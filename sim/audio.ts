@@ -1,11 +1,12 @@
 import type { PortalStage } from './world/portal-types.ts';
-import type { AudioDef, CueDef, CueTable, LifeSoundEvent, UiAction, WeaponCue, WorldSoundEvent } from './content/audio.ts';
+import type { AudioDef, CueDef, CueTable, LifeSoundEvent, PitchRange, UiAction, WeaponCue, WorldSoundEvent } from './content/audio.ts';
 import { FALLBACK_KEY, GOLD_KEY, PLAYER_KEY } from './content/audio.ts';
+import type { AreaDelivery } from './content/shape-types.ts';
 import type { ItemBaseDef, SkillDef, WeaponKind } from './content/types.ts';
 import { baseOf } from './items.ts';
 import { surfaceAt } from './world/ground-surface.ts';
 import type { Vec2 } from './math.ts';
-import type { AreaStage, Command, GroundItem, ItemInstance, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
+import type { AreaStage, AreaState, Command, GroundItem, ItemInstance, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
 
 export interface SoundCue extends CueDef {
   readonly position: Vec2 | null;
@@ -23,16 +24,22 @@ function heldBy(entry: WeaponCue, weapon: WeaponKind | null): boolean {
   return entry.weapons.length === 0 || (weapon !== null && entry.weapons.includes(weapon));
 }
 
-function cues(table: CueTable, key: string, position: Vec2 | null, weapon: WeaponKind | null = null): readonly SoundCue[] {
+function brightened(range: PitchRange | null, lift: number): PitchRange | null {
+  if (lift === 0) return range;
+  const base: PitchRange = range ?? { min: 1, max: 1 };
+  return { min: base.min * (1 + lift), max: base.max * (1 + lift) };
+}
+
+function cues(table: CueTable, key: string, position: Vec2 | null, weapon: WeaponKind | null = null, heat: number = 0): readonly SoundCue[] {
   const list: readonly WeaponCue[] | undefined = table.get(key);
   if (list === undefined) return NONE;
   const heard: readonly WeaponCue[] = list.filter((entry: WeaponCue): boolean => heldBy(entry, weapon));
   if (heard.length === 0) return NONE;
-  return heard.map((entry: CueDef): SoundCue => ({ sound: entry.sound, volume: entry.volume, maxVoices: entry.maxVoices, cooldown: entry.cooldown, reach: entry.reach, holdForVoice: entry.holdForVoice, pitch: entry.pitch, volumeJitter: entry.volumeJitter, position }));
+  return heard.map((entry: WeaponCue): SoundCue => ({ sound: entry.sound, volume: entry.volume, maxVoices: entry.maxVoices, cooldown: entry.cooldown, reach: entry.reach, holdForVoice: entry.holdForVoice, pitch: brightened(entry.pitch, entry.brighten * heat), volumeJitter: entry.volumeJitter, position }));
 }
 
-function bySkill(table: CueTable, skill: SkillDef, position: Vec2 | null, weapon: WeaponKind | null = null): readonly SoundCue[] {
-  return table.has(skill.form) ? cues(table, skill.form, position, weapon) : cues(table, skill.id, position, weapon);
+function bySkill(table: CueTable, skill: SkillDef, position: Vec2 | null, weapon: WeaponKind | null = null, heat: number = 0): readonly SoundCue[] {
+  return table.has(skill.form) ? cues(table, skill.form, position, weapon, heat) : cues(table, skill.id, position, weapon, heat);
 }
 
 function firstOf(table: CueTable, keys: readonly string[], position: Vec2 | null, weapon: WeaponKind | null): readonly SoundCue[] {
@@ -89,15 +96,23 @@ function portalCues(audio: AudioDef, stage: PortalStage, position: Vec2): readon
   return sound === null ? NONE : worldCues(audio, sound, position);
 }
 
-function areaCues(audio: AudioDef, skill: SkillDef, stage: AreaStage, hits: number, at: Vec2): readonly SoundCue[] {
-  const position: Vec2 = { x: at.x, z: at.z };
+function heatOf(skill: SkillDef, pulses: number): number {
+  const delivery: AreaDelivery | null = skill.delivery.type === 'area' ? skill.delivery : null;
+  const stoke = delivery?.stoke ?? null;
+  return stoke === null ? 0 : Math.min(stoke.max, stoke.perPulse * pulses) / stoke.max;
+}
+
+function areaCues(audio: AudioDef, area: AreaState, stage: AreaStage, hits: number): readonly SoundCue[] {
+  const position: Vec2 = { x: area.pos.x, z: area.pos.z };
+  const skill: SkillDef = area.skill;
+  const heat: number = heatOf(skill, area.pulses);
   let found: readonly SoundCue[] = NONE;
   switch (stage) {
     case 'start':
       found = bySkill(audio.areaStart, skill, position);
       break;
     case 'pulse':
-      found = bySkill(audio.areaPulse, skill, position).concat(hits > 0 ? bySkill(audio.areaStrike, skill, position) : NONE);
+      found = bySkill(audio.areaPulse, skill, position, null, heat).concat(hits > 0 ? bySkill(audio.areaStrike, skill, position, null, heat) : NONE);
       break;
     case 'end':
       found = bySkill(audio.areaEnd, skill, position);
@@ -211,7 +226,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       if (event.burst) found = bySkill(audio.skillImpact, event.hazard.skill, event.hazard.pos);
       break;
     case 'area':
-      found = areaCues(audio, event.area.skill, event.stage, event.hits, event.area.pos);
+      found = areaCues(audio, event.area, event.stage, event.hits);
       break;
     case 'brand':
       found = bySkill(audio.brand, event.skill, event.pos);

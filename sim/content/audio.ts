@@ -38,6 +38,7 @@ const LIMITS = {
   pitchMin: 0.5,
   pitchMax: 2,
   jitterMax: 0.5,
+  brightenMax: 0.5,
   cutMin: 0.05,
   cutMax: 10,
 } as const;
@@ -67,6 +68,7 @@ export interface CueDef {
 
 export interface WeaponCue extends CueDef {
   readonly weapons: readonly WeaponKind[];
+  readonly brighten: number;
 }
 
 export type CueTable = ReadonlyMap<string, readonly WeaponCue[]>;
@@ -188,7 +190,7 @@ function cue(value: unknown, defaults: CueDefaults, where: string): CueDef {
 function weaponCue(value: unknown, defaults: CueDefaults, where: string): WeaponCue {
   const source: Fields = fields(value, where);
   const weapons: readonly WeaponKind[] = source['weapons'] === undefined ? [] : choiceList(source, 'weapons', WEAPON_KINDS, where);
-  return { ...cueFields(source, defaults, where), weapons };
+  return { ...cueFields(source, defaults, where), weapons, brighten: ranged(source, 'brighten', 0, 0, LIMITS.brightenMax, where) };
 }
 
 function cueFields(source: Fields, defaults: CueDefaults, where: string): CueDef {

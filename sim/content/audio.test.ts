@@ -63,8 +63,8 @@ void test('cues take the defaults for what they leave out', (): void => {
     draft['ui'] = { click: [{ sound: 'ui_click' }, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60 }] };
   }), known);
   const [plain, tuned]: readonly CueDef[] = must(audio.ui.get('click'), 'click cues');
-  assert.deepEqual(plain, { sound: 'ui_click', volume: 1, maxVoices: 4, cooldown: 0, reach: 30, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [] });
-  assert.deepEqual(tuned, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [] });
+  assert.deepEqual(plain, { sound: 'ui_click', volume: 1, maxVoices: 4, cooldown: 0, reach: 30, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [], brighten: 0 });
+  assert.deepEqual(tuned, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [], brighten: 0 });
 });
 
 void test('a table that names an id the game does not have is rejected', (): void => {
@@ -355,6 +355,23 @@ void test('a cue may carry its own pitch range and volume jitter, and bad ones a
   reject(variant((draft): void => {
     draft['ui'] = { click: [{ sound: 'a', volumeJitter: -0.1 }] };
   }), /volumeJitter/);
+});
+
+void test('an area cue may brighten with its stoke by up to half, and Banked Fire alone does', (): void => {
+  const audio: AudioDef = parseAudio(variant((draft): void => {
+    draft['ui'] = { click: [{ sound: 'ui_click', brighten: 0.3 }, { sound: 'ui_click' }] };
+  }), known);
+  const clicks: readonly WeaponCue[] = must(audio.ui.get('click'), 'click cues');
+  assert.equal(clicks[0]?.brighten, 0.3);
+  assert.equal(clicks[1]?.brighten, 0);
+  for (const bad of [0.6, -0.1]) {
+    reject(variant((draft): void => {
+      draft['ui'] = { click: [{ sound: 'a', brighten: bad }] };
+    }), /brighten/);
+  }
+  const shipped: AudioDef = loadAudio(content);
+  const brightened: string[] = [...shipped.areaStrike.entries()].filter(([, list]: [string, readonly WeaponCue[]]): boolean => list.some((entry: WeaponCue): boolean => entry.brighten > 0)).map(([id]: [string, readonly WeaponCue[]]): string => id);
+  assert.deepEqual(brightened, ['banked_fire']);
 });
 
 void test('the dodge roll varies its pitch and level more than the default and keeps a wide choice of takes', (): void => {
