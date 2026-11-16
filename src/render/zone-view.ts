@@ -1,5 +1,6 @@
 import { liftAt, useTerrain } from './terrain-lift.ts';
 import type { FigureSize } from './figure-gauge.ts';
+import { propCell } from './prop-cells.ts';
 import { claimCutaway, isTall, resetCutaway, withCutaway } from './prop-cutaway.ts';
 import type { Material, Object3D, Scene } from 'three';
 import { BufferGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, Vector3 } from 'three';
@@ -248,7 +249,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean, size: number = 1): void => {
     const def: PropDef | undefined = content.props.get(propId);
     if (def === undefined) return;
-    const key: string = `${propId}:${String(castShadow)}`;
+    const key: string = `${propId}:${String(castShadow)}:${propCell(x, z)}`;
     const batch: Batch = placements.get(key) ?? { prop: propId, castShadow, list: [] };
     const lifted: number = y + liftAt(zone, x, z);
     batch.list.push({ matrix: transform(x, lifted, z, yaw, def.scale * size) });
@@ -315,6 +316,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     }),
   );
 
+  const looks: Map<string, Material> = new Map<string, Material>();
   for (const [batch, gltf] of loaded) {
     const propId: string = batch.prop;
     const list: Placement[] = batch.list;
@@ -325,7 +327,10 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       const geometry: unknown = object.geometry;
       const material: unknown = object.material;
       if (!(material instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-      const instanced: InstancedMesh = new InstancedMesh(geometry, cutFor(content.props.get(propId), finish(content.props.get(propId), dressedProp(content, dress, material, scattered.has(propId) ? loose : dressing))), list.length);
+      const lookKey: string = `${propId}:${object.uuid}`;
+      const look: Material = looks.get(lookKey) ?? cutFor(content.props.get(propId), finish(content.props.get(propId), dressedProp(content, dress, material, scattered.has(propId) ? loose : dressing)));
+      looks.set(lookKey, look);
+      const instanced: InstancedMesh = new InstancedMesh(geometry, look, list.length);
       list.forEach((placement: Placement, index: number): void => {
         instanced.setMatrixAt(index, new Matrix4().multiplyMatrices(placement.matrix, object.matrixWorld));
       });
