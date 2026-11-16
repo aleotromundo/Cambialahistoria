@@ -3,8 +3,8 @@ import { pickTarget, TARGETING } from '../../sim/world/target.ts';
 import type { RecentHit, Target } from '../../sim/world/target.ts';
 import targetCss from './target.css?inline';
 import { clamp01, el, label, setText } from './dom.ts';
-import { monsterLines, monsterSummaryParts, rankPlate, reusedPhrases } from './monster-info.ts';
-import type { MonsterLine, RankPlate } from './monster-info.ts';
+import { monsterInfo, rankPlate, reusedPhrases } from './monster-info.ts';
+import type { MonsterInfo, MonsterLine, RankPlate } from './monster-info.ts';
 import { NO_INFO, stepInfo } from './target-info.ts';
 import type { InfoState, InfoStep } from './target-info.ts';
 
@@ -85,6 +85,7 @@ export function createTargetBar(root: HTMLElement): TargetBar {
   let shownSummary: string = '';
   let visible: boolean = false;
   let info: InfoState = NO_INFO;
+  let facts: MonsterInfo | null = null;
 
   return {
     hit(monsterId: number): void {
@@ -99,12 +100,13 @@ export function createTargetBar(root: HTMLElement): TargetBar {
         visible = show;
         element.classList.toggle('visible', show);
       }
-      const lines: MonsterLine[] = target === null ? [] : monsterLines(world, target);
-      const step: InfoStep = stepInfo(info, target === null ? null : { id: target.id, kind: target.def.id, key: JSON.stringify(lines), hasLines: lines.length > 0 }, dt);
-      if (step.refill) fillInfo(infoBox, lines);
+      const current: MonsterInfo | null = target === null ? null : monsterInfo(facts, world, target);
+      if (current !== null) facts = current;
+      const step: InfoStep = stepInfo(info, target === null || current === null ? null : { id: target.id, kind: target.def.id, key: current.key, hasLines: current.lines.length > 0 }, dt);
+      if (step.refill && current !== null) fillInfo(infoBox, current.lines);
       if (step.state.informed !== info.informed) infoBox.classList.toggle('visible', step.state.informed);
       info = step.state;
-      if (target === null) return;
+      if (target === null || current === null) return;
       if (target.id !== shownId) {
         shownId = target.id;
         shownRatio = -1;
@@ -116,11 +118,9 @@ export function createTargetBar(root: HTMLElement): TargetBar {
         mods.classList.toggle('visible', plate.mods.length > 0);
         track.classList.add('snap');
       }
-      const parts: string[] = monsterSummaryParts(lines);
-      const said: string = parts.join(' · ');
-      if (said !== shownSummary) {
-        shownSummary = said;
-        showPhrases(summary, parts);
+      if (current.said !== shownSummary) {
+        shownSummary = current.said;
+        showPhrases(summary, current.parts);
       }
       setText(level, `Level ${target.level}`, false);
       const ratio: number = Math.round(clamp01(target.life / target.maxLife) / TARGET_BAR.step) * TARGET_BAR.step;

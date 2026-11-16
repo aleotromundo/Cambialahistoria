@@ -13,8 +13,8 @@ import type { MomentState, MonsterState, World } from '../../sim/world/types.ts'
 import { echoesOf, FIELD, fieldWorld, momentLibrary, QUIET, RAID, standAt } from '../../test/moment-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { CATEGORY_NAMES } from './chart-ability.ts';
-import { monsterLines, monsterSummary, monsterSummaryParts, rankPlate, reusedPhrases } from './monster-info.ts';
-import type { MonsterLine, RankPlate } from './monster-info.ts';
+import { monsterInfo, monsterLines, monsterSummary, monsterSummaryParts, rankPlate, reusedPhrases } from './monster-info.ts';
+import type { MonsterInfo, MonsterLine, RankPlate } from './monster-info.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 30;
@@ -131,4 +131,44 @@ void test('the plate shows a ranked monster in its rank colour and lists a rare 
   assert.equal(plate.color, rare.color);
   assert.deepEqual(plate.mods.split(' · '), led.mods.map((id: string): string => must(content.monsterMods.get(id), id).prefix));
   assert.deepEqual(rankPlate(content, must(follower, 'follower')), { color: rare.color, mods: '' });
+});
+
+function assertFresh(info: MonsterInfo, world: World, monster: MonsterState): void {
+  const lines: MonsterLine[] = monsterLines(world, monster);
+  assert.deepEqual(info.lines, lines);
+  assert.equal(info.key, JSON.stringify(lines));
+  assert.deepEqual(info.parts, monsterSummaryParts(lines));
+  assert.equal(info.said, monsterSummary(lines));
+}
+
+void test('the kept info is reused while nothing it shows changes and rebuilt the moment a state does', (): void => {
+  const { world, monster } = spawn('mended', ['hulking']);
+  const first: MonsterInfo = monsterInfo(null, world, monster);
+  assertFresh(first, world, monster);
+  assert.equal(monsterInfo(first, world, monster), first);
+  const raised: MonsterState = { ...monster, revived: true };
+  const again: MonsterInfo = monsterInfo(first, world, raised);
+  assert.notEqual(again, first);
+  assertFresh(again, world, raised);
+  const called: MonsterState = { ...raised, summonerId: raised.id + 1 };
+  const summoned: MonsterInfo = monsterInfo(again, world, called);
+  assert.notEqual(summoned, again);
+  assertFresh(summoned, world, called);
+  const guarded: MonsterState = { ...called, def: { ...called.def, guard: { arcDegrees: 120, damageTaken: 0.2, breakStagger: 0.4, breakTime: 1 } } };
+  const other: MonsterInfo = monsterInfo(summoned, world, guarded);
+  assert.notEqual(other, summoned);
+  assertFresh(other, world, guarded);
+  assert.equal(monsterInfo(other, world, guarded), other);
+});
+
+void test('a sleeper that wakes drops its sleeping line from the kept info', (): void => {
+  const { world, monster } = spawn('cinder_mite');
+  monster.aggro = false;
+  const asleep: MonsterInfo = monsterInfo(null, world, monster);
+  assert.ok(asleep.states.includes('Asleep until it hears you'));
+  assertFresh(asleep, world, monster);
+  monster.aggro = true;
+  const awake: MonsterInfo = monsterInfo(asleep, world, monster);
+  assert.ok(!awake.states.includes('Asleep until it hears you'));
+  assertFresh(awake, world, monster);
 });

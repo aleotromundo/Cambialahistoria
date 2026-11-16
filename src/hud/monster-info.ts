@@ -51,7 +51,7 @@ function defences(def: MonsterDef): MonsterLine[] {
   return lines;
 }
 
-function states(world: World, monster: MonsterState): MonsterLine[] {
+function stateTexts(world: World, monster: MonsterState): string[] {
   const def: MonsterDef = monster.def;
   const texts: string[] = [];
   if (def.boss !== null) texts.push('Boss');
@@ -81,6 +81,10 @@ function states(world: World, monster: MonsterState): MonsterLine[] {
     case 'chaser':
       break;
   }
+  return texts;
+}
+
+function stateLines(texts: readonly string[]): MonsterLine[] {
   return texts.map((text: string): MonsterLine => ({ kind: 'state', text }));
 }
 
@@ -100,7 +104,29 @@ export function rankPlate(content: Content, def: MonsterDef): RankPlate {
 }
 
 export function monsterLines(world: World, monster: MonsterState): MonsterLine[] {
-  return [...states(world, monster), ...abilities(world.content, monster.def), ...defences(monster.def)];
+  return [...stateLines(stateTexts(world, monster)), ...abilities(world.content, monster.def), ...defences(monster.def)];
+}
+
+export interface MonsterInfo {
+  readonly content: Content;
+  readonly def: MonsterDef;
+  readonly states: readonly string[];
+  readonly lines: readonly MonsterLine[];
+  readonly key: string;
+  readonly parts: readonly string[];
+  readonly said: string;
+}
+
+function sameTexts(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((text: string, index: number): boolean => text === b[index]);
+}
+
+export function monsterInfo(before: MonsterInfo | null, world: World, monster: MonsterState): MonsterInfo {
+  const states: string[] = stateTexts(world, monster);
+  if (before !== null && before.content === world.content && before.def === monster.def && sameTexts(before.states, states)) return before;
+  const lines: MonsterLine[] = [...stateLines(states), ...abilities(world.content, monster.def), ...defences(monster.def)];
+  const parts: string[] = monsterSummaryParts(lines);
+  return { content: world.content, def: monster.def, states, lines, key: JSON.stringify(lines), parts, said: parts.join(' · ') };
 }
 
 export function monsterSummary(lines: readonly MonsterLine[]): string {
