@@ -183,7 +183,7 @@ export function powerOf(content: Content, level: number, equipped: Equipment, al
   return { dps: skill === undefined ? 0 : damagePerSecond(stats, skill), toughness: toughnessOf(content, stats), itemLevels: items, mobility: stats.moveSpeed };
 }
 
-function scoreOf(power: Power, weights: GearWeights): number {
+export function scoreOf(power: Power, weights: GearWeights): number {
   return Math.pow(Math.max(power.dps, 1e-6), weights.dps) * Math.pow(Math.max(power.toughness, 1e-6), weights.toughness) * Math.pow(Math.max(power.mobility, 1e-6), weights.mobility);
 }
 
