@@ -24,8 +24,8 @@ export function buildsPage(data: GuideData): PageBody {
   return {
     kicker: 'Guide',
     title: 'Builds',
-    lede: 'Six ways to grow a character, each with a route through the Skill Tree and numbers measured in the game itself.',
-    description: 'Six builds for The Lost Storm, from a crossbow glass cannon to a heavy tank: who each is for, the route to take, and measured clear speed, deaths and boss fights.',
+    lede: 'Five ways to grow a character: one for each kind of weapon, and one that follows whatever you hold. Each has a route through the Skill Tree and numbers measured in the game itself.',
+    description: 'Five builds for The Lost Storm, one for the staff, the heavy weapon, the blade and the crossbow, and the Echo for any weapon: who each is for, the route to take, and measured clear speed, deaths and boss fights.',
     body: [
       section(
         'pick',
@@ -33,10 +33,10 @@ export function buildsPage(data: GuideData): PageBody {
         [
           para(
             `Each build page tells you who the build is for, how it plays, the places to take in order up to level ${top}, the skill to lean on, what to wear and what to avoid. Each one has been played many times by the game's own simulated player, so the numbers on it are measured, not guessed.`,
-            'Where a build is thin today, its page says so.',
+            'Each of the first four is one weapon, one element and one path of the Skill Tree. Most of a path answers only while its weapon is in your hands, so pick the build and the weapon together.',
           ),
           buildCards(data, BUILD_NOTES.slice(0, BUILDS_PAGE.leading)),
-          para('Two more, both real and both measured:'),
+          para('And one that works with any weapon: it makes your main attack strike twice.'),
           buildCards(data, BUILD_NOTES.slice(BUILDS_PAGE.leading)),
         ].join('\n'),
       ),
@@ -44,7 +44,7 @@ export function buildsPage(data: GuideData): PageBody {
         'numbers',
         'Side by side',
         [
-          para(`How the six builds compare. Tap a build name to open its page. The boss is measured at level ${bossLevel}, the first level most players meet it at.`),
+          para(`How the five builds compare. Tap a build name to open its page. The boss is measured at level ${bossLevel}, the first level most players meet it at.`),
           comparison(data, ''),
           measuredTable(namedMeasures(data), data.spec.levels, bossLevel),
           measuredMethod(data),

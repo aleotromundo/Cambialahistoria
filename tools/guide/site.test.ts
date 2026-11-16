@@ -68,6 +68,18 @@ void test('every route can be taken in its order with the points a character has
   }
 });
 
+void test('every list of places after a route reaches the route the guide shows', (): void => {
+  const data = guideData();
+  for (const build of GUIDE_SPEC.builds) {
+    if (build.after.length === 0) continue;
+    const order: readonly string[] = route(data, build.id);
+    assert.ok(
+      build.after.some((id: string): boolean => order.includes(id)),
+      `${build.id} lists places after its route that its route never reaches`,
+    );
+  }
+});
+
 void test('every remark on a route sits on a place the route takes', (): void => {
   const data = guideData();
   for (const notes of BUILD_NOTES) {

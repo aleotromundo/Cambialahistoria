@@ -5,12 +5,12 @@ import {
   afterRouteText,
   bossLevels,
   bossSpeedRank,
-  capPercent,
   carelessBossShare,
   carelessDeaths,
   deathWords,
   familyNames,
-  heavyWeapons,
+  groupNeeds,
+  groupWeapons,
   legendaryLine,
   manaWeapons,
   modShare,
@@ -19,8 +19,6 @@ import {
   steadyBossShare,
   steadyBossLife,
   steadyDeaths,
-  variantName,
-  variantWeapons,
   weaponNames,
 } from '../facts.ts';
 import { esc, percent } from '../html.ts';
@@ -39,68 +37,6 @@ function pathName(data: GuideData, id: string): string {
   return esc(path(data, id).name);
 }
 
-function glass(data: GuideData): BuildNotes {
-  const id: string = 'glass-cannon';
-  const shot: string = esc(variantName(data, 'worn_crossbow', 'cleave'));
-  const keystone: number = placeLevel(data, id, 'edge_without_rest');
-  const lifeCut: string = percent(modShare(data, 'edge_without_rest', 'maxLife'));
-  const [first = 0, second = 0] = bossLevels(data);
-  return {
-    id,
-    ...buildName(id),
-    mainSkill: skill(data, 'quarrel').name,
-    forWho: 'For players who want every fight over before it reaches them, and who would rather roll out of a blow than take it.',
-    plays: [
-      `Hold a crossbow and ${skillName(data, 'cleave')} becomes ${shot}: a shot that costs nothing and waits for nothing. The woman wakes with the ${esc(item(data, 'worn_crossbow').name)}. Anyone else picks one up later; crossbows drop like any other weapon, and the trader sometimes has one.`,
-      `The Glass Cannon walks ${pathName(data, 'blade')} for its plain Damage, critical strikes and attack speed, all of which count for your shots. ${shot} is a bolt skill, not a weapon skill, so the route also crosses into ${pathName(data, 'storm')} for the places that make bolt skills stronger. At level ${placeLevel(data, id, 'whirling_cleave')} ${name(data, 'whirling_cleave')} turns ${shot} into a fan of bolts across the way ahead. Soon after, at level ${placeLevel(data, id, 'slip_through')}, ${name(data, 'slip_through')} turns your ${skillName(data, 'dodge_roll')} into a step through the shadow to wherever you aim.`,
-      'That is the whole rhythm: shoot the fan into the pack, and when something big closes in or winds up, slip out to a clear spot and keep shooting.',
-      `At level ${keystone}, after your first fight with the boss, you take ${name(data, 'edge_without_rest')}. It costs you ${lifeCut} of your life and gives your critical strikes far more weight. From then on you have very little life. That trade is the point of the build: nothing should reach you.`,
-    ],
-    lean: [
-      `${shot} is the button you hold. It swings nothing and costs nothing, so your crossbow's damage is most of your damage: a better crossbow is the biggest upgrade you can find, bigger than any one place on the tree.`,
-      `Your roll is your armour. ${skillName(data, 'dodge_roll')} cuts your own attack short and nothing hits you early in it. Once you have ${name(data, 'slip_through')}, aim it at open ground, never into the pack.`,
-      `${skillName(data, 'thunderhead')} is your opener on anything with a lot of life. Hold it until it is charged and let it go.`,
-    ],
-    lookFor: [
-      `A crossbow with more damage: ${weaponNames(variantWeapons(data, 'cleave'))}.`,
-      legendaryLine(data, 'quietshot'),
-      affixLine(data, 'jagged'),
-      affixLine(data, 'honed'),
-      affixLine(data, 'keen'),
-      affixLine(data, 'cruel'),
-      affixLine(data, 'hale'),
-    ],
-    avoid: [
-      `Swords, axes, maces and staves. Without a crossbow, ${shot} is ${skillName(data, 'cleave')} again, and this build has no life to stand in the crowd.`,
-      `Critical strike chance past ${capPercent(data, 'critChance')}. It stops counting there.`,
-      `Mana on gear. ${shot} costs nothing.`,
-    ],
-    strengths: [
-      'Packs that come at you from the front. The fan of bolts covers them all.',
-      `The boss once it has grown. At level ${second} it won ${percent(steadyBossShare(data, id, second))} of its fights played steadily and ${percent(carelessBossShare(data, id, second))} played carelessly.`,
-      'Staying out of reach. Most enemies die before they get to you.',
-    ],
-    weakSpots: [
-      `The boss at level ${first}. Played steadily it won ${percent(steadyBossShare(data, id, first))} of those fights, and played carelessly ${percent(carelessBossShare(data, id, first))}. Come back a few levels later.`,
-      'The boss\'s holding lines. They stop you in place, and you have no life to spare while you are held.',
-      'Enemies all around you at once. The fan only covers the front: roll out until they are on one side.',
-    ],
-    thin: [
-      'The simulated player that made the numbers on this page never rolls, so they show the build without its best tool. A player who rolls well does better than these numbers say.',
-      `Nothing on the Skill Tree is made for crossbows alone, and the places that say "weapon skills" do not count for ${shot}. What helps is plain Damage, critical strikes, attack speed and the few places for bolt skills.`,
-    ],
-    marks: {
-      heavy_hands: 'The single biggest damage place early.',
-      whirling_cleave: `With a crossbow, ${shot} now looses a fan of bolts. The build starts here.`,
-      slip_through: 'Your roll now goes where you aim.',
-      edge_without_rest: `This is where you give up ${lifeCut} of your life. Its extra damage is for weapon skills and does not reach ${shot}; you take it for the critical strikes. The route puts it after level ${first}, once the first boss is behind you.`,
-      storm_12: `More damage for bolt skills, which ${shot} is.`,
-      windborne: `A shorter wait on ${skillName(data, 'dodge_roll')}.`,
-    },
-    afterRoute: afterRouteText(data, id, 'Each one adds damage, speed or a shorter wait on the roll.'),
-  };
-}
-
 function tank(data: GuideData): BuildNotes {
   const id: string = 'bulwark';
   const keystone: number = placeLevel(data, id, 'the_unmoved');
@@ -114,7 +50,7 @@ function tank(data: GuideData): BuildNotes {
     mainSkill: null,
     forWho: 'For players who want a big weapon, slow heavy blows, and to walk out of every fight.',
     plays: [
-      `You stand in the pack and let it come to you. The Bulwark takes ${pathName(data, 'stone')}, the path of life and armour, and spends little on damage until it is hard to kill. Later it crosses into ${pathName(data, 'echo')} for skills that hit a whole crowd.`,
+      `You stand in the pack and let it burn. The Emberwarden walks ${pathName(data, 'stone')}, the path of fire, life and armour, with ${groupNeeds(data, 'heavy')} in your hands: every place on the path answers only while you hold one. It spends little on damage until it is hard to kill, and later crosses into ${pathName(data, 'echo')} for skills that hit a whole crowd.`,
       `${skillName(data, 'thunderclap')} is your first point: when the pack closes around you, slam the ground and they are thrown back, staggered and set alight. ${skillName(data, 'held_breath')} comes at level ${placeLevel(data, id, 'stone_held_breath')}. Use it when you are surrounded or a big enemy is winding up: everything near you slows to a crawl and you do not.`,
       `At level ${placeLevel(data, id, 'shoulder_through')} ${name(data, 'shoulder_through')} turns your roll into a charge that ends in a burst of fire, so the way out of a pack is also a blow. ${skillName(data, 'banked_fire')} comes at level ${placeLevel(data, id, 'stone_banked_fire')}: a fire around you that burns hotter every second they stay in it.`,
       `At level ${heave} ${name(data, 'heaving_cleave')} lets you hold ${skillName(data, 'cleave')}: let go and one heavy sweep throws everything in front of you far back. ${skillName(data, 'fire_burst')} follows at level ${placeLevel(data, id, 'stone_fire_burst')}, a close heavy slam of fire for the biggest enemy in reach.`,
@@ -125,7 +61,7 @@ function tank(data: GuideData): BuildNotes {
       `${skillName(data, 'thunderclap')} is not your damage; it is how you stop being hit while the sweep is gathering. Light ${skillName(data, 'banked_fire')} and stay in it: it is weak when lit and twice as hot by the end. ${skillName(data, 'held_breath')} has a long wait, so keep it for the moment a fight turns.`,
     ],
     lookFor: [
-      `A heavy weapon: ${weaponNames(heavyWeapons(data))}. They swing slower and hit much harder, which suits a held sweep.`,
+      `A heavy weapon: ${weaponNames(groupWeapons(data, 'heavy'))}. They swing slower and hit much harder, which suits a held sweep.`,
       legendaryLine(data, 'groundbreaker'),
       affixLine(data, 'hale'),
       affixLine(data, 'vital'),
@@ -134,7 +70,7 @@ function tank(data: GuideData): BuildNotes {
       affixLine(data, 'mending'),
     ],
     avoid: [
-      `Crossbows. A crossbow turns ${skillName(data, 'cleave')} into a shot, and this build wants enemies close.`,
+      `Any weapon that is not heavy. With a blade, a staff or a crossbow in hand, ${pathName(data, 'stone')} keeps its life, its armour and its fire but none of the damage it gives your weapon, ${name(data, 'heaving_cleave')} and ${name(data, 'shoulder_through')} stop changing your skills, and the Skill Tree shows those lines struck through.`,
       'Trading life or armour for damage on gear. The tree gives you damage later; your gear keeps you standing.',
       'Chasing fast enemies across the map. Let them come.',
     ],
@@ -147,7 +83,7 @@ function tank(data: GuideData): BuildNotes {
       'Enemies that run or throw from far away. You walk to them slowly.',
     ],
     thin: [
-      `The game has no two-handed weapons as such. The heavy weapons are the ones that swing slower and hit harder, and most of ${pathName(data, 'stone')} answers only while one is in your hands.`,
+      `The game has no two-handed weapons as such. The heavy weapons are the maces, mauls and greatswords: they swing slower and hit harder.`,
       'The simulated player wears whatever raises its damage and toughness most, not always a heavy weapon, so the numbers here are for the route, not for the weapon.',
     ],
     marks: {
@@ -171,6 +107,7 @@ function whirlwind(data: GuideData): BuildNotes {
   const undertow: number = placeLevel(data, id, 'wind_downdraught');
   const riptide: number = placeLevel(data, id, 'riptide');
   const still: number = placeLevel(data, id, 'blade_still_water');
+  const echoes: number = placeLevel(data, id, 'twice_swung');
   const wheel: string = skillName(data, 'cleave_millwheel');
   const millwheel: string = esc(item(data, 'the_millwheel').name);
   const [first = 0, second = 0, top = 0] = bossLevels(data);
@@ -180,19 +117,20 @@ function whirlwind(data: GuideData): BuildNotes {
     mainSkill: wheel,
     forWho: 'For players who want to spin through a pack, drag it under and drink from the fight without stopping.',
     plays: [
-      `At level ${whirl} ${name(data, 'whirling_cleave')} turns ${skillName(data, 'cleave')} into a full turn that strikes everything around you. At level ${endless} ${name(data, 'endless_turn')} turns that into the ${wheel}: hold it and you keep turning while you run.`,
+      `The Maelstrom walks ${pathName(data, 'blade')} with ${groupNeeds(data, 'blade')} in your hands: the spin and almost every place that feeds it answer only while you hold one. At level ${whirl} ${name(data, 'whirling_cleave')} turns ${skillName(data, 'cleave')} into a full turn that strikes everything around you. At level ${endless} ${name(data, 'endless_turn')} turns that into the ${wheel}: hold it and you keep turning while you run.`,
       `Every enemy the ${wheel} strikes builds momentum: you turn faster, reach wider and nothing knocks you off your feet. ${name(data, 'millstone')}, right after, lets the momentum climb higher and gives you life for every enemy struck.`,
-      `At level ${undertow} ${name(data, 'wind_downdraught')} gives you ${skillName(data, 'downdraught')}: a whirlpool where you aim that drags the pack together, so one turn strikes all of it.`,
-      `At level ${riptide} ${name(data, 'riptide')} turns your roll into ${skillName(data, 'dodge_roll_riptide')}: a longer roll that leaves a rip current where you land and drags the pack in after you. At level ${still} ${name(data, 'blade_still_water')} gives you ${skillName(data, 'still_water')}, a pool that slows everything around you, and from then on every four enemies the ${wheel} strikes put a charge back in each flask.`,
-      `From there it crosses into ${pathName(data, 'wind')} for speed: ${name(data, 'racing_cloud')} makes you attack and move faster, and ${name(data, 'long_wake')} at level ${wake} holds your momentum longer after the last hit, so it carries from one pack to the next.`,
+      `At level ${undertow} you learn ${skillName(data, 'downdraught')}: a whirlpool where you aim that drags the pack together, so one turn strikes all of it.`,
+      `At level ${riptide} your roll becomes ${skillName(data, 'dodge_roll_riptide')}: a longer roll that leaves a rip current where you land and drags the pack in after you. At level ${still} you learn ${skillName(data, 'still_water')}, a pool that slows everything around you, and from then on every four enemies the ${wheel} strikes put a charge back in each flask.`,
+      `${name(data, 'long_wake')} at level ${wake} holds your momentum longer after the last hit, so it carries from one pack to the next. It sits past ${name(data, 'racing_cloud')}, a crossbow place: with a blade that one gives only its movement speed, and the route takes it for what lies beyond.`,
+      `At level ${echoes} the route crosses into ${pathName(data, 'echo')} for ${name(data, 'twice_swung')}. A held spin does not echo; it hits harder instead, every turn.`,
     ],
     lean: [
       `The ${wheel} is the button you hold. Each hit gives back a little mana and turning through empty air only spends it, so keep it turning through enemies, not between them.`,
       `Because it swings your weapon, your weapon's damage is most of your damage. Every place on the route that says "weapon skills", "Damage" or "Attack Speed" makes each turn hit harder or come sooner.`,
-      `${millwheel}, a legendary weapon, makes ${skillName(data, 'cleave')} the ${wheel} by itself. With it in hand ${name(data, 'endless_turn')} has nothing left to change, but ${name(data, 'millstone')} and ${name(data, 'long_wake')} still count.`,
+      `${millwheel}, a legendary greatsword, makes ${skillName(data, 'cleave')} the ${wheel} by itself. A greatsword is a heavy weapon, so with it in hand ${pathName(data, 'blade')} is off and only ${name(data, 'long_wake')} still counts. It spins for an Emberwarden; a Maelstrom keeps its blade.`,
     ],
     lookFor: [
-      'A weapon with more damage that does not swing slower. Read the damage range first.',
+      `A blade with more damage that does not swing slower: ${weaponNames(groupWeapons(data, 'blade'))}. Read the damage range first.`,
       affixLine(data, 'quick'),
       affixLine(data, 'honed'),
       affixLine(data, 'fleet'),
@@ -200,7 +138,7 @@ function whirlwind(data: GuideData): BuildNotes {
       affixLine(data, 'jagged'),
     ],
     avoid: [
-      `Crossbows. A crossbow turns ${skillName(data, 'cleave')} into a shot, and this build lives in the middle of the pack.`,
+      `Any weapon that is not a blade. With a heavy weapon, a staff or a crossbow, ${skillName(data, 'cleave')} stops turning, the ${wheel} is gone, and ${pathName(data, 'blade')} keeps ${skillName(data, 'downdraught')}, ${skillName(data, 'still_water')}, its life and its speed but none of its weapon damage.`,
       'Stopping. Momentum fades a moment after the last hit, and a turn that starts cold is a slow one.',
     ],
     strengths: [
@@ -219,8 +157,9 @@ function whirlwind(data: GuideData): BuildNotes {
       whirling_cleave: 'The build starts here.',
       endless_turn: `Your turn becomes the ${wheel}.`,
       millstone: 'More momentum, and life for every enemy struck.',
-      racing_cloud: 'Faster attacks and faster feet.',
+      racing_cloud: 'A crossbow place: with a blade it gives only its movement speed. It leads to the next one.',
       long_wake: 'Momentum that lasts from one pack to the next.',
+      twice_swung: 'The held spin does not echo: it hits harder instead.',
     },
     afterRoute: afterRouteText(data, id, 'More damage and more ways to move.'),
   };
@@ -229,8 +168,10 @@ function whirlwind(data: GuideData): BuildNotes {
 function caster(data: GuideData): BuildNotes {
   const id: string = 'stormcaller';
   const lance: number = placeLevel(data, id, 'storm_lance');
+  const twice: number = placeLevel(data, id, 'twice_told_bolt');
   const keystone: number = placeLevel(data, id, 'eye_of_the_storm');
   const lifeCut: string = percent(modShare(data, 'eye_of_the_storm', 'maxLife'));
+  const bolt: string = skillName(data, 'storm_bolt');
   const [first = 0, second = 0] = bossLevels(data);
   return {
     id,
@@ -238,17 +179,19 @@ function caster(data: GuideData): BuildNotes {
     mainSkill: null,
     forWho: 'For players who want to fight from a distance and let the lightning do the work.',
     plays: [
-      `Your first point is ${skillName(data, 'storm_bolt')}, and from then on it is the button you press. The Stormcaller walks ${pathName(data, 'storm')}, which makes lightning stronger and gives you the mana to keep casting.`,
-      `${name(data, 'forked_bolt')} soon makes each cast throw more bolts. At level ${lance} ${name(data, 'storm_lance')} changes the skill: one straight line of lightning that hits everything along it at once. Step back so the pack comes at you along the line.`,
-      `${skillName(data, 'squall')} comes early too. Drop it where the pack is coming: it strikes everything under it every half second while you keep casting.`,
-      `At level ${keystone} you take ${name(data, 'eye_of_the_storm')}. It costs ${lifeCut} of your life and makes your lightning far stronger. After that, keep your distance.`,
+      `The Stormcaller walks ${pathName(data, 'storm')} with ${groupNeeds(data, 'staff')} in your hands. Nearly every place on the path answers only while you hold one; with any other weapon its lightning places keep their life and mana and lose their damage. Your first point is ${bolt}, and from then on it is the button you press.`,
+      `${name(data, 'forked_bolt')} soon makes each cast throw more bolts, and ${skillName(data, 'squall')} comes early too: drop it where the pack is coming, and it strikes everything under it every half second while you keep casting.`,
+      `At level ${lance} ${name(data, 'storm_lance')} changes ${bolt}: one straight line of lightning that hits everything along it at once. At level ${twice} ${name(data, 'twice_told_bolt')} gives it a second form, a bolt whose echo flies the same way a moment later. ${bolt} uses one of them at a time: choose which on that place's card on the Skill Tree, or right-click the skill on your bar (hold it on a phone).`,
+      `At level ${keystone} you take ${name(data, 'eye_of_the_storm')}. It costs ${lifeCut} of your life and makes your lightning far stronger. ${skillName(data, 'standing_storm')} comes at level ${placeLevel(data, id, 'standing_thunder')}: a storm around you that heals you for every enemy it strikes, for the moments the pack does reach you. ${name(data, 'static_step')} follows, so your roll comes back sooner and carries you further.`,
     ],
     lean: [
-      `${skillName(data, 'storm_bolt')} costs a little mana every cast. Mana is your limit, not waiting. The places on the route that add mana are there for this, and so is the mana flask on 2.`,
-      `Your skills still add your weapon's damage, so a weapon with more damage helps. A staff that adds mana helps more early on.`,
+      `${bolt} costs a little mana every cast. Mana is your limit, not waiting. The places on the route that add mana are there for this, and so is the mana flask on 2.`,
+      `Your skills still add your weapon's damage, so a staff with more damage helps. A staff that adds mana helps more early on.`,
+      `Take ${name(data, 'storm_lance')} for packs that come at you in a line, and ${name(data, 'twice_told_bolt')} for a single big enemy. You can switch between them whenever you like, for nothing.`,
     ],
     lookFor: [
-      `A staff that adds mana: ${weaponNames(manaWeapons(data))}.`,
+      `A staff: ${weaponNames(groupWeapons(data, 'staff'))}. The ones that add mana help most: ${weaponNames(manaWeapons(data))}.`,
+      legendaryLine(data, 'rainmaker'),
       `The Forkweather legendaries: ${familyNames(data, 'forkweather')}.`,
       affixLine(data, 'brimming'),
       affixLine(data, 'clear'),
@@ -257,11 +200,12 @@ function caster(data: GuideData): BuildNotes {
       affixLine(data, 'grounded'),
     ],
     avoid: [
+      `Any weapon that is not a staff. ${bolt} still casts, and ${name(data, 'storm_lance')} still changes it, but ${pathName(data, 'storm')} stops adding its damage, ${name(data, 'twice_told_bolt')} stops changing it, and the Skill Tree shows those lines struck through.`,
       'Attack speed on gear. Your spells do not cast faster for it.',
-      'Standing in the pack. Storm Lance is a line: step back so the enemies come at you along it.',
+      `Standing in the pack. ${name(data, 'storm_lance')} is a line: step back so the enemies come at you along it.`,
     ],
     strengths: [
-      'Packs that come at you from one side. Storm Lance hits the whole line.',
+      `Packs that come at you from one side. ${name(data, 'storm_lance')} hits the whole line.`,
       `The boss once the build comes together. At level ${second} it was ${bossSpeedRank(data, id, second)} build to win.`,
     ],
     weakSpots: [
@@ -275,59 +219,71 @@ function caster(data: GuideData): BuildNotes {
       storm_lance: 'The build starts here.',
       eye_of_the_storm: `This is where you give up ${lifeCut} of your life for a lot more lightning damage.`,
       rolling_thunder: `This one changes ${skillName(data, 'thunderclap')}, which this build does not have. The route passes through it on the way to the keystone.`,
-      standing_thunder: `Also for ${skillName(data, 'thunderclap')}. If you never took Thunderclap, take the next place on the route instead.`,
+      twice_told_bolt: `A second form for ${bolt}. Choose which one it uses on this place's card.`,
+      standing_thunder: 'A storm around you that heals you while it strikes.',
     },
-    afterRoute: afterRouteText(data, id, 'These turn toward the weapon path: worth it only if you start using Cleave as well.'),
+    afterRoute: afterRouteText(data, id, 'More lightning and more mana, all still on the staff.'),
   };
 }
 
 function echoer(data: GuideData): BuildNotes {
   const id: string = 'echo-weaver';
+  const echoes: number = placeLevel(data, id, 'twice_swung');
+  const forked: number = placeLevel(data, id, 'forked');
   const keystone: number = placeLevel(data, id, 'twice_remembered');
+  const brand: number = placeLevel(data, id, 'blade_static_brand');
+  const fork: string = skillName(data, 'forkline');
   const [first = 0, second = 0] = bossLevels(data);
   return {
     id,
     ...buildName(id),
-    mainSkill: null,
-    forWho: 'For players who like to set the ground alight and let the crowd walk into it.',
+    mainSkill: 'your main attack',
+    forWho: 'For players who want every blow to land twice, whatever they hold.',
     plays: [
-      `Your first point is ${skillName(data, 'forkline')}: lightning that jumps from enemy to enemy. The Echo Weaver walks ${pathName(data, 'echo')}, the path of skills that hit an area and of skills that happen twice.`,
-      `At level ${placeLevel(data, id, 'twice_swung')} ${name(data, 'twice_swung')} makes your main attack happen twice. Fork lightning into the pack, then cut what comes close.`,
-      `At level ${placeLevel(data, id, 'forked')} ${name(data, 'forked')} lets your main attack release a Forkline on its own. At level ${keystone} ${name(data, 'twice_remembered')} trades a little damage on everything for bigger, longer area skills and a shorter wait on ${skillName(data, 'held_breath')}.`,
+      `${pathName(data, 'echo')} asks for no weapon and has no element: it follows whatever you hold. Your first point is ${fork}, lightning that jumps from enemy to enemy, and ${name(data, 'first_echo')} right after makes every area skill last longer and hit harder.`,
+      `At level ${echoes} ${name(data, 'twice_swung')} makes your main attack happen twice: a moment after it lands, its echo strikes the same way again for half the damage. Your main attack is whatever your weapon makes of it: ${skillName(data, 'cleave')} and its turns with a blade or a heavy weapon, ${skillName(data, 'quarrel')} with a crossbow, ${skillName(data, 'storm_bolt')} with a staff. A held spin does not echo; it hits harder instead.`,
+      `At level ${forked} ${name(data, 'forked')} lets each hit of your main attack throw a ${fork} from the enemy it struck. At level ${keystone} ${name(data, 'twice_remembered')} trades a little damage on everything for bigger, longer area skills and a shorter wait on ${skillName(data, 'held_breath')}.`,
+      `${skillName(data, 'static_brand')} comes at level ${brand}: it marks the first enemy it touches, and your next hit on that enemy bursts the mark over everything around it. With your main attack striking twice, a mark rarely waits long.`,
     ],
     lean: [
-      `${skillName(data, 'forkline')} is the button you press most. It is best against a crowd, where every jump finds a new enemy.`,
-      `Every echo hits again for free, so a crowd is where the build is strongest.`,
+      'Your main attack is the button you hold. Every echo hits again for free, and every hit can throw a Forkline, so a crowd is where the build is strongest.',
+      `Brand the biggest enemy in a pack with ${skillName(data, 'static_brand')}, then strike it: the burst catches the rest.`,
+      `This route's last places come from ${pathName(data, 'storm')}, for ${fork}'s lightning, and they answer only with ${groupNeeds(data, 'staff')}. Holding another weapon, take more of the Echo's own places instead.`,
     ],
     lookFor: [
-      `A staff that adds mana: ${weaponNames(manaWeapons(data))}.`,
-      legendaryLine(data, 'rainmaker'),
-      affixLine(data, 'brimming'),
-      affixLine(data, 'clear'),
+      'A better weapon of the kind you already hold. The echo copies its damage.',
+      `The Forkweather legendaries: ${familyNames(data, 'forkweather')}.`,
       affixLine(data, 'honed'),
+      affixLine(data, 'keen'),
+      affixLine(data, 'brimming'),
       affixLine(data, 'hale'),
       affixLine(data, 'vital'),
     ],
     avoid: [
-      'Attack speed and critical strikes on gear. Your damage comes from your skills.',
-      'Forking lightning at a single enemy. Wait a moment for the pack to come.',
+      'Changing weapons for every fight. The Echo works with any of them, but the rest of the Skill Tree does not: the places you crossed into answer only with their own weapon.',
+      `Throwing ${fork} at a single enemy. Wait a moment for the pack to come.`,
     ],
     strengths: [
       `Clearing. It was ${speedRank(data, id, second)} build to reach level ${second}.`,
       `The boss. At level ${second} it was ${bossSpeedRank(data, id, second)} build to win, and played steadily it won ${percent(steadyBossShare(data, id, first))} of its fights at level ${first}.`,
+      'Any weapon. If the next good drop is a crossbow instead of a staff, the Echo keeps working.',
     ],
     weakSpots: [
-      'Mana. Forkline costs it every cast; drink the mana flask before you run dry.',
+      `Mana. ${fork} costs it every cast; drink the mana flask before you run dry.`,
       `Mistakes at the start. Played carelessly it won ${percent(carelessBossShare(data, id, first))} of its fights with the boss at level ${first}.`,
     ],
-    thin: [],
+    thin: [
+      'The simulated player that made the numbers on this page wears whichever weapon raises its numbers most, not one kind, so the numbers are for the route, not for one weapon.',
+    ],
     marks: {
-      echo_forkline: 'Your first point, and your main skill.',
+      echo_forkline: `Your first point: ${fork}.`,
       twice_swung: 'Your main attack happens twice from here.',
+      forked: `Every hit of your main attack can throw a ${fork}.`,
       twice_remembered: 'Bigger, longer area skills for a little less damage on everything.',
-      thunder_in_the_bones: `From here the route turns to ${pathName(data, 'storm')}, which makes lightning stronger. Forkline is lightning.`,
+      blade_static_brand: 'A mark that bursts when you hit it again.',
+      thunder_in_the_bones: `From here the route turns to ${pathName(data, 'storm')}, which makes ${fork} stronger. These places need a staff.`,
     },
-    afterRoute: afterRouteText(data, id, 'More lightning damage and more mana.'),
+    afterRoute: afterRouteText(data, id, 'More lightning and more mana, for a staff in hand.'),
   };
 }
 
@@ -335,23 +291,25 @@ function windrunner(data: GuideData): BuildNotes {
   const id: string = 'windrunner';
   const keystone: number = placeLevel(data, id, 'never_still');
   const armourCut: string = percent(modShare(data, 'never_still', 'armour'));
+  const quarrel: string = skillName(data, 'quarrel');
   const [first = 0, second = 0] = bossLevels(data);
   return {
     id,
     ...buildName(id),
-    mainSkill: null,
+    mainSkill: skill(data, 'quarrel').name,
     forWho: 'For players who like to fight from range, step through the pack and shoot out of the shadow.',
     plays: [
-      `The Nightshot walks ${pathName(data, 'wind')} with a crossbow in hand, which turns ${skillName(data, 'cleave')} into ${skillName(data, 'quarrel')}. Your first point is ${skillName(data, 'ghost_wave')}: a pale wave that rolls through the whole line.`,
+      `The Nightshot walks ${pathName(data, 'wind')} with ${groupNeeds(data, 'crossbow')} in your hands, which turns ${skillName(data, 'cleave')} into ${quarrel}. Almost every place on the path answers only while you hold one. Your first point is ${skillName(data, 'ghost_wave')}: a pale wave that rolls through the whole line.`,
       `${name(data, 'shadow_veil')} comes at level ${placeLevel(data, id, 'shadow_veil')}: after every roll your shots hit harder and pierce one more enemy for two seconds. At level ${placeLevel(data, id, 'slip_through')} ${name(data, 'slip_through')} turns your roll into a step through the shadow to where you aim, and it veils you like a roll.`,
       `${skillName(data, 'umbra')} comes at level ${placeLevel(data, id, 'wind_umbra')}: a shadow around you in which enemies deal less damage. At level ${keystone} you take ${name(data, 'never_still')}: faster attacks, faster feet and shorter waits on your movement, and ${armourCut} less armour.`,
+      `At level ${placeLevel(data, id, 'fanned_shot')} ${name(data, 'fanned_shot')} turns ${quarrel} into a fan of bolts across the way ahead, and at level ${placeLevel(data, id, 'heavy_shot')} ${name(data, 'heavy_shot')} gives it a second form: hold it and let go of one heavy bolt. ${quarrel} uses one at a time: choose which on that place's card on the Skill Tree, or right-click the skill on your bar (hold it on a phone).`,
     ],
     lean: [
       `Roll, then shoot. ${skillName(data, 'quarrel')} is strongest in the two seconds after a roll or a step, so move often and fire right after.`,
       `Open with ${skillName(data, 'ghost_wave')} down the line of a pack, and drop ${skillName(data, 'umbra')} when they reach you.`,
     ],
     lookFor: [
-      `A crossbow: ${weaponNames(variantWeapons(data, 'quarrel'))}.`,
+      `A crossbow: ${weaponNames(groupWeapons(data, 'crossbow'))}.`,
       legendaryLine(data, 'quietshot'),
       legendaryLine(data, 'mist_treader_boots'),
       affixLine(data, 'quick'),
@@ -359,6 +317,7 @@ function windrunner(data: GuideData): BuildNotes {
       affixLine(data, 'hale'),
     ],
     avoid: [
+      `Any weapon that is not a crossbow. Without one ${quarrel} is ${skillName(data, 'cleave')} again, and ${pathName(data, 'wind')} keeps its life, its speed, ${skillName(data, 'ghost_wave')} and ${skillName(data, 'umbra')} but none of the damage it gives your shots.`,
       'Standing still. The Veil only works after you move.',
       'Armour to make up for the keystone. Life does more for you.',
     ],
@@ -377,13 +336,15 @@ function windrunner(data: GuideData): BuildNotes {
       shadow_veil: 'Every roll now makes your next shots stronger.',
       slip_through: 'Your roll now goes where you aim.',
       never_still: `Faster at everything, and ${armourCut} less armour.`,
+      fanned_shot: `${quarrel} looses a fan of bolts.`,
+      heavy_shot: `A second form for ${quarrel}. Choose which one it uses on this place's card.`,
     },
     afterRoute: afterRouteText(data, id, 'More life from the stone path: the right answer to a build that gave up its armour.'),
   };
 }
 
 export function buildNotes(data: GuideData): readonly BuildNotes[] {
-  return [glass(data), tank(data), whirlwind(data), caster(data), echoer(data), windrunner(data)];
+  return [caster(data), tank(data), whirlwind(data), windrunner(data), echoer(data)];
 }
 
 export const BUILD_NOTES: readonly BuildNotes[] = buildNotes(guideData());

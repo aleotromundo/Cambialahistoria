@@ -16,38 +16,9 @@
   "climbMinutes": 150,
   "builds": [
     {
-      "id": "glass-cannon",
-      "from": "marksman",
-      "route": [
-        "blade_thunderhead",
-        "heavy_hands",
-        "blade_1",
-        "whetstone",
-        "blade_4",
-        "whirling_cleave",
-        "blade_wind_mid",
-        "slip_through",
-        "blade_7",
-        "unbroken_rhythm",
-        "blade_8",
-        "blade_9",
-        "headsman",
-        "storm_12"
-      ],
-      "after": [
-        "wind_4",
-        "drag_of_the_deep",
-        "wind_1",
-        "windborne",
-        "blade_12",
-        "blade_13",
-        "edge_without_rest",
-        "wind_7",
-        "through_the_mist",
-        "wind_8",
-        "wind_9",
-        "racing_cloud"
-      ]
+      "id": "stormcaller",
+      "from": "caster",
+      "after": []
     },
     {
       "id": "bulwark",
@@ -82,21 +53,66 @@
     {
       "id": "whirlwind",
       "from": "spinner",
-      "after": []
+      "after": [
+        "drag_of_the_deep",
+        "blade_5",
+        "blade_6",
+        "blade_10",
+        "blade_11",
+        "headsman",
+        "storm_blade_mid",
+        "storm_lance",
+        "echo_storm_mid",
+        "twice_swung",
+        "blade_2",
+        "blade_3",
+        "storm_blade_far",
+        "blade_wind_mid",
+        "thunder_leap",
+        "storm_blade_near"
+      ],
+      "route": [
+        "blade_thunderhead",
+        "heavy_hands",
+        "blade_1",
+        "whetstone",
+        "blade_4",
+        "whirling_cleave",
+        "endless_turn",
+        "millstone",
+        "wind_downdraught",
+        "riptide",
+        "blade_still_water",
+        "blade_7",
+        "unbroken_rhythm",
+        "blade_8",
+        "blade_wind_far",
+        "wind_8",
+        "wind_9",
+        "racing_cloud",
+        "blade_12",
+        "blade_13",
+        "edge_without_rest",
+        "blade_9",
+        "long_wake",
+        "deep_water"
+      ]
     },
     {
-      "id": "stormcaller",
-      "from": "caster",
+      "id": "windrunner",
+      "from": "windrunner",
       "after": [
-        "blade_1",
-        "heavy_hands",
-        "whetstone",
-        "blade_2",
-        "blade_8",
-        "blade_9",
-        "headsman",
-        "blade_12",
-        "blade_13"
+        "stone_1",
+        "tempered_body",
+        "bedrock",
+        "stone_2",
+        "stone_3",
+        "stone_8",
+        "stone_9",
+        "old_oak",
+        "stone_10",
+        "stone_12",
+        "stone_13"
       ]
     },
     {
@@ -115,23 +131,6 @@
         "storm_4",
         "storm_12",
         "storm_13"
-      ]
-    },
-    {
-      "id": "windrunner",
-      "from": "windrunner",
-      "after": [
-        "stone_1",
-        "tempered_body",
-        "bedrock",
-        "stone_2",
-        "stone_3",
-        "stone_8",
-        "stone_9",
-        "old_oak",
-        "stone_10",
-        "stone_12",
-        "stone_13"
       ]
     }
   ]

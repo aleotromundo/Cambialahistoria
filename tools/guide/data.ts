@@ -39,7 +39,9 @@ export function topLevel(spec: GuideSpec): number {
 export function makeGuideData(content: Content, policies: Policies, spec: GuideSpec, measured: Measured, balance: string): GuideData {
   const limit: number = pointsAtLevel(content, topLevel(spec));
   const routes: Map<string, readonly string[]> = new Map<string, readonly string[]>(spec.builds.map((build: GuideBuildSpec): [string, readonly string[]] => [build.id, guideRoute(content, policies, spec, build, limit)]));
-  return { content, policies, spec, measured, balance, routes };
+  const shown: ReadonlySet<string> = new Set<string>(spec.builds.map((build: GuideBuildSpec): string => build.id));
+  const builds: readonly BuildMeasure[] = measured.builds.filter((build: BuildMeasure): boolean => shown.has(build.id));
+  return { content, policies, spec, measured: { ...measured, builds }, balance, routes };
 }
 
 let cached: GuideData | null = null;

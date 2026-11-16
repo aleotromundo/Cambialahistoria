@@ -30,4 +30,6 @@ void test('a skill mod reads as a signed amount, the field and the skill or grou
   assert.equal(describeSkillMod(content, { target: { type: 'group', group: 'lightning' }, field: 'damagePercent', value: 0.3 }), '+30% damage (lightning skills)');
   assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'forkline' }, field: 'chains', value: 1 }), '+1 chains (Forkline)');
   assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'held_breath' }, field: 'cooldownPercent', value: -0.3 }), '-30% cooldown (Held Breath)');
+  assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'standing_storm' }, field: 'lifeOnHit', value: 2 }), '+2 life on hit (Standing Storm)');
+  assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'storm_bolt' }, field: 'manaCostPercent', value: -0.2 }), '-20% mana cost (Storm Bolt)');
 });

@@ -1,5 +1,6 @@
-import type { AffixDef, ItemBaseDef, ItemSlot, ModOp, SkillTreeNodeDef, SkillVariant, StatId, StatMod } from '../../sim/content/types.ts';
+import type { AffixDef, ItemBaseDef, ItemSlot, ModOp, SkillTreeNodeDef, SkillVariant, StatId, StatMod, WeaponGroup } from '../../sim/content/types.ts';
 import { statLabel } from '../../sim/stat-text.ts';
+import { weaponGroup } from '../../sim/weapons.ts';
 import type { GuideData } from './data.ts';
 import { levelForPlace, place, route, topLevel } from './data.ts';
 import { guideRoute } from './builds.ts';
@@ -118,6 +119,21 @@ export function bossLevels(data: GuideData): readonly number[] {
 
 export function droppedWeapons(data: GuideData, keep: (base: ItemBaseDef) => boolean): ItemBaseDef[] {
   return [...data.content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon' && base.dropWeight > 0 && base.power === null && keep(base)).toSorted((a: ItemBaseDef, b: ItemBaseDef): number => a.minLevel - b.minLevel);
+}
+
+function group(data: GuideData, id: string): WeaponGroup {
+  const found: WeaponGroup | null = weaponGroup(data.content, id);
+  if (found === null) throw new Error(`the guide names the unknown weapon group ${id}`);
+  return found;
+}
+
+export function groupWeapons(data: GuideData, id: string): ItemBaseDef[] {
+  const kinds: WeaponGroup['kinds'] = group(data, id).kinds;
+  return droppedWeapons(data, (base: ItemBaseDef): boolean => base.weaponKind !== null && kinds.includes(base.weaponKind));
+}
+
+export function groupNeeds(data: GuideData, id: string): string {
+  return esc(group(data, id).needs);
 }
 
 export function implicitOf(base: ItemBaseDef, stat: StatId): number {
