@@ -8,7 +8,9 @@ import { cellIndex, isWalkable } from '../sim/nav/grid.ts';
 import { createWorld } from '../sim/world/create.ts';
 import type { World } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
-import { farthestPoint, routeBack, walkDistances, walkFrom } from './simulate-cave.ts';
+import { dressHero, farthestPoint, routeBack, walkDistances, walkFrom } from './simulate-cave.ts';
+import { POLICIES } from './simulate-policies.ts';
+import { CONTENT } from './simulate-run.ts';
 
 function outpost(): World {
   const world: World = createWorld(OUTPOST_CONTENT, { seed: 1, save: null });
@@ -40,4 +42,14 @@ void test('a route back runs over walkable cells from the hero to the point, in 
     const to: Vec2 = must(legs[index], 'leg');
     assert.ok(Math.abs(walkFrom(world.grid, field, to) - walkFrom(world.grid, field, from)) <= 3);
   }
+});
+
+void test('a dressed hero wears gear of the level in every slot and starts at full life', (): void => {
+  const world: World = createWorld(CONTENT, { seed: 1, save: null });
+  world.player.level = 14;
+  const before: number = world.player.maxLife;
+  dressHero(world, must(POLICIES.builds.get('storm'), 'storm'), 2);
+  for (const slot of ['weapon', 'head', 'chest', 'hands', 'legs', 'feet'] as const) assert.notEqual(world.player.equipped[slot], null, slot);
+  assert.ok(world.player.maxLife > before);
+  assert.equal(world.player.life, world.player.maxLife);
 });

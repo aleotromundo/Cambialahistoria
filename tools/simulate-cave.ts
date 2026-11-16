@@ -10,7 +10,11 @@ import { waiting } from '../sim/world/packs.ts';
 import type { PackTimer } from '../sim/world/pack-return.ts';
 import type { FlaskState, MonsterState, PlayerState, World, WorldEvent } from '../sim/world/types.ts';
 import { enterZone } from '../sim/world/zones.ts';
-import { addToInventory, equipFromInventory, grantXp } from '../sim/world/character.ts';
+import { addToInventory, equipFromInventory, grantXp, refreshPlayer } from '../sim/world/character.ts';
+import { createRng } from '../sim/rng.ts';
+import { WEAPON_KINDS } from '../sim/content/item-types.ts';
+import type { ArmPlan } from './act-scaling.ts';
+import { typicalGear } from './act-scaling.ts';
 import { makeItem } from '../sim/world/ledger.ts';
 import { xpToNextLevel } from '../sim/progression.ts';
 import type { ItemInstance } from '../sim/world/types.ts';
@@ -43,6 +47,7 @@ export interface CaveJob {
   readonly through: readonly string[];
   readonly raise: number;
   readonly gear: readonly string[];
+  readonly dress?: boolean;
   readonly enterLevel: number;
   readonly minutes: number;
   readonly skill: string;
@@ -326,6 +331,14 @@ function wear(world: World, bases: readonly string[]): void {
   }
 }
 
+export function dressHero(world: World, build: BuildPolicy, seed: number): void {
+  const held: string | null = world.player.equipped.weapon === null ? null : (world.content.itemBases.get(world.player.equipped.weapon.base)?.weaponKind ?? null);
+  const plan: ArmPlan = { arm: { name: build.name, build: build.name, kinds: held === null ? [...WEAPON_KINDS] : [held] }, weights: build.weights, focus: build.focus, route: world.player.allocated };
+  world.player.equipped = typicalGear(world.content, plan, world.player.level, createRng(seed));
+  refreshPlayer(world);
+  world.player.life = world.player.maxLife;
+}
+
 export function runCave(job: CaveJob, policies: Policies): CaveRun {
   const skill: SkillPolicy | undefined = policies.skills.get(job.skill);
   const build: BuildPolicy | undefined = policies.builds.get(job.build);
@@ -347,6 +360,7 @@ export function runCave(job: CaveJob, policies: Policies): CaveRun {
   farm(bot, world.time + CAVE.climbMinutes * 60, skill.loot, (): boolean => world.player.level >= job.enterLevel);
   for (const before of through) if (before !== undefined) sweepZone(bot, { zone: before, tally: emptyTally(), skill: job.skill, stopWhenClear: true }, world.time + CAVE.throughMinutes * 60);
   raiseTo(world, job.raise);
+  if (job.dress === true) dressHero(world, build, job.seed);
   wear(world, job.gear);
   const enteredAtLevel: number = world.player.level;
   inside = true;
