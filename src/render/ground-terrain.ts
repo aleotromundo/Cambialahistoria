@@ -16,6 +16,7 @@ export const GROUND_TERRAIN = {
   rockFineScale: 0.9,
   jitter: 0.32,
   jitterScale: 0.7,
+  overhang: 0.05,
   blendSoft: 0.34,
   blendLift: 0.012,
   shadeScale: 0.09,
@@ -139,6 +140,18 @@ function heightOf(field: Field, column: number, row: number): number {
   return field.heights[r * field.columns + c] ?? 0;
 }
 
+function fieldHeight(field: Field, x: number, z: number): number {
+  const u: number = x / GROUND_TERRAIN.step;
+  const v: number = z / GROUND_TERRAIN.step;
+  const column: number = Math.floor(u);
+  const row: number = Math.floor(v);
+  const fu: number = u - column;
+  const fv: number = v - row;
+  const near: number = heightOf(field, column, row) * (1 - fu) + heightOf(field, column + 1, row) * fu;
+  const far: number = heightOf(field, column, row + 1) * (1 - fu) + heightOf(field, column + 1, row + 1) * fu;
+  return near * (1 - fv) + far * fv;
+}
+
 function vertexAt(field: Field, column: number, row: number): Vertex {
   const step: number = GROUND_TERRAIN.step;
   const here: number = heightOf(field, column, row);
@@ -148,9 +161,15 @@ function vertexAt(field: Field, column: number, row: number): Vertex {
   const steepness: number = smooth((Math.hypot(gx, gz) * step) / GROUND_TERRAIN.steep);
   const x0: number = column * step;
   const z0: number = row * step;
+  const slope: number = Math.max(Math.hypot(gx, gz), Number.EPSILON);
   const push: number = GROUND_TERRAIN.jitter * steepness;
-  const x: number = x0 + push * terrainNoise(x0 * GROUND_TERRAIN.jitterScale, z0 * GROUND_TERRAIN.jitterScale + here, 21);
-  const z: number = z0 + push * terrainNoise(x0 * GROUND_TERRAIN.jitterScale + here, z0 * GROUND_TERRAIN.jitterScale, 22);
+  const along: number = push * terrainNoise(x0 * GROUND_TERRAIN.jitterScale, z0 * GROUND_TERRAIN.jitterScale + here, 21);
+  const uphill: number = (push * (terrainNoise(x0 * GROUND_TERRAIN.jitterScale + here, z0 * GROUND_TERRAIN.jitterScale, 22) + 1)) / 2;
+  const pushedX: number = x0 + (gx * uphill - gz * along) / slope;
+  const pushedZ: number = z0 + (gz * uphill + gx * along) / slope;
+  const slid: boolean = field.floor[row * field.columns + column] !== 1 && fieldHeight(field, pushedX, pushedZ) >= here - GROUND_TERRAIN.overhang;
+  const x: number = slid ? pushedX : x0;
+  const z: number = slid ? pushedZ : z0;
   let above: number = 0;
   for (let dr: number = -GROUND_TERRAIN.footReach; dr <= GROUND_TERRAIN.footReach; dr += 1) {
     for (let dc: number = -GROUND_TERRAIN.footReach; dc <= GROUND_TERRAIN.footReach; dc += 1) above = Math.max(above, heightOf(field, column + dc, row + dr) - here);
