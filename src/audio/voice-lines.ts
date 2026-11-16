@@ -20,6 +20,7 @@ export interface VoiceLines {
   say(speaker: string, clipId: string): Promise<void>;
   hush(): void;
   speaking(): readonly string[];
+  anySpeaking(): boolean;
 }
 
 interface Speaker {
@@ -76,6 +77,12 @@ export function createVoiceLines<T>(deps: VoiceLineDeps<T>): VoiceLines {
     },
     speaking(): readonly string[] {
       return [...speakers.entries()].filter(([, speaker]: [string, Speaker]): boolean => speaker.talking).map(([id]: [string, Speaker]): string => id);
+    },
+    anySpeaking(): boolean {
+      for (const speaker of speakers.values()) {
+        if (speaker.talking) return true;
+      }
+      return false;
     },
   };
 }

@@ -27,6 +27,8 @@ import { createVoiceLimiter } from './voices.ts';
 import type { VoiceMeasure } from './loudness.ts';
 import { measureVoice, spokenSeconds, voiceGain } from './loudness.ts';
 import { warmPaths, warmVoicePaths } from './warm.ts';
+import type { IdleQueue } from './idle-queue.ts';
+import { createIdleQueue } from './idle-queue.ts';
 
 const SYSTEM = {
   cacheBytes: 64 * 1024 * 1024,
@@ -52,6 +54,7 @@ const SYSTEM = {
   fadeTimeConstants: 4,
   cutFade: 0.12,
   echoSpeaker: 'echo',
+  measureIdleMs: 2000,
 } as const;
 
 export interface Trigger {
@@ -116,6 +119,11 @@ interface Graph {
 }
 
 const NOWHERE: StingerLocator = (): Placement | null => null;
+
+function whenIdle(work: () => void): void {
+  if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: SYSTEM.measureIdleMs });
+  else window.setTimeout(work, SYSTEM.measureIdleMs);
+}
 
 export function createAudioSystem(options: AudioOptions): AudioSystem {
   const { base, controls, random, clock } = options;
@@ -283,22 +291,6 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     if (graph !== null) loader.ensure();
   };
 
-  const startWarm = (): void => {
-    const manifest: AssetManifest | null = loader.current();
-    if (manifest === null || graph === null || warming) return;
-    const queue: readonly string[] = [...warmVoicePaths(warmVoices, manifest), ...warmPaths(warmIds, manifest)];
-    if (queue.length === 0) return;
-    warming = true;
-    let next: number = 0;
-    const lane = (): Promise<void> => {
-      if (next >= queue.length || cache.bytes >= SYSTEM.cacheBytes * SYSTEM.warmFill) return Promise.resolve();
-      const path: string | undefined = queue[next];
-      next += 1;
-      return path === undefined ? lane() : load(path, WARM_LOAD).then(lane);
-    };
-    Promise.all(Array.from({ length: SYSTEM.warmLanes }, lane)).catch((): void => undefined);
-  };
-
   const measured: WeakMap<AudioBuffer, VoiceMeasure> = new WeakMap<AudioBuffer, VoiceMeasure>();
   const measureOf = (buffer: AudioBuffer): VoiceMeasure => {
     const known: VoiceMeasure | undefined = measured.get(buffer);
@@ -308,6 +300,35 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     measured.set(buffer, fresh);
     return fresh;
   };
+  const measureLater: IdleQueue<AudioBuffer> = createIdleQueue<AudioBuffer>(
+    (buffer: AudioBuffer): void => {
+      measureOf(buffer);
+    },
+    (buffer: AudioBuffer): boolean => measured.has(buffer),
+    whenIdle,
+  );
+
+  const startWarm = (): void => {
+    const manifest: AssetManifest | null = loader.current();
+    if (manifest === null || graph === null || warming) return;
+    const voicePaths: readonly string[] = warmVoicePaths(warmVoices, manifest);
+    const queue: readonly string[] = [...voicePaths, ...warmPaths(warmIds, manifest)];
+    if (queue.length === 0) return;
+    warming = true;
+    let next: number = 0;
+    const lane = (): Promise<void> => {
+      if (next >= queue.length || cache.bytes >= SYSTEM.cacheBytes * SYSTEM.warmFill) return Promise.resolve();
+      const path: string | undefined = queue[next];
+      next += 1;
+      if (path === undefined) return lane();
+      return load(path, WARM_LOAD).then((buffer: AudioBuffer | null): Promise<void> => {
+        if (buffer !== null && voicePaths.includes(path)) measureLater.add(buffer);
+        return lane();
+      });
+    };
+    Promise.all(Array.from({ length: SYSTEM.warmLanes }, lane)).catch((): void => undefined);
+  };
+
 
   const speak = (buffer: AudioBuffer, current: Graph): SpokenClip => {
     const measure: VoiceMeasure = measureOf(buffer);
@@ -421,7 +442,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       }
     },
     play(cue: SoundCue, place: Placement): void {
-      if (hold.offer(cue, place, clock(), echoes > 0 || lines.speaking().length > 0)) trigger('effects', cue, place);
+      if (hold.offer(cue, place, clock(), echoes > 0 || lines.anySpeaking())) trigger('effects', cue, place);
     },
     playVoice(speaker: string, clipId: string): Promise<void> {
       return lines.say(speaker, clipId);
@@ -516,7 +537,9 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     },
     update(dt: number): void {
       ensureManifest();
-      for (const held of hold.release(clock(), echoes > 0 || lines.speaking().length > 0)) trigger('effects', held.cue, held.place);
+      if (hold.waiting() > 0) {
+        for (const held of hold.release(clock(), echoes > 0 || lines.anySpeaking())) trigger('effects', held.cue, held.place);
+      }
       loopRetryLeft -= dt;
       if (loopRetryLeft <= 0) {
         loopRetryLeft = SYSTEM.loopRetrySeconds;

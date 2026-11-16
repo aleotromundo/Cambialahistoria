@@ -55,39 +55,40 @@ function highPass(rate: number): Biquad {
   return { b0: 1, b1: -2, b2: 1, a1: (2 * (k * k - 1)) / a0, a2: (1 - k / LOUDNESS.passQ + k * k) / a0 };
 }
 
-function filtered(samples: Float32Array, stages: readonly Biquad[]): Float64Array {
-  let input: Float64Array = Float64Array.from(samples);
-  for (const stage of stages) {
-    const output: Float64Array = new Float64Array(input.length);
-    let x1: number = 0;
-    let x2: number = 0;
-    let y1: number = 0;
-    let y2: number = 0;
-    for (let index: number = 0; index < input.length; index += 1) {
-      const x: number = input[index] ?? 0;
-      const y: number = stage.b0 * x + stage.b1 * x1 + stage.b2 * x2 - stage.a1 * y1 - stage.a2 * y2;
-      output[index] = y;
-      x2 = x1;
-      x1 = x;
-      y2 = y1;
-      y1 = y;
-    }
-    input = output;
+function weightedSquares(samples: Float32Array, first: Biquad, second: Biquad): Float64Array {
+  const squares: Float64Array = new Float64Array(samples.length);
+  let x1: number = 0;
+  let x2: number = 0;
+  let y1: number = 0;
+  let y2: number = 0;
+  let z1: number = 0;
+  let z2: number = 0;
+  for (let index: number = 0; index < samples.length; index += 1) {
+    const x: number = samples[index] ?? 0;
+    const y: number = first.b0 * x + first.b1 * x1 + first.b2 * x2 - first.a1 * y1 - first.a2 * y2;
+    const z: number = second.b0 * y + second.b1 * y1 + second.b2 * y2 - second.a1 * z1 - second.a2 * z2;
+    squares[index] = z ** 2;
+    x2 = x1;
+    x1 = x;
+    y2 = y1;
+    y1 = y;
+    z2 = z1;
+    z1 = z;
   }
-  return input;
+  return squares;
 }
 
-function blockPowers(weighted: readonly Float64Array[], rate: number): number[] {
-  const length: number = weighted[0]?.length ?? 0;
+function blockPowers(squared: readonly Float64Array[], rate: number): number[] {
+  const length: number = squared[0]?.length ?? 0;
   const block: number = Math.min(length, Math.round(LOUDNESS.blockSeconds * rate));
   const step: number = Math.max(1, Math.round(LOUDNESS.stepSeconds * rate));
   const powers: number[] = [];
   if (block === 0) return powers;
   for (let start: number = 0; start + block <= length; start += step) {
     let power: number = 0;
-    for (const channel of weighted) {
+    for (const channel of squared) {
       let sum: number = 0;
-      for (let index: number = start; index < start + block; index += 1) sum += (channel[index] ?? 0) ** 2;
+      for (let index: number = start; index < start + block; index += 1) sum += channel[index] ?? 0;
       power += sum / block;
     }
     powers.push(power);
@@ -104,8 +105,9 @@ function mean(values: readonly number[]): number {
 }
 
 export function integratedLoudness(channels: readonly Float32Array[], rate: number): number {
-  const stages: readonly Biquad[] = [shelf(rate), highPass(rate)];
-  const powers: number[] = blockPowers(channels.map((channel: Float32Array): Float64Array => filtered(channel, stages)), rate);
+  const first: Biquad = shelf(rate);
+  const second: Biquad = highPass(rate);
+  const powers: number[] = blockPowers(channels.map((channel: Float32Array): Float64Array => weightedSquares(channel, first, second)), rate);
   const loud: number[] = powers.filter((power: number): boolean => loudnessOf(power) > LOUDNESS.absoluteGate);
   if (loud.length === 0) return -Infinity;
   const gate: number = loudnessOf(mean(loud)) + LOUDNESS.relativeGate;

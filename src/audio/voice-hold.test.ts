@@ -50,3 +50,11 @@ void test('the same sound offered twice while held waits once and plays once', (
   assert.equal(hold.waiting(), 1);
   assert.deepEqual(sounds(hold.release(2, false)), ['opening_alien']);
 });
+
+void test('with nothing held, release hands back the same empty list every frame and holds nothing', (): void => {
+  const hold: VoiceHold = createVoiceHold();
+  const first: readonly HeldCue[] = hold.release(0, false);
+  assert.equal(hold.release(1, true), first);
+  assert.deepEqual(first, []);
+  assert.equal(hold.waiting(), 0);
+});

@@ -15,24 +15,50 @@ function barredCount(count: number): number {
   return Math.min(VARIATION.recentBarred, count - 1);
 }
 
+function isBarred(index: number, recent: readonly number[], from: number): boolean {
+  for (let at: number = from; at < recent.length; at += 1) {
+    if (recent[at] === index) return true;
+  }
+  return false;
+}
+
 export function pickVariant(count: number, recent: readonly number[], random: () => number): number {
   if (count <= 1) return 0;
-  const barred: ReadonlySet<number> = new Set<number>(recent.slice(-barredCount(count)));
-  const open: number[] = [];
+  const from: number = Math.max(0, recent.length - barredCount(count));
+  let open: number = 0;
   for (let index: number = 0; index < count; index += 1) {
-    if (!barred.has(index)) open.push(index);
+    if (!isBarred(index, recent, from)) open += 1;
   }
-  const chosen: number | undefined = open[Math.min(open.length - 1, Math.floor(random() * open.length))];
-  return chosen ?? 0;
+  const wanted: number = Math.min(open - 1, Math.floor(random() * open));
+  let seen: number = 0;
+  for (let index: number = 0; index < count; index += 1) {
+    if (isBarred(index, recent, from)) continue;
+    if (seen === wanted) return index;
+    seen += 1;
+  }
+  return 0;
 }
 
 export function createVariantBag(random: () => number): VariantBag {
-  const recent: Map<string, readonly number[]> = new Map<string, readonly number[]>();
+  const recent: Map<string, number[]> = new Map<string, number[]>();
   return {
     next(sound: string, count: number): number {
-      const history: readonly number[] = (recent.get(sound) ?? []).filter((index: number): boolean => index < count);
+      let history: number[] | undefined = recent.get(sound);
+      if (history === undefined) {
+        history = [];
+        recent.set(sound, history);
+      }
+      let kept: number = 0;
+      for (const index of history) {
+        if (index < count) {
+          history[kept] = index;
+          kept += 1;
+        }
+      }
+      history.length = kept;
       const variant: number = pickVariant(count, history, random);
-      recent.set(sound, [...history, variant].slice(-VARIATION.recentBarred));
+      history.push(variant);
+      while (history.length > VARIATION.recentBarred) history.shift();
       return variant;
     },
   };

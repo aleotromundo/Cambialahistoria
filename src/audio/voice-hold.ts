@@ -16,6 +16,8 @@ export interface VoiceHold {
   waiting(): number;
 }
 
+const NONE_HELD: readonly HeldCue[] = [];
+
 export function createVoiceHold(): VoiceHold {
   let held: Waiting[] = [];
   return {
@@ -26,8 +28,9 @@ export function createVoiceHold(): VoiceHold {
       return false;
     },
     release(now: number, speaking: boolean): readonly HeldCue[] {
+      if (held.length === 0) return NONE_HELD;
       held = held.filter((entry: Waiting): boolean => now <= entry.until);
-      if (speaking || held.length === 0) return [];
+      if (speaking || held.length === 0) return NONE_HELD;
       const ready: readonly HeldCue[] = held.map((entry: Waiting): HeldCue => ({ cue: entry.cue, place: entry.place }));
       held = [];
       return ready;

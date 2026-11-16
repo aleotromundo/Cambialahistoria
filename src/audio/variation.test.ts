@@ -94,3 +94,35 @@ void test('a delay falls between its bounds', (): void => {
   assert.equal(delayBetween(10, 30, (): number => 0.5), 20);
   assert.equal(delayBetween(10, 30, (): number => 1), 30);
 });
+
+function referencePick(count: number, recent: readonly number[], random: () => number): number {
+  if (count <= 1) return 0;
+  const barred: ReadonlySet<number> = new Set<number>(recent.slice(-Math.min(VARIATION.recentBarred, count - 1)));
+  const open: number[] = [];
+  for (let index: number = 0; index < count; index += 1) {
+    if (!barred.has(index)) open.push(index);
+  }
+  return open[Math.min(open.length - 1, Math.floor(random() * open.length))] ?? 0;
+}
+
+void test('the bag picks the same variations, in the same order and with the same draws, as the set-and-filter picker it replaced', (): void => {
+  const counts: readonly number[] = [1, 2, 3, 6, 4, 4, 2, 7, 5, 1, 3, 8, 8, 2, 6];
+  const ours: () => number = seeded();
+  const theirs: () => number = seeded();
+  const bag: VariantBag = createVariantBag(ours);
+  const history: Map<string, readonly number[]> = new Map<string, readonly number[]>();
+  for (let step: number = 0; step < 3000; step += 1) {
+    const sound: string = `s${step % 4}`;
+    const count: number = counts[(step * 7) % counts.length] ?? 1;
+    const before: readonly number[] = (history.get(sound) ?? []).filter((index: number): boolean => index < count);
+    const expected: number = referencePick(count, before, theirs);
+    history.set(sound, [...before, expected].slice(-VARIATION.recentBarred));
+    assert.equal(bag.next(sound, count), expected);
+  }
+  assert.equal(ours(), theirs());
+  for (const recent of [[], [0], [5], [9, 9], [2, 2], [1, 0, 3], [3, 1]]) {
+    for (const draw of [0, 0.2, 0.5, 0.99, 1]) {
+      for (let count: number = 0; count <= 6; count += 1) assert.equal(pickVariant(count, recent, (): number => draw), referencePick(count, recent, (): number => draw));
+    }
+  }
+});

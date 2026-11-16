@@ -123,6 +123,7 @@ void test('a line plays the clip the manifest names for its id, once', async ():
   assert.deepEqual(asked, ['warden_guide_road']);
   assert.deepEqual(playing.map((clip: FakeClip): string => clip.path), ['voice/warden_guide/warden_guide_road.mp3']);
   assert.deepEqual(lines.speaking(), ['warden_guide']);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
 });
 
 void test('a line with no clip loads nothing, plays nothing and stays quiet', async (): Promise<void> => {
@@ -131,6 +132,7 @@ void test('a line with no clip loads nothing, plays nothing and stays quiet', as
   assert.deepEqual(loaded, []);
   assert.deepEqual(playing, []);
   assert.deepEqual(lines.speaking(), []);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
 });
 
 void test('a clip that fails to load plays nothing', async (): Promise<void> => {
@@ -154,6 +156,7 @@ void test('a second line from the same speaker fades the first out with the shor
   assert.deepEqual(second.fades, []);
   assert.equal(second.path, 'voice/warden_guide/warden_guide_lesson.mp3');
   assert.deepEqual(lines.speaking(), ['warden_guide']);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
 });
 
 void test('lines from different speakers do not cut each other', async (): Promise<void> => {
@@ -164,6 +167,7 @@ void test('lines from different speakers do not cut each other', async (): Promi
   assert.equal(playing.length, 2);
   assert.deepEqual(playing.map((clip: FakeClip): number => clip.fades.length), [0, 0]);
   assert.deepEqual(lines.speaking(), ['warden_guide', 'warden_trader']);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
 });
 
 void test('a line still loading when the speaker moves on never starts', async (): Promise<void> => {
@@ -188,6 +192,7 @@ void test('hush fades every speaker and drops lines still loading', async (): Pr
   assert.deepEqual(playing.map((clip: FakeClip): string => clip.path), ['voice/warden_guide/warden_guide_road.mp3']);
   assert.deepEqual(playing[0]?.fades, [VOICE_LINES.fadeSeconds]);
   assert.deepEqual(lines.speaking(), []);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
 });
 
 void test('a line that ends on its own leaves its speaker quiet', async (): Promise<void> => {
@@ -197,6 +202,7 @@ void test('a line that ends on its own leaves its speaker quiet', async (): Prom
   playing[0]?.finish();
   await said;
   assert.deepEqual(lines.speaking(), []);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
   assert.deepEqual(playing[0]?.fades, []);
 });
 
@@ -224,6 +230,7 @@ void test('a clip that started plays to its end however long it is, past the sta
   assert.equal(said.done(), false);
   assert.deepEqual(clip.fades, []);
   assert.deepEqual(lines.speaking(), ['warden_guide']);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
   clip.finish();
   await settle();
   assert.equal(said.done(), true);
@@ -238,6 +245,7 @@ void test('a line is spoken until its last sound, while its silent tail plays on
   await settle();
   assert.equal(said.done(), true);
   assert.deepEqual(lines.speaking(), []);
+  assert.equal(lines.anySpeaking(), lines.speaking().length > 0);
   assert.deepEqual(clip.fades, []);
 });
 
