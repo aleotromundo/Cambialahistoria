@@ -25,6 +25,8 @@ import { createGlide, glideToward } from './label-glide.ts';
 import type { Folding, LabelSpot, RankedBox, ScreenRect } from './label-stack.ts';
 import type { TagSize, TagSizes } from './tag-sizes.ts';
 import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
+import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
+import type { TagBound } from './overlay-place.ts';
 
 export const OVERLAYS = {
   pinGlyph: '!',
@@ -146,41 +148,6 @@ export interface Overlays {
   aimExit(exit: string | null): void;
   aimItem(groundId: number | null): void;
   labelHover(): number | null;
-}
-
-function blockersIn(root: HTMLElement): ScreenRect[] {
-  const origin: DOMRect = root.getBoundingClientRect();
-  const rects: ScreenRect[] = [];
-  for (const selector of OVERLAYS.hudBlockers) {
-    for (const element of document.querySelectorAll(selector)) {
-      const box: DOMRect = element.getBoundingClientRect();
-      if (box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== 'hidden') rects.push({ left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top });
-    }
-  }
-  return rects;
-}
-
-function place(element: HTMLElement, point: Vector2): void {
-  element.style.transform = `translate3d(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px, 0)`;
-}
-
-function glideAt(glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number, bound: TagBound | null): void {
-  glideToward(glide, target.x - anchor.x, target.y - anchor.y, dt);
-  target.set(anchor.x + glide.x, anchor.y + glide.y);
-  if (bound !== null) {
-    const [x, y] = keepTagInView(target.x, target.y, bound.size.width, bound.size.height, bound.view);
-    target.set(x, y);
-  }
-}
-
-function glidePlace(element: HTMLElement, glide: LabelGlide, anchor: Vector2, target: Vector2, dt: number): void {
-  glideAt(glide, anchor, target, dt, null);
-  place(element, target);
-}
-
-interface TagBound {
-  readonly size: TagSize;
-  readonly view: ViewSize;
 }
 
 export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
@@ -557,7 +524,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     update(dt: number, world: World, hoveredId: number | null): void {
       sinceHudRead += dt;
       if (sinceHudRead >= OVERLAYS.hudReadSeconds) {
-        hudRects = blockersIn(root);
+        hudRects = blockersIn(root, OVERLAYS.hudBlockers);
         sinceHudRead = 0;
       }
       if (exitsOf !== world.zone) showExits(world);
