@@ -1,5 +1,5 @@
 {
- "fingerprint": "758e9e9942657a8d",
+ "fingerprint": "92000bd8b267282c",
  "runs": 4,
  "builds": [
   {
@@ -216,23 +216,23 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 21.3
+      "minutes": 24.8
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 48.7
+      "minutes": 50.8
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 85.4
+      "minutes": 91.7
      }
     ],
-    "killsPerMinute": 6.3,
-    "fightSeconds": 5.4,
-    "flasksPerFight": 0,
-    "deathsPerHour": 0,
+    "killsPerMinute": 5.7,
+    "fightSeconds": 6,
+    "flasksPerFight": 0.01,
+    "deathsPerHour": 0.3,
     "lowShare": 0,
     "magicDeathShare": 0,
     "rareDeathShare": 0,
@@ -240,23 +240,23 @@
      {
       "level": 10,
       "attempts": 12,
-      "winShare": 0.83,
-      "seconds": 80,
-      "lifeLeft": 0.97
+      "winShare": 0.67,
+      "seconds": 117,
+      "lifeLeft": 0.88
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 22,
-      "lifeLeft": 0.91
+      "seconds": 35,
+      "lifeLeft": 0.82
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 22,
-      "lifeLeft": 0.72
+      "seconds": 48,
+      "lifeLeft": 0.59
      }
     ]
    },
@@ -266,21 +266,21 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 21.6
+      "minutes": 21
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 45.7
+      "minutes": 48.7
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 80.9
+      "minutes": 93.7
      }
     ],
-    "killsPerMinute": 6.6,
-    "fightSeconds": 5.8,
+    "killsPerMinute": 6.3,
+    "fightSeconds": 6.3,
     "flasksPerFight": 0,
     "deathsPerHour": 2.2,
     "lowShare": 0.01,
@@ -290,22 +290,22 @@
      {
       "level": 10,
       "attempts": 12,
-      "winShare": 0.25,
-      "seconds": 39,
-      "lifeLeft": 0.47
+      "winShare": 0.33,
+      "seconds": 37,
+      "lifeLeft": 0.7
      },
      {
       "level": 15,
       "attempts": 12,
-      "winShare": 0.92,
+      "winShare": 0.67,
       "seconds": 27,
-      "lifeLeft": 0.59
+      "lifeLeft": 0.32
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 25,
+      "seconds": 13,
       "lifeLeft": 0.84
      }
     ]
