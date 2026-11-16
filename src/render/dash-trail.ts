@@ -111,6 +111,10 @@ function trailMesh(color: Color): Trail {
   return { mesh, positions, alphas, samples: [], color, direction: { x: 0, z: 1 }, travelled: 0, live: true };
 }
 
+export function dashTrailKeeper(color: Color): Mesh<BufferGeometry, ShaderMaterial> {
+  return trailMesh(color).mesh;
+}
+
 function writeTrail(trail: Trail): void {
   const last: number = DASH_TRAIL.samples - 1;
   for (let index: number = 0; index <= last; index += 1) {
@@ -119,7 +123,12 @@ function writeTrail(trail: Trail): void {
     const z: number = sample?.z ?? 0;
     const fade: number = sample === undefined || index >= trail.samples.length ? 0 : Math.max(0, 1 - sample.age / DASH_TRAIL.fade);
     const base: number = index * 6;
-    trail.positions.set([x, floorUp(x, DASH_TRAIL.low, z), z, x, floorUp(x, DASH_TRAIL.high, z), z], base);
+    trail.positions[base] = x;
+    trail.positions[base + 1] = floorUp(x, DASH_TRAIL.low, z);
+    trail.positions[base + 2] = z;
+    trail.positions[base + 3] = x;
+    trail.positions[base + 4] = floorUp(x, DASH_TRAIL.high, z);
+    trail.positions[base + 5] = z;
     trail.alphas[index * 2] = fade * DASH_TRAIL.footFade;
     trail.alphas[index * 2 + 1] = fade;
   }

@@ -14,7 +14,7 @@ import { createShockwave } from './shockwave.ts';
 import type { Telegraphs } from './telegraphs.ts';
 import { createTelegraphs } from './telegraphs.ts';
 import type { DashTrails } from './dash-trail.ts';
-import { createDashTrails } from './dash-trail.ts';
+import { createDashTrails, dashTrailKeeper } from './dash-trail.ts';
 import type { IsoCamera } from './iso-camera.ts';
 import type { StormEffects } from './storm-effects.ts';
 import { createStormEffects } from './storm-effects.ts';
@@ -159,7 +159,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   const flashes: FlashLights = createFlashLights(scene, Math.min(EFFECTS.flashLights, renderBudget().flashLights));
 
-  const keepers: Mesh[] = programKeepers(WHITE);
+  const keepers: Mesh[] = [...programKeepers(WHITE), dashTrailKeeper(WHITE)];
   let warmFrames: number = EFFECTS.warmFrames;
   for (const keeper of keepers) {
     keeper.position.set(0, EFFECTS.warmDepth, 0);
