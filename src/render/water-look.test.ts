@@ -22,8 +22,8 @@ function recorder(): Recorded {
   return { sprays, rings, kit: { spray: (_x: number, _y: number, _z: number, _color: Color, count: number): void => { sprays.push(count); }, ring: (_x: number, _z: number, radius: number): void => { rings.push(radius); } } };
 }
 
-void test('Still Water lies as a deep pool, a shadow skill keeps its shadow and a plain skill has no pool', (): void => {
-  const still: SkillDef = must(content.skills.get('still_water'), 'still_water');
+void test('a rip current lies as a deep pool, a shadow skill keeps its shadow and a plain skill has no pool', (): void => {
+  const still: SkillDef = must(content.skills.get('riptide_wake'), 'riptide_wake');
   assert.ok(still.vfx.water !== null);
   assert.deepEqual(poolOf(still.vfx), { color: still.vfx.water.deep, strength: still.vfx.water.depth });
   const umbra: SkillDef = must(content.skills.get('umbra'), 'umbra');
@@ -45,14 +45,15 @@ void test('a lap stays inside the pool and lays a small ripple with a few drops'
   assert.ok(ripple !== undefined && ripple >= WATER_LOOK.lapRingMin && ripple <= WATER_LOOK.lapRingMax);
 });
 
-void test('a splash throws its drops up from where the water strikes', (): void => {
+void test('a splash throws its drops up from where the water strikes, more of them for a wave thrown with momentum', (): void => {
   const seen: Recorded = recorder();
-  splash(seen.kit, { x: 0, z: 0 }, new Color(1, 1, 1));
-  assert.deepEqual(seen.sprays, [WATER_LOOK.splashDrops]);
+  splash(seen.kit, { x: 0, z: 0 }, new Color(1, 1, 1), 0);
+  splash(seen.kit, { x: 0, z: 0 }, new Color(1, 1, 1), 1);
+  assert.deepEqual(seen.sprays, [WATER_LOOK.splashDrops, Math.round(WATER_LOOK.splashDrops * (1 + WATER_LOOK.splashGain))]);
   assert.deepEqual(seen.rings, []);
 });
 
-void test('a pulse of still water swells out as one faint ring inside the pool, with no drops', (): void => {
+void test('a pulse of a water pool swells out as one faint ring inside the pool, with no drops', (): void => {
   const seen: Recorded = recorder();
   swell(seen.kit, { x: 0, z: 0 }, 4, new Color(1, 1, 1));
   assert.deepEqual(seen.rings, [4 * WATER_LOOK.swellReach]);

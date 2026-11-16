@@ -43,6 +43,11 @@ export interface PointGrant {
   readonly points: number;
 }
 
+export interface ChartRetired {
+  readonly places: ReadonlyMap<string, string>;
+  readonly skills: ReadonlyMap<string, string>;
+}
+
 export interface ChartDef {
   readonly title: string;
   readonly pointsPerLevel: number;
@@ -53,4 +58,5 @@ export interface ChartDef {
   readonly weaponGroups: readonly WeaponGroup[];
   readonly grants: readonly PointGrant[];
   readonly twist: number;
+  readonly retired: ChartRetired;
 }

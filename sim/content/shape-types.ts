@@ -83,6 +83,12 @@ export interface MomentumDef {
   readonly tiers: readonly MomentumTier[];
 }
 
+export interface MomentumSpend {
+  readonly damage: number;
+  readonly area: number;
+  readonly range: number;
+}
+
 export interface SoakDef {
   readonly tempo: number;
   readonly duration: number;
@@ -103,6 +109,8 @@ export interface SkillShape {
   readonly momentum: MomentumDef | null;
   readonly burn: BurnDef | null;
   readonly soak: SoakDef | null;
+  readonly spend: MomentumSpend | null;
+  readonly spent: number;
 }
 
 export interface SkillUnlock {

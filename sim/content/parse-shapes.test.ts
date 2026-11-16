@@ -31,7 +31,9 @@ void test('a field that pulses less often than it lasts, a fractional jump count
 });
 
 void test('hold and brand are optional and read as charge, channel or a burst skill', (): void => {
-  assert.deepEqual(skillPress({}, 'x'), { press: null, brand: null, momentum: null, burn: null, soak: null });
+  assert.deepEqual(skillPress({}, 'x'), { press: null, brand: null, momentum: null, burn: null, soak: null, spend: null, spent: 0 });
+  assert.deepEqual(skillPress({ spend: { damage: 0.07, area: 0.025, range: 0.025 } }, 'x').spend, { damage: 0.07, area: 0.025, range: 0.025 });
+  assert.throws(() => skillPress({ spend: { damage: -1, area: 0, range: 0 } }, 'x'), ContentError);
   assert.deepEqual(skillPress({ press: { type: 'channel', interval: 0.2, max: 3 } }, 'x').press, { type: 'channel', interval: 0.2, max: 3, move: 0, hint: null });
   assert.deepEqual(skillPress({ press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4 }, brand: { duration: 6, burst: 'pop' } }, 'x'), {
     press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4, hint: null },
@@ -39,6 +41,8 @@ void test('hold and brand are optional and read as charge, channel or a burst sk
     momentum: null,
     burn: null,
     soak: null,
+    spend: null,
+    spent: 0,
   });
 });
 
@@ -84,4 +88,11 @@ void test('only a channelled skill can build momentum', (): void => {
   const loose: SkillDef = { ...shapeSkill('test_fork'), id: 'bad_momentum', momentum: block };
   const content: Content = { ...SHAPE_CONTENT, skills: new Map<string, SkillDef>([...SHAPE_CONTENT.skills, [loose.id, loose]]) };
   assert.deepEqual(shapeProblems(content), ['skill bad_momentum builds momentum, so it must be channelled']);
+});
+
+void test('a skill that spends momentum can neither build it nor be held', (): void => {
+  const spend = { damage: 0.1, area: 0, range: 0 };
+  const held: SkillDef = { ...shapeSkill('test_fork'), id: 'bad_spend', spend, press: { type: 'charge', max: 1, damageScale: 2, areaScale: 1, hint: null } };
+  const content: Content = { ...SHAPE_CONTENT, skills: new Map<string, SkillDef>([...SHAPE_CONTENT.skills, [held.id, held]]) };
+  assert.deepEqual(shapeProblems(content), ['skill bad_spend spends momentum, so it can neither build it nor be held']);
 });

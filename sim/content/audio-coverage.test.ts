@@ -31,7 +31,6 @@ void test('a skill that starts in silence is reported, and a silent skill listed
   const bare: AudioDef = variant((draft: Record<string, unknown>): void => {
     without(draft, 'areaStart', 'standing_storm');
     without(draft, 'areaStart', 'thunderclap_standing');
-    without(draft, 'areaStart', 'still_water');
     without(draft, 'areaStart', 'banked_fire');
     without(draft, 'skillStart', 'cleave');
   });
@@ -58,11 +57,11 @@ void test('a change is heard through the skill it changes, so a variant needs no
 void test('a lasting area that pulses without a sound, or ends without one, is reported', (): void => {
   const quiet: AudioDef = variant((draft: Record<string, unknown>): void => {
     without(draft, 'areaPulse', 'standing_storm');
-    without(draft, 'areaEnd', 'still_water');
+    without(draft, 'areaEnd', 'banked_fire');
   });
   const problems: readonly string[] = soundProblems(content, quiet);
   assert.ok(problems.includes('standing_storm stands for 2.5 s and pulses every 0.5 s but has no sound while it stands'));
-  assert.ok(problems.includes('still_water is a lasting area but has no sound when it ends'));
+  assert.ok(problems.includes('banked_fire is a lasting area but has no sound when it ends'));
 });
 
 void test('a skill listed as silent that does start with a sound, or that does not exist, is reported', (): void => {

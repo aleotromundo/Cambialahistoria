@@ -1,9 +1,10 @@
-import type { MomentumDef, PressDef } from '../content/shape-types.ts';
+import type { MomentumDef, MomentumSpend, PressDef } from '../content/shape-types.ts';
 import type { SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { moveWithCollision } from '../nav/grid.ts';
+import { lengthened, widenedSkill } from '../widen.ts';
 import type { MomentumState } from './momentum-types.ts';
 import type { ActionState, Actor, PlayerState } from './types.ts';
 
@@ -54,6 +55,32 @@ export function feedMomentum(actor: Actor, skill: SkillDef, hits: number): void 
   state.quiet = 0;
   actor.mana = Math.min(actor.stats.maxMana, actor.mana + def.manaPerHit * hits);
   actor.life = Math.min(actor.maxLife, actor.life + def.lifePerHit * hits);
+}
+
+export function spentSkill(skill: SkillDef, held: number, share: number): SkillDef {
+  const spend: MomentumSpend | null = skill.spend;
+  if (spend === null || held <= 0) return skill;
+  const power: number = 1 + spend.damage * held;
+  const weight: number = Math.sqrt(power);
+  const wide: SkillDef = widenedSkill(skill, 1 + spend.area * held);
+  return {
+    ...wide,
+    delivery: lengthened(wide.delivery, 1 + spend.range * held),
+    damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * power, flatMin: skill.damage.flatMin * power, flatMax: skill.damage.flatMax * power },
+    shake: skill.shake * weight,
+    hitStop: skill.hitStop * weight,
+    spent: share,
+  };
+}
+
+export function spendMomentum(actor: Actor, skill: SkillDef): SkillDef {
+  if (actor.kind !== 'player' || skill.spend === null) return skill;
+  const state: MomentumState = actor.momentum;
+  const def: MomentumDef | null = momentumDef(actor);
+  const held: number = def === null ? 0 : state.value;
+  const share: number = def === null ? 0 : Math.min(1, held / def.cap);
+  state.value = 0;
+  return spentSkill(skill, held, share);
 }
 
 export function stepMomentum(player: PlayerState, dt: number): void {

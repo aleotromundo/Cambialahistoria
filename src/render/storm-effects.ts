@@ -391,7 +391,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
 
   const onLash = (event: Extract<WorldEvent, { type: 'damage' }>): void => {
     const water: VfxWater | null = event.skill.vfx.water;
-    if (water !== null && areaOf(event.skill) !== null) splash(kit, event.pos, kit.colorOf(water.foam));
+    if (water !== null && (areaOf(event.skill) !== null || event.skill.vfx.wave !== null)) splash(kit, event.pos, kit.colorOf(water.foam), event.skill.spent);
     const shadow: VfxShadow | null = event.skill.vfx.shadow;
     if (shadow !== null && areaOf(event.skill) !== null) kit.spray(event.pos.x, STORM_EFFECTS.bodyHeight, event.pos.z, kit.colorOf(event.skill.vfx.color), STORM_EFFECTS.biteMotes, { speed: { min: 0.3, max: 1.4 }, lift: { min: 0.6, max: 2 }, life: { min: 0.5, max: 0.9 }, size: { min: 0.45, max: 0.8 }, gravity: -0.6, drag: 1, jitter: 0.3 });
     const lightning = event.skill.vfx.lightning;

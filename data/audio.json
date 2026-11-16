@@ -105,6 +105,7 @@
     ]
   },
   "projectileSpawn": {
+    "millrace": [{ "sound": "water_surge", "volume": 0.9, "maxVoices": 2, "swell": 0.45 }],
     "storm_bolt": [{ "sound": "bolt_whoosh", "volume": 0.6, "maxVoices": 3 }],
     "mender_needle": [{ "sound": "hex_orb_launch", "volume": 0.7, "maxVoices": 2 }],
     "quarrel_fan": [{ "sound": "bolt_flight", "volume": 0.25, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.95, 1.15], "volumeJitter": 0.2 }],
@@ -114,6 +115,7 @@
     "storm_bolt": [{ "sound": "electric_crackle", "volume": 0.45, "maxVoices": 2, "cooldown": 0.1 }]
   },
   "skillHit": {
+    "millrace": [{ "sound": "water_crash", "volume": 0.75, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.94, 1.06], "volumeJitter": 0.15, "swell": 0.3 }, { "sound": "water_crash_heavy", "volume": 0.9, "maxVoices": 1, "cooldown": 0.4, "swell": 0.9 }],
     "storm_bolt": [{ "sound": "bolt_impact", "volume": 0.9, "maxVoices": 3 }],
     "mender_needle": [{ "sound": "hex_impact", "volume": 0.8, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 3, "cooldown": 0.04 }]
@@ -121,7 +123,6 @@
   "areaStart": {
     "standing_storm": [{ "sound": "storm_hum", "volume": 0.45, "maxVoices": 1, "pitch": [0.95, 1.05] }, { "sound": "spark_tick", "volume": 0.25, "maxVoices": 2, "pitch": [0.95, 1.1] }],
     "thunderclap_standing": [{ "sound": "storm_hum", "volume": 0.45, "maxVoices": 1, "pitch": [0.95, 1.05] }, { "sound": "spark_tick", "volume": 0.25, "maxVoices": 2, "pitch": [0.95, 1.1] }],
-    "still_water": [{ "sound": "water_swell", "volume": 0.5, "maxVoices": 1 }],
     "banked_fire": [{ "sound": "fire_ignite", "volume": 0.6, "maxVoices": 1 }],
     "cinder_patch": [{ "sound": "fire_ignite", "volume": 0.45, "maxVoices": 2, "cooldown": 0.15 }],
     "alpha_patch": [{ "sound": "fire_ignite", "volume": 0.55, "maxVoices": 2, "cooldown": 0.15 }, { "sound": "lava_boil", "volume": 0.3, "maxVoices": 1 }],
@@ -132,7 +133,6 @@
     "thunderclap_standing": [{ "sound": "spark_tick", "volume": 0.1, "maxVoices": 1, "cooldown": 1.8, "pitch": [0.9, 1.2], "volumeJitter": 0.4 }],
     "squall": [{ "sound": "spark_tick", "volume": 0.12, "maxVoices": 1, "cooldown": 1.1, "pitch": [0.9, 1.2], "volumeJitter": 0.4 }],
     "umbra": [{ "sound": "shade_hush", "volume": 0.1, "maxVoices": 1, "cooldown": 3, "pitch": [0.8, 0.95], "volumeJitter": 0.3 }],
-    "still_water": [{ "sound": "water_lap", "volume": 0.4, "maxVoices": 2, "cooldown": 0.8, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
     "banked_fire": [{ "sound": "ember_bed", "volume": 0.3, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
     "gathered_embers": [{ "sound": "ember_bed", "volume": 0.3, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
     "cinder_patch": [{ "sound": "ember_bed", "volume": 0.3, "maxVoices": 1, "cooldown": 1.2, "pitch": [0.92, 1.08], "volumeJitter": 0.25 }],
@@ -153,7 +153,6 @@
     "thunderclap_standing": [{ "sound": "storm_hum", "volume": 0.2, "maxVoices": 1, "pitch": [0.8, 0.9] }],
     "squall": [{ "sound": "storm_hum", "volume": 0.16, "maxVoices": 1, "pitch": [0.8, 0.9] }],
     "umbra": [{ "sound": "shadow_cast", "volume": 0.3, "maxVoices": 1, "pitch": [0.7, 0.8] }],
-    "still_water": [{ "sound": "water_settle", "volume": 0.5, "maxVoices": 1 }],
     "banked_fire": [{ "sound": "fire_extinguish", "volume": 0.35, "maxVoices": 1, "pitch": [0.9, 1.05] }],
     "gathered_embers": [{ "sound": "fire_extinguish", "volume": 0.3, "maxVoices": 1, "pitch": [0.9, 1.05] }],
     "cinder_patch": [{ "sound": "fire_extinguish", "volume": 0.3, "maxVoices": 1, "pitch": [0.9, 1.05] }],

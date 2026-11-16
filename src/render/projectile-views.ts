@@ -107,7 +107,8 @@ export function createProjectileViews(deps: ProjectileViewDeps): ProjectileViews
       const look = projectile.skill.vfx.wave;
       const delivery = projectile.skill.delivery;
       if (look === null || delivery.type !== 'projectile') return;
-      waves.launch(projectile.id, projectile.from, projectile.direction, look, colorOf(projectile.skill.vfx.color), delivery.speed, delivery.range + SKILLS.projectileOrigin);
+      const water = projectile.skill.vfx.water;
+      waves.launch(projectile.id, projectile.from, projectile.direction, look, colorOf(projectile.skill.vfx.color), delivery.speed, delivery.range + SKILLS.projectileOrigin, water === null ? null : { foam: colorOf(water.foam), power: projectile.skill.spent });
     },
     end(event: Extract<WorldEvent, { type: 'projectile_end' }>): void {
       const view: ProjectileView | undefined = views.get(event.id);

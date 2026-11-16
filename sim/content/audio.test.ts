@@ -63,8 +63,8 @@ void test('cues take the defaults for what they leave out', (): void => {
     draft['ui'] = { click: [{ sound: 'ui_click' }, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60 }] };
   }), known);
   const [plain, tuned]: readonly CueDef[] = must(audio.ui.get('click'), 'click cues');
-  assert.deepEqual(plain, { sound: 'ui_click', volume: 1, maxVoices: 4, cooldown: 0, reach: 30, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [], brighten: 0 });
-  assert.deepEqual(tuned, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [], brighten: 0 });
+  assert.deepEqual(plain, { sound: 'ui_click', volume: 1, maxVoices: 4, cooldown: 0, reach: 30, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [], brighten: 0, swell: 0 });
+  assert.deepEqual(tuned, { sound: 'ui_click', volume: 0.5, maxVoices: 2, cooldown: 1, reach: 60, holdForVoice: 0, pitch: null, volumeJitter: null, weapons: [], brighten: 0, swell: 0 });
 });
 
 void test('a table that names an id the game does not have is rejected', (): void => {

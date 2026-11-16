@@ -31,3 +31,23 @@ export function widenedSkill(skill: SkillDef, scale: number): SkillDef {
   if (scale === 1) return skill;
   return { ...skill, delivery: widened(skill.delivery, scale), vfx: widerWave(skill.vfx, scale) };
 }
+
+export function lengthened(delivery: Delivery, scale: number): Delivery {
+  switch (delivery.type) {
+    case 'projectile':
+    case 'mark':
+    case 'field':
+    case 'area':
+    case 'blink':
+    case 'chain':
+    case 'beam':
+    case 'revive':
+      return { ...delivery, range: delivery.range * scale };
+    case 'dash':
+      return { ...delivery, distance: delivery.distance * scale };
+    case 'arc':
+    case 'nova':
+      return delivery;
+  }
+  return delivery;
+}

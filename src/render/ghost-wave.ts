@@ -36,7 +36,33 @@ export const GHOST_WAVE = {
   mistBehind: 0.7,
   mistDrift: 0.06,
   mistCap: 12,
+  powerGlow: 0.35,
+  crestDrops: 70,
+  crestGain: 1.5,
+  crestCap: 10,
+  crestBehind: 0.35,
+  crestHeight: 0.25,
+  crestSlow: 0.15,
+  crestFast: 0.4,
+  launchDrops: 16,
+  launchGain: 1.6,
 } as const;
+
+const CREST: Partial<BurstOptions> = { spread: 0.5, lift: { min: 1.6, max: 3.6 }, life: { min: 0.35, max: 0.6 }, size: { min: 0.1, max: 0.24 }, gravity: 11, drag: 0.5, jitter: 0.2 };
+const LAUNCH: Partial<BurstOptions> = { spread: 0.7, speed: { min: 1, max: 4 }, lift: { min: 2.4, max: 4.8 }, life: { min: 0.45, max: 0.8 }, size: { min: 0.12, max: 0.28 }, gravity: 12, drag: 0.4, jitter: 0.25 };
+
+export interface WaveWater {
+  readonly foam: Color;
+  readonly power: number;
+}
+
+export function crestRate(water: WaveWater, strength: number): number {
+  return GHOST_WAVE.crestDrops * (1 + GHOST_WAVE.crestGain * water.power) * strength;
+}
+
+export function poweredGlow(water: WaveWater | null): number {
+  return GHOST_WAVE.glow * (1 + GHOST_WAVE.powerGlow * (water?.power ?? 0));
+}
 
 export function riseIn(age: number): number {
   const t: number = Math.min(1, Math.max(0, age / GHOST_WAVE.rise));
@@ -76,7 +102,7 @@ export interface GhostWaveKit {
 }
 
 export interface GhostWaves {
-  launch(id: number, from: Vec2, direction: Vec2, look: VfxWave, color: Color, speed: number, range: number): void;
+  launch(id: number, from: Vec2, direction: Vec2, look: VfxWave, color: Color, speed: number, range: number, water: WaveWater | null): void;
   carry(id: number, pos: Vec2): void;
   end(id: number, pos: Vec2): void;
   update(dt: number): void;
@@ -98,11 +124,13 @@ interface Wave {
   readonly speed: number;
   readonly main: Front;
   readonly ripples: readonly Front[];
+  readonly water: WaveWater | null;
   range: number;
   front: number;
   age: number;
   ended: number | null;
   mistOwed: number;
+  dropsOwed: number;
 }
 
 export function crestArc(halfWidth: number): number {
@@ -123,10 +151,10 @@ function frontOf(color: Color, look: VfxWave): Front {
   return { light, shade };
 }
 
-function placeFront(front: Front, look: VfxWave, reach: number, strength: number, time: number, shaded: boolean): void {
+function placeFront(front: Front, look: VfxWave, reach: number, strength: number, time: number, shaded: boolean, glowing: number): void {
   const radius: number = look.halfWidth * GHOST_WAVE.crest;
   front.light.mesh.position.z = reach - radius;
-  front.light.pose(strength * GHOST_WAVE.glow, time);
+  front.light.pose(strength * glowing, time);
   front.shade.mesh.position.z = reach - radius - GHOST_WAVE.shadeGap;
   front.shade.pose(shaded ? strength * GHOST_WAVE.shadeStrength : 0, time);
 }
@@ -156,6 +184,21 @@ export function createGhostWaves(kit: GhostWaveKit): GhostWaves {
     wave.mistOwed = Math.min(wave.mistOwed, 1);
   };
 
+  const crest = (wave: Wave, water: WaveWater, strength: number, dt: number): void => {
+    wave.dropsOwed += crestRate(water, strength) * dt;
+    let emitted: number = 0;
+    while (wave.dropsOwed >= 1 && emitted < GHOST_WAVE.crestCap) {
+      wave.dropsOwed -= 1;
+      emitted += 1;
+      const across: number = (Math.random() * 2 - 1) * wave.look.halfWidth;
+      const along: number = Math.max(0, wave.front - Math.random() * GHOST_WAVE.crestBehind);
+      const x: number = wave.from.x + wave.direction.x * along + wave.direction.z * across;
+      const z: number = wave.from.z + wave.direction.z * along - wave.direction.x * across;
+      kit.spray(x, GHOST_WAVE.crestHeight, z, water.foam, 1, { ...CREST, dirX: wave.direction.x, dirZ: wave.direction.z, speed: { min: wave.speed * GHOST_WAVE.crestSlow, max: wave.speed * GHOST_WAVE.crestFast } });
+    }
+    wave.dropsOwed = Math.min(wave.dropsOwed, 1);
+  };
+
   const drop = (id: number, wave: Wave): void => {
     disposeFront(wave.main);
     for (const ripple of wave.ripples) disposeFront(ripple);
@@ -164,7 +207,7 @@ export function createGhostWaves(kit: GhostWaveKit): GhostWaves {
   };
 
   return {
-    launch(id: number, from: Vec2, direction: Vec2, look: VfxWave, color: Color, speed: number, range: number): void {
+    launch(id: number, from: Vec2, direction: Vec2, look: VfxWave, color: Color, speed: number, range: number, water: WaveWater | null): void {
       const group: Group = new Group();
       group.position.set(from.x, floorUp(from.x, GHOST_WAVE.height, from.z), from.z);
       group.rotation.y = facingOf(direction);
@@ -172,7 +215,8 @@ export function createGhostWaves(kit: GhostWaveKit): GhostWaves {
       const ripples: Front[] = look.ripples.map((): Front => frontOf(color, look));
       for (const front of [main, ...ripples]) group.add(front.shade.mesh, front.light.mesh);
       kit.parent.add(group);
-      waves.set(id, { group, from: { x: from.x, z: from.z }, direction: { x: direction.x, z: direction.z }, look, color, haze: color.clone().multiplyScalar(GHOST_WAVE.mistTone), speed, main, ripples, range, front: 0, age: 0, ended: null, mistOwed: 0 });
+      waves.set(id, { group, from: { x: from.x, z: from.z }, direction: { x: direction.x, z: direction.z }, look, color, haze: color.clone().multiplyScalar(GHOST_WAVE.mistTone), speed, main, ripples, water, range, front: 0, age: 0, ended: null, mistOwed: 0, dropsOwed: 0 });
+      if (water !== null) kit.spray(from.x, GHOST_WAVE.crestHeight, from.z, water.foam, Math.round(GHOST_WAVE.launchDrops * (1 + GHOST_WAVE.launchGain * water.power)), { ...LAUNCH, dirX: direction.x, dirZ: direction.z });
     },
     carry(id: number, pos: Vec2): void {
       const wave: Wave | undefined = waves.get(id);
@@ -192,14 +236,16 @@ export function createGhostWaves(kit: GhostWaveKit): GhostWaves {
         const share: number = Math.min(1, wave.front / Math.max(wave.range, 0.001));
         const fading: number = wave.ended === null ? 1 : Math.max(0, 1 - (wave.age - wave.ended) / GHOST_WAVE.settle);
         const strength: number = curveAt(wave.look.swell, share) * riseIn(wave.age) * fading * hushed(wave.look, wave.age);
-        placeFront(wave.main, wave.look, wave.front, strength, wave.age, true);
+        const glowing: number = poweredGlow(wave.water);
+        placeFront(wave.main, wave.look, wave.front, strength, wave.age, true, glowing);
         if (strength > 0) mist(wave, wave.front, strength, dt);
+        if (strength > 0 && wave.water !== null && wave.ended === null) crest(wave, wave.water, strength, dt);
         wave.look.ripples.forEach((ripple: VfxRipple, index: number): void => {
           const front: Front | undefined = wave.ripples[index];
           if (front === undefined) return;
           const level: number = rippleLevel(ripple, wave.age, wave.speed, wave.range) * hushed(wave.look, wave.age);
           const reach: number = Math.min(wave.range, Math.max(0, rippleReach(ripple, wave.age, wave.speed)));
-          placeFront(front, wave.look, reach, level, wave.age + index, true);
+          placeFront(front, wave.look, reach, level, wave.age + index, true, glowing);
           if (level > 0) mist(wave, reach, level, dt);
         });
         if (finished(wave.look, wave.age, wave.speed, wave.range)) drop(id, wave);

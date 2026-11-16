@@ -1,7 +1,7 @@
 {
   "title": "The Skill Tree",
   "pointsPerLevel": 2,
-  "revision": 7,
+  "revision": 8,
   "twist": 0.08,
   "respec": {
     "goldPerPoint": 10,
@@ -79,7 +79,7 @@
         "downdraught",
         "forkline",
         "umbra",
-        "still_water",
+        "millrace",
         "banked_fire"
       ]
     },
@@ -157,5 +157,9 @@
   "grants": [
     {"id": "first_moment", "when": [{"type": "flag", "flag": "first_moment", "is": "cleared"}], "points": 1},
     {"id": "fire_lesson", "when": [{"type": "flag", "flag": "fire_lesson", "is": "given"}], "points": 1}
-  ]
+  ],
+  "retired": {
+    "places": {"blade_still_water": "blade_millrace"},
+    "skills": {"still_water": "millrace"}
+  }
 }

@@ -35,7 +35,7 @@ function cues(table: CueTable, key: string, position: Vec2 | null, weapon: Weapo
   if (list === undefined) return NONE;
   const heard: readonly WeaponCue[] = list.filter((entry: WeaponCue): boolean => heldBy(entry, weapon));
   if (heard.length === 0) return NONE;
-  return heard.map((entry: WeaponCue): SoundCue => ({ sound: entry.sound, volume: entry.volume, maxVoices: entry.maxVoices, cooldown: entry.cooldown, reach: entry.reach, holdForVoice: entry.holdForVoice, pitch: brightened(entry.pitch, entry.brighten * heat), volumeJitter: entry.volumeJitter, position }));
+  return heard.map((entry: WeaponCue): SoundCue => ({ sound: entry.sound, volume: entry.volume * (1 - entry.swell * (1 - heat)), maxVoices: entry.maxVoices, cooldown: entry.cooldown, reach: entry.reach, holdForVoice: entry.holdForVoice, pitch: brightened(entry.pitch, entry.brighten * heat), volumeJitter: entry.volumeJitter, position }));
 }
 
 function bySkill(table: CueTable, skill: SkillDef, position: Vec2 | null, weapon: WeaponKind | null = null, heat: number = 0): readonly SoundCue[] {
@@ -131,7 +131,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       found = bySkill(audio.skillImpact, event.skill, event.origin);
       break;
     case 'projectile_spawn':
-      found = bySkill(audio.projectileSpawn, event.projectile.skill, event.projectile.pos, weaponOf(world, event.projectile.ownerId));
+      found = bySkill(audio.projectileSpawn, event.projectile.skill, event.projectile.pos, weaponOf(world, event.projectile.ownerId), event.projectile.skill.spent);
       break;
     case 'projectile_end':
       if (!event.hit) found = cues(audio.projectileExpire, event.skill.id, event.pos);
@@ -140,7 +140,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       if (event.burn) break;
       const weapon: WeaponKind | null = weaponOf(world, event.sourceId);
       const keys: readonly string[] = targetKeys(world, event.targetTeam, event.targetId);
-      const arrival: readonly SoundCue[] = bySkill(audio.skillHit, event.skill, event.pos, weapon);
+      const arrival: readonly SoundCue[] = bySkill(audio.skillHit, event.skill, event.pos, weapon, event.skill.spent);
       const body: readonly SoundCue[] = firstOf(audio.hit, keys, event.pos, weapon);
       const sweetener: readonly SoundCue[] = event.crit ? firstOf(audio.critHit, keys, event.pos, weapon) : NONE;
       found = [...arrival, ...body, ...sweetener];

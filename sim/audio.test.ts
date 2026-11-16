@@ -462,15 +462,11 @@ void test('Standing Storm crackles and rumbles when it starts, crackles quietly 
   assert.deepEqual(names().at(-1), ['storm_hum']);
 });
 
-void test('a lasting area sounds from its own form, a lap or a crackle sounds on its pulse, and a flare adds its strike sound', (): void => {
+void test('a lasting area sounds from its own form, a crackle sounds on its pulse, and a flare adds its strike sound', (): void => {
   const world: World = fresh();
   const owner: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   const cuesOf = (id: string, stage: 'start' | 'pulse' | 'end', hits: number, pulses: number = 0): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, timeLeft: 1, pulseLeft: 1, pulses }, stage, hits });
   const area = (id: string, stage: 'start' | 'pulse' | 'end', hits: number): string[] => sounds(cuesOf(id, stage, hits));
-  assert.deepEqual(area('still_water', 'start', 0), ['water_swell']);
-  assert.deepEqual(area('still_water', 'pulse', 0), ['water_lap']);
-  assert.deepEqual(area('still_water', 'pulse', 3), ['water_lap']);
-  assert.deepEqual(area('still_water', 'end', 0), ['water_settle']);
   assert.deepEqual(area('banked_fire', 'start', 0), ['fire_ignite']);
   assert.deepEqual(area('banked_fire', 'pulse', 0), ['ember_bed']);
   assert.deepEqual(area('banked_fire', 'pulse', 2), ['ember_bed', 'flare_crackle']);
@@ -543,4 +539,25 @@ void test('a bubble that turns its echoes opens with the hostile sound', (): voi
   const woke: WorldEvent | undefined = events.find((event: WorldEvent): boolean => event.type === 'moment_woke' && event.turned.length > 0);
   assert.ok(woke !== undefined);
   assert.deepEqual(cuesForEvent(loadAudio(world.content), world, woke).map((cue): string => cue.sound), ['bubble_hostile']);
+});
+
+function wave(spent: number): SkillDef {
+  return { ...skill('millrace'), spent };
+}
+
+void test('Millrace surges as it leaves and crashes where it strikes, louder for the momentum spent into it, with the heavy crash almost silent from a cold start', (): void => {
+  const world: World = fresh();
+  const thrall: MonsterState = monster(world, 'mended');
+  const leaves = (spent: number): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'projectile_spawn', projectile: { id: 1, ownerId: world.player.id, from: AWAY, team: 'player', faction: null, skill: wave(spent), damageMin: 1, damageMax: 2, damagePercent: 0, critChance: 0, critMultiplier: 1.5, pos: AWAY, direction: { x: 0, z: 1 }, distanceLeft: 10, pierceLeft: 99, hitIds: [] } });
+  const strikes = (spent: number): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, crit: false, killed: false, pos: thrall.pos, direction: AWAY, skill: wave(spent), burn: false }).slice(0, 2);
+  assert.deepEqual(sounds(leaves(0)), ['water_surge']);
+  assert.deepEqual(sounds(strikes(0)), ['water_crash', 'water_crash_heavy']);
+  const cold: number = must(leaves(0)[0], 'cold surge').volume;
+  const full: number = must(leaves(1)[0], 'full surge').volume;
+  assert.ok(cold < full);
+  assert.ok(Math.abs(full - must(audio.projectileSpawn.get('millrace')?.[0], 'surge cue').volume) < 1e-9);
+  const heavyCold: number = must(strikes(0)[1], 'cold crash').volume;
+  const heavyFull: number = must(strikes(1)[1], 'full crash').volume;
+  assert.ok(heavyCold < heavyFull * 0.15);
+  assert.ok(must(strikes(0.5)[0], 'half crash').volume < must(strikes(1)[0], 'full crash').volume);
 });

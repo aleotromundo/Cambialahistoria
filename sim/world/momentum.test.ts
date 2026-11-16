@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import { damageTo, dummy, offset, run, shapeArena, shapeSkill, SHAPE_DT } from '../../test/shape-support.ts';
-import type { MomentumDef } from '../content/shape-types.ts';
+import type { MomentumDef, MomentumSpend } from '../content/shape-types.ts';
 import type { SkillDef } from '../content/types.ts';
 import { distance } from '../math.ts';
 import { applyHit, kill, offenceOf } from './combat.ts';
-import { momentumShare, momentumStep, steadied } from './momentum.ts';
+import { momentumShare, momentumStep, spentSkill, steadied } from './momentum.ts';
 import { channelInterval, spunSkill, turnRate } from './skills.ts';
 import { stepWorld } from './step.ts';
-import type { Command, MonsterState, World, WorldEvent } from './types.ts';
+import type { Command, MonsterState, ProjectileState, World, WorldEvent } from './types.ts';
 
 const MOMENTUM_DEF: MomentumDef = { perHit: 1, cap: 10, grace: 0.5, drain: 10, steady: 3, manaPerHit: 0.5, lifePerHit: 0, tiers: [{ at: 4, turn: 1.25, reach: 1.2 }, { at: 8, turn: 1.5, reach: 1.4 }] };
 const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', manaCost: 1, delivery: { type: 'nova', radius: 3 }, press: { type: 'channel', interval: 0.2, max: 30, move: 1, hint: null }, momentum: MOMENTUM_DEF };
@@ -223,4 +223,53 @@ void test('a turn struck through a crowd numbers every enemy it hits', (): void 
   const events: WorldEvent[] = run(world, 0.25);
   for (const foe of foes) assert.ok(damageTo(events, foe.id).length >= 1);
   assert.ok(must(world.player.action, 'spin').skill.momentum !== null);
+});
+
+const SPEND: MomentumSpend = { damage: 0.1, area: 0.05, range: 0.05 };
+const WAVE: SkillDef = { ...shapeSkill('test_wire'), id: 'test_wave', manaCost: 1, cooldown: 0, windup: 0.05, recovery: 0.05, delivery: { type: 'projectile', speed: 20, radius: 1, range: 6, pierce: 99, count: 1, spreadDegrees: 0, interval: 0 }, damage: { type: 'physical', weaponPercent: 0, flatMin: 10, flatMax: 10 }, shake: 0.2, hitStop: 0.04, spend: SPEND };
+
+function launched(events: readonly WorldEvent[]): ProjectileState {
+  const spawn: WorldEvent | undefined = events.find((event: WorldEvent): boolean => event.type === 'projectile_spawn');
+  return must(spawn?.type === 'projectile_spawn' ? spawn.projectile : undefined, 'a launched wave');
+}
+
+void test('a spending skill grows with the momentum held: harder, wider and farther per point, and heavier to feel', (): void => {
+  assert.equal(spentSkill(WAVE, 0, 0), WAVE);
+  const full: SkillDef = spentSkill(WAVE, 10, 1);
+  assert.ok(full.delivery.type === 'projectile');
+  assert.ok(Math.abs(full.delivery.radius - 1.5) < 1e-9);
+  assert.ok(Math.abs(full.delivery.range - 9) < 1e-9);
+  assert.equal(full.damage.flatMin, 20);
+  assert.ok(Math.abs(full.shake - 0.2 * Math.SQRT2) < 1e-9);
+  assert.equal(full.spent, 1);
+  assert.equal(full.stagger, WAVE.stagger);
+  assert.equal(full.knockback, WAVE.knockback);
+});
+
+void test('a spending skill spends all the momentum the spin built, and from a cold start it is the plain skill', (): void => {
+  const world: World = spinner();
+  world.player.skills = [SPIN, WAVE];
+  world.player.momentum = { skill: 'test_spin', value: 10, quiet: 0 };
+  const hot: ProjectileState = launched(run(world, 0.2, [{ type: 'skill', slot: 1, aim: offset(0, 8), targetId: null }]));
+  assert.equal(world.player.momentum.value, 0);
+  assert.equal(hot.skill.spent, 1);
+  assert.ok(hot.skill.delivery.type === 'projectile' && Math.abs(hot.skill.delivery.range - 9) < 1e-9);
+  run(world, 1);
+  const cold: ProjectileState = launched(run(world, 0.2, [{ type: 'skill', slot: 1, aim: offset(0, 8), targetId: null }]));
+  assert.equal(cold.skill.spent, 0);
+  assert.ok(cold.skill.delivery.type === 'projectile' && cold.skill.delivery.range === 6);
+});
+
+void test('a wave thrown with full momentum reaches an enemy the plain wave stops short of, and strikes it harder', (): void => {
+  const plain: World = spinner();
+  plain.player.skills = [SPIN, WAVE];
+  const far: MonsterState = dummy(plain, offset(0, 10));
+  assert.deepEqual(damageTo(run(plain, 1, [{ type: 'skill', slot: 1, aim: offset(0, 10), targetId: null }]), far.id), []);
+  const charged: World = spinner();
+  charged.player.skills = [SPIN, WAVE];
+  charged.player.momentum = { skill: 'test_spin', value: 10, quiet: 0 };
+  const reached: MonsterState = dummy(charged, offset(0, 10));
+  const hits: number[] = damageTo(run(charged, 1, [{ type: 'skill', slot: 1, aim: offset(0, 10), targetId: null }]), reached.id);
+  assert.equal(hits.length, 1);
+  assert.ok((hits[0] ?? 0) > 10);
 });

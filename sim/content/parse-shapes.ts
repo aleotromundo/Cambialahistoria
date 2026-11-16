@@ -1,7 +1,7 @@
 import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, flag, fraction, nonNegative, positive, share, text } from './read.ts';
-import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaDelivery, AreaStoke, MomentumDef, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
+import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaDelivery, AreaStoke, MomentumDef, MomentumSpend, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
 import { AREA_ANCHORS } from './shape-types.ts';
 import type { Content, SkillBinding, SkillDef, SkillTreeNodeDef } from './types.ts';
 
@@ -128,16 +128,24 @@ function soak(value: unknown, where: string): SoakDef | null {
   return { tempo: fraction(source, 'tempo', where), duration: positive(source, 'duration', where) };
 }
 
+function spend(value: unknown, where: string): MomentumSpend | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { damage: nonNegative(source, 'damage', where), area: nonNegative(source, 'area', where), range: nonNegative(source, 'range', where) };
+}
+
 export interface SkillPress {
   readonly press: PressDef | null;
   readonly brand: BrandDef | null;
   readonly momentum: MomentumDef | null;
   readonly burn: BurnDef | null;
   readonly soak: SoakDef | null;
+  readonly spend: MomentumSpend | null;
+  readonly spent: number;
 }
 
 export function skillPress(source: Fields, where: string): SkillPress {
-  return { press: press(source['press'], `${where}.press`), brand: brand(source['brand'], `${where}.brand`), momentum: momentum(source['momentum'], `${where}.momentum`), burn: burn(source['burn'], `${where}.burn`), soak: soak(source['soak'], `${where}.soak`) };
+  return { press: press(source['press'], `${where}.press`), brand: brand(source['brand'], `${where}.brand`), momentum: momentum(source['momentum'], `${where}.momentum`), burn: burn(source['burn'], `${where}.burn`), soak: soak(source['soak'], `${where}.soak`), spend: spend(source['spend'], `${where}.spend`), spent: 0 };
 }
 
 export function shapeProblems(content: Content): string[] {
@@ -149,6 +157,7 @@ export function shapeProblems(content: Content): string[] {
     if (used.press !== null) need(used.leap === null && used.delivery.type !== 'dash' && used.delivery.type !== 'blink', `skill ${used.id} moves the caster, so it cannot be held`);
     if (used.press?.type === 'channel') need(used.combo === null && used.leap === null, `skill ${used.id} is channelled, so it cannot combo or leap`);
     if (used.momentum !== null) need(used.press?.type === 'channel', `skill ${used.id} builds momentum, so it must be channelled`);
+    if (used.spend !== null) need(used.momentum === null && used.press === null, `skill ${used.id} spends momentum, so it can neither build it nor be held`);
     if (used.brand === null) continue;
     const burst: SkillDef | undefined = content.skills.get(used.brand.burst);
     need(burst !== undefined, `skill ${used.id} brands with unknown burst skill ${used.brand.burst}`);

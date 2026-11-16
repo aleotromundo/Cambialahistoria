@@ -106,7 +106,7 @@ function whirlwind(data: GuideData): BuildNotes {
   const wake: number = placeLevel(data, id, 'long_wake');
   const undertow: number = placeLevel(data, id, 'wind_downdraught');
   const riptide: number = placeLevel(data, id, 'riptide');
-  const still: number = placeLevel(data, id, 'blade_still_water');
+  const race: number = placeLevel(data, id, 'blade_millrace');
   const echoes: number = placeLevel(data, id, 'twice_swung');
   const wheel: string = skillName(data, 'cleave_millwheel');
   const millwheel: string = esc(item(data, 'the_millwheel').name);
@@ -120,7 +120,7 @@ function whirlwind(data: GuideData): BuildNotes {
       `The Maelstrom walks ${pathName(data, 'blade')} with ${groupNeeds(data, 'blade')} in your hands: the spin and almost every place that feeds it answer only while you hold one. At level ${whirl} ${name(data, 'whirling_cleave')} turns ${skillName(data, 'cleave')} into a full turn that strikes everything around you. At level ${endless} ${name(data, 'endless_turn')} turns that into the ${wheel}: hold it and you keep turning while you run.`,
       `Every enemy the ${wheel} strikes builds momentum: you turn faster, reach wider and nothing knocks you off your feet. ${name(data, 'millstone')}, right after, lets the momentum climb higher and gives you life for every enemy struck.`,
       `At level ${undertow} you learn ${skillName(data, 'downdraught')}: a whirlpool where you aim that drags the pack together, so one turn strikes all of it.`,
-      `At level ${riptide} your roll becomes ${skillName(data, 'dodge_roll_riptide')}: a longer roll that leaves a rip current where you land and drags the pack in after you. At level ${still} you learn ${skillName(data, 'still_water')}, a pool that slows everything around you, and from then on every four enemies the ${wheel} strikes put a charge back in each flask.`,
+      `At level ${riptide} your roll becomes ${skillName(data, 'dodge_roll_riptide')}: a longer roll that leaves a rip current where you land and drags the pack in after you. At level ${race} you learn ${skillName(data, 'millrace')}: let go of the ${wheel} and throw its momentum out as one wave that crashes through the pack, harder, wider and farther the more you held. From then on every four enemies the ${wheel} strikes put a charge back in each flask.`,
       `${name(data, 'long_wake')} at level ${wake} holds your momentum longer after the last hit, so it carries from one pack to the next. It sits past ${name(data, 'racing_cloud')}, a crossbow place: with a blade that one gives only its movement speed, and the route takes it for what lies beyond.`,
       `At level ${echoes} the route crosses into ${pathName(data, 'echo')} for ${name(data, 'twice_swung')}. A held spin does not echo; it hits harder instead, every turn.`,
     ],
@@ -138,7 +138,7 @@ function whirlwind(data: GuideData): BuildNotes {
       affixLine(data, 'jagged'),
     ],
     avoid: [
-      `Any weapon that is not a blade. With a heavy weapon, a staff or a crossbow, ${skillName(data, 'cleave')} stops turning, the ${wheel} is gone, and ${pathName(data, 'blade')} keeps ${skillName(data, 'downdraught')}, ${skillName(data, 'still_water')}, its life and its speed but none of its weapon damage.`,
+      `Any weapon that is not a blade. With a heavy weapon, a staff or a crossbow, ${skillName(data, 'cleave')} stops turning, the ${wheel} is gone, and ${pathName(data, 'blade')} keeps ${skillName(data, 'downdraught')}, ${skillName(data, 'millrace')}, its life and its speed but none of its weapon damage.`,
       'Stopping. Momentum fades a moment after the last hit, and a turn that starts cold is a slow one.',
     ],
     strengths: [
@@ -157,6 +157,7 @@ function whirlwind(data: GuideData): BuildNotes {
       whirling_cleave: 'The build starts here.',
       endless_turn: `Your turn becomes the ${wheel}.`,
       millstone: 'More momentum, and life for every enemy struck.',
+      blade_millrace: `Let go of the ${wheel} and spend its momentum in one wave.`,
       racing_cloud: 'A crossbow place: with a blade it gives only its movement speed. It leads to the next one.',
       long_wake: 'Momentum that lasts from one pack to the next.',
       twice_swung: 'The held spin does not echo: it hits harder instead.',

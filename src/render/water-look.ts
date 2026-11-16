@@ -6,6 +6,7 @@ import type { BurstOptions } from './particles.ts';
 export const WATER_LOOK = {
   splashHeight: 0.45,
   splashDrops: 14,
+  splashGain: 1.2,
   lapEvery: 0.3,
   lapReach: 0.85,
   lapDrops: 3,
@@ -48,8 +49,8 @@ export function poolOf(vfx: SkillVfx): VfxShadow | null {
   return null;
 }
 
-export function splash(kit: WaterKit, at: Vec2, foam: Color): void {
-  kit.spray(at.x, WATER_LOOK.splashHeight, at.z, foam, WATER_LOOK.splashDrops, SPLASH);
+export function splash(kit: WaterKit, at: Vec2, foam: Color, power: number): void {
+  kit.spray(at.x, WATER_LOOK.splashHeight, at.z, foam, Math.round(WATER_LOOK.splashDrops * (1 + WATER_LOOK.splashGain * power)), SPLASH);
 }
 
 export function lapSpot(center: Vec2, radius: number, angle: number, share: number): Vec2 {

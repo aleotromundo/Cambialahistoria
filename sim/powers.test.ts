@@ -316,7 +316,7 @@ void test('a flask charge never fills a flask past its maximum', (): void => {
 });
 
 const shipped: Content = loadContent();
-const MAELSTROM: readonly string[] = ['blade_thunderhead', 'heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'endless_turn', 'millstone', 'riptide', 'blade_still_water'];
+const MAELSTROM: readonly string[] = ['blade_thunderhead', 'heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'endless_turn', 'millstone', 'riptide', 'blade_millrace'];
 
 function maelstrom(wielding: string): World {
   const world: World = worldIn(shipped, 'hall_of_time', 3);
@@ -334,7 +334,7 @@ function resolvedIn(world: World, id: string): SkillDef {
   return resolveSkill(shipped, shippedSkill(id), world.player.allocated, [], [], world.player.wielding, world.player.changes);
 }
 
-void test('with a blade in hand the Millwheel feeds the flasks through Still Water, and Riptide leaves its current where the roll lands', (): void => {
+void test('with a blade in hand the Millwheel feeds the flasks through Millrace, and Riptide leaves its current where the roll lands', (): void => {
   const world: World = maelstrom('blade');
   const wheel: SkillDef = resolvedIn(world, 'cleave');
   assert.deepEqual([wheel.id, wheel.form], ['cleave', 'cleave_millwheel']);
@@ -352,7 +352,7 @@ void test('with a blade in hand the Millwheel feeds the flasks through Still Wat
   assert.deepEqual(current.origin, start);
 });
 
-void test('Still Water feeds no flask with a crossbow in hand', (): void => {
+void test('Millrace feeds no flask with a crossbow in hand', (): void => {
   const world: World = maelstrom('crossbow');
   const wheel: SkillDef = resolvedIn(maelstrom('blade'), 'cleave');
   for (let struck: number = 0; struck < 8; struck += 1) firePowers(world, { on: 'hit', skill: wheel, target: null, at: world.player.pos });

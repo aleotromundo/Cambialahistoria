@@ -64,3 +64,17 @@ void test('a place and a skill name weapon groups the chart knows, and every wea
   assert.ok(chartProblems(starters).includes('weapon group staff starts with warden_shortsword, which is not one of its weapons'));
   assert.ok(chartProblems(starters).includes('weapon group blade starts with unknown item no_such_blade'));
 });
+
+void test('a retired place or skill names what took its place, and one still in use or pointing at nothing is a problem', (): void => {
+  assert.equal(content.chart.retired.places.get('blade_still_water'), 'blade_millrace');
+  assert.equal(content.chart.retired.skills.get('still_water'), 'millrace');
+  const bare = { title: 'T', pointsPerLevel: 2, revision: 1, respec: { goldPerPoint: 1, goldPerLevel: 1 }, grants: [], twist: 0, paths: [], groups: [], weaponGroups: [] };
+  assert.equal(chartDef(bare, 'chart').retired.places.size, 0);
+  assert.throws((): unknown => chartDef({ ...bare, retired: { skills: { old: 3 } } }, 'chart'), /chart\.retired\.skills/);
+  const wrong = { ...content, chart: { ...content.chart, retired: { places: new Map<string, string>([['blade_millrace', 'nowhere']]), skills: new Map<string, string>([['cleave', 'no_such']]) } } };
+  const lines: string[] = chartProblems(wrong);
+  assert.ok(lines.includes('retired place blade_millrace is still on the chart'));
+  assert.ok(lines.includes('retired place blade_millrace becomes unknown place nowhere'));
+  assert.ok(lines.includes('retired skill cleave is still a skill'));
+  assert.ok(lines.includes('retired skill cleave becomes unknown skill no_such'));
+});

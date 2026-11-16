@@ -1,4 +1,4 @@
-import type { ChartDef, ChartGroup, ChartPath, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
+import type { ChartDef, ChartGroup, ChartPath, ChartRetired, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
 import { skillMod, statMod } from './parse-mods.ts';
 import { powerTrigger } from './parse-powers.ts';
 import { conditions } from './parse-conditions.ts';
@@ -59,6 +59,18 @@ function pointGrant(value: unknown, where: string): PointGrant {
   return { id: text(source, 'id', where), when: conditions(source, 'when', where), points };
 }
 
+function renames(value: unknown, where: string): ReadonlyMap<string, string> {
+  if (value === undefined) return new Map<string, string>();
+  const source: Fields = fields(value, where);
+  return new Map<string, string>(Object.keys(source).map((old: string): [string, string] => [old, text(source, old, where)]));
+}
+
+function retired(value: unknown, where: string): ChartRetired {
+  if (value === undefined) return { places: new Map<string, string>(), skills: new Map<string, string>() };
+  const source: Fields = fields(value, where);
+  return { places: renames(source['places'], `${where}.places`), skills: renames(source['skills'], `${where}.skills`) };
+}
+
 export function chartDef(value: unknown, where: string): ChartDef {
   const source: Fields = fields(value, where);
   const respec: unknown = source['respec'];
@@ -77,6 +89,7 @@ export function chartDef(value: unknown, where: string): ChartDef {
     weaponGroups: each(source['weaponGroups'], `${where}.weaponGroups`, weaponGroup),
     grants: each(source['grants'], `${where}.grants`, pointGrant),
     twist: nonNegative(source, 'twist', where),
+    retired: retired(source['retired'], `${where}.retired`),
   };
 }
 
@@ -114,6 +127,14 @@ export function chartProblems(content: Content): string[] {
   if (!unique(content.chart.grants.map((grant: PointGrant): string => grant.id))) problems.push('chart has duplicate point grant ids');
   for (const group of content.chart.groups) {
     for (const skill of group.skills) if (!content.skills.has(skill)) problems.push(`skill group ${group.id} names unknown skill ${skill}`);
+  }
+  for (const [old, now] of content.chart.retired.places) {
+    if (nodeIds.has(old)) problems.push(`retired place ${old} is still on the chart`);
+    if (!nodeIds.has(now)) problems.push(`retired place ${old} becomes unknown place ${now}`);
+  }
+  for (const [old, now] of content.chart.retired.skills) {
+    if (content.skills.has(old)) problems.push(`retired skill ${old} is still a skill`);
+    if (!content.skills.has(now)) problems.push(`retired skill ${old} becomes unknown skill ${now}`);
   }
   for (const node of nodes) {
     for (const required of node.requires) if (!nodeIds.has(required)) problems.push(`tree node ${node.id} requires unknown node ${required}`);

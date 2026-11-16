@@ -480,3 +480,20 @@ void test('a save can never carry the hero into a withheld cave: its flag, the z
   const restored: World = createWorld(held, { seed: 7, save: read });
   assert.notEqual(restored.zone.id, 'under_hall');
 });
+
+void test('a save from before Millrace keeps its place and puts Millrace where Still Water sat on the bar', (): void => {
+  const old: World = played();
+  old.player.level = 20;
+  old.player.skillPoints = 0;
+  old.player.allocated = ['blade_thunderhead', 'heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'endless_turn', 'millstone', 'riptide', 'blade_millrace'];
+  const raw: unknown = JSON.parse(JSON.stringify({ ...toSave(old), allocated: [...old.player.allocated.slice(0, -1), 'blade_still_water'], learned: ['cleave', 'still_water'], bar: ['cleave', null, 'still_water', null, null, null], treeRevision: 7, freeReset: false }));
+  const save: SaveData = must(readSave(content, raw), 'save');
+  assert.equal(save.allocated.at(-1), 'blade_millrace');
+  assert.equal(save.allocated.length, 10);
+  assert.ok(save.learned.includes('millrace'));
+  assert.ok(!save.learned.includes('still_water'));
+  assert.deepEqual(save.bar.slice(0, 3), ['cleave', null, 'millrace']);
+  assert.equal(save.freeReset, true);
+  const restored: World = createWorld(content, { seed: 3, save });
+  assert.equal(restored.player.skills[2]?.id, 'millrace');
+});

@@ -18,7 +18,7 @@ import { widenedSkill } from '../widen.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
-import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn } from './momentum.ts';
+import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
 import type { ActionState, Actor, EchoState, NoticeReason, PlayerState, ProjectileState, QueuedShot, Team, World } from './types.ts';
@@ -314,7 +314,7 @@ export function turnRate(actor: Actor, action: ActionState): number {
 }
 
 function resolveImpact(world: World, actor: Actor, action: ActionState, skill: SkillDef): void {
-  const hits: number = resolve(world, { actor, offence: offenceOf(actor), skill: spunSkill(actor, skill), origin: actor.pos, direction: action.direction, target: action.target, echo: false }, teamOf(actor));
+  const hits: number = resolve(world, { actor, offence: offenceOf(actor), skill: spendMomentum(actor, spunSkill(actor, skill)), origin: actor.pos, direction: action.direction, target: action.target, echo: false }, teamOf(actor));
   feedMomentum(actor, skill, hits);
 }
 
