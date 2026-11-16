@@ -21,6 +21,16 @@ export const DASH_TRAIL = {
   feather: 0.45,
   wakeSpread: Math.PI * 0.9,
   kickSpread: Math.PI * 0.6,
+  splash: {
+    speed: { min: 1, max: 3 },
+    lift: { min: 2, max: 4.2 },
+    life: { min: 0.4, max: 0.7 },
+    size: { min: 0.12, max: 0.26 },
+    gravity: 11,
+    drag: 0.4,
+    spread: Math.PI * 2,
+    jitter: 0.2,
+  },
   dust: {
     speed: { min: 0.6, max: 2.4 },
     lift: { min: 0.4, max: 1.6 },
@@ -45,14 +55,15 @@ interface Trail {
   readonly alphas: Float32Array;
   readonly samples: Sample[];
   readonly color: Color;
+  readonly foam: Color | null;
   readonly direction: Vec2;
   travelled: number;
   live: boolean;
 }
 
 export interface DashTrails {
-  start(actorId: number, from: Vec2, direction: Vec2, color: Color): void;
-  land(at: Vec2, direction: Vec2, color: Color): void;
+  start(actorId: number, from: Vec2, direction: Vec2, color: Color, foam: Color | null): void;
+  land(at: Vec2, direction: Vec2, color: Color, foam: Color | null): void;
   update(dt: number, world: World): void;
   clear(): void;
 }
@@ -108,7 +119,7 @@ function trailMesh(color: Color): Trail {
   });
   const mesh: Mesh<BufferGeometry, ShaderMaterial> = new Mesh(geometry, material);
   mesh.frustumCulled = false;
-  return { mesh, positions, alphas, samples: [], color, direction: { x: 0, z: 1 }, travelled: 0, live: true };
+  return { mesh, positions, alphas, samples: [], color, foam: null, direction: { x: 0, z: 1 }, travelled: 0, live: true };
 }
 
 export function dashTrailKeeper(color: Color): Mesh<BufferGeometry, ShaderMaterial> {
@@ -145,6 +156,14 @@ export function createDashTrails(scene: Scene, particles: ParticleSystem): DashT
     particles.burst({ x, y: DASH_TRAIL.puffLift, z, count, color, dirX: 0, dirZ: 1, ...DASH_TRAIL.dust, ...overrides });
   };
 
+  const kick = (x: number, z: number, color: Color, foam: Color | null, count: number, overrides: Partial<BurstOptions>): void => {
+    if (foam === null) {
+      dust(x, z, color.clone().multiplyScalar(DASH_TRAIL.dustShade), count, overrides);
+      return;
+    }
+    particles.burst({ x, y: DASH_TRAIL.puffLift, z, count, color: foam, dirX: 0, dirZ: 1, ...DASH_TRAIL.splash, ...overrides });
+  };
+
   const drop = (actorId: number, trail: Trail): void => {
     trail.mesh.removeFromParent();
     trail.mesh.geometry.dispose();
@@ -153,18 +172,17 @@ export function createDashTrails(scene: Scene, particles: ParticleSystem): DashT
   };
 
   return {
-    start(actorId: number, from: Vec2, direction: Vec2, color: Color): void {
+    start(actorId: number, from: Vec2, direction: Vec2, color: Color, foam: Color | null): void {
       const old: Trail | undefined = trails.get(actorId);
       if (old !== undefined) drop(actorId, old);
-      const shade: Color = color.clone().multiplyScalar(DASH_TRAIL.dustShade);
-      const trail: Trail = { ...trailMesh(color), direction: { x: direction.x, z: direction.z } };
+      const trail: Trail = { ...trailMesh(color), foam, direction: { x: direction.x, z: direction.z } };
       trail.samples.push({ x: from.x, z: from.z, age: 0 });
       scene.add(trail.mesh);
       trails.set(actorId, trail);
-      dust(from.x, from.z, shade, DASH_TRAIL.puffCount, { dirX: -direction.x, dirZ: -direction.z, spread: DASH_TRAIL.wakeSpread });
+      kick(from.x, from.z, color, foam, DASH_TRAIL.puffCount, { dirX: -direction.x, dirZ: -direction.z, spread: DASH_TRAIL.wakeSpread });
     },
-    land(at: Vec2, direction: Vec2, color: Color): void {
-      dust(at.x, at.z, color.clone().multiplyScalar(DASH_TRAIL.dustShade), DASH_TRAIL.puffCount, { dirX: direction.x, dirZ: direction.z, spread: DASH_TRAIL.wakeSpread });
+    land(at: Vec2, direction: Vec2, color: Color, foam: Color | null): void {
+      kick(at.x, at.z, color, foam, DASH_TRAIL.puffCount, { dirX: direction.x, dirZ: direction.z, spread: DASH_TRAIL.wakeSpread });
     },
     update(dt: number, world: World): void {
       for (const [actorId, trail] of trails) {
@@ -178,7 +196,7 @@ export function createDashTrails(scene: Scene, particles: ParticleSystem): DashT
           trail.travelled += step;
           if (trail.travelled >= DASH_TRAIL.kickEvery) {
             trail.travelled = 0;
-            dust(actor.pos.x, actor.pos.z, trail.color.clone().multiplyScalar(DASH_TRAIL.dustShade), DASH_TRAIL.kickCount, { dirX: -trail.direction.x, dirZ: -trail.direction.z, spread: DASH_TRAIL.kickSpread });
+            kick(actor.pos.x, actor.pos.z, trail.color, trail.foam, DASH_TRAIL.kickCount, { dirX: -trail.direction.x, dirZ: -trail.direction.z, spread: DASH_TRAIL.kickSpread });
           }
         }
         if (trail.samples.length > DASH_TRAIL.samples) trail.samples.length = DASH_TRAIL.samples;

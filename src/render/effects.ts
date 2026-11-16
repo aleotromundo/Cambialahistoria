@@ -3,7 +3,7 @@ import type { Group, Mesh, Object3D, Scene, Vector3 } from 'three';
 import { Color } from 'three';
 import type { FlaskResource } from '../../sim/content/flasks.ts';
 import type { Delivery, SkillDef } from '../../sim/content/types.ts';
-import type { VfxGather } from '../../sim/content/vfx-types.ts';
+import type { SkillVfx, VfxGather } from '../../sim/content/vfx-types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { DEGREES_TO_RADIANS, facingOf } from '../../sim/math.ts';
 import { SKILLS } from '../../sim/world/skills.ts';
@@ -179,6 +179,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     return created;
   };
 
+  const foamOf = (vfx: SkillVfx): Color | null => (vfx.water === null ? null : colorOf(vfx.water.foam));
+
   const add = (object: Mesh | Group, duration: number, tick: (t: number) => void, owner: number | null): void => {
     scene.add(object);
     tick(0);
@@ -279,7 +281,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     }
     if (event.skill.vfx.style === 'roll') {
       const roller: { readonly pos: { readonly x: number; readonly z: number } } | undefined = event.actorId === world.player.id ? world.player : world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
-      if (roller !== undefined) dashTrails.start(event.actorId, roller.pos, event.direction, colorOf(event.skill.vfx.shadow?.color ?? event.skill.vfx.color));
+      if (roller !== undefined) dashTrails.start(event.actorId, roller.pos, event.direction, colorOf(event.skill.vfx.shadow?.color ?? event.skill.vfx.color), foamOf(event.skill.vfx));
     }
     if (event.actorId === world.player.id) {
       if (event.skill.press?.type !== 'charge') cues.windup(event.actorId, world.player.pos, event.direction, event.skill, event.windup, colorOf(event.skill.vfx.color));
@@ -322,7 +324,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         if (event.team === 'player') flashLight(event.origin.x, 2, event.origin.z, color, EFFECTS.boltLight * event.skill.vfx.light);
         break;
       case 'dash':
-        if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color);
+        if (event.skill.vfx.style === 'roll') dashTrails.land(event.origin, event.direction, color, foamOf(event.skill.vfx));
         break;
       case 'chain':
       case 'area':
