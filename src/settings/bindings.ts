@@ -121,7 +121,8 @@ export function actionTable(slots: readonly SlotDefault[], build: Shipped, movem
 }
 
 export function freeMoveKeys(overrides: Overrides): Overrides {
-  return Object.fromEntries(Object.entries(overrides).filter(([, codes]: [string, readonly string[]]): boolean => !codes.some((code: string): boolean => MOVE_CODES.has(code))));
+  const kept: [string, readonly string[]][] = Object.entries(overrides).map(([action, codes]: [string, readonly string[]]): [string, readonly string[]] => [action, codes.filter((code: string): boolean => !MOVE_CODES.has(code))]);
+  return Object.fromEntries(kept.filter(([, codes]: [string, readonly string[]]): boolean => codes.length > 0));
 }
 
 export function isBindingCode(value: string): boolean {

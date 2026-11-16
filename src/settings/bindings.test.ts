@@ -145,5 +145,5 @@ void test('a move key can be rebound, and no other action can take a key that mo
 });
 
 void test('freeing the move keys drops every saved key that sits on W, A, S or D and keeps the rest', (): void => {
-  assert.deepEqual(freeMoveKeys({ inventory: ['KeyD'], 'skill:1': ['KeyF'], tree: ['KeyX', 'KeyS'] }), { 'skill:1': ['KeyF'] });
+  assert.deepEqual(freeMoveKeys({ inventory: ['KeyD'], 'skill:1': ['KeyF'], tree: ['KeyX', 'KeyS'] }), { 'skill:1': ['KeyF'], tree: ['KeyX'] });
 });

@@ -93,7 +93,7 @@ export function titleKeyRows(keys: ResolvedKeys, names: TitleNames): readonly Ti
   const panelRows: readonly (TitleKeyRow | null)[] = Array.from({ length: Math.ceil(bound.length / TITLE_KEYS.panelsPerRow) }, (_unused: unknown, row: number): TitleKeyRow | null => joined(keys, bound.slice(row * TITLE_KEYS.panelsPerRow, (row + 1) * TITLE_KEYS.panelsPerRow), labelOf));
   const grouped: readonly (TitleKeyRow | null)[] = [flaskRow, ...panelRows, joined(keys, system, labelOf)];
   const moveKeys: readonly string[] = keys.table.filter((def: ActionDef): boolean => def.group === 'Movement').flatMap((def: ActionDef): readonly string[] => keys.bindingsOf(def.id).slice(0, 1).map(keyName));
-  const lead: readonly TitleKeyRow[] = moveKeys.length === 0 ? [TITLE_KEYS.primary, TITLE_KEYS.inPlace] : [{ keys: moveKeys.join(TITLE_KEYS.movesJoiner), does: TITLE_KEYS.moves }, TITLE_KEYS.primaryByKeys];
+  const lead: readonly TitleKeyRow[] = moveKeys.length === 0 ? [TITLE_KEYS.primary, TITLE_KEYS.inPlace] : [{ keys: moveKeys.join(TITLE_KEYS.movesJoiner), does: TITLE_KEYS.moves }, TITLE_KEYS.primaryByKeys, TITLE_KEYS.inPlace];
   return [...lead, ...skillRows, ...grouped.filter((row: TitleKeyRow | null): row is TitleKeyRow => row !== null), TITLE_KEYS.zoom];
 }
 

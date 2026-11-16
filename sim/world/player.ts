@@ -385,12 +385,17 @@ export function handleCommand(world: World, command: Command): void {
       if ((command.type === 'move' || command.type === 'walk') && aimGlide(player, command.dest)) return;
       if (cutsRecovery(player, command)) player.action = null;
       if (player.action !== null) {
-        player.queued = command;
+        if (!keepsQueuedSkill(player.queued, command)) player.queued = command;
         return;
       }
       act(world, command);
       return;
   }
+}
+
+function keepsQueuedSkill(queued: Command | null, next: Command): boolean {
+  if (queued === null || queued.type !== 'skill') return false;
+  return next.type === 'walk' || next.type === 'stop' || (next.type === 'move' && next.held);
 }
 
 function pursue(world: World, dest: Vec2, dt: number): void {

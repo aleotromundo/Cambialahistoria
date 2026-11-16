@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { MotionSample, TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../../test/motion-support.ts';
 import { SCENE_BASE } from '../../test/road-support.ts';
-import { must, worldIn } from '../../test/support.ts';
+import { armed, must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -472,4 +472,47 @@ void test('an empty key slot does nothing when pressed, aimed at the ground or a
   assert.equal(world.player.action, null);
   assert.equal(world.player.intent.type, 'idle');
   assert.ok(distance(world.player.pos, at) < 0.01);
+});
+
+const BUFFERED = { hero: { x: 14, z: 14 }, first: 1, second: 2, reach: 3, seconds: 4 } as const;
+
+function castingScene(): World {
+  const world: World = worldIn(content, content.world.start, 5);
+  enterZone(world, sceneZone(base, 'test_buffered_skill', { tiles: Array.from({ length: 8 }, (): string => '........'), props: [], start: BUFFERED.hero }), { type: 'start' });
+  world.monsters = [];
+  world.moments = [];
+  armed(world);
+  const at: Vec2 = world.player.pos;
+  stepWorld(world, [{ type: 'skill', slot: BUFFERED.first, aim: { x: at.x + BUFFERED.reach, z: at.z }, targetId: null }], MOTION_DT);
+  return world;
+}
+
+void test('a skill pressed during another skill is kept through a held walk, a held press and a stop, and fires when the first ends', (): void => {
+  const world: World = castingScene();
+  const at: Vec2 = world.player.pos;
+  assert.equal(must(world.player.action, 'first cast').slot, BUFFERED.first);
+  const next: Command = { type: 'skill', slot: BUFFERED.second, aim: { x: at.x, z: at.z + BUFFERED.reach }, targetId: null };
+  const ahead: Vec2 = { x: at.x - BUFFERED.reach, z: at.z };
+  stepWorld(world, [next], MOTION_DT);
+  assert.deepEqual(world.player.queued, next);
+  for (const held of [{ type: 'walk', held: true, dest: ahead }, { type: 'walk', held: false, dest: ahead }, { type: 'move', held: true, dest: ahead }, { type: 'stop' }] as const) {
+    stepWorld(world, [held], MOTION_DT);
+    assert.equal(must(world.player.action, `first cast during ${held.type}`).goal, null);
+    assert.deepEqual(world.player.queued, next, held.type);
+  }
+  let fired: boolean = false;
+  for (let clock: number = 0; clock < BUFFERED.seconds && !fired; clock += MOTION_DT) {
+    stepWorld(world, [{ type: 'walk', held: true, dest: ahead }], MOTION_DT);
+    fired = world.player.action?.slot === BUFFERED.second;
+  }
+  assert.ok(fired, 'the second skill never fired');
+});
+
+void test('a fresh click on the ground still replaces a skill waiting behind another', (): void => {
+  const world: World = castingScene();
+  const at: Vec2 = world.player.pos;
+  const click: Command = { type: 'move', held: false, dest: { x: at.x - BUFFERED.reach, z: at.z } };
+  stepWorld(world, [{ type: 'skill', slot: BUFFERED.second, aim: { x: at.x, z: at.z + BUFFERED.reach }, targetId: null }], MOTION_DT);
+  stepWorld(world, [click], MOTION_DT);
+  assert.deepEqual(world.player.queued, click);
 });
