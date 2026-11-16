@@ -12,12 +12,7 @@
     "prop": "chest",
     "reach": 1.3,
     "open": 1.6,
-    "linger": 45,
-    "lid": {
-      "seam": 0.4,
-      "hinge": -0.22,
-      "degrees": 100
-    }
+    "linger": 45
   },
   "moments": [
     {

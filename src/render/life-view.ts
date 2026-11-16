@@ -1,6 +1,7 @@
 import type { IUniform, Material, WebGLProgramParametersWithUniforms } from 'three';
 import { BufferAttribute, BufferGeometry, Color, DoubleSide, DynamicDrawUsage, Euler, Group, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Quaternion, Vector3 } from 'three';
 import type { BatEvent, Colony } from './bat-colony.ts';
+import type { LidEvent } from './prop-lid.ts';
 import { createColony, settleRoosts, stepColony } from './bat-colony.ts';
 import { batGeometry } from './bat-look.ts';
 import type { BatKind, LifeForm, LifeGroup, LifeKind, LifeRules } from './life-kinds.ts';
@@ -225,7 +226,7 @@ interface Herd {
   colony: Colony | null;
 }
 
-export type LifeEvent = BatEvent;
+export type LifeEvent = BatEvent | LidEvent;
 
 export interface LifeView {
   readonly group: Group;

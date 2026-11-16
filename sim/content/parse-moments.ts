@@ -2,7 +2,7 @@ import { conditions } from './parse-conditions.ts';
 import { storyFlags } from './parse-story.ts';
 import type { Fields } from './read.ts';
 import { byId, colour, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
-import type { ChestLid, ChestRules, EchoLook, EchoPose, MomentChest, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeBearing, StrikeInterval, StrikeNear, WeightedMoment } from './moment-types.ts';
+import type { ChestRules, EchoLook, EchoPose, MomentChest, MomentDef, MomentEcho, MomentField, MomentLibrary, MomentProp, MomentReward, StrikeArea, StrikeClearance, StrikeBearing, StrikeInterval, StrikeNear, WeightedMoment } from './moment-types.ts';
 
 function chance(source: Fields, key: string, where: string): number {
   const value: number = numeric(source, key, where);
@@ -65,14 +65,9 @@ function chest(value: unknown, radius: number, where: string): MomentChest | nul
   return { x, z, rotationDegrees: numeric(source, 'rotationDegrees', where), goldMin, goldMax };
 }
 
-function lid(value: unknown, where: string): ChestLid {
-  const source: Fields = fields(value, where);
-  return { seam: positive(source, 'seam', where), hinge: numeric(source, 'hinge', where), degrees: positive(source, 'degrees', where) };
-}
-
 function chestRules(value: unknown, where: string): ChestRules {
   const source: Fields = fields(value, where);
-  return { prop: text(source, 'prop', where), reach: positive(source, 'reach', where), open: positive(source, 'open', where), linger: positive(source, 'linger', where), lid: lid(source['lid'], `${where}.lid`) };
+  return { prop: text(source, 'prop', where), reach: positive(source, 'reach', where), open: positive(source, 'open', where), linger: positive(source, 'linger', where) };
 }
 
 function moment(value: unknown, where: string): MomentDef {

@@ -1,8 +1,8 @@
 import type { Material, Object3D } from 'three';
-import { BufferAttribute, BufferGeometry, Color, Group, Matrix4, Mesh, MeshStandardMaterial } from 'three';
+import { BufferGeometry, Color, Group, Matrix4, Mesh, MeshStandardMaterial } from 'three';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
-import type { ChestRules, MomentChest } from '../../sim/content/moment-types.ts';
-import type { PropDef } from '../../sim/content/types.ts';
+import type { MomentChest } from '../../sim/content/moment-types.ts';
+import type { PropDef, PropLid } from '../../sim/content/types.ts';
 import type { ChestState } from '../../sim/world/types.ts';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
@@ -11,6 +11,7 @@ import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { createGhostUniforms, makeGhost } from './ghost-material.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
+import { lidAngle, splitAtSeam } from './prop-lid.ts';
 
 export const MOMENT_CHEST = {
   sink: 0.5,
@@ -29,6 +30,7 @@ export const MOMENT_CHEST = {
 
 const CHEST_GLOW: Color = new Color(0xffc45a);
 const WHITE: Color = new Color(0xffffff);
+const NO_LID: PropLid = { seam: Number.POSITIVE_INFINITY, hinge: 0, degrees: 0 };
 
 export interface ChestView {
   readonly root: Group;
@@ -40,11 +42,11 @@ export interface ChestView {
   readonly rise: Spring;
   readonly swing: Spring;
   readonly scale: number;
+  readonly hinge: PropLid;
   opened: number;
 }
 
 export interface ChestMaking {
-  readonly rules: ChestRules;
   readonly prop: PropDef;
   readonly model: GLTF;
   readonly dresser: Dresser;
@@ -57,30 +59,6 @@ export interface ChestMoment {
   readonly clock: number;
 }
 
-function sideOf(geometry: BufferGeometry, seam: number, above: boolean): BufferGeometry {
-  const flat: BufferGeometry = geometry.index === null ? geometry : geometry.toNonIndexed();
-  const raw: unknown = flat.getAttribute('position');
-  const position: BufferAttribute | undefined = raw instanceof BufferAttribute ? raw : undefined;
-  const kept: number[] = [];
-  const count: number = position === undefined ? 0 : position.count;
-  for (let corner: number = 0; corner + 2 < count; corner += 3) {
-    const middle: number = position === undefined ? 0 : (position.getY(corner) + position.getY(corner + 1) + position.getY(corner + 2)) / 3;
-    if (middle >= seam === above) kept.push(corner, corner + 1, corner + 2);
-  }
-  const part: BufferGeometry = new BufferGeometry();
-  for (const name of Object.keys(flat.attributes)) {
-    const source: unknown = flat.getAttribute(name);
-    if (!(source instanceof BufferAttribute)) continue;
-    const values: Float32Array = new Float32Array(kept.length * source.itemSize);
-    kept.forEach((vertex: number, at: number): void => {
-      for (let item: number = 0; item < source.itemSize; item += 1) values[at * source.itemSize + item] = source.getComponent(vertex, item);
-    });
-    part.setAttribute(name, new BufferAttribute(values, source.itemSize));
-  }
-  if (flat !== geometry) flat.dispose();
-  return part;
-}
-
 function isGeometry(value: unknown): value is BufferGeometry {
   return value instanceof BufferGeometry;
 }
@@ -90,17 +68,19 @@ function clamp01(value: number): number {
 }
 
 export function buildChest(making: ChestMaking, holder: Group, chest: MomentChest): ChestView {
-  const { rules, prop, model } = making;
+  const { prop, model } = making;
+  const hinge: PropLid = prop.lid ?? NO_LID;
   const ghost: GhostUniforms = createGhostUniforms(WHITE, 0);
   ghost.rim.value = 0;
   ghost.dissolve.value = 1;
   const root: Group = new Group();
   const lid: Group = new Group();
-  lid.position.set(0, rules.lid.seam, rules.lid.hinge);
+  const seam: number = Number.isFinite(hinge.seam) ? hinge.seam : 0;
+  lid.position.set(0, seam, hinge.hinge);
   root.add(lid);
   const materials: MeshStandardMaterial[] = [];
   const geometries: BufferGeometry[] = [];
-  const toLid: Matrix4 = new Matrix4().makeTranslation(0, -rules.lid.seam, -rules.lid.hinge);
+  const toLid: Matrix4 = new Matrix4().makeTranslation(0, -seam, -hinge.hinge);
   model.scene.updateMatrixWorld(true);
   model.scene.traverse((child: Object3D): void => {
     if (!(child instanceof Mesh)) return;
@@ -113,8 +93,8 @@ export function buildChest(making: ChestMaking, holder: Group, chest: MomentChes
     makeGhost(material, making.flash, ghost);
     materials.push(material);
     const placed: BufferGeometry = shape.clone().applyMatrix4(child.matrixWorld);
-    const base: BufferGeometry = sideOf(placed, rules.lid.seam, false);
-    const top: BufferGeometry = sideOf(placed, rules.lid.seam, true).applyMatrix4(toLid);
+    const base: BufferGeometry = splitAtSeam(placed, hinge.seam, false);
+    const top: BufferGeometry = splitAtSeam(placed, hinge.seam, true).applyMatrix4(toLid);
     placed.dispose();
     for (const [geometry, parent] of [[base, root], [top, lid]] as const) {
       geometry.computeBoundingSphere();
@@ -131,10 +111,10 @@ export function buildChest(making: ChestMaking, holder: Group, chest: MomentChes
   root.rotation.y = (chest.rotationDegrees * Math.PI) / 180;
   root.scale.setScalar(prop.scale * MOMENT_CHEST.startScale);
   holder.add(root, glow.mesh);
-  return { root, lid, ghost, materials, geometries, glow, rise: { value: 0, velocity: 0, target: 1 }, swing: { value: 0, velocity: 0, target: 0 }, scale: prop.scale, opened: 0 };
+  return { root, lid, ghost, materials, geometries, glow, rise: { value: 0, velocity: 0, target: 1 }, swing: { value: 0, velocity: 0, target: 0 }, scale: prop.scale, hinge, opened: 0 };
 }
 
-export function stepChest(view: ChestView, rules: ChestRules, moment: ChestMoment, dt: number): void {
+export function stepChest(view: ChestView, moment: ChestMoment, dt: number): void {
   const open: boolean = moment.state === 'opening' || moment.state === 'opened';
   springTo(view.swing, open ? 1 : 0);
   stepSpring(view.rise, dt);
@@ -143,7 +123,7 @@ export function stepChest(view: ChestView, rules: ChestRules, moment: ChestMomen
   const rise: number = view.rise.value;
   view.root.position.y = (rise - 1) * MOMENT_CHEST.sink;
   view.root.scale.setScalar(view.scale * (MOMENT_CHEST.startScale + (1 - MOMENT_CHEST.startScale) * rise));
-  view.lid.rotation.x = (rules.lid.hinge < 0 ? -1 : 1) * view.swing.value * ((rules.lid.degrees * Math.PI) / 180);
+  view.lid.rotation.x = lidAngle(view.hinge, view.swing.value);
   view.ghost.dissolve.value = Math.max(moment.fade, 1 - clamp01(rise));
   const pulse: number = MOMENT_CHEST.glowClosed + MOMENT_CHEST.glowPulse * Math.sin(moment.clock * MOMENT_CHEST.glowRate);
   const burst: number = MOMENT_CHEST.glowOpen * Math.exp(-view.opened * MOMENT_CHEST.glowFall);

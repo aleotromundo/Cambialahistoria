@@ -274,7 +274,7 @@ export interface SkillTreeNodeDef {
 
 export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
 
-export type { PropCache, PropDef, PropLight, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
+export type { PropCache, PropDef, PropLid, PropLight, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
 
 export type { AttachmentDef, RigActionClip, RigClips, RigContact, RigDef, RigGait, RigSocket, RigStanceClips, Triple } from './rig-types.ts';
 

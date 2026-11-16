@@ -102,7 +102,9 @@ function fieldProblems(content: Content, zone: ZoneDef, field: MomentField): str
 export function momentProblems(content: Content): string[] {
   const problems: string[] = [];
   if (!content.factions.has(content.moments.faction)) problems.push(`moments use unknown faction ${content.moments.faction}`);
-  if (!content.props.has(content.moments.chest.prop)) problems.push(`moments keep their gold in unknown prop ${content.moments.chest.prop}`);
+  const box: PropDef | undefined = content.props.get(content.moments.chest.prop);
+  if (box === undefined) problems.push(`moments keep their gold in unknown prop ${content.moments.chest.prop}`);
+  else if (box.lid === null) problems.push(`moments keep their gold in ${box.id}, which has no lid to open`);
   for (const def of content.moments.defs.values()) problems.push(...defProblems(content, def));
   for (const zone of content.zones.values()) if (zone.moments !== null) problems.push(...fieldProblems(content, zone, zone.moments));
   return problems;

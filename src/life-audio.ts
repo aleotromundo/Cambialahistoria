@@ -7,7 +7,7 @@ export interface LifeSound {
   readonly at: Vec2;
 }
 
-const SOUND_OF: Readonly<Record<LifeEvent['type'], LifeSoundEvent>> = { 'bats-disturbed': 'bats_disturbed', 'bat-flyby': 'bat_flyby' };
+const SOUND_OF: Readonly<Record<LifeEvent['type'], LifeSoundEvent>> = { 'bats-disturbed': 'bats_disturbed', 'bat-flyby': 'bat_flyby', 'lid-opened': 'lid_opened', 'lid-closed': 'lid_closed' };
 
 export function lifeSounds(events: readonly LifeEvent[]): readonly LifeSound[] {
   return events.map((event: LifeEvent): LifeSound => ({ event: SOUND_OF[event.type], at: { x: event.x, z: event.z } }));

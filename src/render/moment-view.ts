@@ -336,13 +336,13 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const prop: PropDef | undefined = content.props.get(rules.prop);
     const model: GLTF | undefined = prop === undefined ? undefined : models.get(prop.model);
     if (prop === undefined || model === undefined) return null;
-    return buildChest({ rules, prop, model, dresser: deps.dresser, flash: zeroFlash }, entry.group, chest);
+    return buildChest({ prop, model, dresser: deps.dresser, flash: zeroFlash }, entry.group, chest);
   };
 
   const dressChest = (entry: MomentEntry, moment: MomentState, fade: number, dt: number): void => {
     const chest: MomentChest | null = moment.def.chest;
     if (entry.chest === null && moment.chest !== 'none' && chest !== null) entry.chest = chestOf(entry, chest);
-    if (entry.chest !== null) stepChest(entry.chest, content.moments.chest, { state: moment.chest, fade, clock }, dt);
+    if (entry.chest !== null) stepChest(entry.chest, { state: moment.chest, fade, clock }, dt);
   };
 
   const makeFigure = (entry: MomentEntry, figure: MomentFigure, echo: MomentEcho): FigureView | null => {

@@ -47,6 +47,12 @@ export interface PropCache {
   readonly opened: string | null;
 }
 
+export interface PropLid {
+  readonly seam: number;
+  readonly hinge: number;
+  readonly degrees: number;
+}
+
 export interface PropDef {
   readonly id: string;
   readonly model: string;
@@ -62,4 +68,5 @@ export interface PropDef {
   readonly tint: string | null;
   readonly service: ServiceKind | null;
   readonly cache: PropCache | null;
+  readonly lid: PropLid | null;
 }

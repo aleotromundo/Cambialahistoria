@@ -1,5 +1,5 @@
 import { packRanks, rankProblems } from './parse-ranks.ts';
-import { propCache } from './parse-cache.ts';
+import { propCache, propLid } from './parse-cache.ts';
 import { atlasProblems } from './atlas.ts';
 import { affix, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
@@ -286,6 +286,7 @@ function prop(value: unknown, where: string): PropDef {
     tint: source['tint'] === undefined ? null : colour(source, 'tint', where),
     service: service(source, where),
     cache: propCache(source['cache'], `${where}.cache`),
+    lid: propLid(source['lid'], `${where}.lid`),
   };
 }
 

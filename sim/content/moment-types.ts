@@ -47,18 +47,11 @@ export interface MomentChest {
   readonly goldMax: number;
 }
 
-export interface ChestLid {
-  readonly seam: number;
-  readonly hinge: number;
-  readonly degrees: number;
-}
-
 export interface ChestRules {
   readonly prop: string;
   readonly reach: number;
   readonly open: number;
   readonly linger: number;
-  readonly lid: ChestLid;
 }
 
 export interface MomentDef {

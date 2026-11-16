@@ -43,6 +43,8 @@ import { tickGlow } from './surface-glow.ts';
 import type { Embers } from './embers.ts';
 import { createEmbers } from './embers.ts';
 import type { Hero } from './life-motion.ts';
+import type { LiddedPlacement, LiddedProps } from './lidded-props.ts';
+import { createLiddedProps } from './lidded-props.ts';
 
 export const ZONE_VIEW = {
   abyssDepth: -1.06,
@@ -273,10 +275,17 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     conditionals.push(conditional);
     if (def.light !== null && point !== null) sources.push({ point, color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(prop.x, prop.z, 1) * 40, conditional, score: 0 });
   };
+  const lidded: LiddedPlacement[] = [];
   zone.props.forEach((prop: ZoneProp, index: number): void => {
     const def: PropDef | undefined = content.props.get(prop.prop);
     if (def === undefined) return;
     const cache: PropCache | null = def.cache;
+    if (prop.when.length === 0 && cache === null && def.lid !== null) {
+      const lifted: number = prop.y + liftAt(zone, prop.x, prop.z);
+      lidded.push({ def, lid: def.lid, x: prop.x, y: lifted, z: prop.z, yaw: prop.rotationDegrees * DEGREES });
+      if (def.light !== null) sources.push({ point: lightPoint(def.light, prop.x, lifted, prop.z, prop.rotationDegrees * DEGREES), color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(prop.x, prop.z, 1) * 40, conditional: null, score: 0 });
+      return;
+    }
     if (prop.when.length === 0 && cache === null) {
       place(prop.prop, prop.x, prop.y, prop.z, prop.rotationDegrees * DEGREES, true);
       return;
@@ -361,6 +370,10 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     }),
   );
 
+  const lids: LiddedProps = createLiddedProps(loader, lidded, (def: PropDef, material: MeshStandardMaterial): Material => cutFor(def, finish(def, dressedProp(content, def.surfaces, material, dressing))));
+  await lids.ready;
+  group.add(lids.group);
+
   const roofs: TunnelRoofs = createTunnelRoofs(loader, content, zone, (def: PropDef, material: MeshStandardMaterial): MeshStandardMaterial[] => standardMaterials(dressedProp(content, def.surfaces, material, dressing)).map((worn: MeshStandardMaterial): MeshStandardMaterial => carryLook(worn, worn.clone())));
   await roofs.ready;
   group.add(roofs.group);
@@ -402,10 +415,11 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       return lightsVersion;
     },
     takeLifeEvents(): LifeEvent[] {
-      return life.takeEvents();
+      return [...life.takeEvents(), ...lids.takeEvents()];
     },
     dispose(): void {
       resetCutaway(cutaway);
+      lids.dispose();
       roofs.dispose();
       life.dispose();
       group.removeFromParent();
@@ -428,6 +442,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       mistWall?.update(time, focus.flash);
       life.update(time, dt, world.player.pos, groundAt, fightsIn(world));
       roofs.update(world.player.pos.x, world.player.pos.z, dt);
+      lids.update(world.service, time, dt);
       for (const conditional of conditionals) {
         const wanted: boolean = conditional.wanted(world);
         if (conditional.on === null) conditional.shown = wanted ? 1 : 0;

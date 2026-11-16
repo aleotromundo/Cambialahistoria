@@ -243,7 +243,9 @@
       { "sound": "bat_flutter", "volume": 0.45, "maxVoices": 2, "cooldown": 0.6, "reach": 26 },
       { "sound": "bat_squeak", "volume": 0.3, "maxVoices": 1, "cooldown": 9, "reach": 26 }
     ],
-    "bat_flyby": [{ "sound": "bat_flutter", "volume": 0.3, "maxVoices": 1, "cooldown": 1.5, "reach": 20 }]
+    "bat_flyby": [{ "sound": "bat_flutter", "volume": 0.3, "maxVoices": 1, "cooldown": 1.5, "reach": 20 }],
+    "lid_opened": [{ "sound": "chest_open", "volume": 0.7, "maxVoices": 1, "cooldown": 0.3, "reach": 24 }],
+    "lid_closed": [{ "sound": "hit_wood", "volume": 0.35, "maxVoices": 1, "cooldown": 0.3, "reach": 24 }]
   },
   "ui": {
     "click": [{ "sound": "ui_tap", "volume": 0.8, "maxVoices": 3 }],
