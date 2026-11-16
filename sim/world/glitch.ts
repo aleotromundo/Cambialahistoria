@@ -4,6 +4,7 @@ import type { Rng } from '../rng.ts';
 import { createRng, pickWeighted } from '../rng.ts';
 import { allHold } from './conditions.ts';
 import { applyEdit, turnHero } from './glitch-edits.ts';
+import { stillHero, worldly } from './glitch-hold.ts';
 import type { ActiveGlitch, GlitchRequest, GlitchSave, GlitchSource, GlitchState, PathEntry, Silhouette } from './glitch-types.ts';
 import type { SeamMoment, SeamPhase, SeamPlan } from './seam.ts';
 import { guardStart, hidesWorld, seamAt, seamLength } from './seam.ts';
@@ -150,49 +151,6 @@ export function setGlitchesEnabled(world: World, enabled: boolean): void {
   }
 }
 
-const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
-  read: true,
-  use_item: true,
-  enter_portal: true,
-  hero: false,
-  open: true,
-  glitch: false,
-  glitch_setting: false,
-  overlay: false,
-  strike: false,
-  spawn: false,
-  bench: false,
-  move: false,
-  walk: false,
-  skill: true,
-  hold: false,
-  slot: false,
-  steer: true,
-  pickup: true,
-  travel: true,
-  talk: true,
-  use: true,
-  flask: true,
-  teleport: true,
-  trade: true,
-  purse: false,
-  stop: false,
-  equip: false,
-  unequip: false,
-  drop: false,
-  allocate: false,
-  refund: false,
-  respec: false,
-  choose_change: false,
-  advance: false,
-  replay: false,
-  respawn: false,
-};
-
-function worldly(command: Command): boolean {
-  return WORLDLY[command.type];
-}
-
 export function heldCommands(world: World, commands: readonly Command[]): readonly Command[] {
   if (!inMist(world)) return commands;
   return commands.filter((command: Command): boolean => !worldly(command));
@@ -249,14 +207,6 @@ function interruptMonsters(world: World): void {
   }
 }
 
-function still(world: World): void {
-  const player = world.player;
-  if (player.queued !== null && worldly(player.queued)) player.queued = null;
-  if (player.intent.type === 'move') return;
-  player.intent = { type: 'idle' };
-  player.path = [];
-}
-
 function holdFor(world: World, seconds: number): void {
   const state: GlitchState = world.glitch;
   state.holdUntil = Math.max(state.holdUntil, world.time + seconds + state.def.rules.grace);
@@ -294,7 +244,7 @@ function begin(world: World, request: GlitchRequest): void {
   holdFor(world, duration);
   if (isMist(request.kind)) {
     state.lastMist = world.time;
-    still(world);
+    stillHero(world);
     world.events.push({ type: 'silence', duration });
   }
   world.events.push({ type: 'glitch_start', kind: request.kind, duration, edit: null, silhouettes });
@@ -311,7 +261,7 @@ function enterPhase(world: World, active: ActiveGlitch, plan: SeamPlan, phase: S
     case 'build_up':
       break;
     case 'tear':
-      still(world);
+      stillHero(world);
       world.events.push({ type: 'silence', duration: plan.times.tear + plan.mist + plan.times.tearBack });
       break;
     case 'mist': {
