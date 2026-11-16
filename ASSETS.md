@@ -174,6 +174,8 @@ node tools/compress-models.ts public/models/props/new_prop.glb
 
 The worn pieces were thinned once with `tools/simplify-models.ts <ratio> <error> <files>` (meshoptimizer's simplifier with the normals, texture coordinates and skin weights as weights, borders locked so the parts still meet and the UV seams stay), then compressed again with `compress-models.ts`. Triangle counts before and after, with the ratio asked for each file: `wear/{man,woman}/ranger.glb` 27,000 to 14,900 (0.55), `peasant.glb` 12,900 and 13,600 to 7,300 and 7,500 (0.55), `hair.glb` 10,200 to 6,300 (0.6), `headgear.glb` 14,700 to 7,600 (0.5), `charms.glb` 35,300 to 10,500 and 10,800 (0.4, most of it was the cord of each charm). Running it again thins the file again, so start from the originals in git history when changing a ratio.
 
+`characters/skeleton.glb` was thinned the same way (15,679 to 8,373 triangles, ratio 0.5). Textures that are large for how small a model is on screen are halved with `node tools/shrink-textures.ts 512 <files>`, which resizes every embedded image whose longer edge is over 512 and writes it back as WebP: `characters/skeleton.glb` (one 1024 texture) and `cave/{earth_roots_b,boulder_large,rock_face_a,rock_face_b,scree_shards,basket_lidded,rock_chunk_a,rock_chunk_b}.glb`. `cave/earth_roots_a.glb`, `shore/standing_stone_slender.glb` and `shore/standing_stone_broad.glb` keep their 1024 textures.
+
 ## Weapons
 
 | File | Source | Author | Licence |
