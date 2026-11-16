@@ -35,7 +35,7 @@ import type { CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
 import { cardNode, CLOSED_CARD, stepCard } from './tree-card.ts';
-import type { CardEvent, CardState, CardStep } from './tree-card.ts';
+import type { CardEvent, CardState } from './tree-card.ts';
 
 const CHART = {
   unit: TREE_NODES.unit,
@@ -46,8 +46,6 @@ const CHART = {
   zoomStep: 360,
   findZoom: 1.2,
   confirmMs: 3200,
-  hoverGraceMs: 320,
-  hoverDwellMs: 120,
   cardGap: 12,
   cardEdge: 10,
   warmFrames: 3,
@@ -172,8 +170,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let cardState: CardState = CLOSED_CARD;
   let shownCard: string = '';
   let segments: readonly ChangeSegment[] = [];
-  let unhover: number | undefined;
-  let dwell: number | undefined;
   let pinnedButton: HTMLButtonElement | null = null;
   const cardView = (): NodeView | null => {
     const id: string | null = cardNode(cardState);
@@ -250,26 +246,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   };
 
   const sendCard = (event: CardEvent): void => {
-    const step: CardStep = stepCard(cardState, event);
-    cardState = step.state;
-    switch (step.timer) {
-      case 'none':
-        break;
-      case 'stop':
-        window.clearTimeout(dwell);
-        window.clearTimeout(unhover);
-        break;
-      case 'dwell':
-        window.clearTimeout(dwell);
-        window.clearTimeout(unhover);
-        dwell = window.setTimeout((): void => sendCard({ type: 'dwell' }), CHART.hoverDwellMs);
-        break;
-      case 'grace':
-        window.clearTimeout(dwell);
-        window.clearTimeout(unhover);
-        unhover = window.setTimeout((): void => sendCard({ type: 'grace' }), CHART.hoverGraceMs);
-        break;
-    }
+    cardState = stepCard(cardState, event);
     const pinned: HTMLButtonElement | null = cardState.pinned === null ? null : (viewOf.get(cardState.pinned)?.button ?? null);
     if (pinned !== pinnedButton) {
       pinnedButton?.classList.remove('selected');
@@ -282,8 +259,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     measureCard();
     placeCard();
   });
-  card.addEventListener('pointerenter', (): void => sendCard({ type: 'enter_card' }));
-  card.addEventListener('pointerleave', (): void => sendCard({ type: 'leave_card' }));
 
   action.addEventListener('click', (event: MouseEvent): void => {
     event.stopPropagation();
@@ -522,6 +497,11 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (card.contains(event.target instanceof Node ? event.target : null)) return;
     const at: ScreenPoint = toMap(motion.view, frame, local(event));
     sendCard({ type: 'point', node: nodeAt(spots, at.x, at.y) });
+  });
+  viewport.addEventListener('click', (event: MouseEvent): void => {
+    const clicked: EventTarget | null = event.target;
+    if (clicked instanceof Element && (clicked.closest('button, input') !== null || card.contains(clicked))) return;
+    if (cardState.pinned !== null) sendCard({ type: 'clear' });
   });
   viewport.addEventListener('pointerleave', (event: PointerEvent): void => {
     if (event.pointerType !== 'touch') sendCard({ type: 'point', node: null });
