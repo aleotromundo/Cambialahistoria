@@ -35,7 +35,7 @@ export interface PerfOutbox {
 
 export interface PerfBatch {
   readonly text: string;
-  readonly windows: number;
+  readonly sent: readonly PerfWindowBody[];
   readonly facts: boolean;
   readonly anonymous: boolean;
 }
@@ -61,8 +61,8 @@ function withinHour(box: PerfOutbox, now: number): boolean {
 
 export function due(box: PerfOutbox, now: number, final: boolean): boolean {
   if (box.stopped || box.busy || box.queue.length === 0 || !withinHour(box, now)) return false;
-  if (final) return box.lastAt === null || now - box.lastAt >= PERF_OUTBOX.finalGapMs;
-  return now >= box.retryAt && (box.lastAt === null || now - box.lastAt >= PERF_OUTBOX.gapMs);
+  if (now < box.retryAt) return false;
+  return box.lastAt === null || now - box.lastAt >= (final ? PERF_OUTBOX.finalGapMs : PERF_OUTBOX.gapMs);
 }
 
 function bodyOf(header: PerfHeader, windows: readonly PerfWindowBody[], facts: PerfFactsBody | null): PerfReportBody {
@@ -81,7 +81,7 @@ export function takeBatch(box: PerfOutbox, header: PerfHeader, facts: PerfFactsB
   const freshHour: boolean = now - box.hourStart >= PERF_OUTBOX.hourMs;
   return {
     box: { ...box, busy: true, lastAt: now, hourStart: freshHour ? now : box.hourStart, sentThisHour: (freshHour ? 0 : box.sentThisHour) + 1 },
-    batch: { text, windows: count, facts: sendFacts !== null, anonymous: box.anonymous },
+    batch: { text, sent: box.queue.slice(0, count), facts: sendFacts !== null, anonymous: box.anonymous },
   };
 }
 
@@ -91,7 +91,7 @@ export function retryDelay(failures: number): number {
 
 export function answered(box: PerfOutbox, batch: PerfBatch, outcome: PerfOutcome, now: number): PerfOutbox {
   const idle: PerfOutbox = { ...box, busy: false };
-  if (outcome.kind === 'sent') return { ...idle, queue: box.queue.slice(batch.windows), factsSent: box.factsSent || batch.facts, failures: 0, retryAt: -Infinity };
+  if (outcome.kind === 'sent') return { ...idle, queue: box.queue.filter((window: PerfWindowBody): boolean => !batch.sent.includes(window)), factsSent: box.factsSent || batch.facts, failures: 0, retryAt: -Infinity };
   if (outcome.kind === 'retry') {
     const failures: number = box.failures + 1;
     return { ...idle, failures, retryAt: now + Math.max(outcome.afterMs ?? 0, retryDelay(failures)) };

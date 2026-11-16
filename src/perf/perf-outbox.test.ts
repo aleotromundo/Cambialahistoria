@@ -37,7 +37,7 @@ void test('nothing is due with an empty queue, and a first window is due at once
 
 void test('a batch carries at most six windows and the device facts until a send is accepted', (): void => {
   const first: Taken = take(filled(8), 100);
-  assert.equal(first.batch.windows, PERF_PROTOCOL.maxWindows);
+  assert.equal(first.batch.sent.length, PERF_PROTOCOL.maxWindows);
   assert.equal(first.batch.facts, true);
   assert.deepEqual(sentFacts(first), FACTS);
   assert.equal(due(first.box, 100, true), false);
@@ -74,6 +74,7 @@ void test('network errors and busy servers back off and keep the windows; refusa
   const told: PerfOutbox = answered(taken.box, taken.batch, { kind: 'retry', afterMs: 120_000 }, 1000);
   assert.equal(told.retryAt, 121_000);
   assert.equal(retryDelay(30), PERF_OUTBOX.maxBackoffMs);
+  assert.equal(due(failed, 1000 + retryDelay(1) - 1, true), false);
   const stopped: PerfOutbox = answered(taken.box, taken.batch, { kind: 'stop' }, 1000);
   assert.equal(due(queued(stopped, window(5)), 1_000_000, true), false);
 });
@@ -100,4 +101,26 @@ void test('no more than the hourly budget is sent in an hour', (): void => {
   box = queued(box, window(0));
   assert.equal(due(box, now, true), false);
   assert.equal(due(box, PERF_OUTBOX.hourMs, true), true);
+});
+
+void test('a window queued while a batch is out is kept even when the queue trims from the front', (): void => {
+  const full: PerfOutbox = filled(PERF_OUTBOX.queued);
+  const taken: Taken = take(full, 0);
+  const grown: PerfOutbox = queued(taken.box, window(99));
+  assert.equal(grown.queue.length, PERF_OUTBOX.queued);
+  const after: PerfOutbox = answered(grown, taken.batch, { kind: 'sent' }, 10);
+  assert.deepEqual(
+    after.queue.map((left: PerfWindowBody): number => left.at),
+    [6, 7, 8, 9, 10, 11, 99],
+  );
+});
+
+void test('a batch sent before the facts could be read leaves the facts for the next batch', (): void => {
+  const early: Taken | null = takeBatch(filled(1), HEADER, null, 0);
+  assert.ok(early !== null);
+  assert.equal(sentFacts(early), undefined);
+  const after: PerfOutbox = queued(answered(early.box, early.batch, { kind: 'sent' }, 10), window(5));
+  const next: Taken = take(after, PERF_OUTBOX.gapMs + 10);
+  assert.equal(next.batch.facts, true);
+  assert.deepEqual(sentFacts(next), FACTS);
 });

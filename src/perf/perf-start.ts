@@ -57,7 +57,7 @@ export function startPerfReports(deps: PerfDeps): PerfReports {
   const pump = (final: boolean): void => {
     const now: number = performance.now();
     if (!due(box, now, final)) return;
-    facts ??= readDeviceFacts(deps.renderer, deps.graphics(), deps.touch);
+    if (facts === null && !deps.renderer.getContext().isContextLost()) facts = readDeviceFacts(deps.renderer, deps.graphics(), deps.touch);
     const taken: Taken | null = takeBatch(box, header(), facts, now);
     if (taken === null) return;
     box = taken.box;
