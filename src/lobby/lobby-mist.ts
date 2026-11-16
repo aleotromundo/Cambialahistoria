@@ -15,6 +15,7 @@ export interface MistSize {
 export interface LobbyMist {
   readonly texture: Texture;
   draw(renderer: WebGLRenderer, dt: number, cssWidth: number, cssHeight: number, pixelRatio: number): void;
+  compile(renderer: WebGLRenderer): Promise<void>;
   flash(amount: number): void;
   haze(amount: number): void;
   release(): void;
@@ -138,6 +139,17 @@ export function createLobbyMist(): LobbyMist {
     },
     release(): void {
       surface.dispose();
+    },
+    compile(renderer: WebGLRenderer): Promise<void> {
+      const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
+      renderer.setRenderTarget(surface);
+      let compiling: Promise<unknown>;
+      try {
+        compiling = renderer.compileAsync(stage, flat);
+      } finally {
+        renderer.setRenderTarget(previous);
+      }
+      return compiling.then((): void => undefined);
     },
     draw(renderer: WebGLRenderer, dt: number, cssWidth: number, cssHeight: number, pixelRatio: number): void {
       time.value += dt;

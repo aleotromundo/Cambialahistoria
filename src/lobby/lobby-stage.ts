@@ -1,4 +1,4 @@
-import type { AnimationClip, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
+import type { AnimationClip, Group, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
 import { AdditiveBlending, Box3, Color, DataTexture, Fog, LinearFilter, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -244,7 +244,6 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   scene.fog = new Fog(LOBBY_STAGE.background, set.fogNear, set.fogFar);
   const sky: LobbyMist = createLobbyMist();
   sky.haze(set.haze);
-  scene.background = sky.texture;
   const camera: PerspectiveCamera = new PerspectiveCamera(LOBBY_STAGE.fov, 1, LOBBY_STAGE.near, LOBBY_STAGE.far);
   camera.position.set(0, LOBBY_STAGE.cameraHeight, LOBBY_STAGE.cameraDistance);
   camera.lookAt(0, LOBBY_STAGE.lookHeight, 0);
@@ -277,7 +276,22 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let pipeline: LobbyPipeline | null = null;
   const dressing: SetDressing = createSetDressing(set, content, loader, contact, skirtGround(floor, groundDef), random);
   scene.add(dressing.lamps);
-  let dressed: boolean = false;
+  let drawnOnce: boolean = false;
+  let placing: Promise<void> | null = null;
+  const pipelineFor = (renderer: WebGLRenderer): LobbyPipeline => {
+    pipeline ??= createLobbyPipeline(renderer, scene, camera, sky.texture);
+    return pipeline;
+  };
+  const placeDressing = async (made: LobbyPipeline, tier: QualityName): Promise<void> => {
+    const group: Group = await dressing.build();
+    await Promise.all([dressing.asSolid((): Promise<void> => made.compileInto(group)), made.warm(tier, window.devicePixelRatio, [group])]).catch((): void => undefined);
+    scene.add(group);
+    dressing.show(!drawnOnce);
+  };
+  const place = (made: LobbyPipeline, tier: QualityName): Promise<void> => {
+    placing ??= placeDressing(made, tier).catch((): void => undefined);
+    return placing;
+  };
   let life: LobbyLife | null = null;
   const orbit: LobbyOrbit = createLobbyOrbit();
   let drawnAt: number = Number.NEGATIVE_INFINITY;
@@ -454,17 +468,13 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       camera.setViewOffset(size.x, size.y, (0.5 - framing.across) * size.x, framing.down * size.y, size.x, size.y);
       camera.updateProjectionMatrix();
       shaft.step(dt, camera);
-      if (!dressed) {
-        dressed = true;
-        dressing.load(renderer, scene, camera).catch((): void => undefined);
-      }
       const lightning: number = dressing.step(dt, camera);
       lights.flash(lightning);
       sky.flash(lightning);
       sky.draw(renderer, dt, size.x, size.y, devicePixelRatio);
       RIM_LIGHT.value.copy(rimGlow);
-      pipeline ??= createLobbyPipeline(renderer, scene, camera);
-      pipeline.render(tier, devicePixelRatio);
+      pipelineFor(renderer).render(tier, devicePixelRatio);
+      drawnOnce = true;
     },
     release(): void {
       pipeline?.release();
@@ -472,8 +482,8 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     },
     async warm(renderer: WebGLRenderer, tier: QualityName): Promise<void> {
       if (hero === null && wanted !== null) dress(wanted);
-      pipeline ??= createLobbyPipeline(renderer, scene, camera);
-      await pipeline.compile(tier);
+      const made: LobbyPipeline = pipelineFor(renderer);
+      await Promise.all([sky.compile(renderer), made.warm(tier, window.devicePixelRatio, []), place(made, tier)]);
     },
   };
 }

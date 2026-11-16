@@ -26,7 +26,7 @@ export interface WarmSurvey {
   readonly drawables: readonly Object3D[];
 }
 
-const warmedTextures: WeakSet<Texture> = new WeakSet<Texture>();
+const warmedTextures: WeakMap<Texture, number> = new WeakMap<Texture, number>();
 const warmedGeometries: WeakSet<BufferGeometry> = new WeakSet<BufferGeometry>();
 
 export function revealHidden(root: Object3D): () => void {
@@ -114,7 +114,7 @@ function materialTextures(material: Material, into: Set<Texture>): void {
 }
 
 function uploadable(texture: Texture): boolean {
-  if (warmedTextures.has(texture) || texture.isRenderTargetTexture) return false;
+  if (warmedTextures.get(texture) === texture.version || texture.isRenderTargetTexture) return false;
   const image: unknown = texture.image;
   return image !== null && image !== undefined;
 }
@@ -209,7 +209,7 @@ async function drawPaced(compiler: ShaderCompiler, scene: Scene, camera: Camera,
     found.textures,
     (texture: Texture): void => {
       compiler.initTexture(texture);
-      warmedTextures.add(texture);
+      warmedTextures.set(texture, texture.version);
     },
     pacer,
     PACED_WORK.frameBudgetMs,

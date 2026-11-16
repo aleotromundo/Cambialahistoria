@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { PointLight } from 'three';
-import { Vector3 } from 'three';
+import type { Group, Object3D, PointLight } from 'three';
+import { AdditiveBlending, Mesh, MeshBasicMaterial, MeshStandardMaterial, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { loadContent } from '../../sim/content/content.ts';
 import { must } from '../../test/support.ts';
+import { groundContact } from './lobby-contact.ts';
 import { groundHeight } from './lobby-ground.ts';
-import { featherShare, lampFlicker, lampLights, LOBBY_SCENERY, pieceMatrix, pieceSeat, stepFlash, strikeShape, swayAngle } from './lobby-scenery.ts';
-import type { FlashState } from './lobby-scenery.ts';
+import { createSetDressing, featherShare, lampFlicker, lampLights, LOBBY_SCENERY, pieceMatrix, pieceSeat, stepFlash, strikeShape, swayAngle } from './lobby-scenery.ts';
+import type { FlashState, SetDressing } from './lobby-scenery.ts';
 import { LOBBY_SETS, setMounds } from './lobby-sets.ts';
 import type { Flash, Lamp, LobbySet, SetPiece } from './lobby-sets.ts';
 
@@ -73,4 +76,34 @@ void test('a lamp starts dark where its data puts it, and a flickering fire wave
   assert.ok(Math.min(...fire) >= 0.7 - 1e-9 && Math.max(...fire) <= 1.3 + 1e-9);
   assert.ok(Math.max(...fire) - Math.min(...fire) > 0.2);
   for (let step: number = 0; step < 50; step += 1) assert.equal(lampFlicker(step * 0.1, 1, 0), 1);
+});
+
+function dressingMaterials(group: Group): (MeshStandardMaterial | MeshBasicMaterial)[] {
+  const found: (MeshStandardMaterial | MeshBasicMaterial)[] = [];
+  group.traverse((object: Object3D): void => {
+    if (!(object instanceof Mesh)) return;
+    const material: unknown = object.material;
+    if (material instanceof MeshStandardMaterial || material instanceof MeshBasicMaterial) found.push(material);
+  });
+  return found;
+}
+
+void test('the set is built once and fades in from nothing, but can be compiled as it will stand once solid, and a set in place before the first frame stands solid at once', async (): Promise<void> => {
+  const base: LobbySet = must([...LOBBY_SETS.sets.values()].find((set: LobbySet): boolean => set.skylines.length > 0 && set.roosts.length + set.glows.length > 0), 'a set with a skyline and roosts or glows');
+  const set: LobbySet = { ...base, pieces: [], skirt: null };
+  const dressing: SetDressing = createSetDressing(set, loadContent(), new GLTFLoader(), groundContact(setMounds(set)), null, (): number => 0.5);
+  const group: Group = await dressing.build();
+  assert.equal(await dressing.build(), group);
+  const materials: (MeshStandardMaterial | MeshBasicMaterial)[] = dressingMaterials(group);
+  assert.ok(materials.length >= 2);
+  const fading = (): boolean => materials.every((material: MeshStandardMaterial | MeshBasicMaterial): boolean => material.transparent && material.opacity === 0);
+  assert.ok(fading());
+  const opaque: MeshStandardMaterial | MeshBasicMaterial = must(materials.find((material: MeshStandardMaterial | MeshBasicMaterial): boolean => material.blending !== AdditiveBlending), 'an opaque dressing material');
+  const during: boolean = dressing.asSolid((): boolean => !opaque.transparent && opaque.opacity === 1);
+  assert.ok(during);
+  assert.ok(fading());
+  dressing.show(true);
+  assert.equal(opaque.transparent, false);
+  assert.equal(opaque.opacity, 1);
+  assert.ok(materials.filter((material: MeshStandardMaterial | MeshBasicMaterial): boolean => material.blending === AdditiveBlending).every((material: MeshStandardMaterial | MeshBasicMaterial): boolean => material.transparent));
 });

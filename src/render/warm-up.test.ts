@@ -366,6 +366,26 @@ void test('a texture warmed once is not uploaded again by a later warm-up', asyn
   assert.equal(uploads, 1);
 });
 
+void test('a texture changed after its warm-up, such as one given sharper filtering, is uploaded again by the next warm-up instead of on a drawn frame', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const map: Texture = sizedTexture(4, 4);
+  scene.add(new Mesh(undefined, new MeshStandardMaterial({ map })));
+  let uploads: number = 0;
+  const compiler: ShaderCompiler = {
+    compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
+    drawOnce(): void {},
+    initTexture(): void {
+      uploads += 1;
+    },
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  map.anisotropy = 8;
+  map.needsUpdate = true;
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  assert.equal(uploads, 2);
+});
+
 function pacerThatOnFrame(frame: number, act: () => void): FramePacer {
   let frames: number = 0;
   return {

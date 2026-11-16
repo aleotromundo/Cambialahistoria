@@ -1,10 +1,14 @@
-import type { Camera, IUniform, Object3D, Scene, ShaderMaterial, Texture, WebGLRenderer } from 'three';
-import { Color, HalfFloatType, Mesh, MeshStandardMaterial, Vector2, WebGLRenderTarget } from 'three';
+import type { Camera, IUniform, Material, Object3D, Texture, ToneMapping, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, AgXToneMapping, BufferAttribute, BufferGeometry, CineonToneMapping, Color, ColorManagement, CustomToneMapping, HalfFloatType, LinearToneMapping, Mesh, MeshStandardMaterial, NeutralToneMapping, OrthographicCamera, ReinhardToneMapping, Scene, ShaderMaterial, SRGBTransfer, Vector2, VSMShadowMap, WebGLRenderTarget } from 'three';
 import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { QualityName } from '../mobile/quality.ts';
 import { ditheredOutputPass } from '../render/output-dither.ts';
+import { shadowLights, withShadowStandIns } from '../render/shadow-warm.ts';
+import type { ShadowLights } from '../render/shadow-warm.ts';
+import { warmUp } from '../render/warm-up.ts';
+import type { ShaderCompiler } from '../render/warm-up.ts';
 
 export interface LobbyBloom {
   readonly strength: number;
@@ -33,7 +37,71 @@ export function lobbyPixelRatio(name: QualityName, devicePixelRatio: number): nu
 export interface LobbyPipeline {
   render(name: QualityName, devicePixelRatio: number): void;
   compile(name: QualityName): Promise<void>;
+  compileInto(root: Object3D): Promise<void>;
+  warm(name: QualityName, devicePixelRatio: number, standIns: readonly Object3D[]): Promise<void>;
   release(): void;
+}
+
+const BACKDROP_VERTEX: string = 'varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = vec4( position.xy, 0.0, 1.0 );\n}';
+const BACKDROP_FRAGMENT: string = 'uniform sampler2D tMap;\nvarying vec2 vUv;\nvoid main() {\n  gl_FragColor = texture2D( tMap, vUv );\n}';
+
+export function backdropMaterial(backdrop: Texture): ShaderMaterial {
+  return new ShaderMaterial({ vertexShader: BACKDROP_VERTEX, fragmentShader: BACKDROP_FRAGMENT, uniforms: { tMap: { value: backdrop } }, depthTest: false, depthWrite: false, toneMapped: false });
+}
+
+const TONE_DEFINES: ReadonlyMap<ToneMapping, string> = new Map<ToneMapping, string>([
+  [LinearToneMapping, 'LINEAR_TONE_MAPPING'],
+  [ReinhardToneMapping, 'REINHARD_TONE_MAPPING'],
+  [CineonToneMapping, 'CINEON_TONE_MAPPING'],
+  [ACESFilmicToneMapping, 'ACES_FILMIC_TONE_MAPPING'],
+  [AgXToneMapping, 'AGX_TONE_MAPPING'],
+  [NeutralToneMapping, 'NEUTRAL_TONE_MAPPING'],
+  [CustomToneMapping, 'CUSTOM_TONE_MAPPING'],
+]);
+
+export function outputDefines(outputColorSpace: string, toneMapping: ToneMapping): Record<string, string> {
+  const defines: Record<string, string> = {};
+  if (ColorManagement.getTransfer(outputColorSpace) === SRGBTransfer) defines['SRGB_TRANSFER'] = '';
+  const tone: string | undefined = TONE_DEFINES.get(toneMapping);
+  if (tone !== undefined) defines[tone] = '';
+  return defines;
+}
+
+const QUAD_CAMERA: OrthographicCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+function quadGeometry(): BufferGeometry {
+  const geometry: BufferGeometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array([-1, 3, 0, -1, -1, 0, 3, -1, 0]), 3));
+  geometry.setAttribute('uv', new BufferAttribute(new Float32Array([0, 2, 0, 0, 2, 0]), 2));
+  return geometry;
+}
+
+const QUAD_GEOMETRY: BufferGeometry = quadGeometry();
+
+export function quadScene(materials: readonly Material[]): Scene {
+  const scene: Scene = new Scene();
+  for (const material of materials) {
+    const mesh: Mesh = new Mesh(QUAD_GEOMETRY, material);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+  }
+  return scene;
+}
+
+function compileWith(renderer: WebGLRenderer, target: WebGLRenderTarget | null, work: () => Promise<unknown>): Promise<void> {
+  const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
+  renderer.setRenderTarget(target);
+  let started: Promise<unknown>;
+  try {
+    started = work();
+  } finally {
+    renderer.setRenderTarget(previous);
+  }
+  return started.then((): void => undefined);
+}
+
+export function bloomMaterials(pass: UnrealBloomPass): readonly ShaderMaterial[] {
+  return [pass.materialHighPassFilter, ...pass.separableBlurMaterials, pass.compositeMaterial];
 }
 
 function sharpen(material: unknown, anisotropy: number): void {
@@ -143,6 +211,14 @@ function build(samples: number, bloom: LobbyBloom | null): Built {
   return { target: new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples }), output, bloomed: bloom === null ? null : bloomOutput(output, bloom), samples, bloom };
 }
 
+function freeTargets(built: Built): void {
+  built.target.dispose();
+  const pass: UnrealBloomPass | undefined = built.bloomed?.pass;
+  if (pass === undefined) return;
+  pass.renderTargetBright.dispose();
+  for (const target of [...pass.renderTargetsHorizontal, ...pass.renderTargetsVertical]) target.dispose();
+}
+
 function free(built: Built | null): void {
   if (built === null) return;
   built.target.dispose();
@@ -151,12 +227,14 @@ function free(built: Built | null): void {
   built.bloomed?.quad.dispose();
 }
 
-export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camera: Camera): LobbyPipeline {
+export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camera: Camera, backdrop: Texture): LobbyPipeline {
   let built: Built | null = null;
   let sharpened: number = 0;
   let ratio: number = 0;
   const size: Vector2 = new Vector2();
   const drawn: Vector2 = new Vector2();
+  const sky: ShaderMaterial = backdropMaterial(backdrop);
+  const skyQuad: FullScreenQuad = new FullScreenQuad(sky);
 
   const ready = (samples: number, bloom: LobbyBloom | null): Built => {
     if (built !== null && built.samples === samples && built.bloom === bloom) return built;
@@ -166,44 +244,100 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
     return built;
   };
 
-  return {
-    release(): void {
-      free(built);
-      built = null;
-      drawn.set(0, 0);
+  const tierBuilt = (name: QualityName): Built => ready(LOBBY_RENDER.tiers[name].samples, LOBBY_RENDER.tiers[name].bloom);
+
+  const anisotropyFor = (name: QualityName): number => Math.min(LOBBY_RENDER.tiers[name].anisotropy, renderer.capabilities.getMaxAnisotropy());
+
+  const sharpenFor = (name: QualityName): void => {
+    const limit: number = anisotropyFor(name);
+    if (sharpened === limit) return;
+    sharpenTextures(scene, limit);
+    sharpened = limit;
+  };
+
+  const fit = (name: QualityName, devicePixelRatio: number, active: Built): boolean => {
+    const next: number = lobbyPixelRatio(name, devicePixelRatio);
+    renderer.getSize(size);
+    if (size.x <= 0 || size.y <= 0) return false;
+    if (drawn.x !== size.x || drawn.y !== size.y || ratio !== next) {
+      active.target.setSize(size.x * next, size.y * next);
+      active.bloomed?.pass.setSize(size.x * next, size.y * next);
+      drawn.copy(size);
+      ratio = next;
+    }
+    return true;
+  };
+
+  const compileInto = (root: Object3D): Promise<void> => {
+    const active: Built | null = built;
+    if (active === null) return Promise.resolve();
+    const casting: ShadowLights = renderer.shadowMap.enabled ? shadowLights(scene) : { depth: false, distance: false };
+    const variance: boolean = renderer.shadowMap.type === VSMShadowMap;
+    return compileWith(renderer, active.target, (): Promise<unknown> =>
+      Promise.all([
+        renderer.compileAsync(root, camera, scene),
+        ...(casting.depth ? [withShadowStandIns(root, false, variance, (): Promise<Object3D> => renderer.compileAsync(root, camera, scene))] : []),
+        ...(casting.distance ? [withShadowStandIns(root, true, variance, (): Promise<Object3D> => renderer.compileAsync(root, camera, scene))] : []),
+      ]),
+    );
+  };
+
+  const compiler: ShaderCompiler = {
+    compileAsync(target: Object3D): Promise<Object3D> {
+      return compileInto(target).then((): Object3D => target);
     },
-    compile(name: QualityName): Promise<void> {
-      const active: Built = ready(LOBBY_RENDER.tiers[name].samples, LOBBY_RENDER.tiers[name].bloom);
+    drawOnce(target: Object3D, viewer: Camera): void {
+      const active: Built | null = built;
+      if (active === null) return;
       const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
       renderer.setRenderTarget(active.target);
       try {
-        return renderer.compileAsync(scene, camera).then((): void => undefined);
+        renderer.render(target, viewer);
       } finally {
         renderer.setRenderTarget(previous);
       }
     },
+    initTexture(texture: Texture): void {
+      renderer.initTexture(texture);
+    },
+  };
+
+  const compile = (name: QualityName): Promise<void> => {
+    const active: Built = tierBuilt(name);
+    active.output.material.defines = outputDefines(renderer.outputColorSpace, renderer.toneMapping);
+    const passes: readonly Material[] = [sky, ...(active.bloomed === null ? [] : bloomMaterials(active.bloomed.pass))];
+    return Promise.all([
+      compileInto(scene),
+      compileWith(renderer, active.target, (): Promise<Object3D> => renderer.compileAsync(quadScene(passes), QUAD_CAMERA)),
+      compileWith(renderer, null, (): Promise<Object3D> => renderer.compileAsync(quadScene([active.output.material]), QUAD_CAMERA)),
+    ]).then((): void => undefined);
+  };
+
+  return {
+    release(): void {
+      if (built !== null) freeTargets(built);
+      drawn.set(0, 0);
+    },
+    compile,
+    compileInto,
+    async warm(name: QualityName, devicePixelRatio: number, standIns: readonly Object3D[]): Promise<void> {
+      sharpenFor(name);
+      for (const root of standIns) sharpenTextures(root, anisotropyFor(name));
+      fit(name, devicePixelRatio, tierBuilt(name));
+      await compile(name);
+      await warmUp(compiler, scene, camera, standIns);
+    },
     render(name: QualityName, devicePixelRatio: number): void {
       const tier: LobbyRenderTier = LOBBY_RENDER.tiers[name];
-      const limit: number = Math.min(tier.anisotropy, renderer.capabilities.getMaxAnisotropy());
-      if (sharpened !== limit) {
-        sharpenTextures(scene, limit);
-        sharpened = limit;
-      }
+      sharpenFor(name);
       const active: Built = ready(tier.samples, tier.bloom);
-      const next: number = lobbyPixelRatio(name, devicePixelRatio);
-      renderer.getSize(size);
-      if (size.x <= 0 || size.y <= 0) return;
-      if (drawn.x !== size.x || drawn.y !== size.y || ratio !== next) {
-        active.target.setSize(size.x * next, size.y * next);
-        active.bloomed?.pass.setSize(size.x * next, size.y * next);
-        drawn.copy(size);
-        ratio = next;
-      }
+      if (!fit(name, devicePixelRatio, active)) return;
       const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
       const keptAuto: boolean = renderer.autoClear;
       renderer.autoClear = false;
       renderer.setRenderTarget(active.target);
       renderer.clear();
+      skyQuad.render(renderer);
       renderer.render(scene, camera);
       renderer.autoClear = keptAuto;
       if (active.bloomed !== null) active.bloomed.bloom.value = drawBloom(renderer, active.bloomed, active.target.texture);

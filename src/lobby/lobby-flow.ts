@@ -106,8 +106,9 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
   let warming: Promise<void> | null = null;
   const warmStage = (): Promise<void> => {
     stage.dress(parts.look());
-    warming ??= stage.warm(parts.renderer, parts.tier());
-    return warming;
+    const next: Promise<void> = (warming ?? Promise.resolve()).then((): Promise<void> => stage.warm(parts.renderer, parts.tier())).catch((): void => undefined);
+    warming = next;
+    return next;
   };
 
   const swap = async (into: boolean, middle: () => void, colour: string | null, hold: () => Promise<void> = (): Promise<void> => Promise.resolve(), covered: boolean = false): Promise<void> => {
@@ -118,7 +119,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     if (!covered) await veil.cover(colour);
     await within(hold(), createBrowserTimers(), BOUNDED_WAIT.readyMs);
     middle();
-    active = into;
+    if (!into) active = false;
     document.body.toggleAttribute(`data-${LOBBY_FLOW.bodyMark}`, into);
     if (!into) {
       stage.release();
@@ -126,6 +127,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     }
     if (into) {
       await within(warmStage(), createBrowserTimers(), BOUNDED_WAIT.readyMs);
+      active = true;
       screen.setBusy(false);
       screen.show(view());
       void refresh();

@@ -1,4 +1,4 @@
-import type { Camera, Material, Object3D, Scene, WebGLRenderer } from 'three';
+import type { Camera, Material, Object3D } from 'three';
 import { AdditiveBlending, Box3, BufferGeometry, Color, ConeGeometry, DataTexture, Euler, Group, InstancedMesh, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, RGBAFormat, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropDef } from '../../sim/content/types.ts';
@@ -116,7 +116,9 @@ interface Swaying {
 
 export interface SetDressing {
   readonly lamps: Group;
-  load(renderer: WebGLRenderer, scene: Scene, camera: Camera): Promise<void>;
+  build(): Promise<Group>;
+  asSolid<T>(work: () => T): T;
+  show(instant: boolean): void;
   step(dt: number, camera: Camera): number;
 }
 
@@ -237,7 +239,7 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
     });
   };
 
-  const build = async (): Promise<void> => {
+  const assemble = async (): Promise<void> => {
     const byKey: Map<string, SetPiece[]> = new Map<string, SetPiece[]>();
     for (const piece of set.pieces) byKey.set(`${piece.prop}:${piece.skirt}`, [...(byKey.get(`${piece.prop}:${piece.skirt}`) ?? []), piece]);
     const rubbleProp: string | null = set.skirt?.rubble?.prop ?? null;
@@ -285,6 +287,14 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
     }
   };
 
+  let building: Promise<Group> | null = null;
+  const settle = (share: number, final: boolean): void => {
+    for (const entry of fading) {
+      entry.material.opacity = entry.base * share;
+      entry.material.transparent = final ? entry.keepsBlend : true;
+    }
+  };
+
   const at: Matrix4 = new Matrix4();
   const facing: Quaternion = new Quaternion();
   const point: Vector3 = new Vector3();
@@ -292,11 +302,26 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
 
   return {
     lamps,
-    async load(renderer: WebGLRenderer, scene: Scene, camera: Camera): Promise<void> {
-      await build();
-      await renderer.compileAsync(group, camera, scene);
-      scene.add(group);
+    build(): Promise<Group> {
+      building ??= assemble().then((): Group => group);
+      return building;
+    },
+    asSolid<T>(work: () => T): T {
+      settle(1, true);
+      try {
+        return work();
+      } finally {
+        if (solid) settle(1, true);
+        else settle(amount, false);
+      }
+    },
+    show(instant: boolean): void {
       shown = true;
+      if (!instant) return;
+      solid = true;
+      amount = 1;
+      presence.x = 1;
+      settle(1, true);
     },
     step(dt: number, camera: Camera): number {
       seconds += dt;
