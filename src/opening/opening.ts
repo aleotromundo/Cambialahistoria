@@ -31,8 +31,13 @@ function mountLids(): HTMLElement | null {
   if (host === null) return null;
   const made: HTMLElement = document.createElement('div');
   made.className = LIDS.className;
+  made.hidden = true;
   host.append(made);
   return made;
+}
+
+function showLids(lids: Pick<HTMLElement, 'hidden'>, shown: boolean): void {
+  if (lids.hidden === shown) lids.hidden = !shown;
 }
 
 export const OPENING = {
@@ -143,6 +148,7 @@ export function createOpening(deps: OpeningDeps): Opening {
         document.body.style.setProperty('--wake-soft', frame.soft.toFixed(3));
         lids ??= mountLids();
         document.body.style.setProperty('--wake-lids', frame.lids.toFixed(3));
+        if (lids !== null) showLids(lids, frame.lids > 0);
         document.body.style.setProperty('--wake-blur', `${frame.blur.toFixed(2)}px`);
         document.body.dataset['wakeBlur'] = frame.blur > 0 ? 'on' : 'off';
         framed = true;
@@ -150,6 +156,7 @@ export function createOpening(deps: OpeningDeps): Opening {
         camera.frame(null);
         document.body.style.setProperty('--wake-soft', '0');
         document.body.style.setProperty('--wake-lids', '0');
+        if (lids !== null) showLids(lids, false);
         document.body.dataset['wakeBlur'] = 'off';
         framed = false;
       }

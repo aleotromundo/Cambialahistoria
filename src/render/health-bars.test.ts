@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { barWanted, endStops, HEALTH_BARS } from './health-bars.ts';
+import { barWanted, canvasVisibility, endStops, HEALTH_BARS } from './health-bars.ts';
 import type { FadeStop } from './health-bars.ts';
 
 void test('a bar shows only for a living monster that has lost life', (): void => {
@@ -16,4 +16,9 @@ void test('every layer of a bar fades out at both ends instead of stopping in a 
     assert.equal(stops[stops.length - 1]?.color, `rgba(${tone.rgb}, 0)`);
     assert.ok(stops.some((stop: FadeStop): boolean => stop.color === `rgba(${tone.rgb}, ${tone.alpha})`));
   }
+});
+
+void test('the bar canvas leaves the picture while it holds no bar and returns the frame one is drawn', (): void => {
+  assert.equal(canvasVisibility(false), 'hidden');
+  assert.equal(canvasVisibility(true), '');
 });

@@ -84,6 +84,10 @@ function layer(target: CanvasRenderingContext2D, stops: readonly FadeStop[], lef
   target.fillRect(left, top, span, barHeight);
 }
 
+export function canvasVisibility(drawn: boolean): string {
+  return drawn ? '' : 'hidden';
+}
+
 export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBars {
   const canvas: HTMLCanvasElement = document.createElement('canvas');
   canvas.className = 'health-canvas';
@@ -93,6 +97,7 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
   const states: Map<number, BarState> = new Map<number, BarState>();
   const seen: Set<number> = new Set<number>();
   let drawn: boolean = true;
+  let shown: boolean = true;
   const point: Vector2 = new Vector2();
   let width: number = 0;
   let height: number = 0;
@@ -162,6 +167,9 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
         if (!seen.has(id)) states.delete(id);
       }
       context.globalAlpha = 1;
+      if (drawn === shown) return;
+      shown = drawn;
+      canvas.style.visibility = canvasVisibility(drawn);
     },
   };
 }

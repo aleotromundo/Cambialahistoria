@@ -131,6 +131,8 @@ import { changesSave, urgentEvents } from './save-events.ts';
 import type { TransitionReport, ZoneTransition } from './transition.ts';
 import { createZoneTransition, describeTransition, veilColour } from './transition.ts';
 import { createVeil } from './veil.ts';
+import type { HurtVignette } from './vignette-hurt.ts';
+import { createHurtVignette } from './vignette-hurt.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
 import { createFigureGauge, figureJoints } from './render/figure-gauge.ts';
 import { untilCycleEnds } from './loading-mark.ts';
@@ -152,6 +154,7 @@ function whenIdle(work: () => void): void {
 
 async function start(): Promise<void> {
   const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
+  const hurtVignette: HurtVignette = createHurtVignette(vignette);
   statusLine.show('Loading…');
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
@@ -471,7 +474,7 @@ async function start(): Promise<void> {
     touch.update();
     ladder?.noteLevel(world.player.level);
     launch.update(world, dt, gate.queue);
-    vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
+    hurtVignette.show(effects.hurt);
     if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
     perf.frame(now);
     if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {

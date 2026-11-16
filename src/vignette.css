@@ -12,3 +12,7 @@
   background: radial-gradient(ellipse at center, rgba(108, 46, 40, 0) 68%, rgba(108, 46, 40, 0.16) 86%, rgba(120, 52, 44, 0.34) 100%);
   opacity: var(--hurt, 0);
 }
+
+#vignette:not([data-hurt])::after {
+  visibility: hidden;
+}

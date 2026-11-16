@@ -31,6 +31,12 @@ body:not([data-zone-kind='void']) .vignette-wake {
 
 .vignette-void-edge {
   opacity: calc(var(--void-edge) * (1 - var(--wake-soft, 0)));
+  transition: visibility 0s;
+}
+
+body:not([data-zone-kind='void']) .vignette-void-edge {
+  visibility: hidden;
+  transition: visibility 0s linear var(--spring-smooth-ms);
 }
 
 .wake-lids {

@@ -20,3 +20,12 @@ void test('the wake-up blurs the game canvas only while the lobby is not showing
   assert.ok(selector.includes(`:not(${LOBBY_MARK})`), selector);
   assert.ok(readFileSync(new URL('../lobby/lobby-screen.css', import.meta.url), 'utf8').includes(`body${LOBBY_MARK} `));
 });
+
+void test('the void edge leaves the render tree only after the void has faded from it', (): void => {
+  const blocks: string[] = css.split('}');
+  const away: string | undefined = blocks.find((block: string): boolean => (block.split('{')[0] ?? '').trim() === "body:not([data-zone-kind='void']) .vignette-void-edge");
+  assert.ok(away !== undefined);
+  assert.ok(away.includes('visibility: hidden'), away);
+  assert.ok(away.includes('visibility 0s linear var(--spring-smooth-ms)'), away);
+  assert.ok(readFileSync(new URL('../dither/dither.css', import.meta.url), 'utf8').includes('transition: --void-edge var(--spring-smooth-ms) var(--spring-smooth)'));
+});
