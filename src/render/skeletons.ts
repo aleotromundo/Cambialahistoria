@@ -1,4 +1,4 @@
-import type { Object3D, Skeleton } from 'three';
+import type { Bone, Matrix4, Object3D, Skeleton } from 'three';
 import { SkinnedMesh } from 'three';
 
 export function disposeSkeletons(root: Object3D): number {
@@ -23,4 +23,31 @@ export function boundSkins(template: Object3D): number {
     bounded += 1;
   });
   return bounded;
+}
+
+function sameSkin(kept: Skeleton, other: Skeleton): boolean {
+  if (kept === other) return true;
+  if (kept.bones.length !== other.bones.length || kept.boneInverses.length !== other.boneInverses.length) return false;
+  return kept.bones.every((bone: Bone, index: number): boolean => {
+    const keptInverse: Matrix4 | undefined = kept.boneInverses[index];
+    const otherInverse: Matrix4 | undefined = other.boneInverses[index];
+    return bone === other.bones[index] && keptInverse !== undefined && otherInverse !== undefined && keptInverse.equals(otherInverse);
+  });
+}
+
+export function shareSkeletons(root: Object3D): number {
+  const kept: Skeleton[] = [];
+  let shared: number = 0;
+  root.traverse((object: Object3D): void => {
+    if (!(object instanceof SkinnedMesh)) return;
+    const same: Skeleton | undefined = kept.find((skeleton: Skeleton): boolean => sameSkin(skeleton, object.skeleton));
+    if (same === undefined) {
+      kept.push(object.skeleton);
+      return;
+    }
+    if (same === object.skeleton) return;
+    object.bind(same, object.bindMatrix);
+    shared += 1;
+  });
+  return shared;
 }
