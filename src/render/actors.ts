@@ -4,8 +4,7 @@ import { drawnBy, SEES_ALL } from './sight.ts';
 import type { Box3, Object3D, Scene } from 'three';
 import { isTimeHeld, knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
-import type { Content, MonsterDef, ZoneDef, ZonePack } from '../../sim/content/types.ts';
-import { modsNamed, withMods } from '../../sim/world/elites.ts';
+import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import type { CostLimit, FramePacer } from './paced-work.ts';
 import { browserPacer, PACED_WORK, workPaced } from './paced-work.ts';
 import type { Look } from '../../sim/wear.ts';
@@ -44,6 +43,8 @@ import type { EmpowerLook } from '../../sim/content/types.ts';
 import type { BodySwap, SwapMix } from './body-swap.ts';
 import { startSwap, stepSwap } from './body-swap.ts';
 import { crustBody } from './body-crust.ts';
+import type { ZoneBody } from './zone-bodies.ts';
+import { monsterKey, zoneBodies } from './zone-bodies.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
@@ -59,15 +60,9 @@ export const ACTORS = {
   turnRim: 4,
   leaveTime: 1.2,
   pooledPerKind: 8,
-  sparesCap: 16,
   sparesPerFrame: 1,
   wearWait: 4,
 } as const;
-
-export interface ZoneBody {
-  readonly def: MonsterDef;
-  readonly spares: number;
-}
 
 interface EchoLook {
   readonly ghost: GhostUniforms;
@@ -129,49 +124,6 @@ function stillPose(actor: ActorState): ActorPose {
 
 function poseOf(actor: ActorState, beat: number | null): ActorPose {
   return { pos: actor.pos, facing: actor.facing, motion: actor.motion, gait: actor.gait, knockTime: knockTime(actor), busy: actor.action !== null, held: isTimeHeld(actor), beat, deadTime: actor.deadTime };
-}
-
-export function monsterKey(def: MonsterDef): string {
-  return `${def.id}|${def.rig}|${def.tint}|${def.color}|${def.scale}`;
-}
-
-function wantBody(bodies: Map<string, ZoneBody>, def: MonsterDef, spares: number): boolean {
-  const key: string = monsterKey(def);
-  const known: ZoneBody | undefined = bodies.get(key);
-  const wanted: number = Math.min(ACTORS.sparesCap, Math.max(1, spares));
-  if (known === undefined) {
-    bodies.set(key, { def, spares: wanted });
-    return true;
-  }
-  if (known.spares < wanted) bodies.set(key, { def: known.def, spares: wanted });
-  return false;
-}
-
-function packBodies(content: Content, zone: ZoneDef, pack: ZonePack, bodies: Map<string, ZoneBody>): void {
-  const woken: Map<string, ZoneBody> = new Map<string, ZoneBody>();
-  const extra: number = zone.surge?.maxExtraMonsters ?? 0;
-  pack.members.forEach((member, index: number): void => {
-    const base: MonsterDef | undefined = content.monsters.get(member.monster);
-    if (base === undefined) return;
-    wantBody(bodies, base, 1);
-    const def: MonsterDef = withMods(base, modsNamed(content.monsterMods, member.mods));
-    const key: string = monsterKey(def);
-    const count: number = member.count + (index === 0 ? extra : 0);
-    woken.set(key, { def, spares: (woken.get(key)?.spares ?? 0) + count });
-  });
-  for (const body of woken.values()) wantBody(bodies, body.def, pack.waits === undefined ? 1 : body.spares);
-}
-
-export function zoneBodies(content: Content, zone: ZoneDef): ReadonlyMap<string, ZoneBody> {
-  const bodies: Map<string, ZoneBody> = new Map<string, ZoneBody>();
-  for (const pack of zone.packs) packBodies(content, zone, pack, bodies);
-  const callers: MonsterDef[] = [...bodies.values()].map((body: ZoneBody): MonsterDef => body.def);
-  for (let caller: MonsterDef | undefined = callers.pop(); caller !== undefined; caller = callers.pop()) {
-    if (caller.summon === null) continue;
-    const minion: MonsterDef | undefined = content.monsters.get(caller.summon.monster ?? caller.id);
-    if (minion !== undefined && wantBody(bodies, minion, caller.summon.limit)) callers.push(minion);
-  }
-  return bodies;
 }
 
 function npcPose(npc: NpcState): ActorPose {

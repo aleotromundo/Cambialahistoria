@@ -4,8 +4,8 @@ import { must } from '../../test/support.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, MonsterDef, ZoneDef, ZonePack } from '../../sim/content/types.ts';
 import { modsNamed, withMods } from '../../sim/world/elites.ts';
-import type { ZoneBody } from './actors.ts';
-import { ACTORS, monsterKey, zoneBodies } from './actors.ts';
+import type { ZoneBody } from './zone-bodies.ts';
+import { monsterKey, ZONE_BODIES, zoneBodies } from './zone-bodies.ts';
 
 const content: Content = loadContent();
 
@@ -37,7 +37,7 @@ void test('a pack that wakes in the middle of a fight finds a ready body for eve
   const woken: ReadonlyMap<string, ZoneBody> = zoneBodies(content, zoneOf([pack([{ monster: 'cinder_mite', count: 5, mods: [] }, { monster: 'cinder_mite', count: 4, mods: [] }], true), pack([{ monster: 'cinder_mite', count: 3, mods: [] }], true)]));
   assert.equal(spares(woken, monster('cinder_mite')), 9);
   const crowd: ReadonlyMap<string, ZoneBody> = zoneBodies(content, zoneOf([pack([{ monster: 'cinder_mite', count: 40, mods: [] }], true)]));
-  assert.equal(spares(crowd, monster('cinder_mite')), ACTORS.sparesCap);
+  assert.equal(spares(crowd, monster('cinder_mite')), ZONE_BODIES.sparesCap);
 });
 
 void test('a surge adds its extra monsters to the first member of a waking pack', (): void => {
@@ -52,7 +52,7 @@ void test('a monster that is only ever summoned has bodies ready for as many as 
   const summon = must(elder.summon, 'elder summon');
   const minion: MonsterDef = monster(summon.monster ?? elder.id);
   const bodies: ReadonlyMap<string, ZoneBody> = zoneBodies(content, zoneOf([pack([{ monster: elder.id, count: 1, mods: [] }], false)]));
-  assert.equal(spares(bodies, minion), Math.min(ACTORS.sparesCap, summon.limit));
+  assert.equal(spares(bodies, minion), Math.min(ZONE_BODIES.sparesCap, summon.limit));
 });
 
 void test('an elite pack member gets a body in its own colours as well as the plain one', (): void => {
