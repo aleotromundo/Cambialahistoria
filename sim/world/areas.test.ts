@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { cast, damageTo, dummy, offset, run, shapeArena } from '../../test/shape-support.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { stokedOffence, timeScaleOf } from './areas.ts';
+import { stokedOffence, stokeHeat, timeScaleOf } from './areas.ts';
 import type { AreaState, MonsterState, Offence, World, WorldEvent } from './types.ts';
 
 void test('a lingering area pulses on everything inside it for its whole duration, then ends', (): void => {
@@ -93,6 +93,8 @@ void test('the weapon damage of a stoked area grows with every pulse up to its c
   assert.equal(scale(1), 1.5);
   assert.equal(scale(2), 2);
   assert.equal(scale(6), 2);
+  assert.equal(stokeHeat(delivery, 0), 0);
+  assert.equal(stokeHeat(delivery, 6), delivery.stoke?.max);
   assert.equal(area.pulses, 0);
   run(world, 0.55);
   assert.equal(area.pulses, 2);

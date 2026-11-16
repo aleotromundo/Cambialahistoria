@@ -16,6 +16,7 @@ import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
 import { lap, poolOf, splash, surge, swell, whirl, WATER_LOOK } from './water-look.ts';
 import { STRAND } from './strand-shape.ts';
 import { dripsDue, SOAK_COLOR, SOAK_LOOK } from './soak-look.ts';
+import { burnsAsFire, burnTongues, FIRE_LOOK, flare, heatGlow, heatShare, lick } from './fire-look.ts';
 import type { BurstOptions } from './particles.ts';
 import type { EffectKit } from './effect-kit.ts';
 import { floorUp } from './terrain-lift.ts';
@@ -119,6 +120,8 @@ interface AreaView {
   readonly glow: number;
   readonly color: Color;
   readonly foam: Color | null;
+  readonly fire: boolean;
+  heat: number;
   readonly delivery: AreaDelivery;
   readonly duration: number;
   readonly ownerId: number;
@@ -328,7 +331,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       pool.show(shadow?.strength ?? 0);
       kit.addObject(pool.mesh);
     }
-    areas.set(area.id, { light, pool, depth: shadow?.strength ?? 0, glow: shine, color, foam: area.skill.vfx.water === null ? null : kit.colorOf(area.skill.vfx.water.foam), delivery, duration: delivery.duration, ownerId: area.offence.sourceId, skillId: area.skill.id, center: { x: area.pos.x, z: area.pos.z }, age: 0, moteTimer: 0, lashes: 0 });
+    areas.set(area.id, { light, pool, depth: shadow?.strength ?? 0, glow: shine, color, foam: area.skill.vfx.water === null ? null : kit.colorOf(area.skill.vfx.water.foam), fire: burnsAsFire(area.skill.vfx), heat: 0, delivery, duration: delivery.duration, ownerId: area.offence.sourceId, skillId: area.skill.id, center: { x: area.pos.x, z: area.pos.z }, age: 0, moteTimer: 0, lashes: 0 });
     if (gap && delivery.slow < 1) kit.flashLight(area.pos.x, 3, area.pos.z, color, STORM_EFFECTS.gapLight);
   };
 
@@ -336,6 +339,12 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const view: AreaView | undefined = areas.get(area.id);
     if (view === undefined) return;
     const { delivery, color } = view;
+    if (view.fire) {
+      view.heat = heatShare(delivery, area.pulses);
+      flare(kit, area.pos, delivery.radius, color, view.heat);
+      if (hits > 0) kit.trauma(area.skill.shake);
+      return;
+    }
     if (delivery.pull > 0) {
       kit.burst(area.pos.x, area.pos.z, delivery.radius * 0.55, area.skill);
       if (view.foam !== null) surge(kit, area.pos, view.foam);
@@ -440,6 +449,11 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const { delivery, color } = view;
     view.moteTimer -= dt;
     if (view.moteTimer > 0) return;
+    if (view.fire) {
+      view.moteTimer = FIRE_LOOK.lickEvery;
+      lick(kit, area.pos, delivery.radius, delivery.pull, color, view.heat, Math.random);
+      return;
+    }
     if (view.foam !== null) {
       view.moteTimer = delivery.pull > 0 ? WATER_LOOK.swirlEvery : WATER_LOOK.lapEvery;
       if (delivery.pull > 0) whirl(kit, area.pos, delivery.radius, delivery.pull, view.foam, Math.random);
@@ -485,7 +499,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       view.age += dt;
       view.center.x = area.pos.x;
       view.center.z = area.pos.z;
-      view.light.show(area.timeLeft > STORM_EFFECTS.areaFadeOut ? view.glow : 0);
+      view.light.show(area.timeLeft > STORM_EFFECTS.areaFadeOut ? heatGlow(view.glow, view.heat) : 0);
       view.light.mesh.position.set(area.pos.x, floorUp(area.pos.x, GROUND_LIGHT.height, area.pos.z), area.pos.z);
       view.light.step(dt, world.time);
       if (view.pool !== null) {
@@ -517,6 +531,13 @@ export function createStormEffects(kit: StormKit): StormEffects {
         const height: number = SOAK_LOOK.dripLow + Math.random() * (SOAK_LOOK.dripHigh - SOAK_LOOK.dripLow);
         kit.spray(target.pos.x + Math.sin(angle) * reach, height, target.pos.z + Math.cos(angle) * reach, SOAK_COLOR, 1, { speed: { min: 0, max: 0.2 }, lift: { min: -SOAK_LOOK.dripFall, max: 0 }, life: { min: SOAK_LOOK.dripLifeMin, max: SOAK_LOOK.dripLifeMax }, size: { min: SOAK_LOOK.dripSizeMin, max: SOAK_LOOK.dripSizeMax }, gravity: SOAK_LOOK.dripGravity, drag: 0, jitter: 0 });
       }
+    }
+  };
+
+  const burning = (dt: number, world: World): void => {
+    for (const actor of [world.player, ...world.monsters]) {
+      if (!actor.alive || actor.burn === null || actor.burn.skill.vfx.burn !== null) continue;
+      burnTongues(kit, actor.pos, kit.colorOf(actor.burn.skill.vfx.color), dripsDue(FIRE_LOOK.burnRate, dt, Math.random()), Math.random);
     }
   };
 
@@ -630,6 +651,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       updateAreas(dt, world);
       updateBrands(dt, world);
       drip(dt, world);
+      burning(dt, world);
       updateVeil(dt, world);
       updateCharge(world);
     },

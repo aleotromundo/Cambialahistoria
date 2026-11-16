@@ -61,9 +61,14 @@ function pull(world: World, area: AreaState, delivery: AreaDelivery, dt: number)
   }
 }
 
+export function stokeHeat(delivery: AreaDelivery, pulses: number): number {
+  if (delivery.stoke === null) return 0;
+  return Math.min(delivery.stoke.max, delivery.stoke.perPulse * pulses);
+}
+
 export function stokedOffence(area: AreaState, delivery: AreaDelivery): Offence {
   if (delivery.stoke === null || area.pulses === 0) return area.offence;
-  const heat: number = Math.min(delivery.stoke.max, delivery.stoke.perPulse * area.pulses);
+  const heat: number = stokeHeat(delivery, area.pulses);
   return { ...area.offence, damagePercent: (1 + area.offence.damagePercent) * (1 + heat) - 1 };
 }
 
