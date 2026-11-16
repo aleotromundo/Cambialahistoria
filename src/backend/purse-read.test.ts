@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { content } from '../../test/backend-support.ts';
+import { content, createHarness, makeSave, synced } from '../../test/backend-support.ts';
+import type { Harness } from '../../test/backend-support.ts';
+import type { Backend } from './backend.ts';
+import type { SaveFold } from './purse-read.ts';
+import { TIMING } from './remote.ts';
 import { emptyFold, NO_FOLD, readEntries, readEntry, readFold } from './purse-read.ts';
 
 const ITEM = { id: 'itm_AAAAAAAAAAAAAAAAAAAAAA', base: 'rusted_blade', rarity: 'magic', level: 3, affixes: [] };
@@ -36,4 +40,41 @@ void test('a save answer without a fold, as from an older server, folds nothing'
   assert.equal(emptyFold(readFold(content, { unverified: [ITEM.id] })), false);
   assert.deepEqual(readFold(content, { unverified: ['nope'] }).unverified, []);
   assert.deepEqual(readFold(content, { folded: 'x', stripped: ['not a ledger id'] }), NO_FOLD);
+});
+
+const FOLDED_ITEM: string = 'itm_FFFFFFFFFFFFFFFFFFFFFF';
+const CLEARED_ITEM: string = 'itm_EEEEEEEEEEEEEEEEEEEEEE';
+
+void test('the entries a save answer folded and the ledger ids it stripped or cleared reach the game once', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  const heard: SaveFold[] = [];
+  backend.onFold((fold: SaveFold): void => void heard.push(fold));
+  harness.server.foldNext({ folded: [{ id: 4, kind: 'collect', gold: 30, item: null, direction: null }], stripped: [FOLDED_ITEM], unverified: [CLEARED_ITEM] });
+  backend.save(makeSave(4, 0));
+  await harness.timers.advance(TIMING.routinePushMs);
+  backend.save(makeSave(5, 0));
+  await harness.timers.advance(TIMING.routinePushMs);
+  assert.deepEqual(heard, [{ folded: [{ id: 4, kind: 'collect', gold: 30, item: null, direction: null }], stripped: [FOLDED_ITEM], unverified: [CLEARED_ITEM] }]);
+});
+
+void test('a fold that arrives before the game listens is handed over when it does', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  harness.server.foldNext({ folded: [], stripped: [], unverified: [CLEARED_ITEM] });
+  backend.save(makeSave(4, 0));
+  await harness.timers.advance(TIMING.routinePushMs);
+  const heard: SaveFold[] = [];
+  backend.onFold((fold: SaveFold): void => void heard.push(fold));
+  assert.deepEqual(heard, [{ folded: [], stripped: [], unverified: [CLEARED_ITEM] }]);
+});
+
+void test('an old server that sends no fold changes nothing in the game', async (): Promise<void> => {
+  const harness: Harness = createHarness();
+  const backend: Backend = await synced(harness, 3);
+  const heard: SaveFold[] = [];
+  backend.onFold((fold: SaveFold): void => void heard.push(fold));
+  backend.save(makeSave(4, 0));
+  await harness.timers.advance(1000);
+  assert.deepEqual(heard, []);
 });

@@ -612,3 +612,11 @@ export function createHarness(sharing: Harness | null = null): Harness {
     open: (url: string = 'http://localhost:8787', play?: Play): Backend => createBackend(content, url, play === undefined ? { fetch: server.fetch, store, clock: clock.read, timers: timers.timers, log, characterKeys: [] } : { fetch: server.fetch, store, clock: clock.read, timers: timers.timers, log, characterKeys: [], play }),
   };
 }
+
+export async function synced(harness: Harness, level: number): Promise<Backend> {
+  const backend: Backend = harness.open();
+  await backend.load();
+  backend.save(makeSave(level, 0));
+  await harness.timers.advance(1000);
+  return backend;
+}

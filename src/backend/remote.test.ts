@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createHarness, freshSave, makeSave, settle, storedLocal } from '../../test/backend-support.ts';
+import { createHarness, freshSave, makeSave, settle, storedLocal, synced } from '../../test/backend-support.ts';
 import type { Harness, RecordedRequest, ServerAccount } from '../../test/backend-support.ts';
 import { isFields } from '../../sim/content/read.ts';
 import { must } from '../../test/support.ts';
 import type { Backend } from './backend.ts';
-import type { SaveFold } from './purse-read.ts';
 import { SAVE_KEY } from './local.ts';
 import { TIMING } from './remote.ts';
 import { parseSyncRecord, SYNC_KEY } from './sync-record.ts';
@@ -41,14 +40,6 @@ async function retryDelays(harness: Harness, count: number): Promise<number[]> {
   const delay: number = must(harness.timers.nextDelay(), 'a retry');
   await harness.timers.advance(delay);
   return [delay, ...(await retryDelays(harness, count - 1))];
-}
-
-async function synced(harness: Harness, level: number): Promise<Backend> {
-  const backend: Backend = harness.open();
-  await backend.load();
-  backend.save(makeSave(level, 0));
-  await harness.timers.advance(1000);
-  return backend;
 }
 
 void test('the first run creates a guest account, keeps its token, and the next run reuses it', async (): Promise<void> => {
@@ -599,43 +590,6 @@ void test('a cloud save on an older game keeps this device saving locally, says 
   await harness.timers.advance(4000);
   assert.equal(account(harness).save?.level, 3);
   assert.equal(account(harness).save?.xp, 4);
-});
-
-const FOLDED_ITEM: string = 'itm_FFFFFFFFFFFFFFFFFFFFFF';
-const CLEARED_ITEM: string = 'itm_EEEEEEEEEEEEEEEEEEEEEE';
-
-void test('the entries a save answer folded and the ledger ids it stripped or cleared reach the game once', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  const backend: Backend = await synced(harness, 3);
-  const heard: SaveFold[] = [];
-  backend.onFold((fold: SaveFold): void => void heard.push(fold));
-  harness.server.foldNext({ folded: [{ id: 4, kind: 'collect', gold: 30, item: null, direction: null }], stripped: [FOLDED_ITEM], unverified: [CLEARED_ITEM] });
-  backend.save(makeSave(4, 0));
-  await harness.timers.advance(TIMING.routinePushMs);
-  backend.save(makeSave(5, 0));
-  await harness.timers.advance(TIMING.routinePushMs);
-  assert.deepEqual(heard, [{ folded: [{ id: 4, kind: 'collect', gold: 30, item: null, direction: null }], stripped: [FOLDED_ITEM], unverified: [CLEARED_ITEM] }]);
-});
-
-void test('a fold that arrives before the game listens is handed over when it does', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  const backend: Backend = await synced(harness, 3);
-  harness.server.foldNext({ folded: [], stripped: [], unverified: [CLEARED_ITEM] });
-  backend.save(makeSave(4, 0));
-  await harness.timers.advance(TIMING.routinePushMs);
-  const heard: SaveFold[] = [];
-  backend.onFold((fold: SaveFold): void => void heard.push(fold));
-  assert.deepEqual(heard, [{ folded: [], stripped: [], unverified: [CLEARED_ITEM] }]);
-});
-
-void test('an old server that sends no fold changes nothing in the game', async (): Promise<void> => {
-  const harness: Harness = createHarness();
-  const backend: Backend = await synced(harness, 3);
-  const heard: SaveFold[] = [];
-  backend.onFold((fold: SaveFold): void => void heard.push(fold));
-  backend.save(makeSave(4, 0));
-  await harness.timers.advance(1000);
-  assert.deepEqual(heard, []);
 });
 
 void test('sync sends the waiting save at once and settles when the server has it', async (): Promise<void> => {
