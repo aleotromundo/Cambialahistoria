@@ -68,10 +68,13 @@ export function wouldPassLimit(content: Content, equipped: Equipment, item: Item
   return others + 1 > rarity.wornLimit;
 }
 
+function nameMatches(content: Content, target: SkillTarget, name: string): boolean {
+  return target.type === 'skill' ? target.skill === name : inGroup(content, target.group, name);
+}
+
 function skillMatches(content: Content, target: SkillTarget | null, skill: SkillDef): boolean {
   if (target === null) return true;
-  const names: readonly string[] = [skill.id, skill.form];
-  return names.some((name: string): boolean => (target.type === 'skill' ? target.skill === name : inGroup(content, target.group, name)));
+  return nameMatches(content, target, skill.id) || nameMatches(content, target, skill.form);
 }
 
 function targetMatches(content: Content, trigger: PowerTriggerDef, target: Actor | null): boolean {
@@ -134,6 +137,32 @@ function triggerSources(content: Content, player: PlayerState): TriggerSource[] 
   return [...worn, ...placed].filter((source: TriggerSource): boolean => source.triggers.length > 0);
 }
 
+interface SourceCache {
+  readonly content: Content;
+  readonly worn: readonly (ItemInstance | null)[];
+  readonly allocated: readonly string[];
+  readonly wielding: string | null;
+  readonly sources: readonly TriggerSource[];
+}
+
+const SOURCES: WeakMap<PlayerState, SourceCache> = new WeakMap<PlayerState, SourceCache>();
+
+function sameWorn(worn: readonly (ItemInstance | null)[], equipped: Equipment): boolean {
+  return ITEM_SLOTS.every((slot: ItemSlot, index: number): boolean => worn[index] === equipped[slot]);
+}
+
+function sameAllocated(held: readonly string[], allocated: readonly string[]): boolean {
+  return held.length === allocated.length && held.every((id: string, index: number): boolean => allocated[index] === id);
+}
+
+function heldSources(content: Content, player: PlayerState): readonly TriggerSource[] {
+  const held: SourceCache | undefined = SOURCES.get(player);
+  if (held !== undefined && held.content === content && held.wielding === player.wielding && sameWorn(held.worn, player.equipped) && sameAllocated(held.allocated, player.allocated)) return held.sources;
+  const sources: readonly TriggerSource[] = triggerSources(content, player);
+  SOURCES.set(player, { content, worn: ITEM_SLOTS.map((slot: ItemSlot): ItemInstance | null => player.equipped[slot]), allocated: [...player.allocated], wielding: player.wielding, sources });
+  return sources;
+}
+
 function ready(state: PowerState, key: string, trigger: PowerTriggerDef): boolean {
   if ((state.cooldowns[key] ?? 0) > 0) return false;
   const count: number = (state.counts[key] ?? 0) + 1;
@@ -146,7 +175,7 @@ function ready(state: PowerState, key: string, trigger: PowerTriggerDef): boolea
 export function firePowers(world: World, event: PowerEvent): boolean {
   const player: PlayerState = world.player;
   let buffed: boolean = false;
-  for (const source of triggerSources(world.content, player)) {
+  for (const source of heldSources(world.content, player)) {
     source.triggers.forEach((trigger: PowerTriggerDef, index: number): void => {
       if (trigger.on !== event.on || !skillMatches(world.content, trigger.skill, event.skill) || !targetMatches(world.content, trigger, event.target)) return;
       const key: string = `${source.key}:${index}`;

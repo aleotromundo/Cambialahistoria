@@ -366,3 +366,10 @@ void test('area skill places leave Held Breath alone, and only its own places st
   assert.ok(own.delivery.duration > base.delivery.duration);
   assert.ok(own.delivery.radius > base.delivery.radius);
 });
+
+void test('a node allocated twice or a name the tree does not hold changes nothing in a resolved skill or its chain', (): void => {
+  const noisy: readonly string[] = ['no_such_place', ...MILLRACE, ...MILLRACE];
+  assert.deepEqual(variantChain(content, skillOf('cleave'), noisy).through, variantChain(content, skillOf('cleave'), MILLRACE).through);
+  assert.deepEqual(resolveSkill(content, skillOf('cleave'), noisy), resolveSkill(content, skillOf('cleave'), MILLRACE));
+  assert.deepEqual(computeStats(content, 3, emptyEquipment(), noisy), computeStats(content, 3, emptyEquipment(), MILLRACE));
+});

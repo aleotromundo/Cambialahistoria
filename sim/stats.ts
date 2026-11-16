@@ -21,7 +21,18 @@ export function applyMods(base: StatBlock, mods: readonly StatMod[]): StatBlock 
 }
 
 export function allocatedNodes(content: Content, allocated: readonly string[], held: string | null): SkillTreeNodeDef[] {
-  return content.skillTree.filter((node: SkillTreeNodeDef): boolean => allocated.includes(node.id)).map((node: SkillTreeNodeDef): SkillTreeNodeDef => heldPlace(content, node, held));
+  const taken: ReadonlySet<string> = new Set<string>(allocated);
+  const placed: SkillTreeNodeDef[] = [];
+  for (const node of content.skillTree) if (taken.has(node.id)) placed.push(heldPlace(content, node, held));
+  return placed;
+}
+
+function inAllocationOrder(placed: readonly SkillTreeNodeDef[], allocated: readonly string[]): SkillTreeNodeDef[] {
+  const rank: Map<string, number> = new Map<string, number>();
+  allocated.forEach((id: string, index: number): void => {
+    if (!rank.has(id)) rank.set(id, index);
+  });
+  return placed.toSorted((a: SkillTreeNodeDef, b: SkillTreeNodeDef): number => (rank.get(a.id) ?? -1) - (rank.get(b.id) ?? -1));
 }
 
 export function computeStats(content: Content, level: number, equipped: Equipment, allocated: readonly string[], extra: readonly StatMod[] = [], held: string | null = heldGroup(content, equipped)): StatBlock {
@@ -139,11 +150,15 @@ export function activeChanges(variants: readonly SkillVariant[], chosen: ChangeC
   });
 }
 
-export function variantChain(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): ChosenSkill {
-  const taken: readonly SkillTreeNodeDef[] = allocatedNodes(content, allocated, held).toSorted((a: SkillTreeNodeDef, b: SkillTreeNodeDef): number => allocated.indexOf(a.id) - allocated.indexOf(b.id));
+function chainFrom(content: Content, skill: SkillDef, placed: readonly SkillTreeNodeDef[], allocated: readonly string[], powers: readonly PowerDef[], worn: readonly SkillVariant[], chosen: ChangeChoice): ChosenSkill {
+  const taken: readonly SkillTreeNodeDef[] = inAllocationOrder(placed, allocated);
   const fromTree: readonly SkillVariant[] = activeChanges(taken.flatMap((node: SkillTreeNodeDef): readonly SkillVariant[] => node.variants), chosen);
   const fromPowers: readonly SkillVariant[] = powers.flatMap((power: PowerDef): readonly SkillVariant[] => power.variants);
   return chained(content, varied(content, { skill, through: [skill.id] }, worn), [...fromPowers, ...fromTree]);
+}
+
+export function variantChain(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): ChosenSkill {
+  return chainFrom(content, skill, allocatedNodes(content, allocated, held), allocated, powers, worn, chosen);
 }
 
 export function chosenVariant(content: Content, skill: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
@@ -172,8 +187,9 @@ function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
 }
 
 export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
-  const { skill, through }: ChosenSkill = variantChain(content, base, allocated, powers, worn, held, chosen);
-  const mods: SkillMod[] = [...allocatedNodes(content, allocated, held).flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
+  const placed: readonly SkillTreeNodeDef[] = allocatedNodes(content, allocated, held);
+  const { skill, through }: ChosenSkill = chainFrom(content, base, placed, allocated, powers, worn, chosen);
+  const mods: SkillMod[] = [...placed.flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
   if (mods.length === 0) return skill;
   const delivery: Delivery = scaledDelivery(skill.delivery, {
     area: scaleOf(mods, 'areaPercent'),

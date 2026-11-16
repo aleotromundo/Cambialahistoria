@@ -74,6 +74,21 @@ void test('an echo killed while wearing the Wirethread Gloves releases a Forklin
   assert.equal(world.echoes.length, 1);
 });
 
+void test('powers follow the gear worn at the moment of the kill, even when it changes between two kills', (): void => {
+  const world: World = hero();
+  const first: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
+  firePowers(world, { on: 'kill', skill: skill('cleave'), target: first, at: first.pos });
+  assert.deepEqual(casts(world), []);
+  const gloves: ItemInstance = wear(world, 'wirethread_gloves');
+  const second: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x - 2, z: ARENA_CENTRE.z });
+  firePowers(world, { on: 'kill', skill: skill('cleave'), target: second, at: second.pos });
+  assert.deepEqual(casts(world), ['forkline']);
+  world.player.equipped[must(slotOf(content, gloves), 'gloves')] = null;
+  world.player.powers.cooldowns = {};
+  firePowers(world, { on: 'kill', skill: skill('cleave'), target: second, at: second.pos });
+  assert.deepEqual(casts(world), ['forkline']);
+});
+
 void test('a killing blow on an echo goes through combat to the gloves', (): void => {
   const world: World = hero();
   wear(world, 'wirethread_gloves');
