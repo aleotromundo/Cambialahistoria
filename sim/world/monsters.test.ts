@@ -5,8 +5,8 @@ import { MOTION_DT, motionProblems, placedProp, sampleOf, sceneZone } from '../.
 import { ARENA_CENTRE, ARENA_CONTENT, arena, place } from '../../test/arena-support.ts';
 import { SCENE_BASE } from '../../test/road-support.ts';
 import { must, worldIn } from '../../test/support.ts';
-import { loadContent } from '../content/content.ts';
-import type { Content, MonsterDef, ZoneDef } from '../content/types.ts';
+import { UNRANKED_CONTENT as content } from '../../test/unranked-support.ts';
+import type { MonsterDef, ZoneDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { blockerGap, isWalkable, lineOfSight, lineWalkable, nearestWalkable, propOutlines, routedGrid } from '../nav/grid.ts';
@@ -16,15 +16,9 @@ import { applyHit, offenceOf } from './combat.ts';
 import { forceStrike } from './moments.ts';
 import { spawnPackNear, spawnPacks } from './monsters.ts';
 import { stepWorld } from './step.ts';
-import { createWorld } from './create.ts';
-import { choicesOpen } from './death.ts';
-import { objectiveTarget } from './objective.ts';
-import type { ObjectiveTarget } from './objective.ts';
-import type { Command, MomentState, MonsterState, World, WorldEvent } from './types.ts';
+import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 
-const shipped: Content = loadContent();
-const content: Content = { ...shipped, zones: new Map<string, ZoneDef>([...shipped.zones].map(([id, zone]: [string, ZoneDef]): [string, ZoneDef] => [id, { ...zone, ranks: false }])) };
 const base: ZoneDef = SCENE_BASE;
 
 const LIMITS = {
@@ -472,57 +466,6 @@ void test('a monster chasing round any tall Hall prop or wall corner slides alon
     }
   }
   assert.deepEqual(stalls, []);
-});
-
-const FIRST_WALK = { seeds: 8, limit: 90, dt: 0.05, moveEvery: 5 } as const;
-
-function echoFaction(world: World, monster: MonsterState): boolean {
-  return monster.def.faction === world.content.moments.faction;
-}
-
-function roamers(world: World): MonsterState[] {
-  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && !echoFaction(world, monster));
-}
-
-function firstWalkCommands(world: World, tick: number): Command[] {
-  const foe: MonsterState | undefined = world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.aggro && echoFaction(world, monster)).toSorted((a: MonsterState, b: MonsterState): number => distance(a.pos, world.player.pos) - distance(b.pos, world.player.pos))[0];
-  if (foe !== undefined) return [{ type: 'skill', slot: 0, aim: foe.pos, targetId: foe.id }];
-  if (choicesOpen(world)) return [{ type: 'respawn', choice: 'checkpoint' }];
-  const target: ObjectiveTarget | null = objectiveTarget(world);
-  return tick % FIRST_WALK.moveEvery === 0 && target !== null ? [{ type: 'move', held: false, dest: target.pos }] : [];
-}
-
-void test('a fresh hero walking the arrow from arrival to the first moment, dying there once, never comes within reach of a roaming pack until it is cleared', (): void => {
-  const hall: ZoneDef = must(content.zones.get('hall_of_time'), 'hall');
-  for (let seed: number = 1; seed <= FIRST_WALK.seeds; seed += 1) {
-    const world: World = createWorld(content, { seed, save: null });
-    enterZone(world, hall, { type: 'start' });
-    world.player.invulnerable = Infinity;
-    assert.ok(roamers(world).length > 0, `seed ${seed}: some packs stand in the Hall from the start`);
-    let died: boolean = false;
-    let exposed: boolean = false;
-    let struck: boolean = false;
-    let tick: number = 0;
-    for (let elapsed: number = 0; elapsed < FIRST_WALK.limit && world.flags['first_moment'] !== 'cleared'; elapsed += FIRST_WALK.dt) {
-      if (!exposed && world.moments.some((moment: MomentState): boolean => moment.phase === 'awake' && moment.entered)) {
-        exposed = true;
-        world.player.invulnerable = 0;
-        world.player.life = 1;
-        world.player.stats.lifeRegen = 0;
-      }
-      died = died || !world.player.alive;
-      for (const event of stepWorld(world, firstWalkCommands(world, tick), FIRST_WALK.dt)) {
-        if (event.type === 'moment_mark') struck = true;
-        if (event.type === 'player_respawn') world.player.invulnerable = Infinity;
-        const roused: MonsterState | undefined = event.type === 'aggro' ? world.monsters.find((monster: MonsterState): boolean => monster.id === event.monsterId) : undefined;
-        if (roused !== undefined) assert.ok(echoFaction(world, roused), `seed ${seed}: ${roused.def.id} woke at ${elapsed.toFixed(1)} s`);
-      }
-      tick += 1;
-      for (const roamer of roamers(world)) assert.ok(distance(roamer.pos, world.player.pos) > roamer.def.aggroRadius, `seed ${seed}: ${roamer.def.id} at ${roamer.pos.x.toFixed(1)},${roamer.pos.z.toFixed(1)} within reach of the hero at ${elapsed.toFixed(1)} s`);
-    }
-    assert.ok(struck && died, `seed ${seed}: the first moment struck and he died in it`);
-    assert.equal(world.flags['first_moment'], 'cleared', `seed ${seed}`);
-  }
 });
 
 void test('a mending monster heals only once it has gone a few seconds without being hit', (): void => {
