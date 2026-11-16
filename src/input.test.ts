@@ -1,11 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { Vector3 } from 'three';
-import type { Vector2 } from 'three';
 import { must, worldIn, zoneOf } from '../test/support.ts';
-import { loadContent } from '../sim/content/content.ts';
-import type { Content, ZoneExit } from '../sim/content/types.ts';
+import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { stepWorld } from '../sim/world/step.ts';
@@ -13,15 +10,10 @@ import type { Command, EncounterState, World } from '../sim/world/types.ts';
 import { wakeLength } from '../sim/world/wake.ts';
 import { enterZone } from '../sim/world/zones.ts';
 import { refreshPlayer } from '../sim/world/character.ts';
-import type { KeyValueStore } from './backend/backend.ts';
-import type { Input, InputCamera, InputHooks, InputHud, InputSurface, KeySource } from './input.ts';
-import { createInput, isTextField } from './input.ts';
-import { keysDirection } from './move-keys.ts';
-import { CAMERA } from './render/iso-camera.ts';
-import { stickMove, TOUCH } from './mobile/touch-map.ts';
+import { stickMove } from './mobile/touch-map.ts';
 import type { SlotDefault } from './settings/bindings.ts';
-import type { SettingsStore } from './settings/store.ts';
-import { createSettingsStore } from './settings/store.ts';
+import { at, clickOn, DT, floorAhead, inputContent as content, LEFT, noPlayers, RIGHT, rig, run, screenOf, VIEW } from '../test/input-support.ts';
+import type { PlayerHooks, Rig } from '../test/input-support.ts';
 
 void test('pointer presses become world input only on the canvas, so a click on the HUD never moves the hero', (): void => {
   const source: string = readFileSync('src/input.ts', 'utf8');
@@ -29,101 +21,6 @@ void test('pointer presses become world input only on the canvas, so a click on 
   assert.ok(listeners.includes('canvas.pointerdown'));
   for (const listener of listeners) assert.ok(listener.startsWith('canvas.'), `${listener} listens outside the canvas`);
 });
-
-const content: Content = loadContent();
-const DT: number = 1 / 60;
-const VIEW = { size: 1000, span: 22 } as const;
-const SLOTS: readonly SlotDefault[] = [{ name: 'Cleave', bindings: ['mouse_left'] }];
-
-interface Rig {
-  readonly world: World;
-  readonly input: Input;
-  readonly fire: (type: string, pointer?: Partial<FakePointer>) => void;
-  readonly settings: SettingsStore;
-  readonly focus: (field: EventTarget) => void;
-}
-
-interface FakePointer {
-  readonly button: number;
-  readonly buttons: number;
-  readonly clientX: number;
-  readonly clientY: number;
-  readonly pointerId: number;
-  readonly pointerType: string;
-  readonly shiftKey: boolean;
-  readonly code: string;
-  readonly repeat: boolean;
-}
-
-type Heard = Map<string, EventListenerOrEventListenerObject[]>;
-
-function hearing(heard: Heard): (type: string, listener: EventListenerOrEventListenerObject | null) => void {
-  return (type: string, listener: EventListenerOrEventListenerObject | null): void => {
-    if (listener !== null) heard.set(type, [...(heard.get(type) ?? []), listener]);
-  };
-}
-
-function rect(): DOMRect {
-  return { x: 0, y: 0, width: VIEW.size, height: VIEW.size, top: 0, left: 0, right: VIEW.size, bottom: VIEW.size, toJSON: (): null => null };
-}
-
-interface PlayerHooks {
-  readonly at: string | null;
-  readonly takes: (id: string | null) => boolean;
-  readonly pressed: (string | null)[];
-  readonly hovered: (string | null)[];
-}
-
-function noPlayers(): PlayerHooks {
-  return { at: null, takes: (): boolean => false, pressed: [], hovered: [] };
-}
-
-function rig(world: World, overUi: () => boolean = (): boolean => false, players: PlayerHooks = noPlayers(), label: () => number | null = (): number | null => null, slots: readonly SlotDefault[] = SLOTS): Rig {
-  const heard: Heard = new Map<string, EventListenerOrEventListenerObject[]>();
-  const canvas: InputSurface = { addEventListener: hearing(heard), getBoundingClientRect: rect, setPointerCapture: (): void => undefined, style: { cursor: 'default' } };
-  const keys: KeySource = { addEventListener: hearing(heard) };
-  const fire = (type: string, pointer: Partial<FakePointer> = {}): void => {
-    const event: Event = Object.assign(new Event(type), { button: -1, buttons: 0, clientX: 0, clientY: 0, pointerId: 1, pointerType: 'mouse', shiftKey: false, code: '', repeat: false }, pointer);
-    for (const listener of heard.get(type) ?? []) {
-      if (typeof listener === 'function') listener(event);
-      else listener.handleEvent(event);
-    }
-  };
-  const camera: InputCamera = {
-    groundPoint: (pointer: Vector2): Vector3 => new Vector3(world.player.pos.x + pointer.x * VIEW.span, 0, world.player.pos.z - pointer.y * VIEW.span),
-    project: (): boolean => false,
-    rayDistanceTo: (): number => Infinity,
-    zoomBy: (): void => undefined,
-  };
-  const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, readInput: (): void => undefined };
-  const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
-  const settings: SettingsStore = createSettingsStore(store, slots, { flasks: 0, ladder: false });
-  const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: label, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined,
-    playerAt: (): string | null => players.at,
-    hoverPlayer: (id: string | null): void => {
-      players.hovered.push(id);
-    },
-    pressPlayer: (id: string | null): boolean => {
-      players.pressed.push(id);
-      return players.takes(id);
-    },
-    pause: (): void => undefined,
-  };
-  const focus = (field: EventTarget): void => {
-    for (const listener of heard.get('focusin') ?? []) field.addEventListener('focusin', listener);
-    field.dispatchEvent(new Event('focusin'));
-  };
-  return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks), fire, settings, focus };
-}
-
-function screenOf(world: World, ground: Vec2): Vec2 {
-  const ndc: Vec2 = { x: (ground.x - world.player.pos.x) / VIEW.span, z: -(ground.z - world.player.pos.z) / VIEW.span };
-  return { x: ((ndc.x + 1) / 2) * VIEW.size, z: ((1 - ndc.z) / 2) * VIEW.size };
-}
-
-function run(setup: Rig, seconds: number, done: () => boolean, extra: () => readonly Command[] = (): readonly Command[] => []): void {
-  for (let clock: number = 0; clock < seconds && !done(); clock += DT) stepWorld(setup.world, [...setup.input.collect(DT), ...extra()], DT);
-}
 
 function voidWithLight(seed: number): World {
   const world: World = createWorld(content, { seed, save: null, opening: true });
@@ -338,21 +235,6 @@ void test('a press that closes an open player menu is taken by it, and the next 
   assert.deepEqual(players.pressed, [null, null]);
 });
 
-const LEFT = { button: 0, bit: 1 } as const;
-const RIGHT = { button: 2, bit: 2 } as const;
-
-function at(point: Vec2, button: number, buttons: number): Partial<FakePointer> {
-  return { clientX: point.x, clientY: point.z, button, buttons };
-}
-
-function clickOn(setup: Rig, point: Vec2): Command[] {
-  setup.fire('pointermove', at(point, -1, 0));
-  setup.fire('pointerdown', at(point, LEFT.button, LEFT.bit));
-  const commands: Command[] = setup.input.collect(DT);
-  setup.fire('pointerup', at(point, LEFT.button, 0));
-  return [...commands, ...setup.input.collect(DT)];
-}
-
 function freshMoves(commands: readonly Command[]): Command[] {
   return commands.filter((command: Command): boolean => command.type === 'move' && !command.held);
 }
@@ -364,10 +246,6 @@ function besideDownExit(): { readonly world: World; readonly exit: ZoneExit } {
   world.player.pos.z = exit.z - exit.radius - 2;
   world.monsters = [];
   return { world, exit };
-}
-
-function floorAhead(world: World): Vec2 {
-  return screenOf(world, { x: world.player.pos.x + 3, z: world.player.pos.z + 3 });
 }
 
 void test('a chorded press (left down, right down, left up, right up) leaves no button held, so the next left click walks', (): void => {
@@ -498,77 +376,6 @@ void test('the input reading reports a held press, a no-ground click and a press
 });
 
 
-const YAW: number = (CAMERA.yawDegrees * Math.PI) / 180;
-
-function walks(commands: readonly Command[]): Command[] {
-  return commands.filter((command: Command): boolean => command.type === 'walk' || command.type === 'stop');
-}
-
-void test('with the keys moving the hero, a held W walks up the screen every frame and its release stops once', (): void => {
-  const world: World = worldIn(content, 'under_hall_2', 22);
-  const setup: Rig = rig(world);
-  setup.settings.setMovement('keys');
-  const up: Vec2 = must(keysDirection({ up: true, down: false, left: false, right: false }, YAW), 'up');
-  const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
-  setup.fire('keydown', { code: 'KeyW' });
-  assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'walk', held: false, dest: { x: from.x + up.x * TOUCH.stickReach, z: from.z + up.z * TOUCH.stickReach } }]);
-  assert.deepEqual(walks(setup.input.collect(DT)).map((command: Command): string => (command.type === 'walk' ? `walk ${command.held}` : command.type)), ['walk true']);
-  setup.fire('keyup', { code: 'KeyW' });
-  assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'stop' }]);
-  assert.deepEqual(walks(setup.input.collect(DT)), []);
-});
-
-void test('with the keys moving the hero, the hero really walks the way the key points', (): void => {
-  const world: World = worldIn(content, 'under_hall_2', 22);
-  const setup: Rig = rig(world);
-  setup.settings.setMovement('keys');
-  const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
-  const reached: number[] = [];
-  for (const [code, keys] of [['KeyW', { up: true, down: false, left: false, right: false }], ['KeyS', { up: false, down: true, left: false, right: false }]] as const) {
-    world.player.pos.x = from.x;
-    world.player.pos.z = from.z;
-    const way: Vec2 = must(keysDirection(keys, YAW), code);
-    setup.fire('keydown', { code });
-    run(setup, 0.6, (): boolean => false);
-    setup.fire('keyup', { code });
-    run(setup, 0.1, (): boolean => false);
-    reached.push((world.player.pos.x - from.x) * way.x + (world.player.pos.z - from.z) * way.z);
-  }
-  assert.ok(Math.max(...reached) > 1, `the hero walked ${reached.join(' and ')} along the keys`);
-});
-
-void test('with the keys moving the hero, a press on open ground never walks there', (): void => {
-  const world: World = worldIn(content, 'under_hall_2', 22);
-  const setup: Rig = rig(world);
-  setup.settings.setMovement('keys');
-  const commands: Command[] = clickOn(setup, floorAhead(world));
-  assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'move'), []);
-  assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'skill').map((command: Command): number | null => (command.type === 'skill' ? command.slot : null)), [0]);
-  assert.equal(setup.input.reading.click?.kind, 'skill');
-});
-
-void test('while a click moves the hero, W never walks', (): void => {
-  const world: World = worldIn(content, 'under_hall_2', 22);
-  const setup: Rig = rig(world);
-  setup.fire('keydown', { code: 'KeyW' });
-  assert.deepEqual(walks(setup.input.collect(DT)), []);
-});
-
-void test('a move key held while a text field takes the focus is let go, and a button taking the focus changes nothing', (): void => {
-  const world: World = worldIn(content, 'under_hall_2', 22);
-  const setup: Rig = rig(world);
-  setup.settings.setMovement('keys');
-  setup.fire('keydown', { code: 'KeyD' });
-  assert.equal(walks(setup.input.collect(DT))[0]?.type, 'walk');
-  setup.focus(new EventTarget());
-  assert.equal(walks(setup.input.collect(DT))[0]?.type, 'walk');
-  const field: EventTarget = Object.assign(new EventTarget(), { selectionStart: 0 });
-  assert.equal(isTextField(field), true);
-  assert.equal(isTextField(null), false);
-  setup.focus(field);
-  assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'stop' }]);
-});
-
 const KEYED_SPIN: readonly SlotDefault[] = [
   { name: 'Left', bindings: ['mouse_left'] },
   { name: 'Spin', bindings: ['KeyQ'] },
@@ -685,4 +492,3 @@ void test('with held skills on hold, letting go of the key ends the spin as befo
   assert.ok(!spinning(world));
   assert.equal(setup.input.reading.toggled, null);
 });
-
