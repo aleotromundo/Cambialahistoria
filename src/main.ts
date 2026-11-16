@@ -1,7 +1,7 @@
 import type { Box3, Material } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { cuesForEvent, cuesForLife, cuesForUi, uiActionForCommand, warmSoundIds } from '../sim/audio.ts';
+import { cuesForEvent, cuesForLife, uiActionForCommand } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { carriedPictures, goodsPictures } from '../sim/pictures.ts';
 import { heroRig } from '../sim/hero.ts';
@@ -11,14 +11,18 @@ import type { FrameKeeper } from './frame-keeper.ts';
 import { element } from './dom-element.ts';
 import { startKeepPrompt } from './keep/keep-start.ts';
 import { fadePageOut } from './landing/leave.ts';
-import { markInput, markPlaying, wireFolds, wireHudAway, wireTitleKeys } from './title-screen.ts';
-import type { SoundCue } from '../sim/audio.ts';
-import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
-import { loadAudio } from '../sim/content/audio.ts';
+import { markPlaying, wireHudAway, wireTitleKeys } from './title-screen.ts';
+import type { UiAction } from '../sim/content/audio.ts';
 import { lifeSounds } from './life-audio.ts';
-import { loadContent } from '../sim/content/content.ts';
-import type { Content, LineDef } from '../sim/content/types.ts';
-import type { Vec2 } from '../sim/math.ts';
+import type { GameAudio } from './game-audio.ts';
+import type { TitleBoot } from './title-boot.ts';
+import { bootTitle } from './title-boot.ts';
+import type { GameServices } from './game-services.ts';
+import { startGameServices } from './game-services.ts';
+import { createPlayOverlays } from './play-overlays.ts';
+import { startGameGlitches } from './game-glitches.ts';
+import { createGameAudio } from './game-audio.ts';
+import type { LineDef } from '../sim/content/types.ts';
 import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
@@ -27,27 +31,14 @@ import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { DebugHooks } from './debug-handle.ts';
 import { attachDebug } from './debug-handle.ts';
 import type { Command, ItemInstance, PlayerState, World, WorldEvent } from '../sim/world/types.ts';
-import type { Listener } from './audio/listener.ts';
-import { createListener, locateNear } from './audio/listener.ts';
-import { readAssetBase } from './audio/manifest.ts';
-import type { Placement } from './audio/mix.ts';
-import { CENTRE } from './audio/mix.ts';
-import type { AudioControls } from './audio/settings.ts';
-import { browserSettingsStorage, createSettingsStore, voiceAudible } from './audio/settings.ts';
-import type { AudioSystem, Trigger } from './audio/system.ts';
-import { createAudioSystem } from './audio/system.ts';
-import type { AccountService } from './backend/account.ts';
+import { voiceAudible } from './audio/settings.ts';
 import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
-import { createSettingsStore as createGameSettings } from './settings/store.ts';
-import type { Backend, BackendState } from './backend/backend.ts';
-import { createBrowserAccount, createBrowserBackend, createBrowserMinter, pagePlay } from './backend/browser.ts';
+import { pagePlay } from './backend/browser.ts';
 import { watchElsewhere } from './hud/elsewhere-card.ts';
 import type { Elsewhere } from './hud/elsewhere-card.ts';
 import { playerHooks, startHideout } from './hideout/hideout.ts';
 import { startAuction } from './auction/auction-start.ts';
-import type { Minter } from './backend/minter.ts';
 import { createHud } from './hud/hud.ts';
-import { findLabel } from './hud/pickup-notes.ts';
 import type { Hud, HudApi } from './hud/hud-api.ts';
 import { startProfile } from './profile/profile-start.ts';
 import type { Input } from './input.ts';
@@ -55,23 +46,17 @@ import { createInput } from './input.ts';
 import { createPauseMenu } from './hud/pause-menu.ts';
 import { frameGate } from './frame-gate.ts';
 import type { FrameGate } from './frame-gate.ts';
-import { startLaunch } from './launch/launch.ts';
-import type { Launch } from './launch/launch.ts';
 import type { PauseMenu } from './hud/pause-menu.ts';
 import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
-import type { SettingsStore } from './settings/store.ts';
 import { createHintStore } from './hints-store.ts';
 import type { ObjectiveMarker } from './objective/objective-marker.ts';
 import { createObjectiveMarker } from './objective/objective-marker.ts';
 import { createBrowserStore } from './storage.ts';
-import type { Mobile, MobileBoot } from './mobile/mobile.ts';
-import { bootMobile, startMobile } from './mobile/mobile.ts';
+import type { Mobile } from './mobile/mobile.ts';
+import { startMobile } from './mobile/mobile.ts';
 import type { QualityName } from './mobile/quality.ts';
-import { createBrowserLobby } from './lobby/compact.ts';
-import type { Lobby } from './lobby/compact.ts';
 import { mountGameBoard } from './lobby/game-board.ts';
 import type { GameBoard } from './lobby/game-board.ts';
-import { mountBackdrops } from './dither/mount.ts';
 import { createLobbyFlow } from './lobby/lobby-flow.ts';
 import type { LobbyFlow } from './lobby/lobby-flow.ts';
 import type { SheetView } from './lobby/lobby-screen.ts';
@@ -92,18 +77,12 @@ import type { NameVoiceClient, SpokenName } from './backend/name-voice.ts';
 import { createBrowserNameVoice } from './opening/browser-voice.ts';
 import type { Opening } from './opening/opening.ts';
 import { createOpening } from './opening/opening.ts';
-import { bookVoiceIds } from './opening/page-voice.ts';
 import { createBrowserJournalCountClient } from './journal-count/browser-journal-count.ts';
 import type { JournalCountClient } from './backend/journal-count-api.ts';
 import { loadCountLines } from './journal-count/count-lines.ts';
 import type { JournalCount } from './journal-count/journal-count.ts';
 import { createJournalCount } from './journal-count/journal-count.ts';
 import type { GlitchView } from './glitch/glitch-view.ts';
-import { createGlitchView } from './glitch/glitch-view.ts';
-import { createSeamAudio } from './glitch/seam-audio.ts';
-import { REDUCED_MOTION } from './render/effect-kit.ts';
-import type { SeamPass } from './render/seam-pass.ts';
-import { createSeamPass } from './render/seam-pass.ts';
 import { createGlitchSettings } from './glitch/glitch-settings.ts';
 import type { GlitchSettingsStore } from './glitch/glitch-settings.ts';
 import type { Actors } from './render/actors.ts';
@@ -123,7 +102,6 @@ import { startItemPictures } from './render/item-pictures-start.ts';
 import type { LootView } from './render/loot-view.ts';
 import { createLootView } from './render/loot-view.ts';
 import type { Overlays } from './render/overlays.ts';
-import { createOverlays } from './render/overlays.ts';
 import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
@@ -140,20 +118,14 @@ import type { ZoneView } from './render/zone-view.ts';
 import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
 import { neighbourZones } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
-import { createOverlayManager, cssMotionMs } from './hud/overlays.ts';
-import type { OverlayManager } from './hud/overlays.ts';
 import { readServerUrl } from './backend/server-url.ts';
-import { createTitleSync, followSync } from './title-sync.ts';
-import { createStatusLine, TITLE_NOTICES } from './title-status.ts';
+import { followSync } from './title-sync.ts';
+import { TITLE_NOTICES } from './title-status.ts';
 import { createdOrUnsupported, probeBrowser, RETRY, UnsupportedBrowser, unsupportedReason } from './browser-support.ts';
 import { runStart } from './start-failure.ts';
-import { defaultBar } from '../sim/skill-book.ts';
-import type { Bar } from '../sim/skill-book.ts';
-import { shippedKeys, showTitleKeys, skillSlots, TITLE_KEYS, titleKeyRows, titleNames } from './title-keys.ts';
 import type { StatusLine } from './title-status.ts';
 import { changesSave, urgentEvents } from './save-events.ts';
 import type { TransitionReport, ZoneTransition } from './transition.ts';
-import type { VoicePlayer } from './voice.ts';
 import { createZoneTransition, describeTransition, veilColour } from './transition.ts';
 import { createVeil } from './veil.ts';
 import type { FigureGauge } from './render/figure-gauge.ts';
@@ -164,8 +136,6 @@ import { reloadPage } from './gpu-release.ts';
 const GAME = {
   maxFrame: 0.1,
   saveEvery: 2,
-  soundLogLength: 300,
-  millisecondsPerSecond: 1000,
   idleWaitMs: 1500,
   titleArrivalMs: 1000,
 } as const;
@@ -178,41 +148,11 @@ function whenIdle(work: () => void): void {
 }
 
 async function start(): Promise<void> {
-  mountBackdrops();
-  const canvas: HTMLCanvasElement = element('scene', HTMLCanvasElement);
-  const title: HTMLDivElement = element('title', HTMLDivElement);
-  const status: HTMLParagraphElement = element('title-status', HTMLParagraphElement);
-  const enter: HTMLButtonElement = element('title-enter', HTMLButtonElement);
-  const reset: HTMLButtonElement = element('title-reset', HTMLButtonElement);
-  const vignette: HTMLDivElement = element('vignette', HTMLDivElement);
-  const titlePlace: HTMLParagraphElement = element('title-place', HTMLParagraphElement);
-  const statusLine: StatusLine = createStatusLine<HTMLSpanElement>(status, (): HTMLSpanElement => document.createElement('span'), createBrowserTimers());
-  titleLines.current = statusLine;
-  const placeLine: StatusLine = createStatusLine<HTMLSpanElement>(titlePlace, (): HTMLSpanElement => document.createElement('span'), createBrowserTimers());
-
-  const mobile: MobileBoot = bootMobile();
-  markInput(document.body, mobile.touch);
-  wireFolds([{ button: element('title-controls-open', HTMLButtonElement), panel: element('title-controls', HTMLDivElement) }, { button: element('title-credits-open', HTMLButtonElement), panel: element('title-credits', HTMLDivElement) }], element('title-foot', HTMLElement));
-  const overlayManager: OverlayManager = createOverlayManager({ body: document.body, timers: createBrowserTimers(), motionMs: (): number => cssMotionMs(document.documentElement), inPlay: (): boolean => playing });
-  const launch: Launch = startLaunch({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, device: mobile.touch ? 'phone' : 'desktop', hud: element('hud', HTMLDivElement), title: element('title', HTMLDivElement), onEnd: (): void => void overlayManager.send({ type: 'interrupt', cause: 'endcard' }), quiet: (): boolean => !overlayManager.hasTop() });
+  const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
   statusLine.show('Loading…');
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
-  const content: Content = loadContent();
-  const backend: Backend = createBrowserBackend(content, import.meta.env.VITE_SERVER_URL);
-  const account: AccountService | null = createBrowserAccount(content, import.meta.env.VITE_SERVER_URL);
-  const showSync: (state: BackendState) => void = createTitleSync(element('title-sync', HTMLParagraphElement), createBrowserTimers());
-  const loadingSave: Promise<SaveData | null> = backend.load();
-  const minter: Minter | null = createBrowserMinter(content, import.meta.env.VITE_SERVER_URL);
-  const lobby: Lobby | null = createBrowserLobby(import.meta.env.VITE_SERVER_URL, true);
-  title.dataset['lobby'] = lobby === null ? 'off' : 'on';
-  const gameSettings: SettingsStore = createGameSettings(createBrowserStore(), skillSlots(content), shippedKeys(content, lobby !== null));
-  const titleBar: { current: Bar } = { current: defaultBar(content) };
-  const drawTitleKeys = (): void => {
-    showTitleKeys(document.querySelector(`.${TITLE_KEYS.listClass}`), titleKeyRows(gameSettings.keys(), titleNames(content, titleBar.current)));
-  };
-  drawTitleKeys();
-  gameSettings.subscribe(drawTitleKeys);
+  const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl: import.meta.env.VITE_SERVER_URL });
   const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -248,35 +188,7 @@ async function start(): Promise<void> {
   stage.setAmbience(world.zone.ambience);
   stage.setHeroLight(world.zone.heroLight);
   placeLine.show(world.zone.name);
-  const audioDef: AudioDef = loadAudio(content);
-  const controls: AudioControls = createSettingsStore(browserSettingsStorage());
-  const audio: AudioSystem = createAudioSystem({
-    base: readAssetBase(import.meta.env['VITE_ASSET_BASE']),
-    controls,
-    random: Math.random,
-    clock: (): number => performance.now() / GAME.millisecondsPerSecond,
-  });
-  audio.warm(warmSoundIds(audioDef), bookVoiceIds(content.books.values(), content.lines));
-  const listener: Listener = createListener(camera, canvas, (): Vec2 => world.player.pos);
-  const playCues = (cues: readonly SoundCue[]): void => {
-    for (const cue of cues) {
-      const place: Placement | null = cue.position === null ? CENTRE : listener(cue.position, cue.reach);
-      if (place !== null) audio.play(cue, place);
-    }
-  };
-  const playUi = (action: UiAction): void => playCues(cuesForUi(audioDef, action));
-  const startZoneAmbience = (): void => {
-    const ambience: ZoneAmbience | undefined = audioDef.ambience.get(world.zone.id);
-    if (ambience === undefined) audio.stopAmbience();
-    else audio.startAmbience(ambience, locateNear(listener, (): World => world));
-  };
-  const sounds: Trigger[] = [];
-  if (import.meta.env.DEV) {
-    audio.onTrigger((trigger: Trigger): void => {
-      sounds.push(trigger);
-      if (sounds.length > GAME.soundLogLength) sounds.shift();
-    });
-  }
+  const { audioDef, controls, audio, sounds, voice, playCues, playUi, startZoneAmbience }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
   const queue: Command[] = [];
   const send = (command: Command): void => {
     queue.push(command);
@@ -298,14 +210,6 @@ async function start(): Promise<void> {
   const figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {}));
   const pictures = startItemPictures({ content, library, loader, dresser, hero: (): string | null => pick.chosen ?? world.player.hero, refresh: (): void => { hud.refreshItems(); profilePanel?.refreshItems(); } });
   const wantCarried = (): void => pictures.items.want([...carriedPictures(content, world.player), ...goodsPictures(content)]);
-  const voice: VoicePlayer = {
-    play(line: LineDef): Promise<void> {
-      return audio.playVoice(line.speaker, line.id).catch((): void => undefined);
-    },
-    stop(): void {
-      audio.stopVoice();
-    },
-  };
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
     overlays: overlayManager,
@@ -340,26 +244,7 @@ async function start(): Promise<void> {
   };
   const hud: Hud = createHud(element('hud', HTMLDivElement), hudApi);
   const profilePanel = startProfile(lobby, { api: hudApi, content, pictures, hosts: { play: element('hud', HTMLDivElement), lobby: element('lobby', HTMLDivElement) } });
-  const overlays: Overlays = createOverlays(element('overlays', HTMLDivElement), camera, {
-    findLabel: findLabel(mobile.touch),
-    nameKeys: (): readonly string[] => gameSettings.keys().bindingsOf('names'),
-    heightOf: (id: number): number => actors.heightOf(id),
-    onPickup: (groundId: number): void => {
-      hud.hideGroundItem();
-      send({ type: 'pickup', groundId });
-    },
-    onLootEnter: (item: ItemInstance, x: number, y: number): void => hud.showGroundItem(item, x, y),
-    onLootMove: (x: number, y: number): void => hud.moveGroundItem(x, y),
-    onLootLeave: (): void => hud.hideGroundItem(),
-    onTravel: (exit: string): void => send({ type: 'travel', exit }),
-    onTalk: (npcId: number): void => send({ type: 'talk', npcId }),
-    onWaypoint: (): void => {
-      const waypoint = world.zone.waypoint;
-      if (waypoint === null) return;
-      send({ type: 'move', held: false, dest: { x: waypoint.x, z: waypoint.z } });
-      hud.requestMap(true);
-    },
-  }, hud.targets);
+  const overlays: Overlays = createPlayOverlays({ world, camera, touch: mobile.touch, gameSettings, actors, hud, send });
   const hideout = startHideout(import.meta.env.VITE_SERVER_URL, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), hud: element('hud', HTMLDivElement), loader, dresser, sight: cameraSight(stage.camera), screen: hud, sync: (): Promise<void> => { dirty = true; saveNow(); return backend.sync(); }, openProfile: lobby === null ? null : (name: string): void => lobby.profiles.open(name) });
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement), hud.targets);
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
@@ -386,29 +271,7 @@ async function start(): Promise<void> {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
   const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, overlays: overlayManager, pageVoice: { busy: (): boolean => audio.speaking().length > 0, soundOn: (): boolean => voiceAudible(controls.get()), say: (line: LineDef): void => void voice.play(line) }, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), setRain: (amount: number): void => rain.setWeather({ ...world.zone.weather, rain: amount }), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
-  const seamPass: SeamPass = createSeamPass();
-  stage.setSeam(seamPass.pass);
-  const glitches: GlitchView = createGlitchView({
-    world,
-    scene: stage.scene,
-    app: element('hud', HTMLDivElement),
-    mistZone: content.zones.get(world.glitch.def.mistZone) ?? world.zone,
-    quality: mobile.quality.tier.name,
-    settings: glitchSettings,
-    overlays: element('overlays', HTMLDivElement),
-    seamPass,
-    seamAudio: createSeamAudio(audio, audioDef.seam, world.glitch.def.seam),
-    reducedMotion: (): boolean => window.matchMedia(REDUCED_MOTION).matches,
-    hero: () => actors.hero(),
-    send,
-    setAmbience: (ambience): void => stage.setAmbience(ambience),
-    restoreAmbience: (): void => { stage.setAmbience(world.zone.ambience); opening.relight(); },
-    silence: (): void => {
-      audio.stopAmbience();
-      voice.stop();
-    },
-    resume: (): void => startZoneAmbience(),
-  });
+  const glitches: GlitchView = startGameGlitches({ world, content, stage, quality: mobile.quality.tier.name, glitchSettings, audio, audioDef, actors, voice, send, relight: (): void => opening.relight(), startZoneAmbience });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
   const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, send });
