@@ -931,7 +931,7 @@
       "sealed": false,
       "collateral": 0.35,
       "strikes": {
-        "count": 8,
+        "count": 12,
         "gap": 4
       }
     },
@@ -971,7 +971,7 @@
       "sealed": false,
       "collateral": 0.35,
       "strikes": {
-        "count": 8,
+        "count": 12,
         "gap": 4
       }
     },
@@ -1011,7 +1011,7 @@
       "sealed": true,
       "collateral": 0,
       "strikes": {
-        "count": 10,
+        "count": 14,
         "gap": 4
       }
     },
