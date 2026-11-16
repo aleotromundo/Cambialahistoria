@@ -18,6 +18,7 @@ import { widenedSkill } from '../widen.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
+import { braceThrough } from './poise.ts';
 import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
@@ -159,6 +160,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const target: Vec2 | null = aimsAhead ? { x: actor.pos.x + aim.x * reach, z: actor.pos.z + aim.z * reach } : null;
   const travelSpeed: number = skill.leap === null ? 0 : reach / Math.min(windup, skill.leap.airTime);
   const goal: Vec2 | null = glidesWith(skill.press) ? { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z } : null;
+  if (actor.kind === 'monster') braceThrough(actor, windup);
   actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0 };
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });

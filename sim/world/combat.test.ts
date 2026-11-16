@@ -234,18 +234,24 @@ void test('a light hit early in a Haymaker interrupts it, but past its commit po
   assert.notEqual(committed.stagger, 0);
 });
 
+function rested(monster: MonsterState): void {
+  monster.stagger = 0;
+  monster.recovery = { guard: 0, strain: 0, unbroken: 0 };
+}
+
 void test('a brute interrupted as often in a row as its resolve holds its next Haymaker against light hits, and a finished swing starts the count again', (): void => {
   const world: World = arena(1);
   const monster: MonsterState = hammerer(world);
   const resolve: number = monster.def.poise.resolve;
   assert.ok(resolve > 0);
   for (let count: number = 1; count <= resolve; count += 1) {
+    rested(monster);
     windUp(world, monster, 0);
     hit(world, monster, light);
     assert.equal(monster.action, null);
     assert.equal(monster.interrupts, count);
   }
-  monster.stagger = 0;
+  rested(monster);
   windUp(world, monster, 0);
   hit(world, monster, light);
   assert.equal(monster.action?.phase, 'windup');
@@ -258,6 +264,7 @@ void test('a brute interrupted as often in a row as its resolve holds its next H
   stepWorld(world, [], DT);
   assert.equal(monster.interrupts, 0);
   monster.action = null;
+  rested(monster);
   windUp(world, monster, 0);
   hit(world, monster, light);
   assert.equal(monster.action, null);

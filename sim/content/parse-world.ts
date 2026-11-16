@@ -1,4 +1,5 @@
 import type { Fields } from './read.ts';
+import type { RecoveryDef } from './combat-types.ts';
 import { packMods } from './parse-combat.ts';
 import { byId, choice, colour, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
@@ -463,6 +464,16 @@ function lifeTimes(value: unknown, where: string): ScalingPoint[] {
   return points;
 }
 
+function recoveryDef(value: unknown, where: string): RecoveryDef {
+  const source: Fields = fields(value, where);
+  const share = (key: string): number => {
+    const scale: number = positive(source, key, where);
+    if (scale > 1) throw new ContentError(`${where}.${key}`, 'expected a share from 0 to 1 of the hold a normal monster takes');
+    return scale;
+  };
+  return { window: positive(source, 'window', where), perHeld: nonNegative(source, 'perHeld', where), fade: positive(source, 'fade', where), interruptRest: nonNegative(source, 'interruptRest', where), elite: share('elite'), boss: share('boss') };
+}
+
 function zoneSize(value: unknown, where: string, tiles: readonly string[]): ZoneSize {
   const source: Fields = fields(value, where);
   const columns: number = positive(source, 'columns', where);
@@ -483,6 +494,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
     legacyFlags: storyFlags(source['legacyFlags'], `${where}.legacyFlags`),
     retired: retiredZones(source['retired'], `${where}.retired`),
     withheld: source['withheld'] === undefined ? [] : textList(source, 'withheld', where),
+    recovery: recoveryDef(source['recovery'], `${where}.recovery`),
     scaling: {
       lifePerLevel: numeric(scaling, 'lifePerLevel', `${where}.scaling`),
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),

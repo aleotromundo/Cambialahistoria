@@ -23,6 +23,8 @@ export const BALANCE = {
   blinkGap: 4,
   barSize: 6,
   saveFor: 2,
+  readable: 0.8,
+  rollMargin: 1,
 } as const;
 
 export interface Build {
@@ -154,6 +156,26 @@ function aimFor(player: PlayerState, skill: SkillDef, foes: readonly MonsterStat
   return null;
 }
 
+function threat(player: PlayerState, foes: readonly MonsterState[]): MonsterState | null {
+  return (
+    foes.find((foe: MonsterState): boolean => {
+      const swing = foe.action;
+      if (swing?.phase !== 'windup' || swing.windup < BALANCE.readable) return false;
+      return Math.hypot(foe.pos.x - player.pos.x, foe.pos.z - player.pos.z) - foe.radius <= swing.skill.engageRange + BALANCE.rollMargin;
+    }) ?? null
+  );
+}
+
+function rollAway(player: PlayerState, foes: readonly MonsterState[]): Command | null {
+  const slot: number = player.skills.findIndex((skill: SkillDef | null): boolean => skill?.delivery.type === 'dash');
+  const roll: SkillDef | null = player.skills[slot] ?? null;
+  const foe: MonsterState | null = threat(player, foes);
+  if (roll === null || foe === null || (player.cooldowns[roll.id] ?? 0) > 0 || player.mana < roll.manaCost) return null;
+  const away: Vec2 = { x: player.pos.x - foe.pos.x, z: player.pos.z - foe.pos.z };
+  const length: number = Math.max(Math.hypot(away.x, away.z), 1e-6);
+  return { type: 'skill', slot, aim: { x: player.pos.x - (away.z / length) * BALANCE.blinkGap, z: player.pos.z + (away.x / length) * BALANCE.blinkGap }, targetId: null };
+}
+
 function pilot(world: World): Command[] {
   const player: PlayerState = world.player;
   const foes: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive);
@@ -172,6 +194,8 @@ function pilot(world: World): Command[] {
     commands.push(done ? { type: 'hold', slot, down: false } : { type: 'steer', aim: target.pos });
     return commands;
   }
+  const roll: Command | null = rollAway(player, foes);
+  if (roll !== null) return [...commands, roll];
   let reserve: number = 0;
   for (const [slot, skill] of player.skills.entries()) {
     if (skill === null || skill.id === 'cleave') continue;

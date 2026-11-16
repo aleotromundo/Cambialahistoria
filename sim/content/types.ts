@@ -3,7 +3,7 @@ import type { AffixDef, FamilyDef, ItemBaseDef, ItemScaling, PowerTriggerDef, Ra
 export type { WeaponKind } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
-import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
+import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, RecoveryDef, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { TradeDef } from './trade-types.ts';
 import type { PropDef, SurfaceDef } from './prop-types.ts';
@@ -319,6 +319,7 @@ export interface WorldDef {
   readonly opening: string | null;
   readonly legacyFlags: StoryFlags;
   readonly scaling: MonsterScaling;
+  readonly recovery: RecoveryDef;
   readonly acts: readonly ActDef[];
   readonly retired: RetiredZones | null;
   readonly withheld: readonly string[];

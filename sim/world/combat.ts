@@ -1,6 +1,7 @@
 import { PLAYER_SIDE } from '../content/combat-types.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
+import type { RecoveryDef } from '../content/combat-types.ts';
 import { rollDrop } from './loot.ts';
 import { makeItem } from './ledger.ts';
 import type { ItemSource } from './ledger.ts';
@@ -17,7 +18,7 @@ import type { Side } from './factions.ts';
 import { mayStrike, provoke, regardOf } from './factions.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
-import { steadiness } from './poise.ts';
+import { afterHold, afterInterrupt, holdScale, recovering, steadiness, unbroken } from './poise.ts';
 import { settleTurn, steadied } from './momentum.ts';
 import { flinchTogether } from './unison.ts';
 import { dealtScale } from './weaken.ts';
@@ -177,12 +178,33 @@ export function holdsFirm(target: MonsterState, skill: SkillDef, guard: GuardOut
   return resolved || action.elapsed >= action.windup * action.skill.commit.at;
 }
 
-function knockBack(target: Actor, push: ReadonlyVec2): void {
-  if (target.action !== null && !isDashing(target)) return;
+function knockBack(target: Actor, push: ReadonlyVec2): boolean {
+  if (target.action !== null && !isDashing(target)) return false;
   const knock: ReadonlyVec2 = { x: target.knock.x + push.x, z: target.knock.z + push.z };
-  if (!readablePush(knock) && knockTime(target) <= 0) return;
+  if (!readablePush(knock) && knockTime(target) <= 0) return false;
   target.knock.x = knock.x;
   target.knock.z = knock.z;
+  return true;
+}
+
+function holdMonster(world: World, target: MonsterState, skill: SkillDef, guard: GuardOutcome, push: ReadonlyVec2, steady: boolean): void {
+  if (recovering(target) || unbroken(target)) return;
+  const recovery: RecoveryDef = world.content.world.recovery;
+  const scale: number = holdScale(recovery, target);
+  const stagger: number = staggerOf(target, skill, guard) * scale;
+  const staggered: boolean = stagger > 0 && !holdsFirm(target, skill, guard);
+  if (staggered) {
+    target.stagger = Math.max(target.stagger, stagger);
+    if (target.action?.phase === 'windup') {
+      target.interrupts += 1;
+      settleTurn(target, target.action);
+      afterInterrupt(recovery, target);
+      target.action = null;
+      world.events.push({ type: 'skill_interrupt', actorId: target.id });
+    }
+  }
+  const pushed: boolean = !steady && knockBack(target, { x: push.x * scale, z: push.z * scale });
+  afterHold(recovery, target, Math.max(staggered ? target.stagger : 0, pushed ? knockTime(target) : 0));
 }
 
 function mendSource(world: World, offence: Offence, target: Actor, skill: SkillDef): void {
@@ -207,6 +229,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const amount: number = target.kind === 'monster' ? holdLine(world, target, strike(world, target, rolled)) : rolled;
   target.life -= amount;
   const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);
+  const push: ReadonlyVec2 = { x: direction.x * skill.knockback * poise, z: direction.z * skill.knockback * poise };
   const steady: boolean = steadied(target) || rollsSteady(target);
   if (skill.root > 0 && target.kind === 'player' && target.rootGrace <= 0 && !steady) {
     target.root = Math.max(target.root, skill.root);
@@ -216,16 +239,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   if (target.kind === 'monster') {
     target.calm = 0;
     provoke(world, target, offence.sourceId, offence.faction ?? PLAYER_SIDE);
-    const stagger: number = staggerOf(target, skill, guard);
-    if (stagger > 0 && !holdsFirm(target, skill, guard)) {
-      target.stagger = Math.max(target.stagger, stagger);
-      if (target.action?.phase === 'windup') {
-        target.interrupts += 1;
-        settleTurn(target, target.action);
-        target.action = null;
-        world.events.push({ type: 'skill_interrupt', actorId: target.id });
-      }
-    }
+    holdMonster(world, target, skill, guard, push, steady);
     if (guard !== 'open') world.events.push({ type: 'guarded', monsterId: target.id, broken: guard === 'broken', pos: { x: target.pos.x, z: target.pos.z }, direction: { x: direction.x, z: direction.z } });
     if (!target.aggro) {
       target.aggro = true;
@@ -233,7 +247,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     }
     aggroPack(world, target);
   }
-  if (!steady) knockBack(target, { x: direction.x * skill.knockback * poise, z: direction.z * skill.knockback * poise });
+  if (target.kind === 'player' && !steady) knockBack(target, push);
   mendSource(world, offence, target, skill);
   const killed: boolean = target.life <= 0;
   world.events.push({

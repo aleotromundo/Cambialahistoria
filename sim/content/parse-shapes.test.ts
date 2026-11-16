@@ -34,7 +34,7 @@ void test('hold and brand are optional and read as charge, channel or a burst sk
   assert.deepEqual(skillPress({}, 'x'), { press: null, brand: null, momentum: null, burn: null, soak: null, spend: null, spent: 0 });
   assert.deepEqual(skillPress({ spend: { damage: 0.07, area: 0.025, range: 0.025 } }, 'x').spend, { damage: 0.07, area: 0.025, range: 0.025 });
   assert.throws(() => skillPress({ spend: { damage: -1, area: 0, range: 0 } }, 'x'), ContentError);
-  assert.deepEqual(skillPress({ press: { type: 'channel', interval: 0.2, max: 3 } }, 'x').press, { type: 'channel', interval: 0.2, max: 3, move: 0, hint: null });
+  assert.deepEqual(skillPress({ press: { type: 'channel', interval: 0.2, max: 3 } }, 'x').press, { type: 'channel', interval: 0.2, max: 3, move: 0, passThrough: false, hint: null });
   assert.deepEqual(skillPress({ press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4 }, brand: { duration: 6, burst: 'pop' } }, 'x'), {
     press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4, hint: null },
     brand: { duration: 6, burst: 'pop' },

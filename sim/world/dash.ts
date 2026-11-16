@@ -35,7 +35,9 @@ export function isInvulnerable(actor: ActorState): boolean {
 }
 
 export function passesThrough(actor: ActorState): boolean {
-  return isDashing(actor) && (dashOf(actor.action)?.passThrough ?? false);
+  const action: ActionState | null = actor.action;
+  if (action !== null && action.skill.press?.type === 'channel') return action.skill.press.passThrough;
+  return isDashing(actor) && (dashOf(action)?.passThrough ?? false);
 }
 
 export function rollsSteady(actor: ActorState): boolean {

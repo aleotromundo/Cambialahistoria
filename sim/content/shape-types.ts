@@ -56,6 +56,7 @@ export interface ChannelPress {
   readonly interval: number;
   readonly max: number;
   readonly move: number;
+  readonly passThrough: boolean;
   readonly hint: string | null;
 }
 

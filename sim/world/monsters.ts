@@ -12,6 +12,7 @@ import { anchoredGoal, onBeat, passOver, stepMeasure } from './count.ts';
 import { allHold } from './conditions.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimers } from './movement.ts';
+import { stepRecovery } from './poise.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import { monsterLevel, SPAWN, spawnMonster } from './spawn.ts';
 import { alarmTarget, spawnPack, surgeExtra, wakePack } from './packs.ts';
@@ -433,6 +434,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   }
   unstrand(world, monster, dt);
   stepTimers(monster, dt);
+  stepRecovery(world, monster, dt);
   monster.calm += dt;
   if (monster.def.regen > 0 && monster.calm >= MONSTERS.mendAfter) monster.life = Math.min(monster.maxLife, monster.life + monster.maxLife * monster.def.regen * dt);
   if (monster.spawnTime > 0) {

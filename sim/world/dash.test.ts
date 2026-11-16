@@ -16,6 +16,8 @@ import { stepWorld } from './step.ts';
 import type { ActionState, Command, MonsterState, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 import { roadWorld, roadZone, SCENE_BASE } from '../../test/road-support.ts';
+import { dummy, offset, shapeArena } from '../../test/shape-support.ts';
+import { refreshPlayer } from './character.ts';
 
 const content: Content = loadContent();
 const base: ZoneDef = SCENE_BASE;
@@ -295,4 +297,83 @@ void test('a roll through deep water covers only the water\'s share of its dista
   stepWorld(world, [rollToward({ x: from.x + 10, z: from.z })], MOTION_DT);
   finish(world);
   assert.ok(Math.abs(world.player.pos.x - from.x - dash.distance * 0.5) < LIMITS.tolerance, `${world.player.pos.x - from.x}`);
+});
+
+const SPIN = {
+  skill: 'cleave_millwheel',
+  dt: 1 / 60,
+  frozen: 1000,
+} as const;
+
+function spinner(): World {
+  const world: World = shapeArena([]);
+  world.player.learned.push(SPIN.skill);
+  world.player.bar = [SPIN.skill, null, null, null, null, 'dodge_roll'];
+  refreshPlayer(world);
+  world.player.mana = world.player.stats.maxMana;
+  return world;
+}
+
+function frozen(world: World, at: Vec2): MonsterState {
+  const monster: MonsterState = dummy(world, at);
+  monster.spawnTime = SPIN.frozen;
+  return monster;
+}
+
+function spin(world: World, aim: Vec2, seconds: number): void {
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim, targetId: null }], SPIN.dt);
+  for (let step: number = 1; step < Math.round(seconds / SPIN.dt); step += 1) {
+    world.player.mana = world.player.stats.maxMana;
+    stepWorld(world, [{ type: 'steer', aim }], SPIN.dt);
+  }
+}
+
+function shifted(monster: MonsterState, from: Vec2): number {
+  return Math.hypot(monster.pos.x - from.x, monster.pos.z - from.z);
+}
+
+void test('a spinning hero glides through a monster in her way and leaves it where it stood', (): void => {
+  const world: World = spinner();
+  const monster: MonsterState = frozen(world, offset(1.2, 0));
+  const stood: Vec2 = { x: monster.pos.x, z: monster.pos.z };
+  spin(world, offset(6, 0), 0.8);
+  assert.equal(world.player.action?.phase, 'channel');
+  assert.ok(passesThrough(world.player));
+  assert.ok(world.player.pos.x > monster.pos.x + 0.5, `hero at ${world.player.pos.x}, monster at ${monster.pos.x}`);
+  assert.ok(shifted(monster, stood) < 1e-6, `monster moved ${shifted(monster, stood)}`);
+});
+
+void test('a hero spinning on the spot inside a monster never moves it, and steps clear of it herself when the spin ends', (): void => {
+  const world: World = spinner();
+  const monster: MonsterState = frozen(world, offset(0.3, 0));
+  const stood: Vec2 = { x: monster.pos.x, z: monster.pos.z };
+  spin(world, { x: world.player.pos.x, z: world.player.pos.z }, 1);
+  assert.ok(shifted(monster, stood) < 1e-6, `monster moved ${shifted(monster, stood)} while she spun`);
+  stepWorld(world, [{ type: 'hold', slot: 0, down: false }], SPIN.dt);
+  for (let step: number = 0; step < Math.round(1 / SPIN.dt); step += 1) stepWorld(world, [], SPIN.dt);
+  assert.equal(world.player.action, null);
+  const gap: number = Math.hypot(world.player.pos.x - monster.pos.x, world.player.pos.z - monster.pos.z);
+  assert.ok(gap >= world.player.radius + monster.radius - 1e-6, `gap ${gap}`);
+  assert.ok(shifted(monster, stood) < 1e-6, `monster moved ${shifted(monster, stood)} after the spin`);
+  assert.ok(isWalkable(world.grid, world.player.pos.x, world.player.pos.z));
+});
+
+void test('a spinning hero is never invulnerable: monsters can target her and their hits land as hard as on a hero standing still', (): void => {
+  const blow: SkillDef = { ...must(content.skills.get('cleave'), 'cleave'), id: 'test_blow', damage: { type: 'physical', weaponPercent: 0, flatMin: 7, flatMax: 7 } };
+  const struck = (spinning: boolean): number => {
+    const world: World = spinner();
+    const monster: MonsterState = frozen(world, offset(1, 0));
+    if (spinning) {
+      spin(world, { x: world.player.pos.x, z: world.player.pos.z }, 0.5);
+      assert.equal(world.player.action?.phase, 'channel');
+      assert.ok(!isInvulnerable(world.player));
+      assert.ok(targetsOf(world, offenceOf(monster)).includes(world.player));
+    }
+    const life: number = world.player.life;
+    assert.ok(applyHit(world, { ...offenceOf(monster), damageMin: 0, damageMax: 0 }, world.player, blow, { x: -1, z: 0 }));
+    return life - world.player.life;
+  };
+  const standing: number = struck(false);
+  assert.ok(standing >= 1);
+  assert.equal(struck(true), standing);
 });

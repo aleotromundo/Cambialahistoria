@@ -36,6 +36,15 @@ export interface MonsterPoise {
   readonly resolve: number;
 }
 
+export interface RecoveryDef {
+  readonly window: number;
+  readonly perHeld: number;
+  readonly fade: number;
+  readonly interruptRest: number;
+  readonly elite: number;
+  readonly boss: number;
+}
+
 export interface SkillEchoing {
   readonly echo: number;
   readonly echoTurn: number;

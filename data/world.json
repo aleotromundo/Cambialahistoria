@@ -6,6 +6,14 @@
   },
   "town": "hideout",
   "withheld": [],
+  "recovery": {
+    "window": 1,
+    "perHeld": 3,
+    "fade": 0.2,
+    "interruptRest": 6,
+    "elite": 0.7,
+    "boss": 0.8
+  },
   "scaling": {
     "lifePerLevel": 0.3,
     "damagePerLevel": 0.28,

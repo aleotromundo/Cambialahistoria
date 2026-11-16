@@ -233,6 +233,13 @@ export interface MonsterState extends ActorState {
   leashTime: number;
   returning: boolean;
   unison: UnisonState;
+  recovery: RecoveryState;
+}
+
+export interface RecoveryState {
+  guard: number;
+  strain: number;
+  unbroken: number;
 }
 
 export type Actor = PlayerState | MonsterState;

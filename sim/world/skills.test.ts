@@ -278,7 +278,7 @@ void test('a channel can be steered while held', (): void => {
 void test('steering a channel that lands at its aim moves where the next pulse lands', (): void => {
   const world: World = shapeArena(['test_squall']);
   const squall: SkillDef = shapeSkill('test_squall');
-  world.player.skills = [{ ...squall, id: 'test_rain', cooldown: 0, press: { type: 'channel', interval: 0.2, max: 2, move: 0, hint: null } }];
+  world.player.skills = [{ ...squall, id: 'test_rain', cooldown: 0, press: { type: 'channel', interval: 0.2, max: 2, move: 0, passThrough: false, hint: null } }];
   stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 6), targetId: null }], DT);
   run(world, 0.3);
   const steered: WorldEvent[] = run(world, 0.5, [{ type: 'steer', aim: offset(6, 0) }]);

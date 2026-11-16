@@ -186,7 +186,7 @@ void test('a boss is not staggered, keeps its feet through its wind-up, and take
   assert.deepEqual(boss.knock, { x: 0, z: 0 });
   boss.action = null;
   applyHit(world, offenceOf(world.player), boss, cleave, { x: 0, z: -1 });
-  assert.ok(Math.abs(Math.hypot(boss.knock.x, boss.knock.z) - cleave.knockback * must(boss.def.boss, 'boss').poise.knockback) < 1e-9);
+  assert.ok(Math.abs(Math.hypot(boss.knock.x, boss.knock.z) - cleave.knockback * must(boss.def.boss, 'boss').poise.knockback * world.content.world.recovery.boss) < 1e-9);
 
   const plain: World = armed(worldIn(OUTPOST_CONTENT, 'outpost', 8));
   const thrall: MonsterState = must(plain.monsters.find((monster: MonsterState): boolean => monster.def.id === 'mended'), 'thrall');

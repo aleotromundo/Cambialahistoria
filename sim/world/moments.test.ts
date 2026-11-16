@@ -584,7 +584,7 @@ function fightFirst(seed: number, attack: boolean): FightLog {
   return { time, taken: hits.reduce((sum: number, hit): number => sum + hit.amount, 0), firstHit: hits[0]?.at ?? Infinity, worstSecond, won: world.player.alive && echoFoes(world).length === 0 };
 }
 
-void test('in the first fight a hero who stands still lasts 24 to 35 s, and one who fights back wins in 15 to 25 s after losing a third to a half of his life', (): void => {
+void test('in the first fight a hero who stands still lasts 24 to 35 s, and one who only mashes Cleave wins in 15 to 25 s after losing a third to two thirds of his life', (): void => {
   for (let seed: number = 1; seed <= 4; seed += 1) {
     const still: FightLog = fightFirst(seed, false);
     assert.equal(still.won, false, `seed ${seed}`);
@@ -592,7 +592,7 @@ void test('in the first fight a hero who stands still lasts 24 to 35 s, and one 
     const fought: FightLog = fightFirst(seed, true);
     assert.ok(fought.won, `seed ${seed}`);
     assert.ok(fought.time >= 15 && fought.time <= 25, `seed ${seed}: won in ${fought.time.toFixed(1)} s`);
-    assert.ok(fought.taken >= 28 && fought.taken <= 55, `seed ${seed}: took ${fought.taken.toFixed(0)}`);
+    assert.ok(fought.taken >= 28 && fought.taken <= 70, `seed ${seed}: took ${fought.taken.toFixed(0)}`);
     for (const log of [still, fought]) {
       assert.ok(log.firstHit >= SHIPPED.rouse, `seed ${seed}: hit at ${log.firstHit.toFixed(1)} s, before the echoes finished waking`);
       assert.ok(log.worstSecond <= 28, `seed ${seed}: ${log.worstSecond.toFixed(0)} in one second`);

@@ -15,8 +15,8 @@ function skill(id: string): SkillDef {
 void test('a held skill says how to hold it, in its own words when the data gives them', (): void => {
   assert.equal(pressLine(skill('cleave_millwheel').press), 'Hold to keep turning; you can run while it turns');
   assert.equal(pressLine(null), null);
-  assert.equal(pressLine({ type: 'channel', interval: 0.2, max: 3, move: 0, hint: null }), FORMS_WORDS.channel);
-  assert.equal(pressLine({ type: 'channel', interval: 0.2, max: 3, move: 1, hint: null }), FORMS_WORDS.channelMoving);
+  assert.equal(pressLine({ type: 'channel', interval: 0.2, max: 3, move: 0, passThrough: false, hint: null }), FORMS_WORDS.channel);
+  assert.equal(pressLine({ type: 'channel', interval: 0.2, max: 3, move: 1, passThrough: false, hint: null }), FORMS_WORDS.channelMoving);
   assert.equal(pressLine({ type: 'charge', max: 1.5, damageScale: 2, areaScale: 1, hint: null }), 'Hold to charge, up to 1.5s, then let go');
 });
 
