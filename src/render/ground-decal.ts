@@ -129,8 +129,19 @@ export function groundDecalBox(half: number): BoxGeometry {
   return new BoxGeometry(half * 2, half * 2, 1);
 }
 
+const sharedGeometries: WeakSet<object> = new WeakSet<object>();
+
+export function sharedGeometry<T extends BufferGeometry>(geometry: T): T {
+  sharedGeometries.add(geometry);
+  return geometry;
+}
+
+export function isSharedGeometry(geometry: object): boolean {
+  return sharedGeometries.has(geometry);
+}
+
 const anchors: Set<WeakRef<Mesh>> = new Set<WeakRef<Mesh>>();
-const handles: WeakMap<Mesh, WeakRef<Mesh>> = new WeakMap<Mesh, WeakRef<Mesh>>();
+const handles: WeakMap<Object3D, WeakRef<Mesh>> = new WeakMap<Object3D, WeakRef<Mesh>>();
 
 export function layOnGround(mesh: Mesh): void {
   mesh.layers.set(GROUND_DECAL.layer);
@@ -143,7 +154,7 @@ export function layOnGround(mesh: Mesh): void {
   anchors.add(handle);
 }
 
-export function liftOffGround(mesh: Mesh): void {
+export function liftOffGround(mesh: Object3D): void {
   const handle: WeakRef<Mesh> | undefined = handles.get(mesh);
   if (handle === undefined) return;
   anchors.delete(handle);

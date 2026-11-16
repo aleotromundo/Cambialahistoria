@@ -127,6 +127,7 @@ export function createParticles(scene: Scene): ParticleSystem {
   scene.add(points);
 
   let density: number = 1;
+  let resting: boolean = false;
 
   return {
     setDensity(next: number): void {
@@ -135,13 +136,18 @@ export function createParticles(scene: Scene): ParticleSystem {
     burst(options: BurstOptions): void {
       const count: number = burstCount(options.count, density, Math.random());
       const baseAngle: number = Math.atan2(options.dirX, options.dirZ);
+      const lift: number = count > 0 ? liftHere(options.x, options.z) : 0;
+      if (count > 0) {
+        resting = false;
+        tintAttribute.needsUpdate = true;
+      }
       for (let spawned: number = 0; spawned < count; spawned += 1) {
         const index: number = cursor;
         cursor = (cursor + 1) % capacity;
         const angle: number = baseAngle + (Math.random() - 0.5) * options.spread;
         const speed: number = pick(options.speed);
         positions[index * 3] = options.x + (Math.random() - 0.5) * options.jitter;
-        floors[index] = liftHere(options.x, options.z);
+        floors[index] = lift;
         positions[index * 3 + 1] = options.y + (floors[index] ?? 0) + (Math.random() - 0.5) * options.jitter;
         positions[index * 3 + 2] = options.z + (Math.random() - 0.5) * options.jitter;
         velocities[index * 3] = Math.sin(angle) * speed;
@@ -159,12 +165,15 @@ export function createParticles(scene: Scene): ParticleSystem {
       }
     },
     update(dt: number): void {
+      if (resting) return;
+      let live: boolean = false;
       for (let index: number = 0; index < capacity; index += 1) {
         const life: number = lives[index] ?? 0;
         if (life <= 0) {
           alphas[index] = 0;
           continue;
         }
+        live = true;
         const next: number = life - dt;
         lives[index] = next;
         const drag: number = Math.exp(-(drags[index] ?? 0) * dt);
@@ -183,9 +192,9 @@ export function createParticles(scene: Scene): ParticleSystem {
         sizes[index] = (baseSizes[index] ?? 0) * (0.35 + 0.65 * t);
       }
       positionAttribute.needsUpdate = true;
-      tintAttribute.needsUpdate = true;
       sizeAttribute.needsUpdate = true;
       alphaAttribute.needsUpdate = true;
+      resting = !live;
     },
     clear(): void {
       lives.fill(0);

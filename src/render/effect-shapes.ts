@@ -3,7 +3,7 @@ import { AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CylinderGe
 import type { Delivery } from '../../sim/content/types.ts';
 import { SKILLS } from '../../sim/world/skills.ts';
 import type { GroundLight, GroundLightLook } from './ground-light.ts';
-import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, groundDecalBox, groundDecalUniforms, layOnGround } from './ground-decal.ts';
+import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, groundDecalBox, groundDecalUniforms, isSharedGeometry, layOnGround, liftOffGround, sharedGeometry } from './ground-decal.ts';
 import { createGroundLight } from './ground-light.ts';
 
 export const SHAPES = {
@@ -113,6 +113,14 @@ void main() {
 }
 `;
 
+const CORE_SPHERE: IcosahedronGeometry = sharedGeometry(new IcosahedronGeometry(1, 1));
+const HALO_SPHERE: IcosahedronGeometry = sharedGeometry(new IcosahedronGeometry(1, 2));
+const SCORCH_BOX: BoxGeometry = sharedGeometry(groundDecalBox(1));
+
+export function orbSphere(): IcosahedronGeometry {
+  return HALO_SPHERE;
+}
+
 export function glow(color: Color, boost: number): Color {
   return color.clone().multiplyScalar(boost);
 }
@@ -144,13 +152,17 @@ export function sectorGeometry(arc: number, inner: number, outer: number): Buffe
 export interface SlashMesh {
   readonly mesh: Mesh;
   readonly material: ShaderMaterial;
+  readonly progress: IUniform<number>;
+  readonly opacity: IUniform<number>;
 }
 
 export function slashMesh(arc: number, reach: number, color: Color): SlashMesh {
+  const progress: IUniform<number> = { value: 0 };
+  const opacity: IUniform<number> = { value: 1 };
   const material: ShaderMaterial = new ShaderMaterial({
     vertexShader: ARC_VERTEX,
     fragmentShader: SLASH_FRAGMENT,
-    uniforms: { uColor: { value: color.clone() }, uProgress: { value: 0 }, uOpacity: { value: 1 } },
+    uniforms: { uColor: { value: color.clone() }, uProgress: progress, uOpacity: opacity },
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
@@ -159,7 +171,7 @@ export function slashMesh(arc: number, reach: number, color: Color): SlashMesh {
   });
   const mesh: Mesh = new Mesh(sectorGeometry(arc, reach * BLADE.inner, reach), material);
   mesh.renderOrder = 8;
-  return { mesh, material };
+  return { mesh, material, progress, opacity };
 }
 
 export function additive(color: Color, opacity: number): MeshBasicMaterial {
@@ -277,7 +289,7 @@ export const ORB_HALO_FRAGMENT: string = ['uniform vec3 uColor;', 'uniform float
 
 export function orbHalo(color: Color): Mesh<IcosahedronGeometry, ShaderMaterial> {
   const halo: Mesh<IcosahedronGeometry, ShaderMaterial> = new Mesh(
-    new IcosahedronGeometry(1, 2),
+    HALO_SPHERE,
     new ShaderMaterial({ vertexShader: ORB_HALO_VERTEX, fragmentShader: ORB_HALO_FRAGMENT, uniforms: { uColor: { value: glow(color, SHAPES.orbHaloBoost) }, uStrength: { value: SHAPES.orbHaloStrength } }, transparent: true, depthWrite: false, blending: AdditiveBlending }),
   );
   halo.scale.setScalar(SHAPES.orbHalo);
@@ -285,7 +297,7 @@ export function orbHalo(color: Color): Mesh<IcosahedronGeometry, ShaderMaterial>
 }
 
 export function projectileMesh(style: 'bolt' | 'orb', color: Color): Mesh<IcosahedronGeometry, MeshBasicMaterial> {
-  const mesh: Mesh<IcosahedronGeometry, MeshBasicMaterial> = new Mesh(new IcosahedronGeometry(1, 1), new MeshBasicMaterial({ color: glow(color, style === 'orb' ? SHAPES.orbBoost : SHAPES.glowBoost) }));
+  const mesh: Mesh<IcosahedronGeometry, MeshBasicMaterial> = new Mesh(CORE_SPHERE, new MeshBasicMaterial({ color: glow(color, style === 'orb' ? SHAPES.orbBoost : SHAPES.glowBoost) }));
   if (style === 'bolt') mesh.scale.set(0.2, 0.2, 1.05);
   else {
     mesh.scale.setScalar(SHAPES.orbCore);
@@ -311,7 +323,7 @@ function groundPlane(fragmentShader: string, uniforms: Record<string, IUniform>,
     forceSinglePass: true,
     blending: additiveBlend ? AdditiveBlending : NormalBlending,
   });
-  const mesh: Mesh<BoxGeometry, ShaderMaterial> = new Mesh(groundDecalBox(1), material);
+  const mesh: Mesh<BoxGeometry, ShaderMaterial> = new Mesh(SCORCH_BOX, material);
   mesh.rotation.x = -Math.PI / 2;
   mesh.renderOrder = order;
   layOnGround(mesh);
@@ -406,10 +418,11 @@ export function programKeepers(color: Color): Mesh[] {
 
 export function disposeObject(object: Mesh | Group): void {
   object.traverse((child): void => {
+    liftOffGround(child);
     if (!(child instanceof Mesh)) return;
     const geometry: unknown = child.geometry;
     const material: unknown = child.material;
-    if (geometry instanceof BufferGeometry) geometry.dispose();
+    if (geometry instanceof BufferGeometry && !isSharedGeometry(geometry)) geometry.dispose();
     const materials: readonly unknown[] = Array.isArray(material) ? material : [material];
     for (const entry of materials) {
       const candidate: unknown = entry;

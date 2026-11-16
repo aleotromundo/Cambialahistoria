@@ -1,8 +1,9 @@
 import type { Color, ShaderMaterial } from 'three';
-import { AdditiveBlending, Group, IcosahedronGeometry, Mesh, MeshBasicMaterial } from 'three';
+import type { IcosahedronGeometry } from 'three';
+import { AdditiveBlending, Group, Mesh, MeshBasicMaterial } from 'three';
 import type { VfxGather } from '../../sim/content/vfx-types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import { glow, orbHalo } from './effect-shapes.ts';
+import { glow, orbHalo, orbSphere } from './effect-shapes.ts';
 import type { BurstOptions } from './particles.ts';
 import { floorUp } from './terrain-lift.ts';
 
@@ -70,7 +71,7 @@ export function createGatherOrbs(kit: GatherKit): GatherOrbs {
       const y: number = height + look.lift;
       const orb: Group = new Group();
       const coreMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: glow(color, GATHER_ORB.coreBoost), transparent: true, depthWrite: false, blending: AdditiveBlending });
-      const core: Mesh = new Mesh(new IcosahedronGeometry(1, 2), coreMaterial);
+      const core: Mesh = new Mesh(orbSphere(), coreMaterial);
       const halo: Mesh<IcosahedronGeometry, ShaderMaterial> = orbHalo(color);
       halo.scale.setScalar(GATHER_ORB.haloSize);
       const strength: { value: unknown } | undefined = halo.material.uniforms['uStrength'];

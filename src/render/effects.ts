@@ -200,7 +200,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   };
 
   const slash = (x: number, z: number, direction: { readonly x: number; readonly z: number }, reach: number, arcDegrees: number, color: Color, mirrored: boolean): void => {
-    const { mesh, material } = slashMesh(arcDegrees * DEGREES_TO_RADIANS, reach, glow(color, EFFECTS.slashGlow));
+    const { mesh, progress, opacity } = slashMesh(arcDegrees * DEGREES_TO_RADIANS, reach, glow(color, EFFECTS.slashGlow));
     mesh.position.set(x, floorUp(x, EFFECTS.slashHeight, z), z);
     mesh.rotation.set(0, facingOf(direction), mirrored ? -EFFECTS.slashTilt : EFFECTS.slashTilt, 'YXZ');
     mesh.scale.x = mirrored ? -1 : 1;
@@ -208,8 +208,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       mesh,
       EFFECTS.slashTime,
       (t: number): void => {
-        material.uniforms['uProgress'] = { value: easeOut(t) };
-        material.uniforms['uOpacity'] = { value: 1 - t * t * t };
+        progress.value = easeOut(t);
+        opacity.value = 1 - t * t * t;
       },
       null,
     );

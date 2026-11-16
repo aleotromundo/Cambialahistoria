@@ -4,7 +4,7 @@ import { BackSide, CustomBlending, Mesh, NormalBlending, OneFactor, OneMinusSrcA
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
 import type { GroundDecalUniforms } from './ground-decal.ts';
-import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, groundDecalBox, groundDecalUniforms, layOnGround, liftOffGround } from './ground-decal.ts';
+import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, groundDecalBox, groundDecalUniforms, layOnGround, liftOffGround, sharedGeometry } from './ground-decal.ts';
 
 export const GROUND_LIGHT = {
   reachWidths: 3.2,
@@ -105,7 +105,7 @@ const glsl = (value: number): string => value.toFixed(4);
 
 export const GROUND_LIGHT_VERTEX: string = GROUND_DECAL_VERTEX;
 
-const DECAL_BOX: BoxGeometry = groundDecalBox(0.5);
+const DECAL_BOX: BoxGeometry = sharedGeometry(groundDecalBox(0.5));
 
 export const GROUND_LIGHT_FRAGMENT: string = [
   'uniform vec3 uColor;',

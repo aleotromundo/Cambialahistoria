@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { BufferAttribute, InterleavedBufferAttribute, Material } from 'three';
-import { BoxGeometry, Color, Mesh, NormalBlending, ShaderMaterial, Vector3 } from 'three';
+import { BoxGeometry, Color, IcosahedronGeometry, Mesh, NormalBlending, ShaderMaterial, Vector3 } from 'three';
 import type { Delivery } from '../../sim/content/types.ts';
 import { loadContent } from '../../sim/content/content.ts';
-import { groundArcs, lightningLine, pillarMesh, programKeepers, projectileMesh, scorchMesh, skyBolt, slashMesh, SHAPES, spotLook, telegraphFor, telegraphLook } from './effect-shapes.ts';
+import { disposeObject, groundArcs, lightningLine, pillarMesh, programKeepers, projectileMesh, scorchMesh, skyBolt, slashMesh, SHAPES, spotLook, telegraphFor, telegraphLook } from './effect-shapes.ts';
 import type { Telegraph } from './effect-shapes.ts';
 import type { GroundLight } from './ground-light.ts';
 import { createGroundLight, GROUND_LIGHT_FRAGMENT } from './ground-light.ts';
@@ -95,4 +95,42 @@ void test('a small round telegraph is lit solid to its middle, and a wide one ke
   assert.equal(spotLook(SHAPES.spotOpen).hollow, telegraphLook(SHAPES.spotOpen).hollow);
   const between: number = spotLook((SHAPES.spotSolid + SHAPES.spotOpen) / 2).hollow ?? 0;
   assert.ok(between > 0 && between < SHAPES.telegraphHollow);
+});
+
+function disposals(target: { addEventListener(type: 'dispose', listener: () => void): void }): { count: number } {
+  const seen: { count: number } = { count: 0 };
+  target.addEventListener('dispose', (): void => {
+    seen.count += 1;
+  });
+  return seen;
+}
+
+void test('ending an effect frees its own geometry and materials but never the shared decal box or orb spheres the next one draws with', (): void => {
+  const red: Color = new Color(1, 0, 0);
+  const ring: GroundLight = createGroundLight(red, { kind: 'round', radius: 2, inner: 0, arc: Math.PI * 2 }, { fill: 0.2, band: 1, width: 0.3, wobble: 0.1 });
+  const orb = projectileMesh('orb', red);
+  const bolt = projectileMesh('bolt', red);
+  const halo: unknown = orb.children[0];
+  assert.ok(halo instanceof Mesh);
+  const haloGeometry: unknown = halo.geometry;
+  const haloMaterial: unknown = halo.material;
+  assert.ok(haloGeometry instanceof IcosahedronGeometry);
+  assert.ok(haloMaterial instanceof ShaderMaterial);
+  const scorch = scorchMesh(red);
+  const slash = slashMesh(1, 2, red);
+  assert.equal(orb.geometry, bolt.geometry, 'every shot core draws one sphere');
+  assert.equal(scorch.mesh.geometry, scorchMesh(red).mesh.geometry, 'every scorch draws one box');
+  const shared = [ring.mesh.geometry, orb.geometry, haloGeometry, scorch.mesh.geometry].map(disposals);
+  const own = disposals(slash.mesh.geometry);
+  const materials = [ring.mesh.material, orb.material, haloMaterial, scorch.material, slash.material].map(disposals);
+  for (const object of [ring.mesh, orb, bolt, scorch.mesh, slash.mesh]) disposeObject(object);
+  assert.deepEqual(shared.map((seen: { count: number }): number => seen.count), [0, 0, 0, 0]);
+  assert.equal(own.count, 1);
+  assert.deepEqual(materials.map((seen: { count: number }): number => seen.count), [1, 1, 1, 1, 1]);
+});
+
+void test('a blade swing hands back the very uniforms its shader reads, so it is moved without replacing them', (): void => {
+  const slash = slashMesh(1, 2, new Color(1, 0, 0));
+  assert.equal(slash.material.uniforms['uProgress'], slash.progress);
+  assert.equal(slash.material.uniforms['uOpacity'], slash.opacity);
 });

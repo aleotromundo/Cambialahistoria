@@ -1,4 +1,4 @@
-import type { Color, Group, Mesh } from 'three';
+import type { Color, Group, IUniform, Mesh } from 'three';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { EffectKit } from './effect-kit.ts';
 import { glow, scorchMesh } from './effect-shapes.ts';
@@ -80,7 +80,8 @@ export function createShockwave(deps: ShockwaveKit): Shockwave {
       scorch.mesh,
       SHOCKWAVE.scorchTime,
       (t: number): void => {
-        scorch.material.uniforms['uFade'] = { value: 1 - t * t };
+        const fade: IUniform<unknown> | undefined = scorch.material.uniforms['uFade'];
+        if (fade !== undefined) fade.value = 1 - t * t;
       },
       null,
     );
