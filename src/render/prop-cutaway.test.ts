@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, ShaderLib, Vector2, Vector3 } from 'three';
+import type { Object3D } from 'three';
+import { BoxGeometry, CylinderGeometry, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Quaternion, Raycaster, ShaderLib, Vector2, Vector3 } from 'three';
 import type { CutHero, CutSpring } from './prop-cutaway.ts';
 import { aimCutaway, claimCutaway, clickThrough, CUTAWAY, CUTAWAY_UNIFORMS, cutawayChunk, cutawayCompany, frontWeight, ghostKeep, heroBehind, highWeight, isTall, patchCutawayShader, radiusFor, resetCutaway, ringWeight, setCutawayCompany, setOccluders, setTerrainSight, springCut, throughWindow, windowMetres, withCutaway } from './prop-cutaway.ts';
 import type { TerrainSight } from './terrain-sight.ts';
@@ -254,4 +255,89 @@ void test('a hidden enemy beside a hidden hero springs the window wide enough to
   assert.ok(Math.abs(CUTAWAY_UNIFORMS.uCutRadius.value - base) < 1);
   assert.ok(radiusFor(10, 10) === CUTAWAY.widest);
   resetCutaway();
+});
+
+function referenceBehind(hero: CutHero, eye: Vector3, list: readonly Object3D[]): boolean {
+  const caster: Raycaster = new Raycaster();
+  const from: Vector3 = new Vector3();
+  const toward: Vector3 = new Vector3();
+  const seen: Object3D[] = list.filter((object: Object3D): boolean => {
+    for (let node: Object3D | null = object; node !== null; node = node.parent) if (!node.visible) return false;
+    return true;
+  });
+  if (seen.length === 0) return false;
+  for (const lift of [CUTAWAY.chest, CUTAWAY.head]) {
+    from.set(hero.x, hero.floor + lift, hero.z);
+    toward.copy(eye).sub(from);
+    const far: number = toward.length();
+    if (far <= 0) continue;
+    caster.set(from, toward.divideScalar(far));
+    caster.far = far;
+    if (caster.intersectObjects(seen, false).length > 0) return true;
+  }
+  return false;
+}
+
+function scatter(count: number, seed: number): InstancedMesh {
+  const mesh: InstancedMesh = new InstancedMesh(new CylinderGeometry(0.6, 0.9, 3.6, 7), new MeshStandardMaterial(), count);
+  let state: number = seed;
+  const next = (): number => {
+    state = (state * 1103515245 + 12345) % 2147483648;
+    return state / 2147483648;
+  };
+  for (let index: number = 0; index < count; index += 1) {
+    const scale: number = 0.5 + next() * 1.5;
+    const placed: Matrix4 = new Matrix4().compose(new Vector3(next() * 24 - 12, 1.8 * scale, next() * 24 - 12), new Quaternion().setFromEuler(new Euler(0, next() * Math.PI * 2, (next() - 0.5) * 0.3)), new Vector3(scale, scale * (0.6 + next()), scale));
+    mesh.setMatrixAt(index, placed);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.computeBoundingSphere();
+  mesh.updateMatrixWorld(true);
+  return mesh;
+}
+
+interface Tally {
+  readonly behind: number;
+  readonly clear: number;
+}
+
+function compareField(list: readonly Object3D[], eyes: readonly Vector3[]): Tally {
+  let behind: number = 0;
+  let clear: number = 0;
+  for (const eye of eyes) {
+    for (let x: number = -13; x <= 13; x += 0.65) {
+      for (let z: number = -13; z <= 13; z += 0.65) {
+        const hero: CutHero = { x, z, floor: 0 };
+        const expected: boolean = referenceBehind(hero, eye, list);
+        assert.equal(heroBehind(hero, eye, list), expected, `hero at ${x}, ${z} seen from ${eye.x}, ${eye.y}, ${eye.z}`);
+        if (expected) behind += 1;
+        else clear += 1;
+      }
+    }
+  }
+  return { behind, clear };
+}
+
+void test('the sight check through instanced props gives exactly the answer of a full raycast, also after an instance or the whole batch moves', (): void => {
+  const field: InstancedMesh = scatter(70, 7);
+  const lone: Mesh = rock(3, -4, 3.4);
+  const list: readonly Object3D[] = [field, lone];
+  const eyes: readonly Vector3[] = [EYE, new Vector3(-18, 24, 16), new Vector3(2, 30, -25)];
+  const first: Tally = compareField(list, eyes);
+  assert.ok(first.behind > 0 && first.clear > 0);
+  field.setMatrixAt(3, new Matrix4().makeTranslation(0.4, 1.8, 0.4));
+  field.instanceMatrix.needsUpdate = true;
+  field.computeBoundingSphere();
+  compareField(list, eyes);
+  field.position.set(1.5, 0, -2);
+  field.updateMatrixWorld(true);
+  compareField(list, eyes);
+  field.count = 40;
+  compareField(list, eyes);
+  const holder: Group = new Group();
+  holder.add(field);
+  holder.visible = false;
+  holder.updateMatrixWorld(true);
+  const hidden: Tally = compareField(list, eyes);
+  assert.ok(hidden.behind > 0);
 });

@@ -3,7 +3,8 @@ import type { Object3D } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
 import type { PassThrough } from './terrain-lift.ts';
 import type { Point3, TerrainSight } from './terrain-sight.ts';
-import { Matrix4, MeshStandardMaterial, Raycaster, Vector2, Vector3 } from 'three';
+import type { Intersection } from 'three';
+import { InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Sphere, Vector2, Vector3 } from 'three';
 
 export const CUTAWAY = {
   radius: 0.115,
@@ -40,6 +41,7 @@ export const CUTAWAY = {
   ghostCap: 0.22,
   ghostShade: 0.8,
   cleared: 0.6,
+  sightSlack: 0.01,
 } as const;
 
 export interface CutawayUniforms {
@@ -80,19 +82,108 @@ export interface CutHero {
   readonly floor: number;
 }
 
-export function heroBehind(hero: CutHero, eye: Vector3, list: readonly Object3D[]): boolean {
-  const seen: Object3D[] = list.filter(shown);
+const BODY_LIFTS: readonly number[] = [CUTAWAY.chest, CUTAWAY.head];
+const SIGHT_LIFTS: readonly number[] = [CUTAWAY.feet, CUTAWAY.chest, CUTAWAY.head];
+const hits: Intersection[] = [];
+const single: Mesh = new Mesh();
+const unionSphere: Sphere = new Sphere();
+const instanceSphere: Sphere = new Sphere();
+const instanceLocal: Matrix4 = new Matrix4();
+const instanceWorld: Matrix4 = new Matrix4();
+
+interface InstanceSpheres {
+  readonly world: Matrix4;
+  readonly source: Sphere;
+  version: number;
+  count: number;
+  spheres: Float64Array;
+}
+
+const instanceSpheres: WeakMap<InstancedMesh, InstanceSpheres> = new WeakMap<InstancedMesh, InstanceSpheres>();
+
+function current(cached: InstanceSpheres, mesh: InstancedMesh, source: Sphere): boolean {
+  return cached.version === mesh.instanceMatrix.version && cached.count === mesh.count && cached.world.equals(mesh.matrixWorld) && cached.source.equals(source);
+}
+
+function spheresOf(mesh: InstancedMesh, source: Sphere): Float64Array {
+  const cached: InstanceSpheres | undefined = instanceSpheres.get(mesh);
+  if (cached !== undefined && current(cached, mesh, source)) return cached.spheres;
+  const spheres: Float64Array = new Float64Array(mesh.count * 4);
+  for (let index: number = 0; index < mesh.count; index += 1) {
+    mesh.getMatrixAt(index, instanceLocal);
+    instanceWorld.multiplyMatrices(mesh.matrixWorld, instanceLocal);
+    instanceSphere.copy(source).applyMatrix4(instanceWorld);
+    spheres[index * 4] = instanceSphere.center.x;
+    spheres[index * 4 + 1] = instanceSphere.center.y;
+    spheres[index * 4 + 2] = instanceSphere.center.z;
+    spheres[index * 4 + 3] = instanceSphere.radius;
+  }
+  instanceSpheres.set(mesh, { world: mesh.matrixWorld.clone(), source: source.clone(), version: mesh.instanceMatrix.version, count: mesh.count, spheres });
+  return spheres;
+}
+
+function segmentMisses(spheres: Float64Array, index: number): boolean {
+  const origin: Vector3 = probe.ray.origin;
+  const direction: Vector3 = probe.ray.direction;
+  const dx: number = (spheres[index * 4] ?? 0) - origin.x;
+  const dy: number = (spheres[index * 4 + 1] ?? 0) - origin.y;
+  const dz: number = (spheres[index * 4 + 2] ?? 0) - origin.z;
+  const along: number = Math.min(probe.far, Math.max(0, dx * direction.x + dy * direction.y + dz * direction.z));
+  const ox: number = dx - direction.x * along;
+  const oy: number = dy - direction.y * along;
+  const oz: number = dz - direction.z * along;
+  const reach: number = (spheres[index * 4 + 3] ?? Infinity) + CUTAWAY.sightSlack;
+  return ox * ox + oy * oy + oz * oz > reach * reach;
+}
+
+function instanceBlocks(mesh: InstancedMesh): boolean {
+  if (!mesh.layers.test(probe.layers)) return false;
+  if (mesh.boundingSphere === null) mesh.computeBoundingSphere();
+  const bounds: Sphere | null = mesh.boundingSphere;
+  if (bounds === null || !probe.ray.intersectsSphere(unionSphere.copy(bounds).applyMatrix4(mesh.matrixWorld))) return false;
+  if (mesh.geometry.boundingSphere === null) mesh.geometry.computeBoundingSphere();
+  const source: Sphere | null = mesh.geometry.boundingSphere;
+  if (source === null) return false;
+  const spheres: Float64Array = spheresOf(mesh, source);
+  single.geometry = mesh.geometry;
+  single.material = mesh.material;
+  for (let index: number = 0; index < mesh.count; index += 1) {
+    if (segmentMisses(spheres, index)) continue;
+    mesh.getMatrixAt(index, instanceLocal);
+    single.matrixWorld.multiplyMatrices(mesh.matrixWorld, instanceLocal);
+    single.raycast(probe, hits);
+    if (hits.length > 0) return true;
+  }
+  return false;
+}
+
+function isInstanced(object: Object3D): object is InstancedMesh {
+  return object instanceof InstancedMesh;
+}
+
+function blocksProbe(object: Object3D): boolean {
+  hits.length = 0;
+  if (isInstanced(object)) return instanceBlocks(object);
+  probe.intersectObject(object, false, hits);
+  return hits.length > 0;
+}
+
+function behindSeen(hero: CutHero, eye: Vector3, seen: readonly Object3D[]): boolean {
   if (seen.length === 0) return false;
-  for (const lift of [CUTAWAY.chest, CUTAWAY.head]) {
+  for (const lift of BODY_LIFTS) {
     probeFrom.set(hero.x, hero.floor + lift, hero.z);
     probeTo.copy(eye).sub(probeFrom);
     const far: number = probeTo.length();
     if (far <= 0) continue;
     probe.set(probeFrom, probeTo.divideScalar(far));
     probe.far = far;
-    if (probe.intersectObjects(seen, false).length > 0) return true;
+    for (const object of seen) if (blocksProbe(object)) return true;
   }
   return false;
+}
+
+export function heroBehind(hero: CutHero, eye: Vector3, list: readonly Object3D[]): boolean {
+  return behindSeen(hero, eye, list.filter(shown));
 }
 
 export function springCut(state: CutSpring, target: number, dt: number): CutSpring {
@@ -213,7 +304,8 @@ export function cutawayCompany(hero: CutHero, others: readonly CutOther[], floor
 }
 
 export function terrainHides(sight: TerrainSight, hero: CutHero, eye: Point3): boolean {
-  return [CUTAWAY.feet, CUTAWAY.chest, CUTAWAY.head].some((lift: number): boolean => sight.blocks(eye, { x: hero.x, y: hero.floor + lift, z: hero.z }, null));
+  for (const lift of SIGHT_LIFTS) if (sight.blocks(eye, { x: hero.x, y: hero.floor + lift, z: hero.z }, null)) return true;
+  return false;
 }
 
 export interface CutView {
@@ -245,6 +337,7 @@ const heroPoint: Vector3 = new Vector3();
 const viewPoint: Vector3 = new Vector3();
 const eye: Vector3 = new Vector3();
 let occluders: readonly Object3D[] = [];
+const shownOccluders: Object3D[] = [];
 let terrain: TerrainSight | null = null;
 let owner: symbol | null = null;
 const windowCentre: Vector2 = new Vector2(CUTAWAY.far, CUTAWAY.far);
@@ -261,7 +354,7 @@ export function setCutawayCompany(list: readonly CutHero[]): void {
 }
 
 function hidden(hero: CutHero): boolean {
-  return heroBehind(hero, eye, occluders) || (terrain !== null && terrainHides(terrain, hero, eye));
+  return behindSeen(hero, eye, shownOccluders) || (terrain !== null && terrainHides(terrain, hero, eye));
 }
 
 function neededRadius(camera: PerspectiveCamera, centre: Vector3, aspect: number): number {
@@ -293,6 +386,7 @@ export function resetCutaway(claim: symbol | null = null): void {
   if (claim !== null && claim !== owner) return;
   owner = null;
   occluders = [];
+  shownOccluders.length = 0;
   terrain = null;
   company = [];
   ghosts = [];
@@ -302,6 +396,8 @@ export function aimCutaway(camera: PerspectiveCamera, hero: CutHero, width: numb
   camera.updateMatrixWorld();
   camera.getWorldPosition(eye);
   CUTAWAY_UNIFORMS.uCutWorld.value.copy(camera.matrixWorld);
+  shownOccluders.length = 0;
+  for (const occluder of occluders) if (shown(occluder)) shownOccluders.push(occluder);
   const behind: boolean = hidden(hero);
   spring = springCut(spring, behind ? 1 : 0, dt);
   CUTAWAY_UNIFORMS.uCutLevel.value = spring.level;
