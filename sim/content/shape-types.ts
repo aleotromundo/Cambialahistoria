@@ -48,6 +48,7 @@ export interface ChargePress {
   readonly max: number;
   readonly damageScale: number;
   readonly areaScale: number;
+  readonly hint: string | null;
 }
 
 export interface ChannelPress {
@@ -55,6 +56,7 @@ export interface ChannelPress {
   readonly interval: number;
   readonly max: number;
   readonly move: number;
+  readonly hint: string | null;
 }
 
 export type PressDef = ChargePress | ChannelPress;

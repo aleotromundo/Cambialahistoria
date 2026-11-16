@@ -280,3 +280,81 @@
   font-size: 12px;
   color: var(--text-dim);
 }
+
+.slot-families {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  pointer-events: none;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.slot.needs .slot-families {
+  opacity: 0;
+}
+
+.slot-family {
+  display: block;
+  width: 8px;
+  height: 8px;
+  color: #c9d2dc;
+  opacity: 0.35;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.9));
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.slot-family.held {
+  color: var(--ember);
+  opacity: 1;
+}
+
+.slot-family svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tip-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tip-forms-title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(214, 222, 232, 0.55);
+}
+
+.tip-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: rgba(214, 222, 232, 0.7);
+}
+
+.tip-form.held {
+  color: #e8edf3;
+}
+
+.tip-form-mark {
+  flex: none;
+  width: 11px;
+  height: 11px;
+}
+
+.tip-form-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

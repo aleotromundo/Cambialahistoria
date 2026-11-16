@@ -8,7 +8,7 @@ import type { SpinMotion, SpinRead, WakeDrop } from './spin-motion.ts';
 import { createSpinMotion, readSpin, SPIN_MOTION, spinShown, stepSpinMotion } from './spin-motion.ts';
 
 const DT: number = 1 / 60;
-const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', animation: 'sweep', delivery: { type: 'nova', radius: 3 }, press: { type: 'channel', interval: 0.25, max: 30, move: 1 }, momentum: { perHit: 1, cap: 10, grace: 0.5, drain: 10, steady: 3, manaPerHit: 0, lifePerHit: 0, tiers: [{ at: 5, turn: 1.25, reach: 1.2 }] } };
+const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', animation: 'sweep', delivery: { type: 'nova', radius: 3 }, press: { type: 'channel', interval: 0.25, max: 30, move: 1, hint: null }, momentum: { perHit: 1, cap: 10, grace: 0.5, drain: 10, steady: 3, manaPerHit: 0, lifePerHit: 0, tiers: [{ at: 5, turn: 1.25, reach: 1.2 }] } };
 
 function spinning(world: World): void {
   world.player.skills = [SPIN];

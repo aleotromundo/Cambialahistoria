@@ -32,9 +32,9 @@ void test('a field that pulses less often than it lasts, a fractional jump count
 
 void test('hold and brand are optional and read as charge, channel or a burst skill', (): void => {
   assert.deepEqual(skillPress({}, 'x'), { press: null, brand: null, momentum: null, burn: null, soak: null });
-  assert.deepEqual(skillPress({ press: { type: 'channel', interval: 0.2, max: 3 } }, 'x').press, { type: 'channel', interval: 0.2, max: 3, move: 0 });
+  assert.deepEqual(skillPress({ press: { type: 'channel', interval: 0.2, max: 3 } }, 'x').press, { type: 'channel', interval: 0.2, max: 3, move: 0, hint: null });
   assert.deepEqual(skillPress({ press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4 }, brand: { duration: 6, burst: 'pop' } }, 'x'), {
-    press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4 },
+    press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.4, hint: null },
     brand: { duration: 6, burst: 'pop' },
     momentum: null,
     burn: null,
@@ -60,7 +60,7 @@ void test('a brand must burst as a nova, and a blink or a leap cannot be held', 
   assert.deepEqual(shapeProblems(SHAPE_CONTENT), []);
   const bad: readonly SkillDef[] = [
     { ...shapeSkill('test_brander'), id: 'bad_brand', brand: { duration: 3, burst: 'test_fork' } },
-    { ...shapeSkill('test_step'), id: 'bad_step', press: { type: 'charge', max: 1, damageScale: 2, areaScale: 1 } },
+    { ...shapeSkill('test_step'), id: 'bad_step', press: { type: 'charge', max: 1, damageScale: 2, areaScale: 1, hint: null } },
     { ...shapeSkill('test_heave'), id: 'bad_leap', leap: { distance: 4, stopShort: 1, airTime: 0.3, lane: false } },
   ];
   const content: Content = { ...SHAPE_CONTENT, skills: new Map<string, SkillDef>([...SHAPE_CONTENT.skills, ...bad.map((def: SkillDef): [string, SkillDef] => [def.id, def])]) };
@@ -70,6 +70,8 @@ void test('a brand must burst as a nova, and a blink or a leap cannot be held', 
 void test('a channel may carry the hero along, and a momentum block reads its gain, cap, grace, drain, steady mark and rising steps', (): void => {
   assert.equal(skillPress({ press: { type: 'channel', interval: 0.3, max: 60, move: 1 } }, 'x').press?.type, 'channel');
   assert.throws(() => skillPress({ press: { type: 'channel', interval: 0.3, max: 60, move: 1.5 } }, 'x'), ContentError);
+  assert.equal(skillPress({ press: { type: 'channel', interval: 0.3, max: 60, move: 1, hint: 'Hold to keep turning' } }, 'x').press?.hint, 'Hold to keep turning');
+  assert.throws(() => skillPress({ press: { type: 'channel', interval: 0.3, max: 60, hint: 4 } }, 'x'), ContentError);
   const block = { perHit: 1, cap: 20, grace: 0.6, drain: 10, steady: 4, manaPerHit: 0.5, lifePerHit: 0, tiers: [{ at: 5, turn: 1.1, reach: 1.1 }, { at: 12, turn: 1.3, reach: 1.2 }] };
   assert.deepEqual(skillPress({ momentum: block }, 'x').momentum, block);
   assert.throws(() => skillPress({ momentum: { ...block, steady: 30 } }, 'x'), ContentError);

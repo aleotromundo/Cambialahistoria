@@ -11,6 +11,8 @@ import type { SkillPicker } from './skill-picker.ts';
 import { clearDetails, createSkillPicker, pointerSlotOf, skillDetails } from './skill-picker.ts';
 import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
+import { appendForms, formFamilies } from './skill-forms-view.ts';
+import { familyMark } from './weapon-family.ts';
 import type { MomentumMeter } from './momentum-meter.ts';
 import { createMomentumMeter } from './momentum-meter.ts';
 import { createChangeList } from './change-list.ts';
@@ -41,7 +43,9 @@ interface SlotView {
   readonly keyNode: HTMLElement;
   readonly needNode: HTMLElement;
   readonly badge: HTMLElement;
+  readonly families: HTMLElement;
   key: string | null;
+  familyKey: string;
   skill: SkillDef | null;
   empty: boolean | null;
   iconId: string;
@@ -164,10 +168,26 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
     const needNode: HTMLDivElement = el('div', 'slot-need', root);
     const badge: HTMLDivElement = el('div', 'slot-changes', root);
-    const view: SlotView = { root, icon, cost, cooldown, keyNode, needNode, badge, key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
+    const families: HTMLDivElement = el('div', 'slot-families', root);
+    const view: SlotView = { root, icon, cost, cooldown, keyNode, needNode, badge, families, familyKey: '', key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
     paintKey(view, keyOf(index));
-    attachTooltip(context.tooltip, root, (): HTMLElement | null => (picker.slot !== null ? null : view.skill === null ? emptyTooltip(context, index, keyOf(index)) : skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null, needOf(index, view.skill)?.line ?? null)));
+    attachTooltip(context.tooltip, root, (): HTMLElement | null => {
+      if (picker.slot !== null) return null;
+      if (view.skill === null) return emptyTooltip(context, index, keyOf(index));
+      const details: HTMLElement = skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null, needOf(index, view.skill)?.line ?? null);
+      appendForms(details, context.api.world.content, context.api.world.content.skills.get(baseOf(index) ?? '') ?? null, context.api.world.player.wielding);
+      return details;
+    });
     return view;
+  };
+
+  const paintFamilies = (view: SlotView, base: string | null, wielding: string | null): void => {
+    const familyKey: string = `${base ?? ''}|${wielding ?? ''}`;
+    if (view.familyKey === familyKey) return;
+    view.familyKey = familyKey;
+    view.families.replaceChildren();
+    if (base === null) return;
+    for (const group of formFamilies(context.api.world.content, base)) familyMark(group, group.id === wielding ? 'slot-family held' : 'slot-family', view.families);
   };
 
   const applySkill = (view: SlotView, skill: SkillDef | null): void => {
@@ -215,6 +235,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
         const need: SlotNeed | null = skill === null ? null : needOf(index, skill);
         if (need !== null) setText(view.needNode, need.tag, true);
         setClass(view.root, 'needs', need !== null);
+        paintFamilies(view, skill === null ? null : baseOf(index), player.wielding);
         const count: number = skill === null ? 0 : (changesOf(index)?.choices.length ?? 0);
         if (count > 0) setText(view.badge, String(count), true);
         setClass(view.root, 'changes', count > 0);

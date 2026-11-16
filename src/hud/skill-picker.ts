@@ -3,6 +3,7 @@ import type { SkillDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { everySkill } from '../../sim/skill-book.ts';
 import { weaponNeed } from '../../sim/weapons.ts';
+import { appendForms, pressLine } from './skill-forms-view.ts';
 import type { HudContext } from './context.ts';
 import { el, label, setClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -40,8 +41,8 @@ export function skillDetails(skill: SkillDef, sub: string, unlock: number | null
   label('tip-sub', sub, root);
   label('tip-line', skill.description, root);
   el('div', 'tip-sep', root);
-  if (skill.press?.type === 'charge') label('tip-line', `Hold to charge, up to ${skill.press.max.toFixed(1)}s`, root);
-  if (skill.press?.type === 'channel') label('tip-line', 'Hold to channel', root);
+  const press: string | null = pressLine(skill.press);
+  if (press !== null) label('tip-line tip-press', press, root);
   if (skill.manaCost > 0) label('tip-line cost', skill.press?.type === 'channel' ? `Mana cost: ${skill.manaCost} per pulse` : `Mana cost: ${skill.manaCost}`, root);
   if (skill.cooldown > 0) label('tip-line', `Cooldown: ${skill.cooldown.toFixed(1)}s`, root);
   if (unlock !== null) label('tip-line locked', `Learned at level ${unlock}`, root);
@@ -88,7 +89,11 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
     el('span', 'skill-choice-icon', root).innerHTML = iconSvg(skill.icon);
     label('skill-choice-level', `${entry.level}`, root);
     const choice: Choice = { root, entry, skill, state: '' };
-    attachTooltip(context.tooltip, root, (): HTMLElement => skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, weaponNeed(content, skill.weapons, context.api.world.player.wielding)));
+    attachTooltip(context.tooltip, root, (): HTMLElement => {
+      const details: HTMLElement = skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, weaponNeed(content, skill.weapons, context.api.world.player.wielding));
+      appendForms(details, content, skill, context.api.world.player.wielding);
+      return details;
+    });
     root.addEventListener('click', (event: MouseEvent): void => {
       event.stopPropagation();
       if (slot === null || choice.state === 'locked') return;

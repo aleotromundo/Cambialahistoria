@@ -8,7 +8,7 @@ import type { MomentumMeterState, MomentumReading } from './momentum-meter.ts';
 import { createMeterState, readMomentum } from './momentum-meter.ts';
 
 const DT: number = 1 / 60;
-const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', press: { type: 'channel', interval: 0.25, max: 30, move: 1 }, momentum: { perHit: 1, cap: 20, grace: 0.5, drain: 10, steady: 4, manaPerHit: 0, lifePerHit: 0, tiers: [{ at: 5, turn: 1.2, reach: 1.1 }, { at: 10, turn: 1.4, reach: 1.2 }] } };
+const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', press: { type: 'channel', interval: 0.25, max: 30, move: 1, hint: null }, momentum: { perHit: 1, cap: 20, grace: 0.5, drain: 10, steady: 4, manaPerHit: 0, lifePerHit: 0, tiers: [{ at: 5, turn: 1.2, reach: 1.1 }, { at: 10, turn: 1.4, reach: 1.2 }] } };
 
 void test('the meter stays hidden for a hero with no momentum skill', (): void => {
   const world: World = arena(1);

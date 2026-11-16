@@ -12,8 +12,8 @@ import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 
 const MOMENTUM_DEF: MomentumDef = { perHit: 1, cap: 10, grace: 0.5, drain: 10, steady: 3, manaPerHit: 0.5, lifePerHit: 0, tiers: [{ at: 4, turn: 1.25, reach: 1.2 }, { at: 8, turn: 1.5, reach: 1.4 }] };
-const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', manaCost: 1, delivery: { type: 'nova', radius: 3 }, press: { type: 'channel', interval: 0.2, max: 30, move: 1 }, momentum: MOMENTUM_DEF };
-const ROOTED: SkillDef = { ...SPIN, id: 'test_rooted_spin', press: { type: 'channel', interval: 0.2, max: 30, move: 0 } };
+const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', manaCost: 1, delivery: { type: 'nova', radius: 3 }, press: { type: 'channel', interval: 0.2, max: 30, move: 1, hint: null }, momentum: MOMENTUM_DEF };
+const ROOTED: SkillDef = { ...SPIN, id: 'test_rooted_spin', press: { type: 'channel', interval: 0.2, max: 30, move: 0, hint: null } };
 const BLOW: SkillDef = { ...shapeSkill('test_wire'), id: 'test_blow', knockback: 12, root: 1, hold: 0.5, damage: { type: 'physical', weaponPercent: 0, flatMin: 3, flatMax: 3 } };
 const HOLD: Command = { type: 'hold', slot: 0, down: true };
 
