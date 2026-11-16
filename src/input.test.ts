@@ -88,7 +88,7 @@ function rig(world: World, overUi: () => boolean = (): boolean => false, players
     rayDistanceTo: (): number => Infinity,
     zoomBy: (): void => undefined,
   };
-  const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined };
+  const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, readInput: (): void => undefined };
   const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
   const settings: SettingsStore = createSettingsStore(store, SLOTS, { flasks: 0, ladder: false });
   const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: label, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined,
@@ -469,5 +469,20 @@ void test('a name label that is still reported hovered never turns a click on op
   assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'talk'), []);
   assert.equal(freshMoves(commands).length, 1);
   assert.equal(setup.input.hoveredId, null);
+  assert.deepEqual(setup.input.reading, { click: { kind: 'move', reason: null }, held: [], inside: true, overUi: false });
+});
+
+void test('the input reading reports a held press, a no-ground click and a press taken by another player, as collect resolved them', (): void => {
+  const world: World = hideoutWorld();
+  const players: PlayerHooks = { at: 'p1', takes: (id: string | null): boolean => id !== null, pressed: [], hovered: [] };
+  const setup: Rig = rig(world, (): boolean => false, players);
+  const point: Vec2 = screenOf(world, { x: world.player.pos.x + 4, z: world.player.pos.z });
+  setup.fire('pointermove', at(point, -1, 0));
+  setup.fire('pointerdown', at(point, LEFT.button, LEFT.bit));
+  setup.input.collect(DT);
+  assert.deepEqual(setup.input.reading, { click: { kind: 'player', reason: 'another player under pointer or their menu open' }, held: ['left'], inside: true, overUi: false });
+  setup.fire('pointerup', at(point, LEFT.button, 0));
+  setup.input.collect(DT);
+  assert.deepEqual(setup.input.reading.held, []);
 });
 

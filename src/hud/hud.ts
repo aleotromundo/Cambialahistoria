@@ -296,6 +296,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     coversScene(): boolean {
       return sceneCovered(overlays.state());
     },
+    readInput(source: () => string): void {
+      fps.readInput(source);
+    },
     update(dt: number, view: FrameView): void {
       const world = api.world;
       if (warmWanted && warmWait-- <= 0) {

@@ -31,6 +31,7 @@ export interface HudApi {
 
 export interface Hud {
   update(dt: number, view: FrameView): void;
+  readInput(source: () => string): void;
   refreshItems(): void;
   warm(): void;
   coversScene(): boolean;

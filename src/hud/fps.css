@@ -2,7 +2,6 @@
   position: absolute;
   top: 8px;
   left: 10px;
-  height: 16px;
   overflow: hidden;
   font-size: 12px;
   font-weight: 600;
@@ -26,6 +25,18 @@
 .hud-fps.shown {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+}
+
+.hud-fps-input {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: rgba(244, 238, 226, 0.72);
+}
+
+.hud-fps-input:empty {
+  display: none;
 }
 
 .hud-fps-tier::before {

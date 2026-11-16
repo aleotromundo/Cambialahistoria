@@ -15,6 +15,8 @@ import type { Command, GroundItem, MomentState, MonsterState, NpcState, World } 
 import { waypointAt } from '../sim/world/waypoints.ts';
 import { portalNear } from '../sim/world/portal.ts';
 import type { PortalEnd } from '../sim/world/portal-types.ts';
+import type { ClickFacts, ClickResolution, InputReading, PersonPick } from './click-reading.ts';
+import { describeInput, resolveClick } from './click-reading.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
 import { pickActor } from './pick.ts';
@@ -35,8 +37,8 @@ export const INPUT = {
   leftBinding: 'mouse_left',
   rightBinding: 'mouse_right',
   mouseButtons: [
-    { binding: 'mouse_left', button: 0, bit: 1 },
-    { binding: 'mouse_right', button: 2, bit: 2 },
+    { binding: 'mouse_left', name: 'left', button: 0, bit: 1 },
+    { binding: 'mouse_right', name: 'right', button: 2, bit: 2 },
   ],
   closeKey: 'Escape',
   advanceKeys: ['Space', 'Enter'],
@@ -63,10 +65,12 @@ export interface Input {
   releaseHold(): void;
   readonly hoveredId: number | null;
   readonly look: Vec2 | null;
+  readonly reading: InputReading;
 }
 
 export interface MouseButton {
   readonly binding: string;
+  readonly name: string;
   readonly button: number;
   readonly bit: number;
 }
@@ -89,7 +93,7 @@ export interface KeySource {
 
 export type InputCamera = Pick<IsoCamera, 'groundPoint' | 'project' | 'rayDistanceTo' | 'zoomBy'>;
 
-export type InputHud = Pick<Hud, 'isPointerOverUi' | 'closePanels' | 'togglePanel' | 'requestMap'>;
+export type InputHud = Pick<Hud, 'isPointerOverUi' | 'closePanels' | 'togglePanel' | 'requestMap' | 'readInput'>;
 
 export function createInput(canvas: InputSurface, windowEvents: KeySource, world: World, camera: InputCamera, hud: InputHud, settings: SettingsStore, hooks: InputHooks): Input {
   const pointer: Vector2 = new Vector2(0, 0);
@@ -110,6 +114,8 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let pressedExit: string | null = null;
   let pressedPlayer: boolean = false;
   let enteredZone: string = world.zone.id;
+  let lastClick: ClickResolution | null = null;
+  let overUi: boolean = false;
   const extra: Command[] = [];
   const canvasRect: SurfaceRect = surfaceRect(canvas);
 
@@ -293,12 +299,18 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     return stationNear(world, ground) ?? cacheNear(world, ground);
   };
 
+  const reading = (): InputReading => ({ click: lastClick, held: INPUT.mouseButtons.filter((mouseButton: MouseButton): boolean => held.has(mouseButton.binding)).map((mouseButton: MouseButton): string => mouseButton.name), inside: pointerInside, overUi });
+  hud.readInput((): string => describeInput(reading()));
+
   return {
     get hoveredId(): number | null {
       return hoveredId;
     },
     get look(): Vec2 | null {
       return look;
+    },
+    get reading(): InputReading {
+      return reading();
     },
     tap(clientX: number, clientY: number): void {
       trackPoint(clientX, clientY);
@@ -331,6 +343,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         pressedItem = false;
         pressedPlayer = false;
       }
+      overUi = hud.isPointerOverUi();
       const picked: PickCandidate | null = pickActors();
       const target: MonsterState | null = picked?.kind === 'monster' ? (world.monsters.find((monster: MonsterState): boolean => monster.id === picked.id) ?? null) : null;
       const person: NpcState | null = picked?.kind === 'npc' ? (world.npcs.find((npc: NpcState): boolean => npc.id === picked.id) ?? null) : null;
@@ -349,6 +362,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const station: Station | Cache | null = target === null && person === null && item === null && exit === null && chest === null ? stationAt(ground) : null;
       const portal: PortalEnd | null = target === null && person === null && item === null && exit === null && chest === null && station === null ? portalAt(ground) : null;
       const marked: boolean = target === null && person === null && item === null && exit === null && chest === null && station === null && portal === null && onWaypointMark(ground);
+      const personPick: PersonPick = person === null ? 'none' : pointerInside ? 'body' : 'label';
       if (tapping) {
         tapping = false;
         pointerInside = false;
@@ -357,11 +371,15 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
-      if (fresh.has(INPUT.leftBinding)) pressedPlayer = false;
-      if (fresh.has(INPUT.leftBinding) && !shift && world.dialogue === null && hooks.pressPlayer(other)) {
+      const leftDown: boolean = fresh.has(INPUT.leftBinding);
+      if (leftDown) pressedPlayer = false;
+      const tookPlayer: boolean = leftDown && !shift && world.dialogue === null && hooks.pressPlayer(other);
+      if (tookPlayer) {
         fresh.delete(INPUT.leftBinding);
         pressedPlayer = true;
       }
+      const facts = (freshPress: boolean, onItem: boolean, heldExit: boolean): ClickFacts => ({ fresh: freshPress, player: tookPlayer, dialogue: world.dialogue !== null, ground: aim !== null && ground !== null, target: target !== null, shift, person: personPick, item: onItem, chest: chest !== null, station: station !== null, portal: portal !== null, heldExit, exit: exit !== null, travelling: world.player.intent.type === 'travel' });
+      if (tookPlayer || (leftDown && (world.dialogue !== null || aim === null || ground === null))) lastClick = resolveClick(facts(true, false, false));
       if (pressedPlayer && !held.has(INPUT.leftBinding)) {
         pressedPlayer = false;
         up.delete(INPUT.leftBinding);
@@ -396,44 +414,61 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const leftTick: boolean = leftFresh || (leftHeld && holdTick);
       if (leftFresh) pressedExit = exit?.id ?? null;
       else if (!leftHeld) pressedExit = null;
+      const click: ClickResolution = resolveClick(facts(leftFresh, pressedItem, pressedExit !== null));
+      if (leftFresh) lastClick = click;
       if (leftFresh || leftHeld) {
-        if (target !== null) {
-          if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim, targetId: target.id });
-          if (leftFresh) hooks.clickMarker(target.pos.x, target.pos.z, true);
-        } else if (shift) {
-          if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: ground, targetId: null });
-        } else if (person !== null) {
-          if (leftFresh) commands.push({ type: 'talk', npcId: person.id });
-        } else if (pressedItem) {
-          if (itemHit.pickup !== null && item !== null) {
-            commands.push({ type: 'pickup', groundId: itemHit.pickup });
-            hooks.clickMarker(item.pos.x, item.pos.z, false);
+        switch (click.kind) {
+          case 'skill':
+            if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: target === null ? ground : aim, targetId: target?.id ?? null });
+            if (leftFresh && target !== null) hooks.clickMarker(target.pos.x, target.pos.z, true);
+            break;
+          case 'talk':
+            if (leftFresh && person !== null) commands.push({ type: 'talk', npcId: person.id });
+            break;
+          case 'pickup':
+            if (itemHit.pickup !== null && item !== null) {
+              commands.push({ type: 'pickup', groundId: itemHit.pickup });
+              hooks.clickMarker(item.pos.x, item.pos.z, false);
+            }
+            break;
+          case 'open': {
+            const spot: Vec2 | null = chest === null ? null : chestSpot(chest);
+            if (leftFresh && chest !== null && spot !== null) {
+              commands.push({ type: 'open', momentId: chest.id });
+              hooks.clickMarker(spot.x, spot.z, false);
+            }
+            break;
           }
-        } else if (chest !== null) {
-          const spot: Vec2 | null = chestSpot(chest);
-          if (leftFresh && spot !== null) {
-            commands.push({ type: 'open', momentId: chest.id });
-            hooks.clickMarker(spot.x, spot.z, false);
+          case 'use':
+            if (leftFresh && station !== null) {
+              commands.push({ type: 'use', prop: station.index });
+              hooks.clickMarker(station.placed.x, station.placed.z, false);
+            }
+            break;
+          case 'portal':
+            if (leftFresh && portal !== null) {
+              commands.push({ type: 'enter_portal' });
+              hooks.clickMarker(portal.pos.x, portal.pos.z, false);
+            }
+            break;
+          case 'swallowed':
+            hooks.aimExit(pressedExit);
+            break;
+          case 'exit': {
+            if (exit === null) break;
+            const through: Command | null = exitPress(exit.id, { fresh: leftFresh, travelling: world.player.intent.type === 'travel', ground });
+            if (through !== null) commands.push(through);
+            if (leftFresh) hooks.clickMarker(exit.x, exit.z, false);
+            break;
           }
-        } else if (station !== null) {
-          if (leftFresh) {
-            commands.push({ type: 'use', prop: station.index });
-            hooks.clickMarker(station.placed.x, station.placed.z, false);
-          }
-        } else if (portal !== null) {
-          if (leftFresh) {
-            commands.push({ type: 'enter_portal' });
-            hooks.clickMarker(portal.pos.x, portal.pos.z, false);
-          }
-        } else if (!leftFresh && pressedExit !== null) {
-          hooks.aimExit(pressedExit);
-        } else if (exit !== null) {
-          const through: Command | null = exitPress(exit.id, { fresh: leftFresh, travelling: world.player.intent.type === 'travel', ground });
-          if (through !== null) commands.push(through);
-          if (leftFresh) hooks.clickMarker(exit.x, exit.z, false);
-        } else {
-          commands.push({ type: 'move', held: !leftFresh, dest: ground });
-          if (leftFresh) hooks.clickMarker(ground.x, ground.z, false);
+          case 'move':
+            commands.push({ type: 'move', held: !leftFresh, dest: ground });
+            if (leftFresh) hooks.clickMarker(ground.x, ground.z, false);
+            break;
+          case 'player':
+          case 'advance':
+          case 'none':
+            break;
         }
       }
 
