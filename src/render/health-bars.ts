@@ -45,6 +45,18 @@ export function endStops(tone: BarTone, ends: number): readonly FadeStop[] {
   ];
 }
 
+interface BarStops {
+  readonly back: readonly FadeStop[];
+  readonly trail: readonly FadeStop[];
+  readonly fill: readonly FadeStop[];
+}
+
+const STOPS: BarStops = {
+  back: endStops(HEALTH_BARS.back, HEALTH_BARS.ends),
+  trail: endStops(HEALTH_BARS.trail, HEALTH_BARS.ends),
+  fill: endStops(HEALTH_BARS.fill, HEALTH_BARS.ends),
+};
+
 interface BarState {
   fill: number;
   trail: number;
@@ -65,9 +77,9 @@ export function barWanted(monster: Pick<MonsterState, 'alive' | 'life' | 'maxLif
   return monster.alive && monster.life < monster.maxLife;
 }
 
-function layer(target: CanvasRenderingContext2D, tone: BarTone, left: number, top: number, full: number, span: number, barHeight: number): void {
+function layer(target: CanvasRenderingContext2D, stops: readonly FadeStop[], left: number, top: number, full: number, span: number, barHeight: number): void {
   const shade: CanvasGradient = target.createLinearGradient(left, 0, left + full, 0);
-  for (const stop of endStops(tone, HEALTH_BARS.ends)) shade.addColorStop(stop.at, stop.color);
+  for (const stop of stops) shade.addColorStop(stop.at, stop.color);
   target.fillStyle = shade;
   target.fillRect(left, top, span, barHeight);
 }
@@ -79,6 +91,8 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
   const rootSize: TagSizes<HTMLElement> = createTagSizes(browserTagMeasure(clientBox));
   const context: CanvasRenderingContext2D | null = canvas.getContext('2d');
   const states: Map<number, BarState> = new Map<number, BarState>();
+  const seen: Set<number> = new Set<number>();
+  let drawn: boolean = true;
   const point: Vector2 = new Vector2();
   let width: number = 0;
   let height: number = 0;
@@ -93,6 +107,7 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
     scale = nextScale;
     canvas.width = Math.round(width * scale);
     canvas.height = Math.round(height * scale);
+    drawn = false;
   };
 
   return {
@@ -100,8 +115,9 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
       if (context === null) return;
       fit();
       context.setTransform(scale, 0, 0, scale, 0, 0);
-      context.clearRect(0, 0, width, height);
-      const seen: Set<number> = new Set<number>();
+      if (drawn) context.clearRect(0, 0, width, height);
+      drawn = false;
+      seen.clear();
       for (const monster of world.monsters) {
         const wanted: boolean = barWanted(monster);
         let state: BarState | undefined = states.get(monster.id);
@@ -133,12 +149,13 @@ export function createHealthBars(root: HTMLElement, camera: IsoCamera): HealthBa
         const barHeight: number = big ? HEALTH_BARS.bossHeight : HEALTH_BARS.height;
         const left: number = point.x - barWidth / 2;
         const top: number = point.y - barHeight / 2;
+        drawn = true;
         context.globalAlpha = state.alpha;
-        layer(context, HEALTH_BARS.back, left, top, barWidth, barWidth, barHeight);
-        layer(context, HEALTH_BARS.trail, left, top, barWidth, barWidth * state.trail, barHeight);
+        layer(context, STOPS.back, left, top, barWidth, barWidth, barHeight);
+        layer(context, STOPS.trail, left, top, barWidth, barWidth * state.trail, barHeight);
         context.shadowColor = HEALTH_BARS.glow;
         context.shadowBlur = HEALTH_BARS.glowBlur;
-        layer(context, HEALTH_BARS.fill, left, top, barWidth, barWidth * state.fill, barHeight);
+        layer(context, STOPS.fill, left, top, barWidth, barWidth * state.fill, barHeight);
         context.shadowBlur = 0;
       }
       for (const id of states.keys()) {
