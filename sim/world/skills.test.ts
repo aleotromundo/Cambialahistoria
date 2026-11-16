@@ -220,6 +220,18 @@ void test('a charged skill waits while its key is held and hits harder and wider
   assert.equal(full.type === 'arc' ? full.reach : 0, 4.5);
 });
 
+void test('a fully charged Heavy Quarrel flies as a bolt wider by its charge area, and a tap stays as narrow as the plain bolt', (): void => {
+  const heave: SkillDef = must(content.skills.get('quarrel_heave'), 'quarrel_heave');
+  const hold = heave.press;
+  assert.ok(hold?.type === 'charge' && heave.delivery.type === 'projectile');
+  const full = chargedSkill(heave, 1).delivery;
+  const half = chargedSkill(heave, 0.5).delivery;
+  assert.ok(full.type === 'projectile' && half.type === 'projectile');
+  assert.ok(Math.abs(full.radius - heave.delivery.radius * hold.areaScale) < 1e-9);
+  assert.ok(Math.abs(half.radius - heave.delivery.radius * (1 + (hold.areaScale - 1) / 2)) < 1e-9);
+  assert.equal(chargedSkill(heave, 0).delivery, heave.delivery);
+});
+
 void test('a charge held past its limit releases on its own', (): void => {
   const world: World = shapeArena(['test_heave']);
   const struck: MonsterState = dummy(world, offset(2, 0));

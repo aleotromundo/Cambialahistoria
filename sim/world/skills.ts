@@ -14,6 +14,7 @@ import { refreshPlayer } from './character.ts';
 import { firePowers } from '../powers.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 import { skillAllowed } from '../weapons.ts';
+import { widenedSkill } from '../widen.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
@@ -40,13 +41,6 @@ export function readyToRepeat(player: PlayerState, skill: SkillDef | null | unde
   return player.action === null && player.queued === null && blockedReason(player, skill) === null;
 }
 
-function widened(delivery: Delivery, scale: number): Delivery {
-  if (delivery.type === 'arc') return { ...delivery, reach: delivery.reach * scale };
-  if (delivery.type === 'nova' || delivery.type === 'mark' || delivery.type === 'field' || delivery.type === 'area' || delivery.type === 'blink') return { ...delivery, radius: delivery.radius * scale };
-  if (delivery.type === 'beam') return { ...delivery, range: delivery.range * scale };
-  return delivery;
-}
-
 export function comboHits(actor: Actor, skill: SkillDef): number {
   const chain = actor.combo;
   if (skill.combo === null || chain === null || chain.skill !== skill.id || chain.timeLeft <= 0) return 0;
@@ -60,11 +54,10 @@ export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
 
 export function stepSkill(skill: SkillDef, step: ComboStep): SkillDef {
   return {
-    ...skill,
+    ...widenedSkill(skill, step.areaScale),
     animation: step.animation,
     windup: step.windup,
     recovery: step.recovery,
-    delivery: widened(skill.delivery, step.areaScale),
     damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * step.damageScale, flatMin: skill.damage.flatMin * step.damageScale, flatMax: skill.damage.flatMax * step.damageScale },
     knockback: skill.knockback * step.knockbackScale,
     stagger: step.stagger,
@@ -130,8 +123,7 @@ export function chargedSkill(skill: SkillDef, charge: number): SkillDef {
   const power: number = 1 + (hold.damageScale - 1) * charge;
   const weight: number = Math.sqrt(power);
   return {
-    ...skill,
-    delivery: widened(skill.delivery, 1 + (hold.areaScale - 1) * charge),
+    ...widenedSkill(skill, 1 + (hold.areaScale - 1) * charge),
     damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * power, flatMin: skill.damage.flatMin * power, flatMax: skill.damage.flatMax * power },
     knockback: skill.knockback * weight,
     stagger: skill.stagger * weight,
@@ -304,7 +296,7 @@ export function echoedSkill(skill: SkillDef): SkillDef {
 export function spunSkill(actor: Actor, skill: SkillDef): SkillDef {
   if (skill.momentum === null) return skill;
   const step: MomentumStep = momentumStep(skill.momentum, momentumOf(actor, skill));
-  return step.reach === 1 ? skill : { ...skill, delivery: widened(skill.delivery, step.reach) };
+  return widenedSkill(skill, step.reach);
 }
 
 export function channelInterval(actor: Actor, skill: SkillDef, interval: number): number {

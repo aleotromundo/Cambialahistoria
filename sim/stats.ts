@@ -1,8 +1,9 @@
-import type { ChartGroup, Content, DamageType, Delivery, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, SkillVfx, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, DamageType, Delivery, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
 import { ANY_WEAPON, heldGroup, heldPlace } from './weapons.ts';
+import { widerWave } from './widen.ts';
 
 export const ARMOUR_HALF_POINT: number = 100;
 export const MIN_ATTACK_SPEED: number = 0.2;
@@ -180,11 +181,6 @@ function echoOf(skill: SkillDef, share: number): SkillEcho {
 function heldEchoScale(skill: SkillDef, share: number): number {
   if (skill.momentum === null || skill.echo > 0 || share <= 0) return 1;
   return 1 + Math.min(1, share) * ADDED_ECHO.heldDamage;
-}
-
-function widerWave(vfx: SkillVfx, area: number): SkillVfx {
-  if (vfx.wave === null || area === 1) return vfx;
-  return { ...vfx, wave: { ...vfx.wave, halfWidth: vfx.wave.halfWidth * area } };
 }
 
 function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
