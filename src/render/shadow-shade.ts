@@ -70,7 +70,8 @@ export function seeThrough(materials: readonly Material[], see: boolean): void {
 }
 
 export function shadowOf(actor: ActorState): VfxShadow | null {
-  if (actor.action === null || !isInvulnerable(actor)) return null;
+  if (actor.action === null) return null;
+  if (actor.action.skill.delivery.type !== 'blink' && !isInvulnerable(actor)) return null;
   return actor.action.skill.vfx.shadow;
 }
 

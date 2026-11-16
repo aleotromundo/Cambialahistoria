@@ -41,6 +41,23 @@ void test('the hero is a shadow only while the roll keeps the hero from harm', (
   assert.equal(shadowOf(world.player), null);
 });
 
+void test('Shadow Step keeps the hero a shadow through the whole step, and Mist Step casts none', (): void => {
+  const world: World = armed(worldIn(content, content.world.start, 5));
+  const step: SkillDef = must(content.skills.get('dodge_roll_slip'), 'dodge_roll_slip');
+  startSkill(world, world.player, step, { x: 1, z: 0 });
+  assert.notEqual(shadowOf(world.player), null);
+  let phases: number = 0;
+  for (let tick: number = 0; tick < 60 && world.player.action !== null; tick += 1) {
+    assert.notEqual(shadowOf(world.player), null);
+    phases += 1;
+    stepWorld(world, [], STEP);
+  }
+  assert.ok(phases > 1);
+  assert.equal(shadowOf(world.player), null);
+  const mist: SkillDef = must(content.skills.get('mist_step'), 'mist_step');
+  assert.equal(mist.vfx.shadow, null);
+});
+
 void test('the shade eases in and out without a jump and comes to rest', (): void => {
   const motion: ShadeMotion = { value: 0, speed: 0 };
   let last: number = 0;

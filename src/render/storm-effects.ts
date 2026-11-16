@@ -74,6 +74,10 @@ export const STORM_EFFECTS = {
   releaseWave: 0.8,
   hop: 0.035,
   blinkHeight: 1,
+  stepPool: 1.4,
+  stepMotes: 16,
+  stepWakeEvery: 0.25,
+  stepWakeLift: 1.3,
   strikeReach: 0.5,
   missShare: 0.4,
   wakeHeight: 0.9,
@@ -253,8 +257,30 @@ export function createStormEffects(kit: StormKit): StormEffects {
     kit.flashLight(event.from.x, 1.5, event.from.z, color, 18);
   };
 
-  const onBlink = (event: Extract<WorldEvent, { type: 'blink' }>): void => {
-    const color: Color = kit.colorOf(event.skill.vfx.color);
+  const shadowStep = (event: Extract<WorldEvent, { type: 'blink' }>, shadow: VfxShadow): void => {
+    const shade: Color = kit.colorOf(shadow.color);
+    const wake: Color = shade.clone().multiplyScalar(STORM_EFFECTS.veilWake);
+    const round: GroundLightForm = { kind: 'round', radius: STORM_EFFECTS.stepPool, inner: 0, arc: Math.PI * 2 };
+    for (const spot of [event.from, event.to]) {
+      const pool: GroundLight = createGroundLight(shade.clone().multiplyScalar(STORM_EFFECTS.poolTint), round, { fill: STORM_EFFECTS.poolFill, band: 0, width: STORM_EFFECTS.stepPool * STORM_EFFECTS.poolSoft, wobble: STORM_EFFECTS.stepPool * STORM_EFFECTS.poolWobble }, 'shade');
+      pool.mesh.position.set(spot.x, floorUp(spot.x, GROUND_LIGHT.height, spot.z), spot.z);
+      pool.setNow(shadow.strength);
+      pool.show(0);
+      kit.addObject(pool.mesh);
+      fading.push(pool);
+      kit.spray(spot.x, STORM_EFFECTS.wakeHeight, spot.z, wake, STORM_EFFECTS.stepMotes, { speed: { min: 0.3, max: 1.6 }, lift: { min: 0.4, max: 2 }, life: { min: 0.4, max: 0.8 }, size: { min: 0.4, max: 0.75 }, gravity: -0.4, drag: 1.5, jitter: 0.4 });
+    }
+    const span: number = Math.hypot(event.to.x - event.from.x, event.to.z - event.from.z);
+    const motes: number = Math.max(1, Math.ceil(span / STORM_EFFECTS.stepWakeEvery));
+    for (let mote: number = 0; mote <= motes; mote += 1) {
+      const along: number = mote / motes;
+      const x: number = event.from.x + (event.to.x - event.from.x) * along;
+      const z: number = event.from.z + (event.to.z - event.from.z) * along;
+      kit.spray(x, STORM_EFFECTS.stepWakeLift * Math.random(), z, wake, 1, { speed: { min: 0, max: 0.4 }, lift: { min: 0.2, max: 0.8 }, life: { min: 0.4, max: 0.8 }, size: { min: 0.45, max: 0.85 }, gravity: 0, drag: 1 });
+    }
+  };
+
+  const mistStep = (event: Extract<WorldEvent, { type: 'blink' }>, color: Color): void => {
     for (const spot of [event.from, event.to]) {
       kit.spray(spot.x, 0.9, spot.z, MIST, 26, { speed: { min: 0.4, max: 2.4 }, lift: { min: 0.2, max: 1.6 }, life: { min: 0.4, max: 0.9 }, size: { min: 0.8, max: 1.7 }, gravity: -0.6, drag: 2.4, jitter: 0.6 });
     }
@@ -271,6 +297,13 @@ export function createStormEffects(kit: StormKit): StormEffects {
         null,
       );
     }
+  };
+
+  const onBlink = (event: Extract<WorldEvent, { type: 'blink' }>): void => {
+    const color: Color = kit.colorOf(event.skill.vfx.color);
+    const shadow: VfxShadow | null = event.skill.vfx.shadow;
+    if (shadow !== null) shadowStep(event, shadow);
+    else mistStep(event, color);
     const delivery = event.skill.delivery;
     if (delivery.type === 'blink' && delivery.radius > 0) kit.ring(event.to.x, event.to.z, delivery.radius, color, 0.35);
   };

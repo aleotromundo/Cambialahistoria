@@ -1166,7 +1166,7 @@
     "stagger": 0.25,
     "shake": 0.1,
     "hitStop": 0.02,
-    "vfx": { "style": "mist", "color": "#c9d6e2", "cue": "ground", "lightning": { "forks": 0, "glow": 0.6, "afterglow": 0.32, "jitter": 0.25, "width": 2.4, "core": 0.12 } }
+    "vfx": { "style": "mist", "color": "#8a6fd1", "cue": "ground", "shadow": { "color": "#5a2fc0", "strength": 0.9 } }
   },
   {
     "id": "downdraught_updraught",
