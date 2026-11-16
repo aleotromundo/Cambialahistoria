@@ -7,15 +7,24 @@
   justify-content: center;
   pointer-events: none;
   background: radial-gradient(ellipse at center, rgba(8, 2, 4, 0) 0%, rgba(8, 2, 4, 0.55) 100%);
-  backdrop-filter: saturate(1) brightness(1);
+  backdrop-filter: none;
   opacity: 0;
-  transition: opacity calc(var(--spring-smooth-ms) * 2) var(--spring-smooth), backdrop-filter calc(var(--spring-smooth-ms) * 2) var(--spring-smooth);
+  visibility: hidden;
+  transition:
+    opacity calc(var(--spring-smooth-ms) * 2) var(--spring-smooth),
+    backdrop-filter calc(var(--spring-smooth-ms) * 2) var(--spring-smooth),
+    visibility 0s linear calc(var(--spring-smooth-ms) * 2);
 }
 
 .death-screen.visible {
   pointer-events: auto;
   opacity: 1;
+  visibility: visible;
   backdrop-filter: saturate(0.12) brightness(0.42);
+  transition:
+    opacity calc(var(--spring-smooth-ms) * 2) var(--spring-smooth),
+    backdrop-filter calc(var(--spring-smooth-ms) * 2) var(--spring-smooth),
+    visibility 0s;
 }
 
 .death-panel {

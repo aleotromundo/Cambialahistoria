@@ -6,12 +6,19 @@
   pointer-events: none;
   background: #05070b;
   opacity: 0;
+  visibility: hidden;
   will-change: opacity;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
 }
 
 #fade.on {
   opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
 }
 
 #fade::before {
