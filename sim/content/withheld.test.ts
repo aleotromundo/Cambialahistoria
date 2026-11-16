@@ -7,13 +7,12 @@ import { exitWithheld, withheldZones } from './withheld.ts';
 
 const content: Content = loadContent();
 
-void test('the shipped world withholds only the columned hall, every way down into it held back, and holding back the flag on the way down withholds the cave, every level below it, and hides every way in from the open world', (): void => {
-  assert.deepEqual(content.world.withheld, ['columned_hall_open']);
-  assert.deepEqual([...withheldZones(content)], ['ledger_hall', 'ledger_hall_2', 'ledger_hall_3', 'ledger_court']);
-  for (const exit of [...content.zones.values()].flatMap((zone: ZoneDef): ZoneExit[] => zone.exits.filter((entry: ZoneExit): boolean => entry.id !== 'up' && entry.to.startsWith('ledger_')))) assert.equal(exit.hiddenWhenLocked && exitWithheld(content, exit), true, exit.id);
+void test('the shipped world withholds nothing, and holding back the flag on the way down withholds the cave, every level below it down through the columned hall and its court, and hides every way in from the open world', (): void => {
+  assert.deepEqual(content.world.withheld, []);
+  assert.deepEqual([...withheldZones(content)], []);
   const held: Content = { ...content, world: { ...content.world, withheld: ['keeper_defeated'] } };
   const shut: ReadonlySet<string> = withheldZones(held);
-  assert.deepEqual([...shut], ['under_hall', 'under_hall_2', 'under_hall_3', 'lava_depths', 'lava_depths_2']);
+  assert.deepEqual([...shut], ['under_hall', 'ledger_hall', 'under_hall_2', 'under_hall_3', 'ledger_hall_2', 'ledger_hall_3', 'lava_depths', 'lava_depths_2', 'lava_depths_3', 'ledger_court']);
   const into: ZoneExit[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => !shut.has(zone.id)).flatMap((zone: ZoneDef): ZoneExit[] => zone.exits.filter((exit: ZoneExit): boolean => shut.has(exit.to)));
   assert.ok(into.length > 0);
   for (const exit of into) {

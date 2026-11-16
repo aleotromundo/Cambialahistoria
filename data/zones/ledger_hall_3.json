@@ -291,7 +291,7 @@
   ],
   "exits": [
     {"id":"up","x":92,"z":12.6,"radius":2.2,"to":"ledger_hall_2","toExit":"down","arrival":{"x":92,"z":18},"requires":[]},
-    {"id":"down","x":92,"z":171.4,"radius":2.2,"to":"ledger_court","toExit":"up","arrival":{"x":92,"z":166},"requires":[{"type":"flag","flag":"columned_hall_open","is":"open","not":false}],"lockedHint":"","hiddenWhenLocked":true}
+    {"id":"down","x":92,"z":171.4,"radius":2.2,"to":"ledger_court","toExit":"up","arrival":{"x":92,"z":166},"requires":[],"lockedHint":"","hiddenWhenLocked":false}
   ],
   "checkpoints": [
     {"id":"ledger_hall_3_terrace","x":92,"z":60,"radius":2.5},

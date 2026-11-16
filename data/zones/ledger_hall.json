@@ -343,8 +343,8 @@
     {"x":124,"z":136,"members":[{"monster":"timekeeper_tallier","count":4},{"monster":"timekeeper_custodian","count":2}],"level":27}
   ],
   "exits": [
-    {"id":"up","x":90,"z":12.6,"radius":2.2,"to":"hideout","toExit":"hall_descent","arrival":{"x":90,"z":18},"requires":[]},
-    {"id":"down","x":166,"z":175.4,"radius":2.2,"to":"ledger_hall_2","toExit":"up","arrival":{"x":166,"z":165},"requires":[{"type":"flag","flag":"columned_hall_open","is":"open","not":false}],"lockedHint":"","hiddenWhenLocked":true}
+    {"id":"up","x":90,"z":12.6,"radius":2.2,"to":"lava_depths_3","toExit":"down","arrival":{"x":90,"z":18},"requires":[]},
+    {"id":"down","x":166,"z":175.4,"radius":2.2,"to":"ledger_hall_2","toExit":"up","arrival":{"x":166,"z":165},"requires":[]}
   ],
   "checkpoints": [
     {"id":"ledger_hall_nave","x":42,"z":64,"radius":2.5},

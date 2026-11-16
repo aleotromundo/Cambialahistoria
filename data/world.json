@@ -5,7 +5,7 @@
     "opening": "skipped"
   },
   "town": "hideout",
-  "withheld": ["columned_hall_open"],
+  "withheld": [],
   "scaling": {
     "lifePerLevel": 0.3,
     "damagePerLevel": 0.28,
@@ -102,6 +102,12 @@
             "x": 455,
             "y": 265,
             "when": [{"type": "visited", "zone": "lava_depths", "not": false}]
+          },
+          {
+            "zone": "lava_depths_3",
+            "x": 510,
+            "y": 280,
+            "when": [{"type": "visited", "zone": "lava_depths_2", "not": false}]
           }
         ],
         "roads": [
@@ -146,11 +152,6 @@
             ]
           },
           {
-            "from": "hideout",
-            "to": "ledger_hall",
-            "via": []
-          },
-          {
             "from": "under_hall",
             "to": "under_hall_2",
             "via": [
@@ -189,6 +190,21 @@
                 "y": 280
               }
             ]
+          },
+          {
+            "from": "lava_depths_2",
+            "to": "lava_depths_3",
+            "via": [
+              {
+                "x": 485,
+                "y": 268
+              }
+            ]
+          },
+          {
+            "from": "lava_depths_3",
+            "to": "ledger_hall",
+            "via": []
           },
           {
             "from": "ledger_hall",

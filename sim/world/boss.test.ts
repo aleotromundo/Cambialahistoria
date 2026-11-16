@@ -314,10 +314,11 @@ void test('a pack whose condition fails does not spawn, so a beaten boss is not 
 function gated(def: MonsterDef): boolean {
   const lairs: ZoneDef[] = [...shipped.zones.values()].filter((zone: ZoneDef): boolean => zone.packs.some((pack: ZonePack): boolean => pack.members.some((member): boolean => member.monster === def.id)));
   const withheld: ReadonlySet<string> = withheldZones(shipped);
+  if (def.boss !== null && def.boss.countBreak !== null) return true;
   return lairs.every((lair: ZoneDef): boolean => withheld.has(lair.id)) || lairs.some((lair: ZoneDef): boolean => [...shipped.zones.values()].some((zone: ZoneDef): boolean => zone.exits.some((exit): boolean => exit.to === lair.id && exit.requires.some((entry: Condition): boolean => entry.type === 'level'))));
 }
 
-void test('the bot beats each boss the act does not keep behind a level or withhold, at the level it is met, and reading the telegraph is what keeps it alive', (): void => {
+void test('the bot beats each boss the act does not keep behind a level or withhold, and whose fight is not set by the pieces of its court, at the level it is met, and reading the telegraph is what keeps it alive', (): void => {
   for (const def of bosses().filter((candidate: MonsterDef): boolean => !gated(candidate))) {
     const fight = (dodges: boolean): { readonly won: boolean; readonly deaths: number; readonly lifeLeft: number } => {
       const world: World = armed(worldIn(room(def.id), ROOM, 21));
@@ -331,6 +332,16 @@ void test('the bot beats each boss the act does not keep behind a level or withh
     const reckless = fight(false);
     assert.ok(careful.won, `${def.id}: the bot did not win while dodging`);
     assert.ok(careful.deaths < reckless.deaths || (careful.deaths === reckless.deaths && careful.lifeLeft > reckless.lifeLeft), `${def.id}: dodging did not help (careful ${JSON.stringify(careful)}, reckless ${JSON.stringify(reckless)})`);
+  }
+});
+
+void test('a boss whose count the pieces of its court hold is fought there and left out of the open-room fight, and the others are not', (): void => {
+  const court: MonsterDef[] = bosses().filter((def: MonsterDef): boolean => def.boss !== null && def.boss.countBreak !== null);
+  assert.ok(court.length > 0);
+  for (const def of court) {
+    assert.equal(gated(def), true, def.id);
+    const block: BossDef = must(def.boss, def.id);
+    assert.equal(gated({ ...def, boss: { ...block, countBreak: null } }), false, `${def.id} without its count`);
   }
 });
 

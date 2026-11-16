@@ -320,7 +320,7 @@
   ],
   "exits": [
     {"id":"up","x":175.6,"z":14,"radius":2.2,"to":"ledger_hall","toExit":"down","arrival":{"x":166,"z":14},"requires":[]},
-    {"id":"down","x":8.4,"z":18,"radius":2.2,"to":"ledger_hall_3","toExit":"up","arrival":{"x":20,"z":18},"requires":[{"type":"flag","flag":"columned_hall_open","is":"open","not":false}],"lockedHint":"","hiddenWhenLocked":true}
+    {"id":"down","x":8.4,"z":18,"radius":2.2,"to":"ledger_hall_3","toExit":"up","arrival":{"x":20,"z":18},"requires":[]}
   ],
   "checkpoints": [
     {"id":"ledger_hall_2_gallery","x":152,"z":100,"radius":2.5},

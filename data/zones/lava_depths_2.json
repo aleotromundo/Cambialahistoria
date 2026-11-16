@@ -1636,7 +1636,8 @@
     {"x":63,"z":89,"members":[{"monster":"cinder_alpha","count":1},{"monster":"cinder_hound","count":3}],"level":23,"rank":"rare"}
   ],
   "exits": [
-    {"id":"up","x":293,"z":27,"radius":2.2,"to":"lava_depths","toExit":"down","arrival":{"x":291,"z":35},"requires":[],"lockedHint":"","hiddenWhenLocked":false}
+    {"id":"up","x":293,"z":27,"radius":2.2,"to":"lava_depths","toExit":"down","arrival":{"x":291,"z":35},"requires":[],"lockedHint":"","hiddenWhenLocked":false},
+    {"id":"down","x":42,"z":73,"radius":2.2,"to":"lava_depths_3","toExit":"up","arrival":{"x":51,"z":77},"requires":[],"lockedHint":"","hiddenWhenLocked":false}
   ],
   "checkpoints": [
     {"id":"lava_depths_2_c1","x":243,"z":221,"radius":2.5},

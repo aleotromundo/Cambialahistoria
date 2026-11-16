@@ -35,13 +35,14 @@ import ledgerHall2 from '../../data/zones/ledger_hall_2.json' with { type: 'json
 import ledgerHall3 from '../../data/zones/ledger_hall_3.json' with { type: 'json' };
 import lavaDepths from '../../data/zones/lava_depths.json' with { type: 'json' };
 import lavaDepths2 from '../../data/zones/lava_depths_2.json' with { type: 'json' };
+import lavaDepths3 from '../../data/zones/lava_depths_3.json' with { type: 'json' };
 import { contentProblems, parseContent } from './parse.ts';
 import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 import { modelFootprints, withFootprints } from './footprints.ts';
 
-export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks };
+export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks };
 
 export function loadContent(): Content {
   const parsed: Content = parseContent(RAW_CONTENT);

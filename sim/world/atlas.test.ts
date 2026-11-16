@@ -100,7 +100,7 @@ void test('the act shows the In-Between, the Hall of Time and the Hideout west t
   assert.deepEqual(xs, xs.toSorted((a: number, b: number): number => a - b));
   assert.deepEqual(
     act.atlas.roads.map((joined: AtlasRoad): string => `${joined.from} ${joined.to}`),
-    ['between hall_of_time', 'hall_of_time hideout', 'hall_of_time keepers_gate', 'keepers_gate under_hall', 'hideout ledger_hall', 'under_hall under_hall_2', 'under_hall_2 under_hall_3', 'under_hall_3 lava_depths', 'lava_depths lava_depths_2', 'ledger_hall ledger_hall_2', 'ledger_hall_2 ledger_hall_3', 'ledger_hall_3 ledger_court'],
+    ['between hall_of_time', 'hall_of_time hideout', 'hall_of_time keepers_gate', 'keepers_gate under_hall', 'under_hall under_hall_2', 'under_hall_2 under_hall_3', 'under_hall_3 lava_depths', 'lava_depths lava_depths_2', 'lava_depths_2 lava_depths_3', 'lava_depths_3 ledger_hall', 'ledger_hall ledger_hall_2', 'ledger_hall_2 ledger_hall_3', 'ledger_hall_3 ledger_court'],
   );
   const hall: MapPlace = must(act.atlas.places.find((place: MapPlace): boolean => place.zone === 'hall_of_time'), 'hall');
   const lair: MapPlace = must(act.atlas.places.find((place: MapPlace): boolean => place.zone === 'keepers_gate'), 'lair');
@@ -145,7 +145,7 @@ void test('a hero who woke in the In-Between has walked no road of act 1, and on
   const intoHall: AtlasRoad = must(act.atlas.roads.find((road: AtlasRoad): boolean => road.from === 'between' && road.to === 'hall_of_time'), 'road into the hall');
   assert.equal(roadState(woke, intoHall), 'hidden');
   const travelled: World = worldIn(content, 'hideout', 1);
-  travelled.visited.splice(0, travelled.visited.length, 'between', 'hall_of_time', 'hideout', 'keepers_gate', 'under_hall', 'ledger_hall', 'under_hall_2', 'under_hall_3', 'ledger_hall_2', 'ledger_hall_3', 'lava_depths', 'lava_depths_2', 'ledger_court');
+  travelled.visited.splice(0, travelled.visited.length, 'between', 'hall_of_time', 'hideout', 'keepers_gate', 'under_hall', 'ledger_hall', 'under_hall_2', 'under_hall_3', 'ledger_hall_2', 'ledger_hall_3', 'lava_depths', 'lava_depths_2', 'lava_depths_3', 'ledger_court');
   for (const road of act.atlas.roads) assert.equal(roadWalked(travelled, road), true, `${road.from} ${road.to}`);
 });
 

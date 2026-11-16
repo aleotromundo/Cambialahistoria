@@ -62,8 +62,7 @@
   "packs": [],
   "surge": null,
   "exits": [
-    {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 11, "z": 20}, "requires": []},
-    {"id": "hall_descent", "x": 46.4, "z": 20, "radius": 2.2, "to": "ledger_hall", "toExit": "up", "arrival": {"x": 41, "z": 20}, "requires": [{"type": "flag", "flag": "columned_hall_open", "is": "open", "not": false}], "lockedHint": "", "hiddenWhenLocked": true}
+    {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 11, "z": 20}, "requires": []}
   ],
   "checkpoints": [],
   "waypoint": {"x": 24, "z": 14.5, "radius": 1.8},
