@@ -10,7 +10,7 @@ import type { FireKit } from './fire-look.ts';
 import { burnsAsFire, burnTongues, FIRE_LOOK, flare, heatGlow, heatShare, hotter, lick, rimSpot } from './fire-look.ts';
 
 interface Recorded {
-  readonly sprays: { readonly x: number; readonly y: number; readonly z: number; readonly color: Color }[];
+  readonly sprays: { readonly x: number; readonly y: number; readonly z: number; readonly color: Color; readonly count: number }[];
   readonly rings: number[];
   readonly lights: number[];
 }
@@ -18,8 +18,8 @@ interface Recorded {
 function recordingKit(): { readonly kit: FireKit; readonly seen: Recorded } {
   const seen: Recorded = { sprays: [], rings: [], lights: [] };
   const kit: FireKit = {
-    spray: (x: number, y: number, z: number, color: Color): void => {
-      seen.sprays.push({ x, y, z, color: color.clone() });
+    spray: (x: number, y: number, z: number, color: Color, count: number): void => {
+      seen.sprays.push({ x, y, z, color: color.clone(), count });
     },
     ring: (_x: number, _z: number, radius: number): void => {
       seen.rings.push(radius);
@@ -29,6 +29,10 @@ function recordingKit(): { readonly kit: FireKit; readonly seen: Recorded } {
     },
   };
   return { kit, seen };
+}
+
+function particles(seen: Recorded): number {
+  return seen.sprays.reduce((sum: number, spray: Recorded['sprays'][number]): number => sum + spray.count, 0);
 }
 
 function steady(value: number): () => number {
@@ -77,23 +81,30 @@ void test('flames rise between the inner band and the rim of the area', (): void
   assert.ok(Math.abs(Math.hypot(outer.x - center.x, outer.z - center.z) - 4) < 1e-9);
 });
 
-void test('a hot fire licks with more tongues than a cold one, all inside its radius', (): void => {
+void test('a hot fire licks with more clumps of flame than a cold one, all inside its radius', (): void => {
   const cold = recordingKit();
   lick(cold.kit, { x: 0, z: 0 }, 3, 0, new Color(0xff8a3a), 0, steady(0.9));
   const hot = recordingKit();
   lick(hot.kit, { x: 0, z: 0 }, 3, 0, new Color(0xff8a3a), 1, steady(0.9));
-  assert.equal(cold.seen.sprays.length, FIRE_LOOK.lickTongues);
-  assert.equal(hot.seen.sprays.length, FIRE_LOOK.lickTongues + FIRE_LOOK.lickHotTongues);
+  assert.equal(particles(cold.seen), FIRE_LOOK.lickClumps * FIRE_LOOK.clump);
+  assert.equal(particles(hot.seen), (FIRE_LOOK.lickClumps + FIRE_LOOK.lickHotClumps) * FIRE_LOOK.clump);
   for (const spray of hot.seen.sprays) assert.ok(Math.hypot(spray.x, spray.z) <= 3 + 1e-9);
 });
 
-void test('each strike flares a full ring of flame with a flash that grows with the heat', (): void => {
+void test('each strike flares clumps of flame all round the band, at broken spacing, with a flash that grows with the heat', (): void => {
   const cold = recordingKit();
-  flare(cold.kit, { x: 0, z: 0 }, 4, new Color(0xff8a3a), 0);
+  flare(cold.kit, { x: 0, z: 0 }, 4, new Color(0xff8a3a), 0, steady(0.5));
   const hot = recordingKit();
-  flare(hot.kit, { x: 0, z: 0 }, 4, new Color(0xff8a3a), 1);
-  assert.equal(cold.seen.sprays.length, FIRE_LOOK.flareTongues);
-  assert.equal(hot.seen.sprays.length, FIRE_LOOK.flareTongues + FIRE_LOOK.flareHotTongues);
+  let roll: number = 0;
+  flare(hot.kit, { x: 0, z: 0 }, 4, new Color(0xff8a3a), 1, (): number => {
+    roll = (roll * 7 + 3) % 10;
+    return roll / 10;
+  });
+  assert.equal(cold.seen.sprays.length, FIRE_LOOK.flareClumps);
+  assert.equal(hot.seen.sprays.length, FIRE_LOOK.flareClumps + FIRE_LOOK.flareHotClumps);
+  const reaches: Set<string> = new Set<string>(hot.seen.sprays.map((spray: Recorded['sprays'][number]): string => Math.hypot(spray.x, spray.z).toFixed(3)));
+  assert.ok(reaches.size > 1);
+  for (const spray of hot.seen.sprays) assert.ok(Math.hypot(spray.x, spray.z) <= 4 + 1e-9);
   assert.deepEqual(cold.seen.rings, [4 * FIRE_LOOK.flareRing]);
   assert.ok(must(hot.seen.lights[0], 'hot light') > must(cold.seen.lights[0], 'cold light'));
 });

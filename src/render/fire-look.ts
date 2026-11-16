@@ -6,15 +6,17 @@ import { stokeHeat } from '../../sim/world/areas.ts';
 import type { BurstOptions } from './particles.ts';
 
 export const FIRE_LOOK = {
-  lickEvery: 0.06,
-  lickTongues: 2,
-  lickHotTongues: 3,
+  lickEvery: 0.05,
+  lickClumps: 1,
+  lickHotClumps: 2,
+  clump: 4,
   lickInner: 0.72,
   lickHeight: 0.15,
   lickPull: 0.6,
   emberChance: 0.35,
-  flareTongues: 14,
-  flareHotTongues: 16,
+  flareClumps: 9,
+  flareHotClumps: 9,
+  flareScatter: 0.8,
   flareHeight: 0.2,
   flareRing: 0.95,
   flareRingTime: 0.7,
@@ -26,7 +28,7 @@ export const FIRE_LOOK = {
   hotMix: 0.55,
   heatGlow: 0.8,
   hot: 0xffe2a6,
-  burnRate: 14,
+  burnRate: 26,
   burnSpread: 0.32,
   burnLow: 0.35,
   burnHigh: 1.5,
@@ -35,10 +37,10 @@ export const FIRE_LOOK = {
 
 const HOT: Color = new Color(FIRE_LOOK.hot);
 
-const TONGUE: Partial<BurstOptions> = { speed: { min: 0.1, max: 0.6 }, lift: { min: 1.6, max: 3.2 }, life: { min: 0.25, max: 0.45 }, size: { min: 0.3, max: 0.6 }, gravity: -1.5, drag: 1.6, jitter: 0.35 };
+const TONGUE: Partial<BurstOptions> = { speed: { min: 0.1, max: 0.6 }, lift: { min: 1.6, max: 3.2 }, life: { min: 0.3, max: 0.55 }, size: { min: 0.5, max: 1 }, gravity: -1.5, drag: 1.6, jitter: 0.35 };
 const EMBER: Partial<BurstOptions> = { speed: { min: 0.2, max: 0.9 }, lift: { min: 2.2, max: 4.2 }, life: { min: 0.8, max: 1.4 }, size: { min: 0.06, max: 0.12 }, gravity: -0.6, drag: 0.7, jitter: 0.6 };
-const FLARE: Partial<BurstOptions> = { speed: { min: 0.3, max: 1.4 }, lift: { min: 2.4, max: 4.6 }, life: { min: 0.3, max: 0.55 }, size: { min: 0.45, max: 0.85 }, gravity: -2, drag: 1.4, jitter: 0.4 };
-const BURN: Partial<BurstOptions> = { speed: { min: 0, max: 0.3 }, lift: { min: 1.2, max: 2.4 }, life: { min: 0.2, max: 0.38 }, size: { min: 0.18, max: 0.38 }, gravity: -1.2, drag: 1.8, jitter: 0.25 };
+const FLARE: Partial<BurstOptions> = { speed: { min: 0.3, max: 1.4 }, lift: { min: 2.4, max: 4.6 }, life: { min: 0.35, max: 0.6 }, size: { min: 0.7, max: 1.3 }, gravity: -2, drag: 1.4, jitter: 0.4 };
+const BURN: Partial<BurstOptions> = { speed: { min: 0, max: 0.3 }, lift: { min: 1.2, max: 2.4 }, life: { min: 0.22, max: 0.42 }, size: { min: 0.35, max: 0.7 }, gravity: -1.2, drag: 1.8, jitter: 0.25 };
 
 export interface FireKit {
   readonly spray: (x: number, y: number, z: number, color: Color, count: number, overrides: Partial<BurstOptions>) => void;
@@ -70,12 +72,12 @@ export function rimSpot(center: Vec2, radius: number, angle: number, share: numb
 
 export function lick(kit: FireKit, center: Vec2, radius: number, pull: number, color: Color, heat: number, random: () => number): void {
   const flame: Color = hotter(color, heat);
-  const tongues: number = FIRE_LOOK.lickTongues + Math.round(FIRE_LOOK.lickHotTongues * heat);
-  for (let index: number = 0; index < tongues; index += 1) {
+  const clumps: number = FIRE_LOOK.lickClumps + Math.round(FIRE_LOOK.lickHotClumps * heat);
+  for (let index: number = 0; index < clumps; index += 1) {
     const angle: number = random() * Math.PI * 2;
     const spot: Vec2 = rimSpot(center, radius, angle, random());
     const inward: Partial<BurstOptions> = pull > 0 ? { dirX: -Math.sin(angle), dirZ: -Math.cos(angle), spread: 0.5, speed: { min: pull * FIRE_LOOK.lickPull * 0.5, max: pull * FIRE_LOOK.lickPull } } : {};
-    kit.spray(spot.x, FIRE_LOOK.lickHeight, spot.z, flame, 1, { ...TONGUE, ...inward });
+    kit.spray(spot.x, FIRE_LOOK.lickHeight, spot.z, flame, FIRE_LOOK.clump, { ...TONGUE, ...inward });
   }
   if (random() < FIRE_LOOK.emberChance * (1 + heat)) {
     const spot: Vec2 = rimSpot(center, radius, random() * Math.PI * 2, random());
@@ -83,13 +85,13 @@ export function lick(kit: FireKit, center: Vec2, radius: number, pull: number, c
   }
 }
 
-export function flare(kit: FireKit, center: Vec2, radius: number, color: Color, heat: number): void {
+export function flare(kit: FireKit, center: Vec2, radius: number, color: Color, heat: number, random: () => number): void {
   const flame: Color = hotter(color, heat);
-  const tongues: number = FIRE_LOOK.flareTongues + Math.round(FIRE_LOOK.flareHotTongues * heat);
-  for (let index: number = 0; index < tongues; index += 1) {
-    const angle: number = (index / tongues) * Math.PI * 2;
-    const spot: Vec2 = rimSpot(center, radius, angle, 1);
-    kit.spray(spot.x, FIRE_LOOK.flareHeight, spot.z, flame, 1, FLARE);
+  const clumps: number = FIRE_LOOK.flareClumps + Math.round(FIRE_LOOK.flareHotClumps * heat);
+  for (let index: number = 0; index < clumps; index += 1) {
+    const angle: number = ((index + random() * FIRE_LOOK.flareScatter) / clumps) * Math.PI * 2;
+    const spot: Vec2 = rimSpot(center, radius, angle, random());
+    kit.spray(spot.x, FIRE_LOOK.flareHeight, spot.z, flame, FIRE_LOOK.clump, FLARE);
   }
   kit.ring(center.x, center.z, radius * FIRE_LOOK.flareRing, flame.clone().multiplyScalar(FIRE_LOOK.flareShine + FIRE_LOOK.flareHotShine * heat), FIRE_LOOK.flareRingTime);
   kit.flashLight(center.x, FIRE_LOOK.flareLift, center.z, flame, FIRE_LOOK.flareLight + FIRE_LOOK.flareHotLight * heat);

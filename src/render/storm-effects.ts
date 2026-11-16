@@ -341,7 +341,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const { delivery, color } = view;
     if (view.fire) {
       view.heat = heatShare(delivery, area.pulses);
-      flare(kit, area.pos, delivery.radius, color, view.heat);
+      flare(kit, area.pos, delivery.radius, color, view.heat, Math.random);
       if (hits > 0) kit.trauma(area.skill.shake);
       return;
     }
