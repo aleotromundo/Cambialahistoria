@@ -161,6 +161,7 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   overlay: false,
   strike: false,
   spawn: false,
+  bench: false,
   move: true,
   walk: true,
   skill: true,

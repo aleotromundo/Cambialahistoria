@@ -2,6 +2,7 @@ import type { Scene, WebGLRenderer } from 'three';
 import type { GlitchKind } from '../sim/content/glitches.ts';
 import type { Command, World, WorldEvent } from '../sim/world/types.ts';
 import type { AudioSystem, Trigger } from './audio/system.ts';
+import type { EventWatcher, FightPlan, FightRaw } from './bench/fight-bench.ts';
 import type { MeasureRecorder } from './measure-recorder.ts';
 import type { MemoryReport } from './mobile/memory.ts';
 import type { WalkReport } from './walk/body-walk.ts';
@@ -17,6 +18,7 @@ export interface DebugHandle {
   glitch(kind: GlitchKind): void;
   spawn(monster: string, count: number): void;
   walk(): Promise<WalkReport>;
+  bench(plan: FightPlan): Promise<FightRaw>;
   saveMeasurements(): void;
 }
 
@@ -41,6 +43,7 @@ export interface DebugHooks {
 
 export function attachDebug(deps: DebugDeps): DebugHooks {
   let recorder: MeasureRecorder | null = null;
+  let watcher: EventWatcher | null = null;
   if (import.meta.env.DEV) {
     const { world, scene, renderer, audio, sounds, send } = deps;
     const attachRecorder = async (): Promise<void> => {
@@ -50,11 +53,12 @@ export function attachDebug(deps: DebugDeps): DebugHooks {
       if (window.storm !== undefined) window.storm = { ...window.storm, saveMeasurements: (): void => module.saveRecording(made) };
     };
     void attachRecorder();
-    window.storm = { world, scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(renderer, scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }), spawn: (monster: string, count: number): void => send({ type: 'spawn', monster, count }), walk: async (): Promise<WalkReport> => (await import('./walk/body-walk.ts')).walkBodies({ world, scene, send, sleep: (ms: number): Promise<void> => new Promise<void>((resolve: () => void): void => void window.setTimeout(resolve, ms)) }), saveMeasurements: (): void => undefined };
+    window.storm = { world, scene, audio, sounds, send, memory: (): MemoryReport => measureMemory(renderer, scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }), spawn: (monster: string, count: number): void => send({ type: 'spawn', monster, count }), walk: async (): Promise<WalkReport> => (await import('./walk/body-walk.ts')).walkBodies({ world, scene, send, sleep: (ms: number): Promise<void> => new Promise<void>((resolve: () => void): void => void window.setTimeout(resolve, ms)) }), bench: async (plan: FightPlan): Promise<FightRaw> => (await import('./bench/fight-bench.ts')).runFightBench({ world, scene, renderer, send, watch: (next: EventWatcher | null): void => void (watcher = next) }, plan), saveMeasurements: (): void => undefined };
   }
   return {
     record: (events: readonly WorldEvent[]): void => {
       recorder?.record(events);
+      watcher?.(events);
     },
   };
 }

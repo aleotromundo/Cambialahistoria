@@ -4,6 +4,7 @@ export interface Rng {
   int(min: number, max: number): number;
   chance(probability: number): boolean;
   state(): number;
+  reseed(seed: number): void;
 }
 
 const UINT32: number = 4294967296;
@@ -23,6 +24,9 @@ export function createRng(seed: number): Rng {
     int: (min: number, max: number): number => Math.floor(min + (max - min + 1) * next()),
     chance: (probability: number): boolean => next() < probability,
     state: (): number => state,
+    reseed: (fresh: number): void => {
+      state = fresh >>> 0;
+    },
   };
 }
 

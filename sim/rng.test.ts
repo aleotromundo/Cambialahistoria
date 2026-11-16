@@ -67,3 +67,10 @@ void test('pickWeighted returns null with nothing to pick', (): void => {
   assert.equal(pickWeighted(rng, []), null);
   assert.equal(pickWeighted(rng, [{ weight: 0 }]), null);
 });
+
+void test('reseed restarts the sequence a fresh rng of that seed gives', (): void => {
+  const rng: Rng = createRng(9);
+  draw(rng, 37);
+  rng.reseed(42);
+  assert.deepEqual(draw(rng, 20), draw(createRng(42), 20));
+});

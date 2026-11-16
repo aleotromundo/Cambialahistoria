@@ -37,6 +37,7 @@ import { exitWaits } from './scene.ts';
 import type { PortalEnd } from './portal-types.ts';
 import { sameFloor } from './floors.ts';
 import { goThrough, portalEndHere, stepChannel, useItem } from './portal.ts';
+import { readyBenchHero } from './bench-hero.ts';
 
 const PLAYER = {
   moveDeadZone: 0.7,
@@ -272,6 +273,7 @@ function act(world: World, command: Command): void {
     case 'overlay':
     case 'strike':
     case 'spawn':
+    case 'bench':
     case 'advance':
     case 'replay':
     case 'equip':
@@ -356,6 +358,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'strike':
       forceStrike(world, command.at, command.moment);
+      return;
+    case 'bench':
+      readyBenchHero(world, command.hero);
       return;
     case 'spawn':
       spawnPackNear(world, command.monster, command.count, { x: player.pos.x + Math.sin(player.facing) * PLAYER.spawnAhead, z: player.pos.z + Math.cos(player.facing) * PLAYER.spawnAhead });

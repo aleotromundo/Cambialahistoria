@@ -300,6 +300,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'overlay':
     case 'strike':
     case 'spawn':
+    case 'bench':
     case 'hold':
     case 'steer':
       break;

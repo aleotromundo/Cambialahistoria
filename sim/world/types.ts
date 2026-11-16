@@ -22,6 +22,7 @@ import type { NpcState } from './npc-types.ts';
 import type { HazardState, ProjectileState, QueuedShot } from './delivery-types.ts';
 import type { Escort, SceneState } from './scene-state.ts';
 import type { WardState } from './wards.ts';
+import type { BenchCommand, SpawnCommand } from './dev-commands.ts';
 import type { MomentumState } from './momentum-types.ts';
 import type { Tally } from '../tally.ts';
 import type { EnterPortalCommand, PortalChannelIntent, PortalIntent, PortalStage, PortalState, UseItemCommand } from './portal-types.ts';
@@ -427,12 +428,6 @@ export interface RespawnCommand {
   readonly choice: RespawnChoice;
 }
 
-export interface SpawnCommand {
-  readonly type: 'spawn';
-  readonly monster: string;
-  readonly count: number;
-}
-
 export interface StrikeCommand {
   readonly type: 'strike';
   readonly at: Vec2;
@@ -510,7 +505,7 @@ export interface OverlayCommand {
   readonly open: boolean;
 }
 
-export type Command = HeroCommand | StrikeCommand | SpawnCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand;
+export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand;
 
 export interface StartRespawn {
   readonly type: 'start';
