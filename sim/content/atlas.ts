@@ -1,5 +1,9 @@
 import type { ActDef, AtlasPoint, AtlasRoad, Content, MapPlace, ZoneDef, ZoneExit } from './types.ts';
 
+export const ATLAS_RULES = {
+  placeGap: 100,
+} as const;
+
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
@@ -18,9 +22,16 @@ function actProblems(content: Content, act: ActDef): string[] {
     if (placed.has(place.zone)) problems.push(`${at} places zone ${place.zone} twice`);
     if (spots.has(`${place.x},${place.y}`)) problems.push(`${at} puts two zones at ${place.x},${place.y}`);
     if (!within(place, act)) problems.push(`${at} places zone ${place.zone} off the map`);
+    if (place.label?.trim() === '') problems.push(`${at} gives zone ${place.zone} an empty map label`);
     placed.add(place.zone);
     spots.add(`${place.x},${place.y}`);
   }
+  act.atlas.places.forEach((place: MapPlace, index: number): void => {
+    for (const other of act.atlas.places.slice(index + 1)) {
+      const apart: number = Math.hypot(place.x - other.x, place.y - other.y);
+      if (apart > 0 && apart < ATLAS_RULES.placeGap) problems.push(`${at} puts ${place.zone} and ${other.zone} ${Math.round(apart)} apart, closer than ${ATLAS_RULES.placeGap}`);
+    }
+  });
   if (!within(act.atlas.compass, act)) problems.push(`${at} puts the compass off the map`);
   const roads: Set<string> = new Set<string>();
   const linked = (from: string, to: string): boolean => content.zones.get(from)?.exits.some((exit: ZoneExit): boolean => exit.to === to) ?? false;

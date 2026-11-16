@@ -355,7 +355,7 @@ export function npcs(value: unknown, where: string): Map<string, NpcDef> {
 
 function mapPlace(value: unknown, where: string): MapPlace {
   const source: Fields = fields(value, where);
-  return { zone: text(source, 'zone', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where), when: conditions(source, 'when', where) };
+  return { zone: text(source, 'zone', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where), label: nullableText(source, 'label', where), when: conditions(source, 'when', where) };
 }
 
 function atlasPoint(value: unknown, where: string): AtlasPoint {

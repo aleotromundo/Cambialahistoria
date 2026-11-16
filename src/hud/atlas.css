@@ -328,6 +328,19 @@
   stroke-linejoin: round;
   paint-order: stroke;
   pointer-events: none;
+  dominant-baseline: central;
+}
+
+.atlas-node .atlas-name.settled {
+  transition:
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    stroke var(--spring-smooth-ms) var(--spring-smooth),
+    fill var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.atlas-node .atlas-name.tucked {
+  opacity: 0;
 }
 
 .atlas-node.locked .atlas-ring {

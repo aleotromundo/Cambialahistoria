@@ -9,7 +9,7 @@ export const NODE = {
   wayTick: 5,
   haloGap: 4,
   hitPad: 12,
-  nameGap: 21,
+  nameGap: 7,
   spikes: 8,
   spikeLength: 6,
   spikeHalf: 0.16,
@@ -25,6 +25,7 @@ export interface NodeParts {
   readonly group: SVGGElement;
   readonly name: SVGTextElement;
   readonly radius: number;
+  readonly reach: number;
 }
 
 function point(turn: number, reach: number): string {
@@ -46,6 +47,13 @@ function wayTicks(radius: number): string {
   return `M0 ${-inner}V${-outer}M0 ${inner}V${outer}M${-inner} 0H${-outer}M${inner} 0H${outer}`;
 }
 
+export function nodeReach(mark: ZoneMark, waypoint: boolean): number {
+  const radius: number = NODE.radius[mark];
+  const ring: number = waypoint ? radius + NODE.wayGap + NODE.wayTick / 2 : radius;
+  const spiked: number = mark === 'boss' ? radius + NODE.spikeLength : radius;
+  return Math.max(ring, spiked, radius + NODE.haloGap);
+}
+
 export function drawNode(parent: Element, mark: ZoneMark, waypoint: boolean, x: number, y: number): NodeParts {
   const radius: number = NODE.radius[mark];
   const group: SVGGElement = svg('g', `atlas-node ${mark}`, parent, { transform: `translate(${x} ${y})` });
@@ -61,6 +69,6 @@ export function drawNode(parent: Element, mark: ZoneMark, waypoint: boolean, x: 
   svg('circle', 'atlas-ring', body, { r: radius });
   svg('circle', 'atlas-disc', body, { r: radius - NODE.discInset });
   svg('path', 'atlas-mark', body, { d: NODE.marks[mark] });
-  const name: SVGTextElement = svg('text', 'atlas-name', group, { y: radius + (waypoint ? NODE.wayGap : 0) + NODE.nameGap, 'text-anchor': 'middle' });
-  return { group, name, radius };
+  const name: SVGTextElement = svg('text', 'atlas-name', group, { 'text-anchor': 'middle' });
+  return { group, name, radius, reach: nodeReach(mark, waypoint) };
 }

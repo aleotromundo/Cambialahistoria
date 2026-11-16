@@ -6,6 +6,8 @@ import type { World } from '../../sim/world/types.ts';
 import { canTeleport, onWaypoint } from '../../sim/world/waypoints.ts';
 import { drawAtlasArt } from './atlas-art.ts';
 import { smoothPath } from './atlas-geometry.ts';
+import { labelOffset, placeLabels } from './atlas-labels.ts';
+import type { LabelBox, LabelOffset, LabelSide, LabelSpot } from './atlas-labels.ts';
 import { drawNode, NODE } from './atlas-nodes.ts';
 import type { NodeParts } from './atlas-nodes.ts';
 import { atRest, clampView, markerScale, openView, panBy, pinchTo, placeBox, settleView, stepMotion, still, toScreen, zoomAt } from './atlas-view.ts';
@@ -22,6 +24,9 @@ const MAP = {
   velocityBlend: 0.35,
   tipGap: 10,
   legendSize: 44,
+  labelStroke: 2,
+  labelMargin: 3,
+  labelKeep: { here: 4, landmark: 3, named: 2, level: 1 },
   hintAway: 'Stand on a waypoint to travel',
   hintReady: 'Choose a lit waypoint to travel',
   hintNone: 'No other waypoint found yet',
@@ -49,6 +54,7 @@ interface NodeView {
   readonly parts: NodeParts;
   readonly clear: SVGCircleElement;
   state: PlaceState | null;
+  side: LabelSide | null;
 }
 
 interface RoadView {
@@ -89,6 +95,20 @@ function retriggerSvg(node: SVGElement, className: string): void {
   node.classList.add(className);
 }
 
+function shownName(node: NodeView): string {
+  return node.place.label ?? node.zone.name;
+}
+
+function labelKeep(node: NodeView): number {
+  if (node.state === 'here') return MAP.labelKeep.here;
+  if (node.mark === 'town' || node.mark === 'boss') return MAP.labelKeep.landmark;
+  return node.place.label === null ? MAP.labelKeep.named : MAP.labelKeep.level;
+}
+
+function localSpot(node: NodeView, width: number, height: number): LabelSpot {
+  return { x: 0, y: 0, reach: node.parts.reach, width: width + 2 * MAP.labelStroke, height: height + 2 * MAP.labelStroke, keep: labelKeep(node) };
+}
+
 function setState<T extends string>(node: Element, states: readonly T[], state: T): void {
   for (const each of states) node.classList.toggle(each, each === state);
 }
@@ -122,6 +142,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
   let motion: AtlasMotion = still(target);
   let drawn: string = '';
   let markers: string = '';
+  let labelled: string = '';
   let drag: Drag | null = null;
   let hovered: NodeView | null = null;
   const fingers: Map<number, ScreenPoint> = new Map<number, ScreenPoint>();
@@ -158,7 +179,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       if (zone === undefined) continue;
       const mark: ZoneMark = zoneMark(world.content, zone);
       const clear: SVGCircleElement = svg('circle', 'atlas-clear', mask, { cx: place.x, cy: place.y, r: MAP.fogRadius, fill: `url(#${MAP.ids.clear})` });
-      nodes.push({ zone, place, mark, parts: drawNode(nodeLayer, mark, zone.waypoint !== null, place.x, place.y), clear, state: null });
+      nodes.push({ zone, place, mark, parts: drawNode(nodeLayer, mark, zone.waypoint !== null, place.x, place.y), clear, state: null, side: null });
     }
     setText(actTitle, act.title, false);
     setText(actName, act.name, false);
@@ -206,6 +227,43 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     placeTip();
   };
 
+  const layoutLabels = (): void => {
+    if (view === null) return;
+    const shown: ActView = view;
+    const scale: number = markerScale(target.scale);
+    const local: LabelSpot[] = [];
+    for (const node of shown.nodes) {
+      const box: DOMRect = node.parts.name.getBBox();
+      if (box.width <= 0 && node.parts.name.textContent !== '') return;
+      local.push(localSpot(node, box.width, box.height));
+    }
+    labelled = scale.toFixed(2);
+    const spots: LabelSpot[] = local.map((spot: LabelSpot, index: number): LabelSpot => {
+      const place: MapPlace | undefined = shown.nodes[index]?.place;
+      return { ...spot, x: place?.x ?? 0, y: place?.y ?? 0, reach: spot.reach * scale, width: spot.width * scale, height: spot.height * scale };
+    });
+    const opened: AtlasView = openView(frame);
+    const halfWidth: number = frame.width / (2 * opened.scale);
+    const halfHeight: number = frame.height / (2 * opened.scale);
+    const bounds: LabelBox = { left: Math.max(0, opened.x - halfWidth), top: Math.max(0, opened.y - halfHeight), right: Math.min(frame.mapWidth, opened.x + halfWidth), bottom: Math.min(frame.mapHeight, opened.y + halfHeight) };
+    const sides: LabelSide[] = placeLabels(spots, { bounds, gap: NODE.nameGap * scale, margin: MAP.labelMargin * scale });
+    shown.nodes.forEach((node: NodeView, index: number): void => {
+      const side: LabelSide = sides[index] ?? 'hidden';
+      const spot: LabelSpot | undefined = local[index];
+      if (side === node.side || spot === undefined) return;
+      const first: boolean = node.side === null;
+      node.side = side;
+      node.parts.name.classList.toggle('tucked', side === 'hidden');
+      if (side !== 'hidden') {
+        const offset: LabelOffset = labelOffset(spot, side, NODE.nameGap);
+        node.parts.name.style.transform = `translate(${offset.x.toFixed(1)}px, ${offset.y.toFixed(1)}px)`;
+      }
+      if (!first) return;
+      node.parts.name.getBoundingClientRect();
+      node.parts.name.classList.add('settled');
+    });
+  };
+
   const apply = (): void => {
     const { x, y, scale } = motion.view;
     const next: string = `translate(${(frame.width / 2 - x * scale).toFixed(2)} ${(frame.height / 2 - y * scale).toFixed(2)}) scale(${scale.toFixed(4)})`;
@@ -217,6 +275,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       markers = size;
       for (const node of view.nodes) node.parts.group.setAttribute('transform', `translate(${node.place.x} ${node.place.y}) scale(${size})`);
     }
+    if (markerScale(target.scale).toFixed(2) !== labelled) layoutLabels();
     placeTip();
   };
 
@@ -224,6 +283,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     if (view === null) return;
     const standing: boolean = onWaypoint(world);
     let reachable: number = 0;
+    let renamed: boolean = false;
     for (const node of view.nodes) {
       const state: PlaceState = placeState(world, node.zone.id);
       const travel: boolean = canTeleport(world, node.zone.id);
@@ -234,9 +294,10 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       node.state = state;
       setState(node.parts.group, PLACE_STATES, state);
       setState(node.clear, PLACE_STATES, state);
-      if (node.parts.name.textContent !== node.zone.name) {
-        node.parts.name.textContent = node.zone.name;
+      if (node.parts.name.textContent !== shownName(node)) {
+        node.parts.name.textContent = shownName(node);
         retriggerSvg(node.parts.name, 'tick');
+        renamed = true;
       }
     }
     for (const road of view.roads) {
@@ -246,6 +307,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       road.state = state;
       setState(road.group, ROAD_STATES, state);
     }
+    if (renamed) layoutLabels();
     element.classList.toggle('travel', standing);
     setText(hint, !standing ? MAP.hintAway : reachable > 0 ? MAP.hintReady : MAP.hintNone, true);
     if (hovered !== null) describe(hovered);
@@ -374,8 +436,13 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     motion = still(settleView(target, frame));
     hover(null);
     sync();
+    layoutLabels();
     apply();
   };
+  document.fonts.addEventListener('loadingdone', (): void => {
+    labelled = '';
+    if (element.classList.contains('open')) layoutLabels();
+  });
 
   return {
     element,

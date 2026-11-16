@@ -534,6 +534,7 @@ export interface MapPlace {
   readonly zone: string;
   readonly x: number;
   readonly y: number;
+  readonly label: string | null;
   readonly when: readonly Condition[];
 }
 

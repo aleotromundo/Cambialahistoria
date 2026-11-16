@@ -417,7 +417,7 @@ void test('a quest, its three kinds of objective, conditions, a waypoint and map
   assert.deepEqual(stair.requires, [{ ...gate, not: false }, { type: 'quest', quest: 'out_of_the_mist', is: 'done', not: true }]);
   assert.equal(stair.lockedHint, 'Later');
   assert.deepEqual(town.waypoint, waystation.waypoint);
-  assert.deepEqual(content.world.acts, world.acts.map((entry: object): object => ({ ...entry, end: null })));
+  assert.deepEqual(content.world.acts, world.acts.map((entry: (typeof world.acts)[number]): object => ({ ...entry, end: null, atlas: { ...entry.atlas, places: entry.atlas.places.map((place: (typeof entry.atlas.places)[number]): object => ({ label: null, ...place })) } })));
   const warden = must(npcs.find((entry): boolean => entry.id === 'warden_guide'), 'warden');
   const asked = { type: 'objective', quest: 'errand', objective: 'ask', is: 'current' };
   const gatedWarden = { ...warden, talks: warden.talks.map((talk, index) => (index === 0 ? { ...talk, when: [asked] } : talk)) };
