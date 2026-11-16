@@ -251,7 +251,7 @@ function interruptMonsters(world: World): void {
 
 function still(world: World): void {
   const player = world.player;
-  player.queued = null;
+  if (player.queued !== null && worldly(player.queued)) player.queued = null;
   if (player.intent.type === 'move') return;
   player.intent = { type: 'idle' };
   player.path = [];
@@ -358,7 +358,7 @@ function stepSeam(world: World, active: ActiveGlitch, plan: SeamPlan): void {
 
 function finish(world: World, active: ActiveGlitch): void {
   world.glitch.active = null;
-  if (active.turn) turnHero(world);
+  if (active.turn && world.player.intent.type !== 'move') turnHero(world);
   world.events.push({ type: 'glitch_end', kind: active.kind, calledOff: false });
 }
 

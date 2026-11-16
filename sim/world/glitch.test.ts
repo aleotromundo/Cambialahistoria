@@ -475,6 +475,47 @@ void test('a hero who is walking as the tear back begins is not turned round', (
   assert.ok(Math.cos(world.player.facing - facingOf({ x: 1, z: 0 })) > 0.9);
 });
 
+void test('a panel opened in the mist does not turn a walking hero round', (): void => {
+  const { world } = fight(10);
+  world.monsters = [];
+  world.glitch.progress = 0;
+  requestGlitch(world, 'hard_cut', 'debug');
+  untilPhase(world, 'mist');
+  assert.equal(world.glitch.active?.edit, 'hero_turn');
+  const from = { ...world.player.pos };
+  stepWorld(world, [{ type: 'move', held: false, dest: { x: from.x + 6, z: from.z } }], DT);
+  run(world, 0.3);
+  stepWorld(world, [{ type: 'overlay', open: true }], DT);
+  assert.equal(world.glitch.active, null);
+  assert.equal(world.player.intent.type, 'move');
+  assert.ok(Math.cos(world.player.facing - facingOf({ x: 1, z: 0 })) > 0.9);
+});
+
+void test('the mist keeps a walk the player queued behind a skill, and drops a queued skill', (): void => {
+  const { world } = fight(9);
+  world.monsters = [];
+  const at = { ...world.player.pos };
+  const cast = { type: 'skill', slot: 0, aim: { x: at.x + 3, z: at.z }, targetId: null } as const;
+  const walk = { type: 'move', held: false, dest: { x: at.x + 6, z: at.z } } as const;
+  stepWorld(world, [cast], DT);
+  assert.notEqual(world.player.action, null);
+  world.player.queued = walk;
+  requestGlitch(world, 'quiet_pass', 'debug');
+  stepGlitch(world, DT);
+  assert.equal(inMist(world), true);
+  assert.deepEqual(world.player.queued, walk);
+  run(world, 1.5);
+  assert.ok(world.player.pos.x - at.x > 1);
+  const other: World = fight(9).world;
+  other.monsters = [];
+  stepWorld(other, [cast], DT);
+  other.player.queued = cast;
+  requestGlitch(other, 'quiet_pass', 'debug');
+  stepGlitch(other, DT);
+  assert.equal(inMist(other), true);
+  assert.equal(other.player.queued, null);
+});
+
 void test('the hero faces the other way only as the tear back begins, while the world is still hidden', (): void => {
   const { world } = fight(10);
   world.monsters = [];
