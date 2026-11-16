@@ -194,12 +194,18 @@ function stepGust(drive: MistDrive, input: MistInput): void {
 }
 
 function stepEddies(drive: MistDrive, input: MistInput, pace: number): void {
-  for (const eddy of drive.eddies) eddy.life -= input.dt / MIST.eddyLife;
-  const alive: Eddy[] = drive.eddies.filter((eddy: Eddy): boolean => eddy.life > 0);
-  drive.eddies.length = 0;
-  drive.eddies.push(...alive);
+  let kept: number = 0;
+  for (const eddy of drive.eddies) {
+    eddy.life -= input.dt / MIST.eddyLife;
+    if (eddy.life > 0) {
+      drive.eddies[kept] = eddy;
+      kept += 1;
+    }
+  }
+  drive.eddies.length = kept;
   const turn: number = drive.lastDir.x * drive.dir.z - drive.lastDir.z * drive.dir.x;
-  drive.lastDir = { x: drive.dir.x, z: drive.dir.z };
+  drive.lastDir.x = drive.dir.x;
+  drive.lastDir.z = drive.dir.z;
   if (pace < MIST.eddyAbove || drive.eddies.length >= MIST.eddies) return;
   drive.eddyWait -= input.dt * pace * (1 + Math.abs(turn) * MIST.eddyTurnBoost / Math.max(input.dt, 1e-3));
   if (drive.eddyWait > 0) return;
@@ -230,26 +236,49 @@ export function wakePocket(front: number): number {
   return lying + (peak - lying) * out - (peak - MIST.pocketStill) * smooth(swell, 1, front);
 }
 
-export function clearing(drive: Pick<MistDrive, 'dir' | 'momentum' | 'gust' | 'wake'>, dx: number, dz: number): number {
+type ClearingDrive = Pick<MistDrive, 'dir' | 'momentum' | 'gust' | 'wake'>;
+
+interface ClearingBasis {
+  readonly dir: Vec2;
+  readonly m: number;
+  readonly pocket: number;
+  readonly softness: number;
+  readonly reach: number;
+  readonly widthScale: number;
+  readonly channelScale: number;
+  readonly gust: Gust | null;
+}
+
+function clearingBasis(drive: ClearingDrive): ClearingBasis {
   const m: number = drive.momentum;
   const pocket: number = drive.wake === null ? mix(MIST.pocketStill, MIST.pocketMoving, m) : wakePocket(drive.wake);
   const softness: number = drive.wake === null ? MIST.pocketSoftness : mix(MIST.wake.softness, MIST.pocketSoftness, smooth(MIST.wake.swell, 1, drive.wake));
-  const around: number = 1 - smooth(pocket * (1 - softness), pocket, Math.hypot(dx, dz));
-  const along: number = dx * drive.dir.x + dz * drive.dir.z;
-  const across: number = Math.abs(dz * drive.dir.x - dx * drive.dir.z);
   const reach: number = mix(MIST.reachMin, MIST.reachMax, m);
-  const width: number = mix(MIST.widthNear, MIST.widthFar, Math.min(1, Math.max(0, along / reach))) * mix(0.55, 1, m);
+  const gust: Gust | null = drive.gust !== null && drive.gust.strength > 0 ? drive.gust : null;
+  return { dir: drive.dir, m, pocket, softness, reach, widthScale: mix(0.55, 1, m), channelScale: Math.min(1, m * MIST.channelShare), gust };
+}
+
+function clearingFrom(basis: ClearingBasis, dx: number, dz: number): number {
+  const { dir, pocket, softness, reach } = basis;
+  const around: number = 1 - smooth(pocket * (1 - softness), pocket, Math.hypot(dx, dz));
+  const along: number = dx * dir.x + dz * dir.z;
+  const across: number = Math.abs(dz * dir.x - dx * dir.z);
+  const width: number = mix(MIST.widthNear, MIST.widthFar, Math.min(1, Math.max(0, along / reach))) * basis.widthScale;
   const lane: number = smooth(-MIST.behind, 0, along) * (1 - smooth(reach * 0.65, reach, along)) * (1 - smooth(width * (1 - MIST.widthSoftness), width, across));
-  const channel: number = lane * Math.min(1, m * MIST.channelShare);
-  const gust: Gust | null = drive.gust;
+  const channel: number = lane * basis.channelScale;
+  const gust: Gust | null = basis.gust;
   let glimpse: number = 0;
-  if (gust !== null && gust.strength > 0) {
+  if (gust !== null) {
     const g: number = dx * gust.dir.x + dz * gust.dir.z;
     const off: number = Math.abs(dz * gust.dir.x - dx * gust.dir.z);
     const w: number = MIST.gustWidth * mix(0.7, 1.6, Math.min(1, Math.max(0, g / MIST.gustReach)));
     glimpse = gust.strength * smooth(0, 2, g) * (1 - smooth(MIST.gustReach * 0.75, MIST.gustReach, g)) * (1 - smooth(w * 0.4, w, off));
   }
   return Math.max(around, channel, glimpse);
+}
+
+export function clearing(drive: ClearingDrive, dx: number, dz: number): number {
+  return clearingFrom(clearingBasis(drive), dx, dz);
 }
 
 function wrapped(offset: number, span: number): number {
@@ -270,6 +299,7 @@ function relax(field: MistField, index: number, goal: number, dt: number): void 
 }
 
 export function stepField(field: MistField, drive: MistDrive, hero: Vec2, dt: number): void {
+  const basis: ClearingBasis = clearingBasis(drive);
   const half: number = MIST.span / 2;
   const steps: number = Math.max(1, Math.ceil(dt / MIST.springStep));
   const step: number = dt / steps;
@@ -286,7 +316,7 @@ export function stepField(field: MistField, drive: MistDrive, hero: Vec2, dt: nu
         field.bytes[index] = 0;
         continue;
       }
-      const stamp: number = clearing(drive, dx, dz) * (1 - smooth(MIST.edgeStart, MIST.edgeEnd, edge));
+      const stamp: number = clearingFrom(basis, dx, dz) * (1 - smooth(MIST.edgeStart, MIST.edgeEnd, edge));
       const held: number = field.held[index] ?? 0;
       const age: number = field.age[index] ?? 0;
       if (stamp >= held) {

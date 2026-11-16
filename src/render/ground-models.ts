@@ -140,16 +140,37 @@ function settled(inner: Object3D, look: GroundLook, scale: number, waiting: bool
   return { model, footprint: Math.max(GROUND_MODEL.shadowMin, Math.max(size.x, size.z) * GROUND_MODEL.shadowPerMetre * 0.5), waiting };
 }
 
+function heldPiece(library: CharacterLibrary, base: ItemBaseDef): LoadedAttachment | undefined {
+  return base.visual === null ? undefined : library.attachments.get(base.visual);
+}
+
+function wornPiece(content: Content, library: CharacterLibrary, base: ItemBaseDef, hero: string): LoadedWearable | undefined {
+  return base.wear.map((id: string): LoadedWearable | undefined => library.wearables.get(wearKey(frameOf(content, hero), id))).find((entry: LoadedWearable | undefined): boolean => entry !== undefined);
+}
+
+export function groundModelReady(content: Content, library: CharacterLibrary, base: ItemBaseDef, hero: string): boolean {
+  switch (base.ground.model) {
+    case 'held':
+      return heldPiece(library, base) !== undefined;
+    case 'worn':
+      return wornPiece(content, library, base, hero) !== undefined;
+    case 'pouch':
+    case 'bundle':
+      return true;
+  }
+  return false;
+}
+
 export function groundTemplate(content: Content, library: CharacterLibrary, base: ItemBaseDef, hero: string): GroundTemplate {
   const look: GroundLook = base.ground;
   switch (look.model) {
     case 'held': {
-      const attachment: LoadedAttachment | undefined = base.visual === null ? undefined : library.attachments.get(base.visual);
+      const attachment: LoadedAttachment | undefined = heldPiece(library, base);
       if (attachment !== undefined) return settled(heldModel(attachment), look, heldScale(content, hero, attachment), false);
       break;
     }
     case 'worn': {
-      const worn: LoadedWearable | undefined = base.wear.map((id: string): LoadedWearable | undefined => library.wearables.get(wearKey(frameOf(content, hero), id))).find((entry: LoadedWearable | undefined): boolean => entry !== undefined);
+      const worn: LoadedWearable | undefined = wornPiece(content, library, base, hero);
       if (worn !== undefined) return settled(wornModel(worn, look.keep), look, rigScale(content, hero), false);
       break;
     }

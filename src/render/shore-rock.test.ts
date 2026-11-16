@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { MeshStandardMaterial, NormalBlending } from 'three';
-import type { RockFrame } from './shore-rock.ts';
-import { rockAlpha, SHORE_ROCK, snapped, wetStone } from './shore-rock.ts';
+import type { AlphaInputs, RockFrame } from './shore-rock.ts';
+import { alphaInputsChanged, rockAlpha, SHORE_ROCK, snapped, wetStone } from './shore-rock.ts';
 
 const frame: RockFrame = { hero: { x: 10, z: 0 }, shift: { x: 0, z: 0 }, at: { x: 0, z: 0 }, facing: { x: 1, z: 0 }, shown: 1 };
 
@@ -34,4 +34,16 @@ void test('the rock is its own wet lit stone laid over the ground, not a blend t
   assert.equal(rock.blending, NormalBlending);
   assert.equal(rock.transparent, true);
   assert.equal(shared.transparent, false);
+});
+
+void test('the alphas are rewritten only when the rock moves or the shore line, its facing or its strength changes', (): void => {
+  const last: AlphaInputs = { x: Number.NaN, z: Number.NaN, atX: Number.NaN, atZ: Number.NaN, facingX: Number.NaN, facingZ: Number.NaN, shown: Number.NaN };
+  assert.equal(alphaInputsChanged(last, 6.8, 0, frame), true);
+  assert.equal(alphaInputsChanged(last, 6.8, 0, { ...frame, hero: { x: 7, z: 0.2 } }), false);
+  assert.equal(alphaInputsChanged(last, 10.2, 0, frame), true);
+  assert.equal(alphaInputsChanged(last, 10.2, 0, { ...frame, shown: 0.5 }), true);
+  assert.equal(alphaInputsChanged(last, 10.2, 0, { ...frame, shown: 0.5, at: { x: 1, z: 0 } }), true);
+  assert.equal(alphaInputsChanged(last, 10.2, 0, { ...frame, shown: 0.5, at: { x: 1, z: 0 }, facing: { x: 0, z: 1 } }), true);
+  assert.equal(alphaInputsChanged(last, 10.2, 0, { ...frame, shown: 0.5, at: { x: 1, z: 0 }, facing: { x: 0, z: 1 } }), false);
+  assert.equal(alphaInputsChanged(last, 10.2, -0, { ...frame, shown: 0.5, at: { x: 1, z: 0 }, facing: { x: 0, z: 1 } }), true);
 });

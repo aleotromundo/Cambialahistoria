@@ -51,6 +51,28 @@ export function wetStone(source: MeshStandardMaterial, wet: number): MeshStandar
   return material;
 }
 
+export interface AlphaInputs {
+  x: number;
+  z: number;
+  atX: number;
+  atZ: number;
+  facingX: number;
+  facingZ: number;
+  shown: number;
+}
+
+export function alphaInputsChanged(last: AlphaInputs, x: number, z: number, frame: RockFrame): boolean {
+  if (Object.is(last.x, x) && Object.is(last.z, z) && Object.is(last.atX, frame.at.x) && Object.is(last.atZ, frame.at.z) && Object.is(last.facingX, frame.facing.x) && Object.is(last.facingZ, frame.facing.z) && Object.is(last.shown, frame.shown)) return false;
+  last.x = x;
+  last.z = z;
+  last.atX = frame.at.x;
+  last.atZ = frame.at.z;
+  last.facingX = frame.facing.x;
+  last.facingZ = frame.facing.z;
+  last.shown = frame.shown;
+  return true;
+}
+
 export function createShoreRock(def: SurfaceDef): ShoreRock {
   const geometry: PlaneGeometry = new PlaneGeometry(SHORE_ROCK.size, SHORE_ROCK.size, SHORE_ROCK.cells, SHORE_ROCK.cells);
   geometry.rotateX(-Math.PI / 2);
@@ -76,6 +98,9 @@ export function createShoreRock(def: SurfaceDef): ShoreRock {
   mesh.receiveShadow = true;
   mesh.visible = false;
 
+  const point: { x: number; z: number } = { x: 0, z: 0 };
+  const last: AlphaInputs = { x: Number.NaN, z: Number.NaN, atX: Number.NaN, atZ: Number.NaN, facingX: Number.NaN, facingZ: Number.NaN, shown: Number.NaN };
+
   return {
     mesh,
     update(frame: RockFrame | null, floor: number): void {
@@ -83,8 +108,10 @@ export function createShoreRock(def: SurfaceDef): ShoreRock {
       if (frame === null || !mesh.visible) return;
       const centre: Vec2 = { x: snapped(frame.hero.x - frame.shift.x, def.metres), z: snapped(frame.hero.z - frame.shift.z, def.metres) };
       mesh.position.set(centre.x + frame.shift.x, floor + SHORE_ROCK.lift, centre.z + frame.shift.z);
+      if (!alphaInputsChanged(last, mesh.position.x, mesh.position.z, frame)) return;
       for (let index: number = 0; index < count; index += 1) {
-        const point: Vec2 = { x: (local[index * 2] ?? 0) + mesh.position.x, z: (local[index * 2 + 1] ?? 0) + mesh.position.z };
+        point.x = (local[index * 2] ?? 0) + mesh.position.x;
+        point.z = (local[index * 2 + 1] ?? 0) + mesh.position.z;
         colours.setW(index, rockAlpha(point, frame));
       }
       colours.needsUpdate = true;

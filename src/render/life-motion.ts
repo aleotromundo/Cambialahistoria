@@ -107,10 +107,15 @@ function homeGap(creature: Creature, hero: Hero): number {
   return Math.hypot(creature.home.x - hero.x, creature.home.z - hero.z);
 }
 
+const CIRCLE_GOAL: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
+
 function circlePoint(creature: Creature, kind: BirdKind, time: number): Point3 {
   const wobble: number = LIFE_MOTION.bird.wobble * Math.sin(time * LIFE_MOTION.bird.wobbleRate + creature.seed);
   const radius: number = kind.circleRadius * (1 + wobble * LIFE_MOTION.bird.wobble);
-  return { x: creature.centre.x + Math.cos(creature.angle) * radius, y: creature.centre.y + kind.circleHeight + wobble, z: creature.centre.z + Math.sin(creature.angle) * radius };
+  CIRCLE_GOAL.x = creature.centre.x + Math.cos(creature.angle) * radius;
+  CIRCLE_GOAL.y = creature.centre.y + kind.circleHeight + wobble;
+  CIRCLE_GOAL.z = creature.centre.z + Math.sin(creature.angle) * radius;
+  return CIRCLE_GOAL;
 }
 
 function fly(creature: Creature, kind: BirdKind, goal: Point3, top: number, dt: number): number {
@@ -120,10 +125,12 @@ function fly(creature: Creature, kind: BirdKind, goal: Point3, top: number, dt: 
   const gap: number = Math.hypot(dx, dy, dz);
   const speed: number = Math.min(top, gap * LIFE_MOTION.bird.landSlow + kind.size);
   const blend: number = 1 - Math.exp(-LIFE_MOTION.bird.steer * dt);
-  const wanted: Point3 = gap > 0 ? { x: (dx / gap) * speed, y: (dy / gap) * speed, z: (dz / gap) * speed } : { x: 0, y: 0, z: 0 };
-  creature.velocity.x += (wanted.x - creature.velocity.x) * blend;
-  creature.velocity.y += (wanted.y - creature.velocity.y) * blend;
-  creature.velocity.z += (wanted.z - creature.velocity.z) * blend;
+  const wantedX: number = gap > 0 ? (dx / gap) * speed : 0;
+  const wantedY: number = gap > 0 ? (dy / gap) * speed : 0;
+  const wantedZ: number = gap > 0 ? (dz / gap) * speed : 0;
+  creature.velocity.x += (wantedX - creature.velocity.x) * blend;
+  creature.velocity.y += (wantedY - creature.velocity.y) * blend;
+  creature.velocity.z += (wantedZ - creature.velocity.z) * blend;
   creature.pos.x += creature.velocity.x * dt;
   creature.pos.y += creature.velocity.y * dt;
   creature.pos.z += creature.velocity.z * dt;

@@ -15,14 +15,25 @@ export interface FlashLimiter {
   limit(value: number, now: number, most: number): number;
 }
 
+function dropBefore(times: number[], after: number): void {
+  let kept: number = 0;
+  for (const time of times) {
+    if (time > after) {
+      times[kept] = time;
+      kept += 1;
+    }
+  }
+  times.length = kept;
+}
+
 export function createFlashLimiter(): FlashLimiter {
   let trough: number = 0;
   let last: number = 0;
   let climbing: boolean = false;
-  let times: number[] = [];
+  const times: number[] = [];
   return {
     limit(value: number, now: number, most: number): number {
-      times = times.filter((time: number): boolean => time > now - 1);
+      dropBefore(times, now - 1);
       const held: boolean = times.length >= most && !(climbing && value >= last);
       const shown: number = held ? Math.min(value, trough + WEATHER.swing - WEATHER.margin) : value;
       if (climbing && shown >= last) trough = shown;
@@ -95,14 +106,18 @@ export function pickKind(kinds: LightningKinds, roll: number): StrikeKind {
   return 'fork';
 }
 
+function isDark(light: SkyFlash, dip: number): boolean {
+  return Object.is(light.amount, DARK.amount) && Object.is(light.sheet, DARK.sheet) && Object.is(light.dirX, DARK.dirX) && Object.is(light.dirZ, DARK.dirZ) && Object.is(light.cool, DARK.cool) && Object.is(light.dip, dip);
+}
+
 export function createWeather(random: () => number = Math.random): Weather {
   let now: number = 0;
   let lightning: ZoneLightning | null = null;
   let untilStrike: number = Number.POSITIVE_INFINITY;
   let clustered: number = 0;
   let soft: boolean = false;
-  let running: Running[] = [];
-  let deepTimes: number[] = [];
+  const running: Running[] = [];
+  const deepTimes: number[] = [];
   let thunder: Thunder[] = [];
   let waiting: Waiting[] = [];
   const limiter: FlashLimiter = createFlashLimiter();
@@ -111,7 +126,7 @@ export function createWeather(random: () => number = Math.random): Weather {
   let bolt: ForkBolt = { shown: 0, angle: 0, seed: 0 };
 
   const budget = (): number => {
-    deepTimes = deepTimes.filter((time: number): boolean => time > now - WEATHER.window);
+    dropBefore(deepTimes, now - WEATHER.window);
     return (soft ? WEATHER.softPerSecond : LIGHTNING.deepPerSecond) - deepTimes.length;
   };
 
@@ -146,9 +161,10 @@ export function createWeather(random: () => number = Math.random): Weather {
       }
     }
     flash = limiter.limit(soft ? Math.min(bestSample.light, LIGHTNING.softPeak) : bestSample.light, now, soft ? WEATHER.softPerSecond : LIGHTNING.deepPerSecond);
-    bolt = { ...bolt, shown: fork > WEATHER.forkShow ? Math.min(1, fork * 1.5) : 0 };
+    const shown: number = fork > WEATHER.forkShow ? Math.min(1, fork * 1.5) : 0;
+    if (!Object.is(bolt.shown, shown)) bolt = { ...bolt, shown };
     if (best === null) {
-      light = { ...DARK, dip };
+      if (!isDark(light, dip)) light = { ...DARK, dip };
       return;
     }
     const cool: number = bestSample.light > 0 ? bestSample.stroke / bestSample.light : 0;
@@ -187,12 +203,14 @@ export function createWeather(random: () => number = Math.random): Weather {
     update(dt: number): void {
       now += dt;
       untilStrike -= dt;
-      const held: Waiting[] = [];
-      for (const entry of waiting) {
-        if (budget() > 0) begin(entry.kind, entry.power, now - dt);
-        else held.push(entry);
+      if (waiting.length > 0) {
+        const held: Waiting[] = [];
+        for (const entry of waiting) {
+          if (budget() > 0) begin(entry.kind, entry.power, now - dt);
+          else held.push(entry);
+        }
+        waiting = held.slice(0, 1);
       }
-      waiting = held.slice(0, 1);
       if (untilStrike <= 0 && lightning !== null) {
         if (budget() <= 0) untilStrike = WEATHER.deferral;
         else {
@@ -206,7 +224,14 @@ export function createWeather(random: () => number = Math.random): Weather {
         thunder.push({ kind: entry.plan.kind, distance: entry.plan.distance, loudness: Math.min(1, LIGHTNING.soundSpeed * 2 / entry.plan.distance) });
       }
       sampleAll();
-      running = running.filter((entry: Running): boolean => now - entry.start < Math.max(entry.plan.end, entry.plan.thunderDelay));
+      let kept: number = 0;
+      for (const entry of running) {
+        if (now - entry.start < Math.max(entry.plan.end, entry.plan.thunderDelay)) {
+          running[kept] = entry;
+          kept += 1;
+        }
+      }
+      running.length = kept;
     },
   };
 }

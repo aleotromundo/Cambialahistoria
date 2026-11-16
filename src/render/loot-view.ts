@@ -9,7 +9,7 @@ import type { GroundItem, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary } from './character-loader.ts';
 import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
 import type { GroundTemplate } from './ground-models.ts';
-import { groundTemplate } from './ground-models.ts';
+import { groundModelReady, groundTemplate } from './ground-models.ts';
 import { loadKeptModel } from './character-loader.ts';
 import type { Keepsake } from './keepsake.ts';
 import { createKeepsake } from './keepsake.ts';
@@ -115,7 +115,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
     const hero: string = heroRig(world.content, world.player.hero);
     const key: string = `${hero}|${base.id}`;
     const cached: GroundTemplate | undefined = templates.get(key);
-    if (cached !== undefined && !cached.waiting) return cached;
+    if (cached !== undefined && (!cached.waiting || !groundModelReady(world.content, library, base, hero))) return cached;
     const made: GroundTemplate = groundTemplate(world.content, library, base, hero);
     if (cached === undefined || !made.waiting) templates.set(key, made);
     return cached !== undefined && made.waiting ? cached : made;

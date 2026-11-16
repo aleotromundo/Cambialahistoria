@@ -7,7 +7,7 @@ import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropCache, PropDef, PropLight, ZoneDef, ZoneProp, ZoneScatter, ZoneWalls } from '../../sim/content/types.ts';
 import { wallCorners, wallEdges, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { allHold } from '../../sim/world/conditions.ts';
-import type { MonsterState, ShoreState, World } from '../../sim/world/types.ts';
+import type { ShoreState, World } from '../../sim/world/types.ts';
 import { forgetModel, loadModel } from './character-loader.ts';
 import type { TerrainSight } from './terrain-sight.ts';
 import { createTerrainSight } from './terrain-sight.ts';
@@ -123,8 +123,12 @@ function transform(x: number, y: number, z: number, yaw: number, scale: number):
   return new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromEuler(new Euler(0, yaw, 0)), new Vector3(scale, scale, scale));
 }
 
-export function fightsIn(world: World): Vec2[] {
-  return world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.aggro).map((monster: MonsterState): Vec2 => monster.pos);
+export function fightsInto(world: World, out: Vec2[]): Vec2[] {
+  out.length = 0;
+  for (const monster of world.monsters) {
+    if (monster.alive && monster.aggro) out.push(monster.pos);
+  }
+  return out;
 }
 
 export async function preloadZones(loader: GLTFLoader, content: Content, zones: readonly ZoneDef[]): Promise<void> {
@@ -398,6 +402,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
 
   const cutaway: symbol = claimCutaway(occluders, terrainSight);
   const life: LifeView = createLifeView(LIFE, placesFor(LIFE, zone.id, 'zone'), lifeDensity(1, quality === 'mobile'));
+  const fights: Vec2[] = [];
   group.add(life.group);
   const groundAt = (x: number, z: number): number => zone.floorHeight + liftAt(zone, x, z);
   return {
@@ -440,7 +445,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       tickGlow(time);
       embers.update(time, world.player.pos.x, groundAt(world.player.pos.x, world.player.pos.z), world.player.pos.z);
       mistWall?.update(time, focus.flash);
-      life.update(time, dt, world.player.pos, groundAt, fightsIn(world));
+      life.update(time, dt, world.player.pos, groundAt, fightsInto(world, fights));
       roofs.update(world.player.pos.x, world.player.pos.z, dt);
       lids.update(world.service, time, dt);
       for (const conditional of conditionals) {
