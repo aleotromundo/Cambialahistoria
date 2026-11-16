@@ -127,7 +127,7 @@ function whirlwind(data: GuideData): BuildNotes {
     lean: [
       `The ${wheel} is the button you hold. Each hit gives back a little mana and turning through empty air only spends it, so keep it turning through enemies, not between them.`,
       `Because it swings your weapon, your weapon's damage is most of your damage. Every place on the route that says "weapon skills", "Damage" or "Attack Speed" makes each turn hit harder or come sooner.`,
-      `${millwheel}, a legendary greatsword, makes ${skillName(data, 'cleave')} the ${wheel} by itself. A greatsword is a heavy weapon, so with it in hand ${pathName(data, 'blade')} is off and only ${name(data, 'long_wake')} still counts. It spins for an Emberwarden; a Maelstrom keeps its blade.`,
+      `${millwheel}, a legendary blade, makes ${skillName(data, 'cleave')} the ${wheel} by itself, long before ${name(data, 'endless_turn')}. It is a blade, so every place on ${pathName(data, 'blade')} still counts with it in hand.`,
     ],
     lookFor: [
       `A blade with more damage that does not swing slower: ${weaponNames(groupWeapons(data, 'blade'))}. Read the damage range first.`,

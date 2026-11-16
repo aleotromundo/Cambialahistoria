@@ -3392,11 +3392,11 @@
       "name": "The Millwheel",
       "slot": "weapon",
       "material": null,
-      "weaponKind": "greatsword",
-      "icon": "greatsword",
+      "weaponKind": "blade",
+      "icon": "sword",
       "dropWeight": 1,
       "minLevel": 1,
-      "visual": "greatsword",
+      "visual": "warden_broadsword",
       "wear": [],
       "implicit": [
         {
@@ -3408,11 +3408,6 @@
           "stat": "damageMax",
           "op": "add",
           "value": 18
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.18
         },
         {
           "stat": "damagePercent",
