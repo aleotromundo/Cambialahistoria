@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { PerspectiveCamera, Plane, Raycaster, Vector3 } from 'three';
 import type { Vector2 } from 'three';
 import { loadContent } from '../sim/content/content.ts';
 import type { Content } from '../sim/content/types.ts';
@@ -8,6 +8,10 @@ import type { Command, World } from '../sim/world/types.ts';
 import type { KeyValueStore } from '../src/backend/backend.ts';
 import type { Input, InputCamera, InputHooks, InputHud, InputSurface, KeySource } from '../src/input.ts';
 import { createInput } from '../src/input.ts';
+import { CAMERA } from '../src/render/iso-camera.ts';
+import { cameraEye, TERRAIN_SIGHT } from '../src/render/terrain-sight.ts';
+import type { FloorTest, PassThrough } from '../src/render/terrain-lift.ts';
+import { liftAt, rayToFloor, rayToSurface } from '../src/render/terrain-lift.ts';
 import type { SlotDefault } from '../src/settings/bindings.ts';
 import type { SettingsStore } from '../src/settings/store.ts';
 import { createSettingsStore } from '../src/settings/store.ts';
@@ -60,7 +64,7 @@ export function noPlayers(): PlayerHooks {
   return { at: null, takes: (): boolean => false, pressed: [], hovered: [] };
 }
 
-export function rig(world: World, overUi: () => boolean = (): boolean => false, players: PlayerHooks = noPlayers(), label: () => number | null = (): number | null => null, slots: readonly SlotDefault[] = SLOTS): Rig {
+export function rig(world: World, overUi: () => boolean = (): boolean => false, players: PlayerHooks = noPlayers(), label: () => number | null = (): number | null => null, slots: readonly SlotDefault[] = SLOTS, lens: InputCamera | null = null): Rig {
   const heard: Heard = new Map<string, EventListenerOrEventListenerObject[]>();
   const canvas: InputSurface = { addEventListener: hearing(heard), getBoundingClientRect: rect, setPointerCapture: (): void => undefined, style: { cursor: 'default' } };
   const keys: KeySource = { addEventListener: hearing(heard) };
@@ -71,10 +75,9 @@ export function rig(world: World, overUi: () => boolean = (): boolean => false, 
       else listener.handleEvent(event);
     }
   };
-  const camera: InputCamera = {
+  const camera: InputCamera = lens ?? {
     groundPoint: (pointer: Vector2): Vector3 => new Vector3(world.player.pos.x + pointer.x * VIEW.span, 0, world.player.pos.z - pointer.y * VIEW.span),
     project: (): boolean => false,
-    rayDistanceTo: (): number => Infinity,
     zoomBy: (): void => undefined,
   };
   const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, readInput: (): void => undefined };
@@ -96,6 +99,39 @@ export function rig(world: World, overUi: () => boolean = (): boolean => false, 
     field.dispatchEvent(new Event('focusin'));
   };
   return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks), fire, settings, focus };
+}
+
+export function heroCamera(world: World): InputCamera {
+  const view: PerspectiveCamera = new PerspectiveCamera(CAMERA.fov, 1, TERRAIN_SIGHT.near, TERRAIN_SIGHT.far);
+  const raycaster: Raycaster = new Raycaster();
+  const plane: Plane = new Plane(new Vector3(0, 1, 0), 0);
+  const hit: Vector3 = new Vector3();
+  const projected: Vector3 = new Vector3();
+  const place = (): void => {
+    const { x, z } = world.player.pos;
+    view.position.copy(cameraEye(world.zone, x, z));
+    view.lookAt(x, liftAt(world.zone, x, z) + CAMERA.lookHeight, z);
+    view.updateMatrixWorld(true);
+  };
+  const aimAt = (pointer: Vector2): Raycaster => {
+    place();
+    raycaster.setFromCamera(pointer, view);
+    return raycaster;
+  };
+  return {
+    groundPoint(pointer: Vector2, heightOf?: (x: number, z: number) => number, through: PassThrough | null = null, isFloor: FloorTest | null = null): Vector3 | null {
+      const { ray } = aimAt(pointer);
+      if (heightOf !== undefined) return isFloor === null ? rayToSurface(ray, heightOf, hit, through) : rayToFloor(ray, heightOf, isFloor, hit, through);
+      return ray.intersectPlane(plane, hit);
+    },
+    project(x: number, y: number, z: number, out: Vector2): boolean {
+      place();
+      projected.set(x, y, z).project(view);
+      out.set((projected.x * 0.5 + 0.5) * VIEW.size, (-projected.y * 0.5 + 0.5) * VIEW.size);
+      return projected.z > -1 && projected.z < 1;
+    },
+    zoomBy: (): void => undefined,
+  };
 }
 
 export function screenOf(world: World, ground: Vec2): Vec2 {

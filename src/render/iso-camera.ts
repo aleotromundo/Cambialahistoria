@@ -49,7 +49,6 @@ export interface IsoCamera {
   addTrauma(amount: number): void;
   punch(dirX: number, dirZ: number, amount: number): void;
   groundPoint(pointer: Vector2, heightOf?: (x: number, z: number) => number, through?: PassThrough | null, isFloor?: FloorTest | null): Vector3 | null;
-  rayDistanceTo(pointer: Vector2, bottom: Vector3, height: number): number;
   project(x: number, y: number, z: number, out: Vector2): boolean;
 }
 
@@ -71,9 +70,6 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
   const raycaster: Raycaster = new Raycaster();
   const hit: Vector3 = new Vector3();
   const projected: Vector3 = new Vector3();
-  const segment: Vector3 = new Vector3();
-  const onRay: Vector3 = new Vector3();
-  const onSegment: Vector3 = new Vector3();
   let distance: number = CAMERA.distance;
   let wantedDistance: number = CAMERA.distance;
   let trauma: number = 0;
@@ -168,11 +164,6 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
       raycaster.setFromCamera(pointer, camera);
       if (heightOf !== undefined) return isFloor === null ? rayToSurface(raycaster.ray, heightOf, hit, through) : rayToFloor(raycaster.ray, heightOf, isFloor, hit, through);
       return raycaster.ray.intersectPlane(ground, hit) === null ? null : hit;
-    },
-    rayDistanceTo(pointer: Vector2, bottom: Vector3, height: number): number {
-      raycaster.setFromCamera(pointer, camera);
-      segment.set(bottom.x, bottom.y + height, bottom.z);
-      return Math.sqrt(raycaster.ray.distanceSqToSegment(bottom, segment, onRay, onSegment));
     },
     project(x: number, y: number, z: number, out: Vector2): boolean {
       projected.set(x, y, z).project(camera);

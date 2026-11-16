@@ -6,13 +6,18 @@ import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { stepWorld } from '../sim/world/step.ts';
-import type { Command, EncounterState, World } from '../sim/world/types.ts';
+import type { Command, EncounterState, MonsterState, World } from '../sim/world/types.ts';
 import { wakeLength } from '../sim/world/wake.ts';
 import { enterZone } from '../sim/world/zones.ts';
 import { refreshPlayer } from '../sim/world/character.ts';
+import { floorAt, heightAt } from '../sim/nav/terrain.ts';
+import { Vector2 } from 'three';
+import type { Vector3 } from 'three';
+import type { InputCamera } from './input.ts';
+import { clickFloor, clickHeight } from './render/terrain-sight.ts';
 import { stickMove } from './mobile/touch-map.ts';
 import type { SlotDefault } from './settings/bindings.ts';
-import { at, clickOn, DT, floorAhead, inputContent as content, LEFT, noPlayers, RIGHT, rig, run, screenOf, VIEW } from '../test/input-support.ts';
+import { at, clickOn, DT, floorAhead, heroCamera, inputContent as content, LEFT, noPlayers, RIGHT, rig, run, screenOf, SLOTS, VIEW } from '../test/input-support.ts';
 import type { PlayerHooks, Rig } from '../test/input-support.ts';
 
 void test('pointer presses become world input only on the canvas, so a click on the HUD never moves the hero', (): void => {
@@ -491,4 +496,115 @@ void test('with held skills on hold, letting go of the key ends the spin as befo
   play(setup, 1.5);
   assert.ok(!spinning(world));
   assert.equal(setup.input.reading.toggled, null);
+});
+
+const HIGH = { zone: 'under_hall_2', seed: 41, grid: 24, onFloor: 0.3, below: 1, march: 0.05, edgeStep: 2, dropFrom: 3, dropTo: 12 } as const;
+
+interface HighShot {
+  readonly screen: Vec2;
+  readonly floorHit: Vec2;
+  readonly sunk: Vec2;
+  readonly lower: Vec2 | null;
+}
+
+function highShots(world: World, lens: InputCamera): HighShot[] {
+  const heroFloor: number = heightAt(world.zone, world.player.pos.x, world.player.pos.z);
+  const shots: HighShot[] = [];
+  for (let column: number = 1; column < HIGH.grid; column += 1) {
+    for (let row: number = 1; row < HIGH.grid; row += 1) {
+      const screen: Vec2 = { x: (column / HIGH.grid) * VIEW.size, z: (row / HIGH.grid) * VIEW.size };
+      const pointer: Vector2 = new Vector2((screen.x / VIEW.size) * 2 - 1, 1 - (screen.z / VIEW.size) * 2);
+      const hit: Vector3 | null = lens.groundPoint(pointer, clickHeight(world.zone), null, clickFloor(world.zone));
+      if (hit === null || Math.abs(hit.y - heroFloor) > HIGH.onFloor) continue;
+      const floorHit: Vec2 = { x: hit.x, z: hit.z };
+      const top: number = hit.y;
+      const plane: Vector3 | null = lens.groundPoint(pointer);
+      if (plane === null) continue;
+      const sunk: Vec2 = { x: plane.x, z: plane.z };
+      const length: number = Math.hypot(sunk.x - floorHit.x, top, sunk.z - floorHit.z);
+      let lower: Vec2 | null = null;
+      for (let along: number = HIGH.below; along < length && lower === null; along += HIGH.march) {
+        const share: number = along / length;
+        const x: number = floorHit.x + (sunk.x - floorHit.x) * share;
+        const z: number = floorHit.z + (sunk.z - floorHit.z) * share;
+        const y: number = top * (1 - share);
+        const ground: number = heightAt(world.zone, x, z);
+        if (floorAt(world.zone, x, z) && ground < heroFloor - HIGH.below && y <= ground) lower = { x, z };
+      }
+      shots.push({ screen, floorHit, sunk, lower });
+    }
+  }
+  return shots;
+}
+
+function edgeSpot(world: World): Vec2 {
+  const zone = world.zone;
+  const away: number = Math.SQRT1_2;
+  for (let x: number = 1; x < (zone.tiles[0]?.length ?? 0) * zone.cellSize; x += HIGH.edgeStep) {
+    for (let z: number = 1; z < zone.tiles.length * zone.cellSize; z += HIGH.edgeStep) {
+      if (!floorAt(zone, x, z)) continue;
+      const top: number = heightAt(zone, x, z);
+      for (let drop: number = HIGH.dropFrom; drop <= HIGH.dropTo; drop += 1) {
+        const qx: number = x - away * drop;
+        const qz: number = z - away * drop;
+        if (floorAt(zone, qx, qz) && heightAt(zone, qx, qz) < top - HIGH.below) return { x, z };
+      }
+    }
+  }
+  throw new Error('no edge on the high floor');
+}
+
+function highRig(edge: boolean = false): { readonly setup: Rig; readonly monster: MonsterState; readonly shots: readonly HighShot[] } {
+  const world: World = worldIn(content, HIGH.zone, HIGH.seed);
+  if (edge) Object.assign(world.player.pos, edgeSpot(world));
+  const monster: MonsterState = must(world.monsters.find((entry: MonsterState): boolean => entry.alive), 'a monster');
+  world.monsters = [monster];
+  const lens: InputCamera = heroCamera(world);
+  return { setup: rig(world, (): boolean => false, noPlayers(), (): number | null => null, SLOTS, lens), monster, shots: highShots(world, lens) };
+}
+
+function hoveredWith(setup: Rig, monster: MonsterState, spot: Vec2, screen: Vec2): number | null {
+  monster.pos.x = spot.x;
+  monster.pos.z = spot.z;
+  setup.fire('pointermove', at(screen, -1, 0));
+  setup.input.collect(DT);
+  return setup.input.hoveredId;
+}
+
+void test('on the high entrance floor of the second cave level, a monster far below the pointer is never picked, and one on the floor under it is', (): void => {
+  const { setup, monster, shots } = highRig();
+  assert.ok(heightAt(setup.world.zone, setup.world.player.pos.x, setup.world.player.pos.z) > HIGH.below * 10, 'the hero starts on a raised floor');
+  assert.ok(shots.length > 0, 'the pointer finds the hero floor');
+  for (const shot of shots) {
+    assert.equal(hoveredWith(setup, monster, shot.sunk, shot.screen), null, `a monster at ${shot.sunk.x.toFixed(1)},${shot.sunk.z.toFixed(1)} under the floor is picked from ${shot.screen.x},${shot.screen.z}`);
+    assert.equal(hoveredWith(setup, monster, shot.floorHit, shot.screen), monster.id, `a monster on the floor under the pointer at ${shot.screen.x},${shot.screen.z}`);
+  }
+  const shot: HighShot = must(shots[0], 'a shot');
+  hoveredWith(setup, monster, shot.sunk, shot.screen);
+  clickOn(setup, shot.screen);
+  assert.equal(setup.input.reading.click?.kind, 'move');
+});
+
+void test('a monster standing on a lower floor that the pointer ray passes after the hero floor is never picked', (): void => {
+  const { setup, monster, shots } = highRig(true);
+  const behind: HighShot[] = shots.filter((shot: HighShot): boolean => shot.lower !== null);
+  assert.ok(behind.length > 0, 'some pointer ray carries on to a lower floor');
+  for (const shot of behind) {
+    const lower: Vec2 = must(shot.lower, 'lower');
+    assert.equal(hoveredWith(setup, monster, lower, shot.screen), null, `a monster on the lower floor at ${lower.x.toFixed(1)},${lower.z.toFixed(1)} is picked from ${shot.screen.x},${shot.screen.z}`);
+  }
+});
+
+void test('with nothing on the left button, a click on a monster walks toward it and the readout says why', (): void => {
+  const { setup, monster, shots } = highRig();
+  const { world } = setup;
+  world.player.bar = world.player.bar.map((): string | null => null);
+  refreshPlayer(world);
+  const shot: HighShot = must(shots[Math.floor(shots.length / 2)], 'a shot');
+  assert.equal(hoveredWith(setup, monster, shot.floorHit, shot.screen), monster.id);
+  const commands: Command[] = clickOn(setup, shot.screen);
+  assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'skill'), []);
+  const move: Command = must(commands.find((command: Command): boolean => command.type === 'move'), 'a move');
+  assert.ok(move.type === 'move' && Math.hypot(move.dest.x - monster.pos.x, move.dest.z - monster.pos.z) < 1, JSON.stringify(move));
+  assert.deepEqual(setup.input.reading.click, { kind: 'move', reason: 'monster under pointer, no skill on the left button' });
 });

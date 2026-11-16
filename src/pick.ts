@@ -23,6 +23,7 @@ export interface PickPoint {
 export const PICK = {
   bodyPadding: 4,
   footRadius: 0.8,
+  floorRise: 0.9,
 } as const;
 
 export function rectContains(rect: ScreenRect, point: PickPoint, padding: number): boolean {

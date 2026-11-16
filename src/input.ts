@@ -1,6 +1,7 @@
-import { terrainMap } from '../sim/nav/terrain.ts';
+import { heightAt, terrainMap } from '../sim/nav/terrain.ts';
 import type { Box3 as Box3Type } from 'three';
-import { Box3, Vector2, Vector3 } from 'three';
+import { Box3, Vector2 } from 'three';
+import type { Vector3 } from 'three';
 import type { ZoneExit } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { exitUnder } from '../sim/world/exits.ts';
@@ -19,7 +20,7 @@ import type { ClickFacts, ClickResolution, InputReading, PersonPick } from './cl
 import { describeInput, resolveClick } from './click-reading.ts';
 import type { Hud } from './hud/hud-api.ts';
 import type { PickCandidate, ScreenRect } from './pick.ts';
-import { pickActor } from './pick.ts';
+import { PICK, pickActor } from './pick.ts';
 import { exitPress } from './exit-press.ts';
 import type { ItemPress } from './item-press.ts';
 import { itemPress } from './item-press.ts';
@@ -102,13 +103,12 @@ export interface KeySource {
   readonly addEventListener: Window['addEventListener'];
 }
 
-export type InputCamera = Pick<IsoCamera, 'groundPoint' | 'project' | 'rayDistanceTo' | 'zoomBy'>;
+export type InputCamera = Pick<IsoCamera, 'groundPoint' | 'project' | 'zoomBy'>;
 
 export type InputHud = Pick<Hud, 'isPointerOverUi' | 'closePanels' | 'togglePanel' | 'requestMap' | 'readInput'>;
 
 export function createInput(canvas: InputSurface, windowEvents: KeySource, world: World, camera: InputCamera, hud: InputHud, settings: SettingsStore, hooks: InputHooks): Input {
   const pointer: Vector2 = new Vector2(0, 0);
-  const bottom: Vector3 = new Vector3();
   const box: Box3 = new Box3();
   const corner: Vector2 = new Vector2();
   const held: Set<string> = new Set<string>();
@@ -261,26 +261,26 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     return minX > maxX ? null : { minX, minY, maxX, maxY };
   };
 
-  const candidateFor = (kind: PickCandidate['kind'], id: number, x: number, z: number): PickCandidate => {
-    bottom.set(x, 0, z);
+  const candidateFor = (kind: PickCandidate['kind'], id: number, x: number, z: number, hit: Vector3 | null): PickCandidate => {
     const body: ScreenRect | null = screenRect(id);
-    return { id, kind, body, footGap: camera.rayDistanceTo(pointer, bottom, 0), depth: body === null ? 0 : -body.maxY };
+    const onFloor: boolean = hit !== null && Math.abs(hit.y - heightAt(world.zone, x, z)) <= PICK.floorRise;
+    return { id, kind, body, footGap: hit !== null && onFloor ? Math.hypot(hit.x - x, hit.z - z) : Infinity, depth: body === null ? 0 : -body.maxY };
   };
 
-  const pickActors = (): PickCandidate | null => {
+  const pickActors = (hit: Vector3 | null): PickCandidate | null => {
     const labelId: number | null = hooks.labelHover();
     if (hud.isPointerOverUi()) return null;
     if (!pointerInside) {
       const labelled: NpcState | undefined = world.npcs.find((npc: NpcState): boolean => npc.id === labelId);
-      return labelled === undefined ? null : candidateFor('npc', labelled.id, labelled.pos.x, labelled.pos.z);
+      return labelled === undefined ? null : candidateFor('npc', labelled.id, labelled.pos.x, labelled.pos.z, null);
     }
     const rect: DOMRect = canvasRect.read();
     const point = { x: ((pointer.x + 1) / 2) * rect.width, y: ((1 - pointer.y) / 2) * rect.height };
     const candidates: PickCandidate[] = [];
     for (const monster of world.monsters) {
-      if (monster.alive) candidates.push(candidateFor('monster', monster.id, monster.pos.x, monster.pos.z));
+      if (monster.alive) candidates.push(candidateFor('monster', monster.id, monster.pos.x, monster.pos.z, hit));
     }
-    for (const npc of world.npcs) candidates.push(candidateFor('npc', npc.id, npc.pos.x, npc.pos.z));
+    for (const npc of world.npcs) candidates.push(candidateFor('npc', npc.id, npc.pos.x, npc.pos.z, hit));
     return pickActor(candidates, point, null);
   };
 
@@ -372,14 +372,14 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         pressedPlayer = false;
       }
       overUi = hud.isPointerOverUi();
-      const picked: PickCandidate | null = pickActors();
+      const raised: boolean = terrainMap(world.zone) !== null;
+      const groundHit: Vector3 | null = camera.groundPoint(pointer, raised ? clickHeight(world.zone) : undefined, clickThrough(pointer), raised ? clickFloor(world.zone) : null);
+      const picked: PickCandidate | null = pickActors(groundHit);
       const target: MonsterState | null = picked?.kind === 'monster' ? (world.monsters.find((monster: MonsterState): boolean => monster.id === picked.id) ?? null) : null;
       const person: NpcState | null = picked?.kind === 'npc' ? (world.npcs.find((npc: NpcState): boolean => npc.id === picked.id) ?? null) : null;
       hoveredId = target?.id ?? person?.id ?? null;
       const other: string | null = target === null && person === null ? playerAt() : null;
       hooks.hoverPlayer(other);
-      const raised: boolean = terrainMap(world.zone) !== null;
-      const groundHit: Vector3 | null = camera.groundPoint(pointer, raised ? clickHeight(world.zone) : undefined, clickThrough(pointer), raised ? clickFloor(world.zone) : null);
       const ground: Vec2 | null = groundHit === null ? null : { x: groundHit.x, z: groundHit.z };
       look = mouse && pointerInside ? ground : null;
       const item: GroundItem | null = target === null && person === null && other === null ? itemAt(ground) : null;
@@ -398,6 +398,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       canvas.style.cursor = target !== null ? 'crosshair' : item !== null || exit !== null || person !== null || other !== null || chest !== null || station !== null || portal !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
       const byKeys: boolean = settings.get().movement === 'keys';
+      const leftSlot: number = slotFor(INPUT.leftBinding);
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
       const leftDown: boolean = fresh.has(INPUT.leftBinding);
@@ -407,7 +408,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         fresh.delete(INPUT.leftBinding);
         pressedPlayer = true;
       }
-      const facts = (freshPress: boolean, onItem: boolean, heldExit: boolean): ClickFacts => ({ fresh: freshPress, player: tookPlayer, dialogue: world.dialogue !== null, ground: aim !== null && ground !== null, target: target !== null, shift, person: personPick, item: onItem, chest: chest !== null, station: station !== null, portal: portal !== null, heldExit, exit: exit !== null, travelling: world.player.intent.type === 'travel', keys: byKeys });
+      const facts = (freshPress: boolean, onItem: boolean, heldExit: boolean): ClickFacts => ({ fresh: freshPress, player: tookPlayer, dialogue: world.dialogue !== null, ground: aim !== null && ground !== null, target: target !== null, shift, person: personPick, item: onItem, chest: chest !== null, station: station !== null, portal: portal !== null, heldExit, exit: exit !== null, travelling: world.player.intent.type === 'travel', keys: byKeys, armed: (world.player.skills[leftSlot] ?? null) !== null });
       if (tookPlayer || (leftDown && (world.dialogue !== null || aim === null || ground === null))) lastClick = resolveClick(facts(true, false, false));
       if (pressedPlayer && !held.has(INPUT.leftBinding)) {
         pressedPlayer = false;
@@ -457,7 +458,6 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const steering = world.player.action;
       if (steering !== null && steering.slot !== null && steering.skill.press !== null && (toggled?.slot === steering.slot || settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding)))) commands.push({ type: 'steer', aim });
 
-      const leftSlot: number = slotFor(INPUT.leftBinding);
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);
       if (leftFresh) hud.requestMap(marked && !shift);
       const leftRepeats: boolean = leftFresh || (world.player.skills[leftSlot]?.press ?? null) === null;

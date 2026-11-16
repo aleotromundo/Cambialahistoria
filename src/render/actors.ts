@@ -366,7 +366,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     },
     boundsOf(actorId: number, out: Box3): boolean {
       const view: ActorView | null = viewOf(actorId);
-      if (view === null) return false;
+      if (view === null || !view.rig.root.visible) return false;
       view.bounds(out);
       return !out.isEmpty();
     },

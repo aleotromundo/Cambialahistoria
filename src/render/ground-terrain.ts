@@ -46,10 +46,15 @@ function smooth(t: number): number {
 
 function groundHeight(zone: ZoneDef, cell: TerrainCell, floor: boolean, x: number, z: number): number {
   const base: number = tileHeight(zone, cell.column, cell.row, x, z) - zone.floorHeight;
-  if (floor) return base + (rampAt(zone, cell.column, cell.row) ? 0 : GROUND_TERRAIN.bump * terrainNoise(x * GROUND_TERRAIN.bumpScale, z * GROUND_TERRAIN.bumpScale, 5));
+  if (floor) return base - (rampAt(zone, cell.column, cell.row) ? 0 : (GROUND_TERRAIN.bump * (terrainNoise(x * GROUND_TERRAIN.bumpScale, z * GROUND_TERRAIN.bumpScale, 5) + 1)) / 2);
   const broad: number = (terrainNoise(x * GROUND_TERRAIN.rockScale, z * GROUND_TERRAIN.rockScale, 6) + 1) / 2;
   const fine: number = terrainNoise(x * GROUND_TERRAIN.rockFineScale, z * GROUND_TERRAIN.rockFineScale, 7);
   return base + GROUND_TERRAIN.rock * broad + GROUND_TERRAIN.rockFine * fine;
+}
+
+export function drawnGround(zone: ZoneDef, x: number, z: number): number {
+  const cell: TerrainCell = terrainCell(zone, x, z);
+  return groundHeight(zone, cell, isFloorCell(zone, cell.column, cell.row), x, z);
 }
 
 export function sampleField(zone: ZoneDef): Field {

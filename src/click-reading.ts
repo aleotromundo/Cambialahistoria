@@ -18,6 +18,7 @@ export interface ClickFacts {
   readonly exit: boolean;
   readonly travelling: boolean;
   readonly keys: boolean;
+  readonly armed: boolean;
 }
 
 export interface ClickResolution {
@@ -37,8 +38,9 @@ export function resolveClick(facts: ClickFacts): ClickResolution {
   if (facts.player) return { kind: 'player', reason: 'another player under pointer or their menu open' };
   if (facts.dialogue) return { kind: 'advance', reason: 'dialogue open' };
   if (!facts.ground) return { kind: 'none', reason: 'no ground under pointer' };
-  if (facts.target) return { kind: 'skill', reason: 'monster under pointer' };
-  if (facts.shift) return { kind: 'skill', reason: 'shift held' };
+  if (facts.target && (facts.armed || facts.keys)) return { kind: 'skill', reason: 'monster under pointer' };
+  if (facts.target) return { kind: 'move', reason: 'monster under pointer, no skill on the left button' };
+  if (facts.shift && facts.armed) return { kind: 'skill', reason: 'shift held' };
   switch (facts.person) {
     case 'body':
       return { kind: 'talk', reason: 'person under pointer' };
