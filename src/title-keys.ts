@@ -16,6 +16,9 @@ export interface TitleKeyRow {
 export const TITLE_KEYS = {
   primary: { keys: 'Left mouse', does: 'Move, attack, pick up' },
   inPlace: { keys: 'Shift + left mouse', does: 'Attack in place' },
+  primaryByKeys: { keys: 'Left mouse', does: 'Attack, pick up' },
+  moves: 'Move',
+  movesJoiner: ' ',
   zoom: { keys: 'Mouse wheel', does: 'Zoom' },
   panelsPerRow: 3,
   or: ' or ',
@@ -89,7 +92,9 @@ export function titleKeyRows(keys: ResolvedKeys, names: TitleNames): readonly Ti
   const bound: readonly ActionDef[] = panels.filter((def: ActionDef): boolean => keys.bindingsOf(def.id).length > 0);
   const panelRows: readonly (TitleKeyRow | null)[] = Array.from({ length: Math.ceil(bound.length / TITLE_KEYS.panelsPerRow) }, (_unused: unknown, row: number): TitleKeyRow | null => joined(keys, bound.slice(row * TITLE_KEYS.panelsPerRow, (row + 1) * TITLE_KEYS.panelsPerRow), labelOf));
   const grouped: readonly (TitleKeyRow | null)[] = [flaskRow, ...panelRows, joined(keys, system, labelOf)];
-  return [TITLE_KEYS.primary, TITLE_KEYS.inPlace, ...skillRows, ...grouped.filter((row: TitleKeyRow | null): row is TitleKeyRow => row !== null), TITLE_KEYS.zoom];
+  const moveKeys: readonly string[] = keys.table.filter((def: ActionDef): boolean => def.group === 'Movement').flatMap((def: ActionDef): readonly string[] => keys.bindingsOf(def.id).slice(0, 1).map(keyName));
+  const lead: readonly TitleKeyRow[] = moveKeys.length === 0 ? [TITLE_KEYS.primary, TITLE_KEYS.inPlace] : [{ keys: moveKeys.join(TITLE_KEYS.movesJoiner), does: TITLE_KEYS.moves }, TITLE_KEYS.primaryByKeys];
+  return [...lead, ...skillRows, ...grouped.filter((row: TitleKeyRow | null): row is TitleKeyRow => row !== null), TITLE_KEYS.zoom];
 }
 
 function escaped(text: string): string {

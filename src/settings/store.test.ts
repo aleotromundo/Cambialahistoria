@@ -113,3 +113,42 @@ void test('a failed write keeps the change in memory and is reported', (): void 
   assert.equal(store.get().graphics.quality, 'low');
   assert.equal(store.saved(), false);
 });
+
+const WIDE: readonly SlotDefault[] = [...SLOTS, { name: 'Storm Bolt', bindings: ['KeyW', 'mouse_right'] }];
+
+void test('moving by the keys persists, frees W, A, S and D and tells the listeners', (): void => {
+  const storage = memory(null);
+  const store: SettingsStore = createSettingsStore(storage, WIDE, { flasks: 2, ladder: true });
+  assert.equal(store.rebind('inventory', 'KeyA').kind, 'ok');
+  assert.equal(store.rebind('tree', 'KeyX').kind, 'ok');
+  let heard: number = 0;
+  store.subscribe((): void => {
+    heard += 1;
+  });
+  store.setMovement('keys');
+  store.setMovement('keys');
+  assert.equal(heard, 1);
+  assert.equal(store.get().movement, 'keys');
+  assert.equal(store.keys().actionOf('KeyW'), 'moveUp');
+  assert.equal(store.keys().actionOf('KeyA'), 'moveLeft');
+  assert.equal(store.keys().actionOf('KeyI'), 'inventory');
+  assert.equal(store.keys().actionOf('KeyX'), 'tree');
+  assert.deepEqual(store.keys().bindingsOf('skill:2'), ['mouse_right']);
+  const again: SettingsStore = createSettingsStore(storage, WIDE, { flasks: 2, ladder: true });
+  assert.equal(again.get().movement, 'keys');
+  assert.equal(again.keys().actionOf('KeyS'), 'moveDown');
+  assert.equal(again.keys().actionOf('KeyX'), 'tree');
+});
+
+void test('going back to a click gives W back to its skill and drops the rebound move keys', (): void => {
+  const store: SettingsStore = createSettingsStore(memory(null), WIDE, { flasks: 2, ladder: true });
+  store.setMovement('keys');
+  assert.equal(store.rebind('moveUp', 'ArrowUp').kind, 'ok');
+  assert.equal(store.keys().actionOf('ArrowUp'), 'moveUp');
+  store.setMovement('click');
+  assert.equal(store.keys().actionOf('KeyW'), 'skill:2');
+  assert.equal(store.keys().actionOf('ArrowUp'), null);
+  assert.deepEqual(store.get().controls, {});
+  store.setMovement('keys');
+  assert.equal(store.keys().actionOf('KeyW'), 'moveUp');
+});

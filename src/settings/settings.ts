@@ -1,5 +1,5 @@
-import type { ActionDef, Overrides } from './bindings.ts';
-import { sanitizeOverrides } from './bindings.ts';
+import type { ActionDef, Movement, Overrides } from './bindings.ts';
+import { DEFAULT_MOVEMENT, MOVEMENTS, sanitizeOverrides } from './bindings.ts';
 
 export const QUALITIES = ['low', 'medium', 'high'] as const;
 export type Quality = (typeof QUALITIES)[number];
@@ -31,12 +31,13 @@ export interface GraphicsSettings {
 export interface Settings {
   readonly graphics: GraphicsSettings;
   readonly controls: Overrides;
+  readonly movement: Movement;
 }
 
 export const SETTINGS_KEY: string = 'the-lost-storm.settings.v1';
 
 export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false, lensWater: true };
-export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {} };
+export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {}, movement: DEFAULT_MOVEMENT };
 
 function fieldOf(source: unknown, key: string): unknown {
   if (typeof source !== 'object' || source === null || Array.isArray(source)) return undefined;
@@ -58,14 +59,27 @@ function overridesOf(value: unknown): Overrides {
   return found;
 }
 
-export function readSettings(text: string | null, table: readonly ActionDef[]): Settings {
-  if (text === null) return DEFAULT_SETTINGS;
-  let parsed: unknown;
+function parsedOf(text: string | null): unknown {
+  if (text === null) return undefined;
   try {
-    parsed = JSON.parse(text);
+    const parsed: unknown = JSON.parse(text);
+    return parsed;
   } catch {
-    return DEFAULT_SETTINGS;
+    return undefined;
   }
+}
+
+function movementOf(value: unknown): Movement {
+  return MOVEMENTS.find((movement: Movement): boolean => movement === value) ?? DEFAULT_MOVEMENT;
+}
+
+export function readMovement(text: string | null): Movement {
+  return movementOf(fieldOf(parsedOf(text), 'movement'));
+}
+
+export function readSettings(text: string | null, table: readonly ActionDef[]): Settings {
+  const parsed: unknown = parsedOf(text);
+  if (parsed === undefined) return DEFAULT_SETTINGS;
   const graphics: unknown = fieldOf(parsed, 'graphics');
   const showFps: unknown = fieldOf(graphics, 'showFps');
   const lensWater: unknown = fieldOf(graphics, 'lensWater');
@@ -76,11 +90,12 @@ export function readSettings(text: string | null, table: readonly ActionDef[]): 
       lensWater: typeof lensWater === 'boolean' ? lensWater : DEFAULT_GRAPHICS.lensWater,
     },
     controls: sanitizeOverrides(table, overridesOf(fieldOf(parsed, 'controls'))),
+    movement: movementOf(fieldOf(parsed, 'movement')),
   };
 }
 
 export function mergeSettings(current: Settings, change: Partial<Settings>): Settings {
-  return { graphics: change.graphics ?? current.graphics, controls: change.controls ?? current.controls };
+  return { graphics: change.graphics ?? current.graphics, controls: change.controls ?? current.controls, movement: change.movement ?? current.movement };
 }
 
 export function describePreset(preset: GraphicsPreset): string {

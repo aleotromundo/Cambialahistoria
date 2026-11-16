@@ -1,8 +1,8 @@
 import type { KeyValueStore } from '../backend/backend.ts';
-import type { ActionDef, ActionId, Overrides, RebindResult, ResolvedKeys, SlotDefault, Shipped } from './bindings.ts';
-import { actionTable, rebind, resolveKeys } from './bindings.ts';
+import type { ActionDef, ActionId, Movement, Overrides, RebindResult, ResolvedKeys, SlotDefault, Shipped } from './bindings.ts';
+import { actionTable, freeMoveKeys, rebind, resolveKeys, sanitizeOverrides } from './bindings.ts';
 import type { GraphicsPreset, GraphicsSettings, Quality, Settings } from './settings.ts';
-import { mergeSettings, PRESETS, readSettings, SETTINGS_KEY } from './settings.ts';
+import { mergeSettings, PRESETS, readMovement, readSettings, SETTINGS_KEY } from './settings.ts';
 
 export interface SettingsStore {
   get(): Settings;
@@ -11,6 +11,7 @@ export interface SettingsStore {
   setQuality(quality: Quality): void;
   setShowFps(show: boolean): void;
   setLensWater(on: boolean): void;
+  setMovement(movement: Movement): void;
   rebind(action: ActionId, code: string): RebindResult;
   resetControls(): void;
   saved(): boolean;
@@ -18,8 +19,9 @@ export interface SettingsStore {
 }
 
 export function createSettingsStore(storage: KeyValueStore, slots: readonly SlotDefault[], build: Shipped): SettingsStore {
-  const table: readonly ActionDef[] = actionTable(slots, build);
-  let settings: Settings = readSettings(storage.read(SETTINGS_KEY), table);
+  const stored: string | null = storage.read(SETTINGS_KEY);
+  let table: readonly ActionDef[] = actionTable(slots, build, readMovement(stored));
+  let settings: Settings = readSettings(stored, table);
   let keys: ResolvedKeys = resolveKeys(table, settings.controls);
   let saved = true;
   const listeners: ((settings: Settings) => void)[] = [];
@@ -54,6 +56,11 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     },
     setLensWater(lensWater: boolean): void {
       setGraphics({ ...settings.graphics, lensWater });
+    },
+    setMovement(movement: Movement): void {
+      if (movement === settings.movement) return;
+      table = actionTable(slots, build, movement);
+      commit(mergeSettings(settings, { movement, controls: sanitizeOverrides(table, movement === 'keys' ? freeMoveKeys(settings.controls) : settings.controls) }));
     },
     rebind(action: ActionId, code: string): RebindResult {
       const result: RebindResult = rebind(table, settings.controls, action, code);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ActionDef } from './bindings.ts';
 import { actionTable } from './bindings.ts';
-import { DEFAULT_SETTINGS, describePreset, mergeSettings, PRESETS, readSettings } from './settings.ts';
+import { DEFAULT_SETTINGS, describePreset, mergeSettings, PRESETS, readMovement, readSettings } from './settings.ts';
 
 const TABLE: readonly ActionDef[] = actionTable([
   { name: 'Cleave', bindings: ['mouse_left'] },
@@ -47,4 +47,15 @@ void test('presets get cheaper from high to low', (): void => {
   assert.equal(low.shadows, false);
   assert.equal(low.bloom, false);
   assert.ok(describePreset(high).includes('2048'));
+});
+
+void test('how the hero moves reads back, and anything else reads as a click', (): void => {
+  assert.equal(readSettings(JSON.stringify({ movement: 'keys' }), TABLE).movement, 'keys');
+  assert.equal(readMovement(JSON.stringify({ movement: 'keys' })), 'keys');
+  for (const text of [null, '{nope', '7', JSON.stringify({ movement: 'stick' }), JSON.stringify({ graphics: {} })]) {
+    assert.equal(readMovement(text), 'click');
+    assert.equal(readSettings(text, TABLE).movement, 'click');
+  }
+  assert.equal(mergeSettings(DEFAULT_SETTINGS, { movement: 'keys' }).movement, 'keys');
+  assert.equal(mergeSettings({ ...DEFAULT_SETTINGS, movement: 'keys' }, { controls: {} }).movement, 'keys');
 });

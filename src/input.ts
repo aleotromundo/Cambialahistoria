@@ -23,7 +23,10 @@ import { pickActor } from './pick.ts';
 import { exitPress } from './exit-press.ts';
 import type { ItemPress } from './item-press.ts';
 import { itemPress } from './item-press.ts';
+import type { KeyWalk } from './move-keys.ts';
+import { createKeyWalk } from './move-keys.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
+import { CAMERA } from './render/iso-camera.ts';
 import { clickThrough } from './render/prop-cutaway.ts';
 import { clickFloor, clickHeight } from './render/terrain-sight.ts';
 import type { ActionId } from './settings/bindings.ts';
@@ -42,6 +45,7 @@ export const INPUT = {
   ],
   closeKey: 'Escape',
   advanceKeys: ['Space', 'Enter'],
+  halfTurnDegrees: 180,
 } as const;
 
 export interface InputHooks {
@@ -117,6 +121,8 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let lastClick: ClickResolution | null = null;
   let overUi: boolean = false;
   const extra: Command[] = [];
+  const keyWalk: KeyWalk = createKeyWalk((CAMERA.yawDegrees * Math.PI) / INPUT.halfTurnDegrees);
+  const down = (action: ActionId): boolean => settings.keys().bindingsOf(action).some((binding: string): boolean => held.has(binding));
   const canvasRect: SurfaceRect = surfaceRect(canvas);
 
   const slotFor = (binding: string): number => world.content.player.skillBar.findIndex((_entry, slot: number): boolean => settings.keys().bindingsOf(slotAction(slot)).includes(binding));
@@ -216,6 +222,12 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     held.clear();
     shift = false;
   };
+  const releaseKeys = (): void => {
+    for (const binding of held) if (!INPUT.mouseButtons.some((mouseButton: MouseButton): boolean => mouseButton.binding === binding)) lift(binding);
+  };
+  windowEvents.addEventListener('focusin', (event: FocusEvent): void => {
+    if (isTextField(event.target)) releaseKeys();
+  });
   windowEvents.addEventListener('blur', releaseAll);
   windowEvents.addEventListener('visibilitychange', releaseAll);
 
@@ -369,6 +381,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       }
       canvas.style.cursor = target !== null ? 'crosshair' : item !== null || exit !== null || person !== null || other !== null || chest !== null || station !== null || portal !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
+      const byKeys: boolean = settings.get().movement === 'keys';
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
       const leftDown: boolean = fresh.has(INPUT.leftBinding);
@@ -378,7 +391,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         fresh.delete(INPUT.leftBinding);
         pressedPlayer = true;
       }
-      const facts = (freshPress: boolean, onItem: boolean, heldExit: boolean): ClickFacts => ({ fresh: freshPress, player: tookPlayer, dialogue: world.dialogue !== null, ground: aim !== null && ground !== null, target: target !== null, shift, person: personPick, item: onItem, chest: chest !== null, station: station !== null, portal: portal !== null, heldExit, exit: exit !== null, travelling: world.player.intent.type === 'travel' });
+      const facts = (freshPress: boolean, onItem: boolean, heldExit: boolean): ClickFacts => ({ fresh: freshPress, player: tookPlayer, dialogue: world.dialogue !== null, ground: aim !== null && ground !== null, target: target !== null, shift, person: personPick, item: onItem, chest: chest !== null, station: station !== null, portal: portal !== null, heldExit, exit: exit !== null, travelling: world.player.intent.type === 'travel', keys: byKeys });
       if (tookPlayer || (leftDown && (world.dialogue !== null || aim === null || ground === null))) lastClick = resolveClick(facts(true, false, false));
       if (pressedPlayer && !held.has(INPUT.leftBinding)) {
         pressedPlayer = false;
@@ -400,6 +413,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         const action: ActionId | null = flaskAction(slot);
         if (action !== null && settings.keys().bindingsOf(action).some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'flask', slot });
       });
+      if (byKeys) commands.push(...keyWalk.step({ up: down('moveUp'), down: down('moveDown'), left: down('moveLeft'), right: down('moveRight') }, world.player.pos));
       if (aim === null || ground === null) return commands;
       const steering = world.player.action;
       if (steering !== null && steering.slot !== null && steering.skill.press !== null && settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding))) commands.push({ type: 'steer', aim });
@@ -484,6 +498,10 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       return commands;
     },
   };
+}
+
+export function isTextField(target: EventTarget | null): boolean {
+  return target !== null && 'selectionStart' in target;
 }
 
 export function buttonDown(buttons: number, mouseButton: MouseButton): boolean {

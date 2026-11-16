@@ -2,10 +2,16 @@ export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap'
 export type FixedAction = (typeof FIXED_ACTIONS)[number];
 export const FLASK_ACTIONS: readonly FixedAction[] = ['flask1', 'flask2', 'flask3', 'flask4', 'flask5'];
 export type SkillAction = 'primary' | `skill:${number}`;
-export type ActionId = FixedAction | SkillAction;
+export const MOVE_ACTIONS = ['moveUp', 'moveLeft', 'moveDown', 'moveRight'] as const;
+export type MoveAction = (typeof MOVE_ACTIONS)[number];
+export type ActionId = FixedAction | SkillAction | MoveAction;
 
-export type ActionGroup = 'Combat' | 'Flasks' | 'Panels' | 'System';
-export const ACTION_GROUPS: readonly ActionGroup[] = ['Combat', 'Flasks', 'Panels', 'System'];
+export const MOVEMENTS = ['click', 'keys'] as const;
+export type Movement = (typeof MOVEMENTS)[number];
+export const DEFAULT_MOVEMENT: Movement = 'click';
+
+export type ActionGroup = 'Movement' | 'Combat' | 'Flasks' | 'Panels' | 'System';
+export const ACTION_GROUPS: readonly ActionGroup[] = ['Movement', 'Combat', 'Flasks', 'Panels', 'System'];
 
 export interface ActionDef {
   readonly id: ActionId;
@@ -40,6 +46,23 @@ export const BINDING = {
   escape: 'Escape',
   maxLength: 24,
 } as const;
+
+export const PRIMARY_LABELS: Readonly<Record<Movement, string>> = { click: 'Move / attack', keys: 'Attack' };
+
+interface MoveDef {
+  readonly id: MoveAction;
+  readonly label: string;
+  readonly code: string;
+}
+
+const MOVE_DEFS: readonly MoveDef[] = [
+  { id: 'moveUp', label: 'Move up', code: 'KeyW' },
+  { id: 'moveLeft', label: 'Move left', code: 'KeyA' },
+  { id: 'moveDown', label: 'Move down', code: 'KeyS' },
+  { id: 'moveRight', label: 'Move right', code: 'KeyD' },
+];
+
+const MOVE_CODES: ReadonlySet<string> = new Set<string>(MOVE_DEFS.map((def: MoveDef): string => def.code));
 
 const RESERVED: ReadonlySet<string> = new Set<string>([BINDING.leftMouse, 'ShiftLeft', 'ShiftRight', 'Enter', 'NumpadEnter']);
 
@@ -83,16 +106,22 @@ function shipped(def: ActionDef, build: Shipped): boolean {
   return index < 0 || index < build.flasks;
 }
 
-export function actionTable(slots: readonly SlotDefault[], build: Shipped): readonly ActionDef[] {
+export function actionTable(slots: readonly SlotDefault[], build: Shipped, movement: Movement = DEFAULT_MOVEMENT): readonly ActionDef[] {
+  const byKeys: boolean = movement === 'keys';
+  const moves: ActionDef[] = MOVE_DEFS.map((def: MoveDef): ActionDef => ({ id: def.id, label: def.label, group: 'Movement', defaults: byKeys ? [def.code] : [], locked: !byKeys }));
   const skills: ActionDef[] = slots.map(
     (slot: SlotDefault, index: number): ActionDef =>
       index === 0
-        ? { id: 'primary', label: 'Move / attack', group: 'Combat', defaults: [BINDING.leftMouse], locked: true }
-        : { id: slotAction(index), label: slot.name, group: 'Combat', defaults: slot.bindings, locked: false },
+        ? { id: 'primary', label: PRIMARY_LABELS[movement], group: 'Combat', defaults: [BINDING.leftMouse], locked: true }
+        : { id: slotAction(index), label: slot.name, group: 'Combat', defaults: byKeys ? slot.bindings.filter((code: string): boolean => !MOVE_CODES.has(code)) : slot.bindings, locked: false },
   );
   const fixed: ActionDef[] = FIXED_DEFS.map((def): ActionDef => Object.assign({ locked: false }, def)).filter((def: ActionDef): boolean => shipped(def, build));
   const combat: ActionDef[] = [...skills, ...fixed.filter((def: ActionDef): boolean => def.group === 'Combat')];
-  return [...combat, ...fixed.filter((def: ActionDef): boolean => def.group !== 'Combat')];
+  return [...moves, ...combat, ...fixed.filter((def: ActionDef): boolean => def.group !== 'Combat')];
+}
+
+export function freeMoveKeys(overrides: Overrides): Overrides {
+  return Object.fromEntries(Object.entries(overrides).filter(([, codes]: [string, readonly string[]]): boolean => !codes.some((code: string): boolean => MOVE_CODES.has(code))));
 }
 
 export function isBindingCode(value: string): boolean {

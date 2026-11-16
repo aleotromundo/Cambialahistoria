@@ -17,6 +17,7 @@ export interface ClickFacts {
   readonly heldExit: boolean;
   readonly exit: boolean;
   readonly travelling: boolean;
+  readonly keys: boolean;
 }
 
 export interface ClickResolution {
@@ -51,6 +52,7 @@ export function resolveClick(facts: ClickFacts): ClickResolution {
   if (facts.portal) return { kind: 'portal', reason: 'portal under pointer' };
   if (!facts.fresh && facts.heldExit) return { kind: 'swallowed', reason: 'exit press held' };
   if (facts.exit && facts.fresh) return { kind: 'exit', reason: 'exit under pointer' };
+  if (facts.keys) return { kind: 'skill', reason: 'keys move the hero' };
   if (facts.exit && facts.travelling) return { kind: 'none', reason: 'already travelling' };
   if (facts.exit) return { kind: 'move', reason: 'held over exit' };
   return { kind: 'move', reason: null };

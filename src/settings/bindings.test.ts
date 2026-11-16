@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { ActionDef, ResolvedKeys, SlotDefault } from './bindings.ts';
-import { actionTable, flaskAction, keyLabel, rebind, resolveKeys, sanitizeOverrides, slotAction } from './bindings.ts';
+import { actionTable, flaskAction, freeMoveKeys, keyLabel, MOVE_ACTIONS, rebind, resolveKeys, sanitizeOverrides, slotAction } from './bindings.ts';
 
 const SLOTS: readonly SlotDefault[] = [
   { name: 'Cleave', bindings: ['mouse_left'] },
@@ -109,4 +109,41 @@ void test('the table offers a key for each flask the game has and no more', (): 
   assert.deepEqual(ids(9), ['flask1', 'flask2', 'flask3', 'flask4', 'flask5']);
   assert.equal(resolveKeys(actionTable(SLOTS, { flasks: 2, ladder: true }), {}).actionOf('Digit3'), null);
   assert.equal(rebind(actionTable(SLOTS, { flasks: 2, ladder: true }), {}, 'inventory', 'Digit3').kind, 'ok');
+});
+
+const KEYS_TABLE: readonly ActionDef[] = actionTable(SLOTS, { flasks: 2, ladder: true }, 'keys');
+
+void test('while a click moves the hero the move keys are listed, locked and unbound, and W stays a skill key', (): void => {
+  const keys: ResolvedKeys = resolveKeys(TABLE, {});
+  for (const action of MOVE_ACTIONS) {
+    assert.deepEqual(keys.bindingsOf(action), []);
+    assert.equal(rebind(TABLE, {}, action, 'ArrowUp').kind, 'refused');
+  }
+  assert.equal(keys.actionOf('KeyW'), 'skill:2');
+  assert.deepEqual(sanitizeOverrides(TABLE, { moveUp: ['ArrowUp'] }), {});
+});
+
+void test('with the keys moving the hero W, A, S and D move, and a skill that shared one keeps its other keys', (): void => {
+  const keys: ResolvedKeys = resolveKeys(KEYS_TABLE, {});
+  assert.deepEqual(MOVE_ACTIONS.map((action): string | undefined => keys.bindingsOf(action)[0]), ['KeyW', 'KeyA', 'KeyS', 'KeyD']);
+  assert.deepEqual(keys.bindingsOf('skill:2'), ['mouse_right']);
+  assert.equal(keys.labelOf('skill:2'), 'RMB');
+  assert.equal(keys.actionOf('KeyQ'), 'skill:1');
+  const codes: string[] = KEYS_TABLE.flatMap((def: ActionDef): readonly string[] => def.defaults);
+  assert.equal(new Set(codes).size, codes.length);
+  assert.equal(KEYS_TABLE.find((def: ActionDef): boolean => def.id === 'primary')?.label, 'Attack');
+});
+
+void test('a move key can be rebound, and no other action can take a key that moves', (): void => {
+  const taken = rebind(KEYS_TABLE, {}, 'skill:1', 'KeyA');
+  assert.equal(taken.kind, 'conflict');
+  assert.equal(taken.with.id, 'moveLeft');
+  const arrows = rebind(KEYS_TABLE, {}, 'moveUp', 'ArrowUp');
+  assert.equal(arrows.kind, 'ok');
+  assert.equal(resolveKeys(KEYS_TABLE, arrows.overrides).actionOf('ArrowUp'), 'moveUp');
+  assert.equal(resolveKeys(KEYS_TABLE, arrows.overrides).actionOf('KeyW'), null);
+});
+
+void test('freeing the move keys drops every saved key that sits on W, A, S or D and keeps the rest', (): void => {
+  assert.deepEqual(freeMoveKeys({ inventory: ['KeyD'], 'skill:1': ['KeyF'], tree: ['KeyX', 'KeyS'] }), { 'skill:1': ['KeyF'] });
 });

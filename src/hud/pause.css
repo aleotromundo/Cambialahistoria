@@ -370,6 +370,32 @@
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
+.ctl-fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.ctl-fold.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    visibility 0s;
+}
+
+.ctl-fold-in {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .ctl-group {
   margin: 8px 0 2px;
   font-size: 10px;

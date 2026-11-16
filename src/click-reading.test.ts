@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { ClickFacts, ClickKind } from './click-reading.ts';
 import { describeInput, resolveClick } from './click-reading.ts';
 
-const GROUND: ClickFacts = { fresh: true, player: false, dialogue: false, ground: true, target: false, shift: false, person: 'none', item: false, chest: false, station: false, portal: false, heldExit: false, exit: false, travelling: false };
+const GROUND: ClickFacts = { fresh: true, player: false, dialogue: false, ground: true, target: false, shift: false, person: 'none', item: false, chest: false, station: false, portal: false, heldExit: false, exit: false, travelling: false, keys: false };
 
 void test('a fresh press on open ground is a move with no reason', (): void => {
   assert.deepEqual(resolveClick(GROUND), { kind: 'move', reason: null });
@@ -30,6 +30,23 @@ void test('each fact decides the press in the order collect acts on it', (): voi
     { facts: { fresh: false, exit: true }, kind: 'move', reason: 'held over exit' },
   ];
   for (const { facts, kind, reason } of cases) assert.deepEqual(resolveClick({ ...GROUND, ...facts }), { kind, reason }, JSON.stringify(facts));
+});
+
+void test('with the keys moving the hero, a press on the ground attacks, and a press on a thing still acts on it', (): void => {
+  const cases: readonly { readonly facts: Partial<ClickFacts>; readonly kind: ClickKind }[] = [
+    { facts: {}, kind: 'skill' },
+    { facts: { fresh: false }, kind: 'skill' },
+    { facts: { fresh: false, exit: true }, kind: 'skill' },
+    { facts: { item: true }, kind: 'pickup' },
+    { facts: { person: 'body' }, kind: 'talk' },
+    { facts: { chest: true }, kind: 'open' },
+    { facts: { station: true }, kind: 'use' },
+    { facts: { portal: true }, kind: 'portal' },
+    { facts: { exit: true }, kind: 'exit' },
+    { facts: { fresh: false, heldExit: true }, kind: 'swallowed' },
+    { facts: { dialogue: true }, kind: 'advance' },
+  ];
+  for (const { facts, kind } of cases) assert.equal(resolveClick({ ...GROUND, keys: true, ...facts }).kind, kind, JSON.stringify(facts));
 });
 
 void test('the readout line names the last press, the held buttons and where the pointer counts', (): void => {

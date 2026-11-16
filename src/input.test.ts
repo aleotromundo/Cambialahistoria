@@ -14,8 +14,10 @@ import { wakeLength } from '../sim/world/wake.ts';
 import { enterZone } from '../sim/world/zones.ts';
 import type { KeyValueStore } from './backend/backend.ts';
 import type { Input, InputCamera, InputHooks, InputHud, InputSurface, KeySource } from './input.ts';
-import { createInput } from './input.ts';
-import { stickMove } from './mobile/touch-map.ts';
+import { createInput, isTextField } from './input.ts';
+import { keysDirection } from './move-keys.ts';
+import { CAMERA } from './render/iso-camera.ts';
+import { stickMove, TOUCH } from './mobile/touch-map.ts';
 import type { SlotDefault } from './settings/bindings.ts';
 import type { SettingsStore } from './settings/store.ts';
 import { createSettingsStore } from './settings/store.ts';
@@ -36,6 +38,8 @@ interface Rig {
   readonly world: World;
   readonly input: Input;
   readonly fire: (type: string, pointer?: Partial<FakePointer>) => void;
+  readonly settings: SettingsStore;
+  readonly focus: (field: EventTarget) => void;
 }
 
 interface FakePointer {
@@ -46,6 +50,7 @@ interface FakePointer {
   readonly pointerId: number;
   readonly pointerType: string;
   readonly shiftKey: boolean;
+  readonly code: string;
 }
 
 type Heard = Map<string, EventListenerOrEventListenerObject[]>;
@@ -102,7 +107,11 @@ function rig(world: World, overUi: () => boolean = (): boolean => false, players
     },
     pause: (): void => undefined,
   };
-  return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks), fire };
+  const focus = (field: EventTarget): void => {
+    for (const listener of heard.get('focusin') ?? []) field.addEventListener('focusin', listener);
+    field.dispatchEvent(new Event('focusin'));
+  };
+  return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks), fire, settings, focus };
 }
 
 function screenOf(world: World, ground: Vec2): Vec2 {
@@ -486,3 +495,74 @@ void test('the input reading reports a held press, a no-ground click and a press
   assert.deepEqual(setup.input.reading.held, []);
 });
 
+
+const YAW: number = (CAMERA.yawDegrees * Math.PI) / 180;
+
+function walks(commands: readonly Command[]): Command[] {
+  return commands.filter((command: Command): boolean => command.type === 'walk' || command.type === 'stop');
+}
+
+void test('with the keys moving the hero, a held W walks up the screen every frame and its release stops once', (): void => {
+  const world: World = worldIn(content, 'under_hall_2', 22);
+  const setup: Rig = rig(world);
+  setup.settings.setMovement('keys');
+  const up: Vec2 = must(keysDirection({ up: true, down: false, left: false, right: false }, YAW), 'up');
+  const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  setup.fire('keydown', { code: 'KeyW' });
+  assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'walk', held: false, dest: { x: from.x + up.x * TOUCH.stickReach, z: from.z + up.z * TOUCH.stickReach } }]);
+  assert.deepEqual(walks(setup.input.collect(DT)).map((command: Command): string => (command.type === 'walk' ? `walk ${command.held}` : command.type)), ['walk true']);
+  setup.fire('keyup', { code: 'KeyW' });
+  assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'stop' }]);
+  assert.deepEqual(walks(setup.input.collect(DT)), []);
+});
+
+void test('with the keys moving the hero, the hero really walks the way the key points', (): void => {
+  const world: World = worldIn(content, 'under_hall_2', 22);
+  const setup: Rig = rig(world);
+  setup.settings.setMovement('keys');
+  const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const reached: number[] = [];
+  for (const [code, keys] of [['KeyW', { up: true, down: false, left: false, right: false }], ['KeyS', { up: false, down: true, left: false, right: false }]] as const) {
+    world.player.pos.x = from.x;
+    world.player.pos.z = from.z;
+    const way: Vec2 = must(keysDirection(keys, YAW), code);
+    setup.fire('keydown', { code });
+    run(setup, 0.6, (): boolean => false);
+    setup.fire('keyup', { code });
+    run(setup, 0.1, (): boolean => false);
+    reached.push((world.player.pos.x - from.x) * way.x + (world.player.pos.z - from.z) * way.z);
+  }
+  assert.ok(Math.max(...reached) > 1, `the hero walked ${reached.join(' and ')} along the keys`);
+});
+
+void test('with the keys moving the hero, a press on open ground never walks there', (): void => {
+  const world: World = worldIn(content, 'under_hall_2', 22);
+  const setup: Rig = rig(world);
+  setup.settings.setMovement('keys');
+  const commands: Command[] = clickOn(setup, floorAhead(world));
+  assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'move'), []);
+  assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'skill').map((command: Command): number | null => (command.type === 'skill' ? command.slot : null)), [0]);
+  assert.equal(setup.input.reading.click?.kind, 'skill');
+});
+
+void test('while a click moves the hero, W never walks', (): void => {
+  const world: World = worldIn(content, 'under_hall_2', 22);
+  const setup: Rig = rig(world);
+  setup.fire('keydown', { code: 'KeyW' });
+  assert.deepEqual(walks(setup.input.collect(DT)), []);
+});
+
+void test('a move key held while a text field takes the focus is let go, and a button taking the focus changes nothing', (): void => {
+  const world: World = worldIn(content, 'under_hall_2', 22);
+  const setup: Rig = rig(world);
+  setup.settings.setMovement('keys');
+  setup.fire('keydown', { code: 'KeyD' });
+  assert.equal(walks(setup.input.collect(DT))[0]?.type, 'walk');
+  setup.focus(new EventTarget());
+  assert.equal(walks(setup.input.collect(DT))[0]?.type, 'walk');
+  const field: EventTarget = Object.assign(new EventTarget(), { selectionStart: 0 });
+  assert.equal(isTextField(field), true);
+  assert.equal(isTextField(null), false);
+  setup.focus(field);
+  assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'stop' }]);
+});

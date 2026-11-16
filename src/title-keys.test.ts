@@ -78,3 +78,11 @@ void test('a skill placed off its home slot is named in the slot it sits in', ()
   moved[2] = skill;
   assert.deepEqual(titleNames(content, moved).skills, moved.map((id: string | null): string | null => (id === null ? null : (content.skills.get(id)?.name ?? null))));
 });
+
+void test('with the keys moving the hero the list leads with the move keys, and the left mouse only attacks and picks up', (): void => {
+  const table = actionTable(skillSlots(content), shippedKeys(content, false), 'keys');
+  const rows: readonly TitleKeyRow[] = titleKeyRows(resolveKeys(table, { moveUp: ['ArrowUp'] }), fullNames);
+  assert.deepEqual(rows.slice(0, 2), [{ keys: 'Up A S D', does: 'Move' }, TITLE_KEYS.primaryByKeys]);
+  assert.equal(rows.some((row: TitleKeyRow): boolean => row.keys === TITLE_KEYS.inPlace.keys), false);
+  assert.equal(rows.some((row: TitleKeyRow): boolean => /(^| )W( |$)/.test(row.keys)), false);
+});
