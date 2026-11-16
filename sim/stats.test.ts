@@ -328,7 +328,7 @@ void test('when two held places change one skill the chosen change is active, an
   assert.equal(resolveSkill(content, skillOf('storm_bolt'), ['twice_told_bolt'], [], [], ANY_WEAPON, { storm_bolt: 'storm_bolt_lance' }).name, skillOf('storm_bolt_echo').name);
 });
 
-void test('Echoes makes every main attack happen twice with a weaker echo, keeps an echo it already had, and leaves a held spin and other skills alone', (): void => {
+void test('Echoes makes every main attack happen twice with a weaker echo, keeps an echo it already had, makes a held spin hit harder instead, and leaves other skills alone', (): void => {
   const echoes = must(content.skillTree.find((node): boolean => node.id === 'twice_swung'), 'twice_swung');
   const share: number = echoes.skillMods.find((mod: SkillMod): boolean => mod.field === 'echo')?.value ?? 0;
   assert.ok(share > 0 && share < 1);
@@ -348,7 +348,8 @@ void test('Echoes makes every main attack happen twice with a weaker echo, keeps
   const held: SkillDef = resolveSkill(content, skillOf('cleave'), [...route, 'heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'endless_turn']);
   assert.ok(held.momentum !== null);
   assert.equal(held.echo, 0);
-  assert.deepEqual(held.damage, resolveSkill(content, skillOf('cleave'), ['heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'endless_turn']).damage);
+  const unheld: SkillDef = resolveSkill(content, skillOf('cleave'), ['heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'endless_turn']);
+  assert.ok(Math.abs(held.damage.weaponPercent - unheld.damage.weaponPercent * (1 + share * ADDED_ECHO.heldDamage)) < 1e-9);
   const told: SkillDef = resolveSkill(content, skillOf('storm_bolt'), [...route, 'storm_storm_bolt', 'stormcallers_focus', 'storm_1', 'forked_bolt', 'storm_4', 'twice_told_bolt']);
   assert.equal(told.echo, skillOf('storm_bolt_echo').echo);
   assert.equal(told.echoShare, 1);

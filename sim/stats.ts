@@ -7,7 +7,7 @@ import { ANY_WEAPON, heldGroup, heldPlace } from './weapons.ts';
 export const ARMOUR_HALF_POINT: number = 100;
 export const MIN_ATTACK_SPEED: number = 0.2;
 const MIN_CYCLE: number = 0.05;
-export const ADDED_ECHO = { delay: 0.35 } as const;
+export const ADDED_ECHO = { delay: 0.35, heldDamage: 0.5 } as const;
 
 export function applyMods(base: StatBlock, mods: readonly StatMod[]): StatBlock {
   const flat: StatBlock = { ...base };
@@ -162,6 +162,11 @@ function echoOf(skill: SkillDef, share: number): SkillEcho {
   return { echo: ADDED_ECHO.delay, echoShare: Math.min(1, share) };
 }
 
+function heldEchoScale(skill: SkillDef, share: number): number {
+  if (skill.momentum === null || skill.echo > 0 || share <= 0) return 1;
+  return 1 + Math.min(1, share) * ADDED_ECHO.heldDamage;
+}
+
 function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
   return Math.max(0, 1 + sumSkillMod(mods, field));
 }
@@ -179,7 +184,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
     chains: sumSkillMod(mods, 'chains'),
     falloff: sumSkillMod(mods, 'chainFalloff'),
   });
-  const damageScale: number = scaleOf(mods, 'damagePercent');
+  const damageScale: number = scaleOf(mods, 'damagePercent') * heldEchoScale(skill, sumSkillMod(mods, 'echo'));
   return {
     ...skill,
     delivery,
