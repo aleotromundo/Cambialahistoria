@@ -1,27 +1,20 @@
-import type { ZoneTerrain } from './terrain-types.ts';
 import type { MonsterRank, PackRanks } from './rank-types.ts';
-import type { ZoneBarrier } from './barrier-types.ts';
 import type { AffixDef, FamilyDef, ItemBaseDef, ItemScaling, PowerTriggerDef, RarityDef } from './item-types.ts';
 export type { WeaponKind } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
-import type { ServiceKind, TradeDef } from './trade-types.ts';
+import type { TradeDef } from './trade-types.ts';
 import type { PropDef, SurfaceDef } from './prop-types.ts';
-import type { ZoneScatter } from './scatter-types.ts';
-import type { Condition } from './condition-types.ts';
-import type { ZoneAmbience } from './ambience-types.ts';
-import type { BookDef, StoryFlags, ZoneVoid } from './story-types.ts';
+import type { BookDef, StoryFlags } from './story-types.ts';
 export type { ZoneAmbience } from './ambience-types.ts';
-import type { ActEnd, RetiredZones, ZoneDrift, ZoneHeroLight, ZoneTrigger, ZoneWeather } from './road-types.ts';
-import type { ZoneTunnel } from './tunnel-types.ts';
-import type { MomentField, MomentLibrary } from './moment-types.ts';
+import type { ActEnd, RetiredZones } from './road-types.ts';
+import type { MomentLibrary } from './moment-types.ts';
 import type { ChartDef, SkillTarget, SkillVariant } from './chart-types.ts';
 import type { SkillVfx } from './vfx-types.ts';
 import type { XpCurve } from './xp-types.ts';
 import type { BossDef, PieceStrikes } from './boss-types.ts';
-import type { SceneDef } from './scene-types.ts';
 import type { AtlasDef } from './atlas-types.ts';
 export type { AtlasChain, AtlasDef, AtlasFeature, AtlasFeatureKind, AtlasLabel, AtlasPoint, AtlasRoad, MapPlace } from './atlas-types.ts';
 export { ATLAS_FEATURE_KINDS } from './atlas-types.ts';
@@ -29,6 +22,11 @@ export type { BossAnchor, BossBarks, BossDef, BossDrop, BossFirstKill, BossPhase
 export type { XpCurve, XpGap, XpReduction } from './xp-types.ts';
 export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-types.ts';
+export type { ExitLook, PackMember, PackReturn, PackWait, SurgeRules, ZoneCheckpoint, ZoneDef, ZoneEdge, ZoneExit, ZoneKind, ZoneNpc, ZoneOutside, ZonePack, ZonePoint, ZoneProp, ZoneReturn, ZoneVoice, ZoneWalls, ZoneWaypoint } from './zone-types.ts';
+export { ZONE_KINDS } from './zone-types.ts';
+export type { DefeatObjective, EitherObjective, LineDef, MomentObjective, NpcDef, ObjectiveBase, ObjectiveDef, PathObjective, QuestDef, ReachObjective, TalkDef, TalkObjective } from './quest-types.ts';
+import type { ZoneDef } from './zone-types.ts';
+import type { LineDef, NpcDef, QuestDef } from './quest-types.ts';
 
 export const STAT_IDS = [
   'maxLife',
@@ -281,243 +279,11 @@ export type { PropCache, PropDef, PropLid, PropLight, SurfaceDef, SurfaceGlow, S
 
 export type { AttachmentDef, RigActionClip, RigClips, RigContact, RigDef, RigGait, RigSocket, RigStanceClips, Triple } from './rig-types.ts';
 
-export interface ZonePoint {
-  readonly x: number;
-  readonly z: number;
-}
-
-export interface ZoneProp {
-  readonly prop: string;
-  readonly x: number;
-  readonly z: number;
-  readonly y: number;
-  readonly rotationDegrees: number;
-  readonly when: readonly Condition[];
-}
-
 export type { AroundScatter, CliffScatter, OpenScatter, ScatterSize, ZoneScatter } from './scatter-types.ts';
 export { SCATTER_TYPES } from './scatter-types.ts';
 
-export interface ZoneVoice {
-  readonly id: string;
-  readonly x: number;
-  readonly z: number;
-  readonly radius: number;
-  readonly lines: readonly string[];
-  readonly when: readonly Condition[];
-}
-
-export interface PackMember {
-  readonly monster: string;
-  readonly count: number;
-  readonly mods: readonly string[];
-}
-
-export interface ZonePack {
-  readonly x: number;
-  readonly z: number;
-  readonly members: readonly PackMember[];
-  readonly when: readonly Condition[];
-  readonly row?: ZonePoint;
-  readonly level?: number;
-  readonly waits?: PackWait;
-  readonly rank?: string;
-}
-
-export interface PackWait {
-  readonly near: number;
-}
-
-export interface PackReturn { readonly after: number; readonly away: number }
-
-export interface SurgeRules {
-  readonly delay: number;
-  readonly surgesPerExtraMonster: number;
-  readonly maxExtraMonsters: number;
-}
-
-export interface ZoneEdge {
-  readonly props: readonly string[];
-  readonly gap: number;
-  readonly exitClear: number;
-}
-
-export interface ZoneOutside {
-  readonly surface: string;
-  readonly reach: number;
-  readonly edge: ZoneEdge | null;
-  readonly barrier: ZoneBarrier | null;
-}
-
-export interface ZoneWalls {
-  readonly tall: readonly string[];
-  readonly low: string;
-  readonly corner: string;
-  readonly halfThickness: number;
-}
-
-export const ZONE_KINDS = ['town', 'wild', 'void'] as const;
-export type ZoneKind = (typeof ZONE_KINDS)[number];
-
 export { OBJECTIVE_STATES, QUEST_STATES } from './condition-types.ts';
 export type { Condition, FlagCondition, ObjectiveCondition, ObjectiveState, QuestCondition, QuestState } from './condition-types.ts';
-
-export type ExitLook = 'ring' | 'mist';
-
-export interface ZoneExit {
-  readonly id: string;
-  readonly x: number;
-  readonly z: number;
-  readonly radius: number;
-  readonly to: string;
-  readonly toExit: string;
-  readonly arrival: ZonePoint;
-  readonly requires: readonly Condition[];
-  readonly lockedHint: string;
-  readonly hiddenWhenLocked: boolean;
-  readonly look: ExitLook;
-}
-
-export interface ZoneReturn {
-  readonly zone: string;
-  readonly exit: string;
-}
-
-export interface ZoneWaypoint {
-  readonly x: number;
-  readonly z: number;
-  readonly radius: number;
-}
-
-export interface ZoneCheckpoint {
-  readonly id: string;
-  readonly x: number;
-  readonly z: number;
-  readonly radius: number;
-}
-
-export interface ZoneNpc {
-  readonly npc: string;
-  readonly x: number;
-  readonly z: number;
-  readonly facingDegrees: number;
-  readonly when: readonly Condition[];
-}
-
-export interface ZoneDef {
-  readonly id: string;
-  readonly name: string;
-  readonly kind: ZoneKind;
-  readonly level: number;
-  readonly levelUpTo: number;
-  readonly stormTier: number;
-  readonly cellSize: number;
-  readonly floorHeight: number;
-  readonly terrain: ZoneTerrain | null;
-  readonly tiles: readonly string[];
-  readonly floors: Readonly<Record<string, string>>;
-  readonly outside: ZoneOutside | null;
-  readonly walls: ZoneWalls | null;
-  readonly props: readonly ZoneProp[];
-  readonly scatter: readonly ZoneScatter[];
-  readonly playerStart: ZonePoint;
-  readonly packs: readonly ZonePack[];
-  readonly packReturn: PackReturn | null;
-  readonly ranks: boolean;
-  readonly surge: SurgeRules | null;
-  readonly exits: readonly ZoneExit[];
-  readonly checkpoints: readonly ZoneCheckpoint[];
-  readonly waypoint: ZoneWaypoint | null;
-  readonly portalSpot: ZonePoint | null;
-  readonly deathReturn: ZoneReturn | null;
-  readonly npcs: readonly ZoneNpc[];
-  readonly voices: readonly ZoneVoice[];
-  readonly scenes: readonly SceneDef[];
-  readonly ambience: ZoneAmbience;
-  readonly void: ZoneVoid | null;
-  readonly drifts: readonly ZoneDrift[];
-  readonly triggers: readonly ZoneTrigger[];
-  readonly moments: MomentField | null;
-  readonly weather: ZoneWeather;
-  readonly heroLight: ZoneHeroLight;
-  readonly tunnels: readonly ZoneTunnel[];
-}
-
-export interface LineDef {
-  readonly id: string;
-  readonly speaker: string;
-  readonly text: string;
-}
-
-export interface TalkDef {
-  readonly id: string;
-  readonly once: boolean;
-  readonly when: readonly Condition[];
-  readonly lines: readonly string[];
-}
-
-export interface ObjectiveBase {
-  readonly id: string;
-  readonly text: string;
-  readonly waiting: string;
-  readonly when: readonly Condition[];
-  readonly sets: StoryFlags;
-}
-
-export interface TalkObjective extends ObjectiveBase {
-  readonly type: 'talk';
-  readonly npc: string;
-  readonly talk: string | null;
-}
-
-export interface ReachObjective extends ObjectiveBase {
-  readonly type: 'reach';
-  readonly zone: string;
-  readonly x: number;
-  readonly z: number;
-  readonly radius: number;
-}
-
-export interface DefeatObjective extends ObjectiveBase {
-  readonly type: 'defeat';
-  readonly monster: string;
-}
-
-export interface MomentObjective extends ObjectiveBase {
-  readonly type: 'moment';
-}
-
-export type PathObjective = TalkObjective | ReachObjective | DefeatObjective | MomentObjective;
-
-export interface EitherObjective extends ObjectiveBase {
-  readonly type: 'either';
-  readonly paths: readonly PathObjective[];
-}
-
-export type ObjectiveDef = PathObjective | EitherObjective;
-
-export interface QuestDef {
-  readonly id: string;
-  readonly name: string;
-  readonly requires: readonly string[];
-  readonly when: readonly Condition[];
-  readonly objectives: readonly ObjectiveDef[];
-}
-
-export interface NpcDef {
-  readonly id: string;
-  readonly name: string;
-  readonly title: string;
-  readonly rig: string;
-  readonly scale: number;
-  readonly tint: string;
-  readonly color: string;
-  readonly gear: readonly string[];
-  readonly wear: readonly string[];
-  readonly talks: readonly TalkDef[];
-  readonly service: ServiceKind | null;
-  readonly faction: string | null;
-}
 
 export interface ScalingRamp {
   readonly from: number;
