@@ -428,9 +428,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       }
       const floorAt = (x: number, z: number): number => heightAt(current.zone, x, z);
       sight.refresh();
-      const seen = (view: ActorView, x: number, z: number): boolean => sight.sees(x, floorAt(x, z) + view.height / 2, z, view.height);
-      const draw = (view: ActorView, x: number, z: number): void => {
-        setOffView(view.rig.root, !drawnBy(sight, x, floorAt(x, z), z, view.height));
+      const seen = (view: ActorView, x: number, floor: number, z: number): boolean => sight.sees(x, floor + view.height / 2, z, view.height);
+      const draw = (view: ActorView, x: number, floor: number, z: number): void => {
+        setOffView(view.rig.root, !drawnBy(sight, x, floor, z, view.height));
       };
       standChosen(current);
       countLook.update(dt, current);
@@ -478,10 +478,11 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           else countShades.set(monster.id, counted);
         }
         entry.view.setHover(monster.id === hoveredId);
-        draw(entry.view, monster.pos.x, monster.pos.z);
+        const floor: number = floorAt(monster.pos.x, monster.pos.z);
+        draw(entry.view, monster.pos.x, floor, monster.pos.z);
         if (monster.alive) guard.keep(monster.id, entry.view.rig.root, scene, monster.def.id);
         const pose: ActorPose = monster.yielded ? stillPose(monster) : poseOf(monster, unisonOf(current, monster) === null ? null : current.time);
-        const placed: SyncOptions = { rise: entry.echo === null ? turning : 1, floor: floorAt(monster.pos.x, monster.pos.z), turnRate: ACTOR.turnRate, seen: seen(entry.view, monster.pos.x, monster.pos.z) };
+        const placed: SyncOptions = { rise: entry.echo === null ? turning : 1, floor, turnRate: ACTOR.turnRate, seen: seen(entry.view, monster.pos.x, floor, monster.pos.z) };
         entry.view.sync(dt, pose, placed);
         if (entry.swap !== null) {
           const mix: SwapMix = stepSwap(entry.swap, dt);
@@ -527,8 +528,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           entry.view.setShadowOpacity(easedFade(npc.fade));
         }
         entry.view.setHover(npc.id === hoveredId);
-        draw(entry.view, entry.pose.pos.x, entry.pose.pos.z);
-        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor: floorAt(entry.pose.pos.x, entry.pose.pos.z), turnRate: ACTOR.npcTurnRate, seen: seen(entry.view, entry.pose.pos.x, entry.pose.pos.z) });
+        const floor: number = floorAt(entry.pose.pos.x, entry.pose.pos.z);
+        draw(entry.view, entry.pose.pos.x, floor, entry.pose.pos.z);
+        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate, seen: seen(entry.view, entry.pose.pos.x, floor, entry.pose.pos.z) });
       }
       for (const [id, entry] of npcs) {
         if (current.npcs.some((npc: NpcState): boolean => npc.id === id)) continue;
@@ -539,8 +541,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           continue;
         }
         entry.view.setHover(false);
-        draw(entry.view, entry.pose.pos.x, entry.pose.pos.z);
-        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor: floorAt(entry.pose.pos.x, entry.pose.pos.z), turnRate: ACTOR.npcTurnRate, seen: seen(entry.view, entry.pose.pos.x, entry.pose.pos.z) });
+        const floor: number = floorAt(entry.pose.pos.x, entry.pose.pos.z);
+        draw(entry.view, entry.pose.pos.x, floor, entry.pose.pos.z);
+        entry.view.sync(dt, entry.pose, { rise: entry.shown, floor, turnRate: ACTOR.npcTurnRate, seen: seen(entry.view, entry.pose.pos.x, floor, entry.pose.pos.z) });
       }
     },
     handle(events: readonly WorldEvent[], current: World): void {

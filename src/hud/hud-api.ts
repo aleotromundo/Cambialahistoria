@@ -1,4 +1,5 @@
 import type { PlayerTrade } from '../player-trade/trade-flow.ts';
+import type { FrameTargets } from '../../sim/world/objective.ts';
 import type { UiAction } from '../../sim/content/audio.ts';
 import type { Command, ItemInstance, World, WorldEvent } from '../../sim/world/types.ts';
 import type { AuctionFlow } from '../auction/auction-flow.ts';
@@ -30,6 +31,7 @@ export interface HudApi {
 }
 
 export interface Hud {
+  readonly targets: FrameTargets;
   update(dt: number, view: FrameView): void;
   readInput(source: () => string): void;
   refreshItems(): void;

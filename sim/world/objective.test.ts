@@ -6,10 +6,11 @@ import { loadContent } from '../content/content.ts';
 import { inSentence } from '../name-text.ts';
 import type { Content, ObjectiveDef, QuestDef, ZoneExit } from '../content/types.ts';
 import { moveExit } from './exits.ts';
-import { nextAction, objectiveTarget, questTarget, writtenLine } from './objective.ts';
-import type { ObjectiveTarget } from './objective.ts';
+import { createFrameTargets, nextAction, objectiveTarget, questTarget, writtenLine } from './objective.ts';
+import type { FrameTargets, ObjectiveTarget } from './objective.ts';
 import { activeQuests, currentObjective, startQuests } from './quests.ts';
 import { enterZone } from './zones.ts';
+import { MAX_STEP as STEP, stepWorld } from './step.ts';
 import type { World } from './types.ts';
 
 const errand: QuestDef = {
@@ -102,4 +103,28 @@ void test('an objective with no waiting line keeps its written text while locked
   assert.equal(writtenLine(world, locked), 'Ask later');
   assert.equal(writtenLine(world, { ...locked, waiting: 'Not yet' }), 'Not yet');
   assert.equal(writtenLine(world, { ...locked, when: [], waiting: 'Not yet' }), 'Ask later');
+});
+
+void test('frame targets give the live target and keep it within a step until renewed, then follow the world after the next step', (): void => {
+  const world: World = fresh(content.world.start);
+  const targets: FrameTargets = createFrameTargets();
+  const first: ObjectiveTarget | null = targets.objective(world);
+  assert.deepEqual(first, objectiveTarget(world));
+  assert.equal(targets.objective(world), first);
+  assert.equal(targets.quest(world, errand), first);
+  world.quests['errand'] = 1;
+  assert.equal(targets.objective(world), first);
+  targets.renew();
+  const next: ObjectiveTarget | null = targets.objective(world);
+  assert.deepEqual(next, objectiveTarget(world));
+  assert.deepEqual(targets.quest(world, errand), questTarget(world, errand));
+  assert.equal(next?.kind, 'exit');
+  world.quests['errand'] = 0;
+  assert.equal(targets.objective(world), next);
+  stepWorld(world, [], STEP);
+  assert.deepEqual(targets.objective(world), objectiveTarget(world));
+  assert.equal(targets.objective(world)?.kind, 'person');
+  const other: World = fresh(content.world.start);
+  assert.deepEqual(targets.objective(other), objectiveTarget(other));
+  assert.equal(targets.objective(other)?.kind, 'person');
 });

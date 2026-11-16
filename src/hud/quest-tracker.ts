@@ -1,7 +1,8 @@
 import { tagPart } from './hud-gate.ts';
 import type { ObjectiveDef, QuestDef } from '../../sim/content/types.ts';
 import { activeQuests, currentObjective } from '../../sim/world/quests.ts';
-import { nextAction, questTarget, writtenLine } from '../../sim/world/objective.ts';
+import type { TargetSource } from '../../sim/world/objective.ts';
+import { LIVE_TARGETS, nextAction, writtenLine } from '../../sim/world/objective.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 import { el, label, retrigger } from './dom.ts';
 import { repeatedSteps } from './shared-steps.ts';
@@ -26,11 +27,11 @@ export interface QuestTracker {
   handle(event: WorldEvent, world: World): void;
 }
 
-function actionText(world: World, quest: QuestDef, objective: ObjectiveDef | null): string {
-  return objective === null ? '' : nextAction(questTarget(world, quest), writtenLine(world, objective));
+function actionText(world: World, quest: QuestDef, objective: ObjectiveDef | null, targets: TargetSource): string {
+  return objective === null ? '' : nextAction(targets.quest(world, quest), writtenLine(world, objective));
 }
 
-export function createQuestTracker(root: HTMLElement): QuestTracker {
+export function createQuestTracker(root: HTMLElement, targets: TargetSource = LIVE_TARGETS): QuestTracker {
   const element: HTMLDivElement = el('div', 'hud-quests', root);
   tagPart(element, 'quests');
   const blocks: Map<string, QuestBlock> = new Map<string, QuestBlock>();
@@ -40,7 +41,7 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
     label('quest-name', quest.name, block);
     const goal: HTMLDivElement = el('div', 'quest-goal', block);
     const objective: ObjectiveDef | null = currentObjective(world, quest);
-    const text: string = actionText(world, quest, objective);
+    const text: string = actionText(world, quest, objective, targets);
     goal.textContent = text;
     block.getBoundingClientRect();
     block.classList.add('in');
@@ -69,7 +70,7 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
       const objective: ObjectiveDef | null = currentObjective(world, quest);
       if (objective === null || block.leaving) return;
       block.shown = objective.id;
-      block.text = actionText(world, quest, objective);
+      block.text = actionText(world, quest, objective, LIVE_TARGETS);
       block.goal.textContent = block.text;
       block.goal.classList.remove('done');
       retrigger(block.goal, 'next');
@@ -80,11 +81,12 @@ export function createQuestTracker(root: HTMLElement): QuestTracker {
     element,
     update(world: World): void {
       const active: QuestDef[] = activeQuests(world);
-      const texts: string[] = active.map((quest: QuestDef): string => actionText(world, quest, currentObjective(world, quest)));
+      const objectives: (ObjectiveDef | null)[] = active.map((quest: QuestDef): ObjectiveDef | null => currentObjective(world, quest));
+      const texts: string[] = active.map((quest: QuestDef, index: number): string => actionText(world, quest, objectives[index] ?? null, targets));
       const repeated: readonly boolean[] = repeatedSteps(texts);
       active.forEach((quest: QuestDef, index: number): void => {
         const block: QuestBlock = blocks.get(quest.id) ?? add(world, quest);
-        const objective: ObjectiveDef | null = currentObjective(world, quest);
+        const objective: ObjectiveDef | null = objectives[index] ?? null;
         if (objective !== null && (objective.id !== block.shown || texts[index] !== block.text)) swap(world, quest, block);
         block.goal.classList.toggle('shared', repeated[index] === true);
       });

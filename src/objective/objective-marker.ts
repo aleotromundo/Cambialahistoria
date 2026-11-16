@@ -1,8 +1,8 @@
 import { heightAt } from '../../sim/nav/terrain.ts';
 import type { Scene } from 'three';
 import { Color, Vector2 } from 'three';
-import type { ObjectiveTarget } from '../../sim/world/objective.ts';
-import { objectiveTarget } from '../../sim/world/objective.ts';
+import type { ObjectiveTarget, TargetSource } from '../../sim/world/objective.ts';
+import { LIVE_TARGETS } from '../../sim/world/objective.ts';
 import { routeCorner } from '../../sim/world/route-corner.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import type { World } from '../../sim/world/types.ts';
@@ -51,7 +51,7 @@ function sameSpot(a: ObjectiveTarget | null, b: ObjectiveTarget | null): boolean
   return a !== null && b !== null && a.objective.id === b.objective.id && a.kind === b.kind;
 }
 
-export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTMLElement): ObjectiveMarker {
+export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTMLElement, targets: TargetSource = LIVE_TARGETS): ObjectiveMarker {
   const style: HTMLStyleElement = el('style', '', hud);
   style.textContent = css;
   const glow: LightPool = createLightPool(new Color(OBJECTIVE.color), false);
@@ -74,7 +74,7 @@ export function createObjectiveMarker(scene: Scene, camera: IsoCamera, hud: HTML
 
   return {
     update(dt: number, time: number, world: World): void {
-      const target: ObjectiveTarget | null = world.player.alive ? objectiveTarget(world) : null;
+      const target: ObjectiveTarget | null = world.player.alive ? targets.objective(world) : null;
       if (!sameSpot(previous, target)) {
         level = 0;
         corner = null;

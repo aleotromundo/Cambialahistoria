@@ -22,10 +22,9 @@ function pointedExit(world: World, target: ObjectiveTarget | null): ZoneExit | n
   return world.zone.exits.find((exit: ZoneExit): boolean => exit.x === target.pos.x && exit.z === target.pos.z) ?? null;
 }
 
-export function questPins(world: World): QuestPin[] {
+export function questPins(world: World, target: ObjectiveTarget | null = objectiveTarget(world)): QuestPin[] {
   const scene: SceneState | null = world.scene;
   const guide: number | null = leading(scene);
-  const target: ObjectiveTarget | null = objectiveTarget(world);
   const asked: string | null = talkedTo(target);
   const pins: QuestPin[] = world.npcs
     .filter((npc: NpcState): boolean => world.dialogue?.npcId !== npc.id && (npc.id === guide || npc.def.id === asked || hasNews(world, npc.def)))

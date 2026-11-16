@@ -60,6 +60,8 @@ import { PICKUP_NOTE, pickupLine } from './pickup-notes.ts';
 import type { MenuButton } from './menu.ts';
 import panelsCss from './panels.css?inline';
 import { createQuestTracker } from './quest-tracker.ts';
+import type { FrameTargets } from '../../sim/world/objective.ts';
+import { createFrameTargets } from '../../sim/world/objective.ts';
 import type { QuestTracker } from './quest-tracker.ts';
 import questsCss from './quests.css?inline';
 import { createSkillBar } from './skill-bar.ts';
@@ -147,7 +149,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
   const death: WorldStatus = createDeathPanel(root, api);
-  const quests: QuestTracker = createQuestTracker(root);
+  const targets: FrameTargets = createFrameTargets();
+  const quests: QuestTracker = createQuestTracker(root, targets);
 
   const dialogue: DialogueBox = createDialogueBox(root, context);
   track(dialogue.element);
@@ -287,6 +290,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   let chartPoints: number = 0;
 
   return {
+    targets,
     refreshItems(): void {
       refreshOpen('inventory');
       refreshOpen('character');

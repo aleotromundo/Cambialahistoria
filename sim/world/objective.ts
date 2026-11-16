@@ -6,7 +6,7 @@ import { inSentence } from '../name-text.ts';
 import { allHold } from './conditions.ts';
 import { fightZones, nearestFight, strikeGround } from './moments.ts';
 import { activeQuests, currentObjective } from './quests.ts';
-import type { MomentState, MonsterState, NpcState, World } from './types.ts';
+import type { MomentState, MonsterState, NpcState, World, WorldEvent } from './types.ts';
 
 export type ObjectiveTargetKind = 'person' | 'exit' | 'monster' | 'spot';
 
@@ -142,6 +142,49 @@ export function objectiveTarget(world: World): ObjectiveTarget | null {
     if (target !== null) return target;
   }
   return null;
+}
+
+export interface TargetSource {
+  objective(world: World): ObjectiveTarget | null;
+  quest(world: World, quest: QuestDef): ObjectiveTarget | null;
+}
+
+export const LIVE_TARGETS: TargetSource = { objective: objectiveTarget, quest: questTarget };
+
+export interface FrameTargets extends TargetSource {
+  renew(): void;
+}
+
+export function createFrameTargets(): FrameTargets {
+  const quests: Map<string, ObjectiveTarget | null> = new Map<string, ObjectiveTarget | null>();
+  let seen: World | null = null;
+  let step: readonly WorldEvent[] | null = null;
+  const quest = (world: World, def: QuestDef): ObjectiveTarget | null => {
+    if (seen !== world || step !== world.events) {
+      quests.clear();
+      seen = world;
+      step = world.events;
+    }
+    if (quests.has(def.id)) return quests.get(def.id) ?? null;
+    const target: ObjectiveTarget | null = questTarget(world, def);
+    quests.set(def.id, target);
+    return target;
+  };
+  return {
+    renew(): void {
+      quests.clear();
+      seen = null;
+      step = null;
+    },
+    quest,
+    objective(world: World): ObjectiveTarget | null {
+      for (const def of activeQuests(world)) {
+        const target: ObjectiveTarget | null = quest(world, def);
+        if (target !== null) return target;
+      }
+      return null;
+    },
+  };
 }
 
 function namedAction(target: ObjectiveTarget): string {

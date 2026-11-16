@@ -5,6 +5,8 @@ import { itemName, rarityOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import { questPins } from '../../sim/world/quest-pins.ts';
+import type { TargetSource } from '../../sim/world/objective.ts';
+import { LIVE_TARGETS } from '../../sim/world/objective.ts';
 import type { GroundItem, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import { createTargetBar } from '../hud/target-bar.ts';
 import type { TargetBar } from '../hud/target-bar.ts';
@@ -150,7 +152,7 @@ export interface Overlays {
   labelHover(): number | null;
 }
 
-export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks): Overlays {
+export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks, targets: TargetSource = LIVE_TARGETS): Overlays {
   let hudRects: ScreenRect[] = [];
   let sinceHudRead: number = Infinity;
   const numbers: FloatingNumber[] = [];
@@ -533,7 +535,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       for (const rect of hudRects) tagRects.push(rect);
       pinnedExits.clear();
       pinnedNpcs.clear();
-      for (const pin of questPins(world)) {
+      for (const pin of questPins(world, targets.objective(world))) {
         switch (pin.kind) {
           case 'exit':
             pinnedExits.add(pin.exit);
