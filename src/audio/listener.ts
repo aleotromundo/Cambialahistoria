@@ -1,10 +1,14 @@
 import { Vector2 } from 'three';
+import type { StingerNear } from '../../sim/content/audio.ts';
 import type { Vec2 } from '../../sim/math.ts';
+import { nearestSurface } from '../../sim/world/ground-surface.ts';
+import type { World } from '../../sim/world/types.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
 import type { Placement } from './mix.ts';
 import { placement } from './mix.ts';
 import type { ElementSize } from '../render/element-size.ts';
 import { watchSize } from '../render/element-size.ts';
+import type { StingerLocator } from './system.ts';
 
 const LISTENER = {
   soundHeight: 0.8,
@@ -22,5 +26,13 @@ export function createListener(camera: IsoCamera, canvas: HTMLCanvasElement, her
     camera.project(position.x, LISTENER.soundHeight, position.z, soundPoint);
     const half: number = Math.max(1, size.width / 2);
     return placement(Math.hypot(position.x - from.x, position.z - from.z), (soundPoint.x - heroPoint.x) / half, reach);
+  };
+}
+
+export function locateNear(listener: Listener, world: () => World): StingerLocator {
+  return (near: StingerNear): Placement | null => {
+    const current: World = world();
+    const at: Vec2 | null = nearestSurface(current.zone, near.surfaces, current.player.pos, near.reach);
+    return at === null ? null : listener(at, near.reach);
   };
 }

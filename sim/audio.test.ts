@@ -4,13 +4,13 @@ import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { must, worldIn } from '../test/support.ts';
 import { cuesForEvent, cuesForUi, uiActionForCommand, warmSoundIds } from './audio.ts';
 import type { SoundCue } from './audio.ts';
-import type { AudioDef } from './content/audio.ts';
+import type { AmbienceStinger, AudioDef, CueDef, ZoneAmbience } from './content/audio.ts';
 import { knownIdsOf, loadAudio, parseAudio } from './content/audio.ts';
 import { loadContent } from './content/content.ts';
 import audioJson from '../data/audio.json' with { type: 'json' };
 import { createRng } from './rng.ts';
 import { generateItem } from './items.ts';
-import type { BodyMaterial, Content, SkillDef } from './content/types.ts';
+import type { BodyMaterial, Content, SkillDef, ZoneDef } from './content/types.ts';
 import type { Vec2 } from './math.ts';
 import { forceStrike } from './world/moments.ts';
 import { stepWorld } from './world/step.ts';
@@ -170,6 +170,26 @@ void test('cues carry the tuning of their data entry', (): void => {
   assert.equal(cue.volume, 0.7);
 });
 
+void test('a step on a surface with a step sound of its own plays it, and a surface without one keeps the plain step', (): void => {
+  const world: World = fresh();
+  const tile: string = must(Object.keys(world.zone.floors)[0], 'floor tile');
+  world.zone = { ...world.zone, floors: { ...world.zone.floors, [tile]: 'scorched_stone' } };
+  const ash: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'hero_step', pos: ARENA_CENTRE });
+  assert.deepEqual(sounds(ash), ['step_ash']);
+  assert.deepEqual(ash[0]?.position, ARENA_CENTRE);
+  world.zone = { ...world.zone, floors: { ...world.zone.floors, [tile]: 'cave_floor' } };
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'hero_step', pos: ARENA_CENTRE })), ['footstep_stone']);
+});
+
+void test('every lava floor a hero can walk on steps in ash', (): void => {
+  for (const id of ['lava_depths', 'lava_depths_2', 'lava_depths_3']) {
+    const zone: ZoneDef = must(content.zones.get(id), id);
+    const walked: readonly string[] = [...new Set<string>(Object.values(zone.floors))].filter((surface: string): boolean => content.surfaces.get(surface)?.blocks !== true);
+    assert.ok(walked.length > 0, id);
+    for (const surface of walked) assert.deepEqual(audio.steps.get(surface)?.map((cue: CueDef): string => cue.sound), ['step_ash'], `${id} ${surface}`);
+  }
+});
+
 void test('walking through a real world step produces footstep cues', (): void => {
   const world: World = fresh();
   world.monsters = [];
@@ -193,15 +213,23 @@ void test('interface actions have sounds and commands map to the right action', 
   assert.equal(uiActionForCommand({ type: 'stop' }), null);
 });
 
-void test('the warm list names every one-shot sound once, footsteps first and no ambience', (): void => {
+void test('the warm list names every one-shot sound once, footsteps first and no ambience loop', (): void => {
   const ids: readonly string[] = warmSoundIds(audio);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids[0], 'footstep_stone');
   for (const id of ['sword_swing_light', 'bone_hit', 'crit_hit', 'ground_boom', 'coin_pickup', 'ui_tap', 'wave_arrival']) assert.ok(ids.includes(id), id);
   for (const zone of audio.ambience.values()) {
     for (const loop of zone.loops) assert.equal(ids.includes(loop.sound), false, loop.sound);
-    for (const stinger of zone.stingers) assert.equal(ids.includes(stinger.sound), false, stinger.sound);
   }
+});
+
+void test('a sound only a stinger plays is left off the warm list, and one a skill also plays is warmed once', (): void => {
+  const stinger: AmbienceStinger = { sound: 'stinger_only', volume: 0.3, minDelay: 2, maxDelay: 5, pitch: null, near: null };
+  const shared: AmbienceStinger = { ...stinger, sound: 'sword_swing_light' };
+  const ambience: Map<string, ZoneAmbience> = new Map<string, ZoneAmbience>([...audio.ambience, ['stinger_zone', { loops: [], stingers: [stinger, shared] }]]);
+  const ids: readonly string[] = warmSoundIds({ ...audio, ambience });
+  assert.equal(ids.includes('stinger_only'), false);
+  assert.equal(ids.filter((id: string): boolean => id === 'sword_swing_light').length, 1);
 });
 
 const STRIKE_AT: Vec2 = { x: 40, z: 47 };

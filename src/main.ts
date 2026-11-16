@@ -28,7 +28,7 @@ import type { DebugHooks } from './debug-handle.ts';
 import { attachDebug } from './debug-handle.ts';
 import type { Command, ItemInstance, PlayerState, World, WorldEvent } from '../sim/world/types.ts';
 import type { Listener } from './audio/listener.ts';
-import { createListener } from './audio/listener.ts';
+import { createListener, locateNear } from './audio/listener.ts';
 import { readAssetBase } from './audio/manifest.ts';
 import type { Placement } from './audio/mix.ts';
 import { CENTRE } from './audio/mix.ts';
@@ -268,7 +268,7 @@ async function start(): Promise<void> {
   const startZoneAmbience = (): void => {
     const ambience: ZoneAmbience | undefined = audioDef.ambience.get(world.zone.id);
     if (ambience === undefined) audio.stopAmbience();
-    else audio.startAmbience(ambience);
+    else audio.startAmbience(ambience, locateNear(listener, (): World => world));
   };
   const sounds: Trigger[] = [];
   if (import.meta.env.DEV) {

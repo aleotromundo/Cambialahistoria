@@ -76,11 +76,18 @@ export interface AmbienceLoop {
   readonly volume: number;
 }
 
+export interface StingerNear {
+  readonly surfaces: readonly string[];
+  readonly reach: number;
+}
+
 export interface AmbienceStinger {
   readonly sound: string;
   readonly volume: number;
   readonly minDelay: number;
   readonly maxDelay: number;
+  readonly pitch: PitchRange | null;
+  readonly near: StingerNear | null;
 }
 
 export interface ZoneAmbience {
@@ -129,6 +136,7 @@ export interface AudioDef {
   readonly encounterShown: CueTable;
   readonly life: CueTable;
   readonly ui: CueTable;
+  readonly steps: CueTable;
   readonly ambience: ReadonlyMap<string, ZoneAmbience>;
 }
 
@@ -140,6 +148,7 @@ export interface KnownIds {
   readonly rarities: ReadonlySet<string>;
   readonly zones: ReadonlySet<string>;
   readonly encounters: ReadonlySet<string>;
+  readonly surfaces: ReadonlySet<string>;
 }
 
 function soundId(source: Fields, key: string, where: string): string {
@@ -237,7 +246,18 @@ function silentSkills(value: unknown, skills: ReadonlySet<string>, where: string
   return result;
 }
 
-function zone(value: unknown, where: string): ZoneAmbience {
+function stingerNear(source: Fields, surfaces: ReadonlySet<string>, where: string): StingerNear | null {
+  if (source['near'] === undefined) return null;
+  const near: Fields = fields(source['near'], `${where}.near`);
+  const listed: readonly string[] = each(near['surfaces'], `${where}.near.surfaces`, (entry: unknown, entryWhere: string): string => {
+    if (typeof entry !== 'string' || !surfaces.has(entry)) throw new ContentError(entryWhere, 'expected a surface id');
+    return entry;
+  });
+  if (listed.length === 0) throw new ContentError(`${where}.near.surfaces`, 'expected at least one surface');
+  return { surfaces: listed, reach: required(near, 'reach', LIMITS.reachMin, LIMITS.reachMax, `${where}.near`) };
+}
+
+function zone(value: unknown, surfaces: ReadonlySet<string>, where: string): ZoneAmbience {
   const source: Fields = fields(value, where);
   return {
     loops: each(source['loops'], `${where}.loops`, (entry: unknown, entryWhere: string): AmbienceLoop => {
@@ -249,7 +269,7 @@ function zone(value: unknown, where: string): ZoneAmbience {
       const minDelay: number = required(stinger, 'minDelay', 1, LIMITS.delayMax, entryWhere);
       const maxDelay: number = required(stinger, 'maxDelay', 1, LIMITS.delayMax, entryWhere);
       if (maxDelay < minDelay) throw new ContentError(entryWhere, 'maxDelay is below minDelay');
-      return { sound: soundId(stinger, 'sound', entryWhere), volume: ranged(stinger, 'volume', 1, 0.01, LIMITS.volumeMax, entryWhere), minDelay, maxDelay };
+      return { sound: soundId(stinger, 'sound', entryWhere), volume: ranged(stinger, 'volume', 1, 0.01, LIMITS.volumeMax, entryWhere), minDelay, maxDelay, pitch: pitchRange(stinger, entryWhere), near: stingerNear(stinger, surfaces, entryWhere) };
     }),
   };
 }
@@ -281,7 +301,7 @@ export function parseAudio(value: unknown, known: KnownIds): AudioDef {
   const ambience: Map<string, ZoneAmbience> = new Map<string, ZoneAmbience>();
   for (const [id, entry] of Object.entries(zonesSource)) {
     if (!known.zones.has(id)) throw new ContentError(`${where}.ambience.${id}`, `unknown zone, expected one of ${[...known.zones].join(', ')}`);
-    ambience.set(id, zone(entry, `${where}.ambience.${id}`));
+    ambience.set(id, zone(entry, known.surfaces, `${where}.ambience.${id}`));
   }
   const targets: ReadonlySet<string> = withExtras(known.monsters, PLAYER_KEY, FALLBACK_KEY, ...BODY_MATERIALS);
   const items: ReadonlySet<string> = withExtras(known.rarities, GOLD_KEY);
@@ -312,6 +332,7 @@ export function parseAudio(value: unknown, known: KnownIds): AudioDef {
     encounterShown: read('encounterShown', known.encounters),
     life: read('life', new Set<string>(LIFE_SOUND_EVENTS)),
     ui: read('ui', new Set<string>(UI_ACTIONS)),
+    steps: read('steps', known.surfaces),
     ambience,
   };
 }
@@ -326,6 +347,7 @@ export function knownIdsOf(content: Content): KnownIds {
     rarities: new Set<string>(content.rarities.map((rarity: RarityDef): string => rarity.id)),
     zones: new Set<string>(content.zones.keys()),
     encounters: new Set<string>([...content.zones.values()].flatMap((zoneDef: ZoneDef): string[] => (zoneDef.void?.encounters ?? []).map((met: ZoneEncounter): string => met.id))),
+    surfaces: new Set<string>(content.surfaces.keys()),
   };
 }
 

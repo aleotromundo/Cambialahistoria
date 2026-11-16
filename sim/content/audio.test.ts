@@ -6,7 +6,7 @@ import type { TestContext } from 'node:test';
 import { must } from '../../test/support.ts';
 import audioJson from '../../data/audio.json' with { type: 'json' };
 import soundIds from '../../data/sound-ids.json' with { type: 'json' };
-import type { AudioDef, CueDef, KnownIds, WeaponCue } from './audio.ts';
+import type { AmbienceStinger, AudioDef, CueDef, KnownIds, WeaponCue } from './audio.ts';
 import { knownIdsOf, loadAudio, parseAudio, UI_ACTIONS, WORLD_SOUND_EVENTS } from './audio.ts';
 import { loadContent } from './content.ts';
 import { loadGlitches } from './glitches.ts';
@@ -168,6 +168,29 @@ void test('a stinger must say how soon and how late it can come', (): void => {
   reject(stingerWith({ maxDelay: 5 }), /minDelay/);
   reject(stingerWith({ minDelay: 0, maxDelay: 5 }), /minDelay/);
   assert.equal(parseAudio(stingerWith({ minDelay: 5, maxDelay: 5 }), known).ambience.get(AMBIENT_ZONE)?.stingers.length, 1);
+});
+
+void test('a stinger may be tied to the nearest cell of named surfaces within a reach, and may vary its pitch', (): void => {
+  const stingerWith = (fields: Record<string, unknown>): unknown =>
+    variant((draft): void => {
+      draft['ambience'] = { [AMBIENT_ZONE]: { loops: [], stingers: [{ sound: 'a', minDelay: 5, maxDelay: 9, ...fields }] } };
+    });
+  const plain: AmbienceStinger = must(parseAudio(stingerWith({}), known).ambience.get(AMBIENT_ZONE)?.stingers[0], 'plain stinger');
+  assert.equal(plain.near, null);
+  assert.equal(plain.pitch, null);
+  const tied: AmbienceStinger = must(parseAudio(stingerWith({ pitch: [0.8, 1.2], near: { surfaces: ['vent_bed'], reach: 15 } }), known).ambience.get(AMBIENT_ZONE)?.stingers[0], 'tied stinger');
+  assert.deepEqual(tied.near, { surfaces: ['vent_bed'], reach: 15 });
+  assert.deepEqual(tied.pitch, { min: 0.8, max: 1.2 });
+  reject(stingerWith({ near: { surfaces: ['moon_dust'], reach: 15 } }), /near\.surfaces/);
+  reject(stingerWith({ near: { surfaces: [], reach: 15 } }), /near\.surfaces/);
+  reject(stingerWith({ near: { surfaces: ['vent_bed'] } }), /near\.reach/);
+  reject(stingerWith({ pitch: [1.4, 1.1] }), /pitch/);
+});
+
+void test('steps are keyed by surface, and an unknown surface is refused', (): void => {
+  reject(variant((draft): void => {
+    draft['steps'] = { moon_dust: [{ sound: 'a' }] };
+  }), /steps\.moon_dust/);
 });
 
 void test('the fixed id lists are not empty and have no repeats', (): void => {

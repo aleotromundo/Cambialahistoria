@@ -85,8 +85,8 @@
     "gathered_embers": [{ "sound": "fire_ignite", "volume": 0.7, "maxVoices": 2, "cooldown": 0.1 }],
     "ember_spit": [{ "sound": "spit_land", "volume": 0.6, "maxVoices": 2, "cooldown": 0.3 }],
     "matron_spit": [{ "sound": "spit_land", "volume": 0.7, "maxVoices": 2, "cooldown": 0.3 }],
-    "slag_crash": [{ "sound": "lava_erupt", "volume": 0.5, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.7, "maxVoices": 1 }],
-    "elder_crash": [{ "sound": "lava_erupt", "volume": 0.6, "maxVoices": 1 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
+    "slag_crash": [{ "sound": "lava_erupt", "volume": 0.5, "maxVoices": 2 }, { "sound": "rock_slam", "volume": 0.7, "maxVoices": 1 }],
+    "elder_crash": [{ "sound": "lava_erupt", "volume": 0.6, "maxVoices": 1 }, { "sound": "rock_slam", "volume": 0.8, "maxVoices": 1 }],
     "slag_eruption": [{ "sound": "lava_boil", "volume": 0.6, "maxVoices": 2 }],
     "elder_eruption": [{ "sound": "lava_boil", "volume": 0.7, "maxVoices": 1 }],
     "custodian_push": [{ "sound": "ground_boom", "volume": 0.6, "maxVoices": 2 }],
@@ -300,6 +300,12 @@
     "skill_point": [{ "sound": "ui_skill_point", "volume": 0.9, "maxVoices": 2 }],
     "equip": [{ "sound": "leather_move", "volume": 0.8, "maxVoices": 2 }]
   },
+  "steps": {
+    "basalt": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
+    "scorched_stone": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
+    "cooled_crust": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
+    "vent_bed": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }]
+  },
   "ambience": {
     "between": {
       "loops": [
@@ -342,6 +348,39 @@
         { "sound": "ambience_drone_low", "volume": 0.3 }
       ],
       "stingers": []
+    },
+    "lava_depths": {
+      "loops": [
+        { "sound": "ambience_lava_flow", "volume": 0.45 },
+        { "sound": "vent_hiss_loop", "volume": 0.18 },
+        { "sound": "ambience_drone_low", "volume": 0.2 }
+      ],
+      "stingers": [
+        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed"], "reach": 18 } },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed"], "reach": 14 } }
+      ]
+    },
+    "lava_depths_2": {
+      "loops": [
+        { "sound": "ambience_lava_flow", "volume": 0.45 },
+        { "sound": "vent_hiss_loop", "volume": 0.18 },
+        { "sound": "ambience_drone_low", "volume": 0.2 }
+      ],
+      "stingers": [
+        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed"], "reach": 18 } },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed"], "reach": 14 } }
+      ]
+    },
+    "lava_depths_3": {
+      "loops": [
+        { "sound": "ambience_lava_flow", "volume": 0.45 },
+        { "sound": "vent_hiss_loop", "volume": 0.18 },
+        { "sound": "ambience_drone_low", "volume": 0.2 }
+      ],
+      "stingers": [
+        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed"], "reach": 18 } },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed"], "reach": 14 } }
+      ]
     },
     "ledger_hall": {
       "loops": [

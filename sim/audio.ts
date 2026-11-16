@@ -3,6 +3,7 @@ import type { AudioDef, CueDef, CueTable, LifeSoundEvent, UiAction, WeaponCue, W
 import { FALLBACK_KEY, GOLD_KEY, PLAYER_KEY } from './content/audio.ts';
 import type { ItemBaseDef, SkillDef, WeaponKind } from './content/types.ts';
 import { baseOf } from './items.ts';
+import { surfaceAt } from './world/ground-surface.ts';
 import type { Vec2 } from './math.ts';
 import type { AreaStage, Command, GroundItem, ItemInstance, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
 
@@ -16,7 +17,7 @@ type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'seam' | '
 
 const NO_KEYS: readonly string[] = [];
 
-const WARM_TABLES: readonly CueTableName[] = ['world', 'encounterNearing', 'encounterShown', 'life', 'skillStart', 'hit', 'critHit', 'guarded', 'skillHit', 'areaStart', 'areaPulse', 'areaStrike', 'areaEnd', 'brand', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui'];
+const WARM_TABLES: readonly CueTableName[] = ['world', 'encounterNearing', 'encounterShown', 'life', 'skillStart', 'hit', 'critHit', 'guarded', 'skillHit', 'areaStart', 'areaPulse', 'areaStrike', 'areaEnd', 'brand', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui', 'steps'];
 
 function heldBy(entry: WeaponCue, weapon: WeaponKind | null): boolean {
   return entry.weapons.length === 0 || (weapon !== null && entry.weapons.includes(weapon));
@@ -73,6 +74,12 @@ const WAKE_SOUNDS: Readonly<Record<WakeBeat, WorldSoundEvent>> = { stir: 'wake_s
 
 function worldCues(audio: AudioDef, event: WorldSoundEvent, position: Vec2 | null): readonly SoundCue[] {
   return cues(audio.world, event, position);
+}
+
+function stepCues(audio: AudioDef, world: World, position: Vec2): readonly SoundCue[] {
+  const surface: string | null = surfaceAt(world.zone, position.x, position.z);
+  const own: readonly SoundCue[] = surface === null ? NONE : cues(audio.steps, surface, position);
+  return own.length > 0 ? own : worldCues(audio, 'hero_step', position);
 }
 
 const PORTAL_SOUNDS: Readonly<Record<PortalStage, WorldSoundEvent | null>> = { channel: null, broken: null, opened: 'portal_opened', entered: 'portal_entered', arrived: 'portal_arrived', closed: 'portal_closed' };
@@ -150,7 +157,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       found = cues(audio.notice, event.reason, null);
       break;
     case 'hero_step':
-      found = worldCues(audio, 'hero_step', event.pos);
+      found = stepCues(audio, world, event.pos);
       break;
     case 'level_up':
       found = worldCues(audio, 'level_up', null);

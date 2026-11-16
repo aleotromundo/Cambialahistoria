@@ -1,7 +1,7 @@
 import { createEcho } from './echo.ts';
 import type { EchoChain } from './echo.ts';
 import type { SoundCue } from '../../sim/audio.ts';
-import type { AmbienceLoop, AmbienceStinger, ZoneAmbience } from '../../sim/content/audio.ts';
+import type { AmbienceLoop, AmbienceStinger, StingerNear, ZoneAmbience } from '../../sim/content/audio.ts';
 import type { AmbienceTracker } from './ambience.ts';
 import { createAmbienceTracker, runBatch } from './ambience.ts';
 import type { BufferLoader, LoadOptions } from './buffers.ts';
@@ -62,6 +62,8 @@ export interface Trigger {
   readonly pan: number;
 }
 
+export type StingerLocator = (near: StingerNear) => Placement | null;
+
 export interface AudioSystem {
   readonly controls: AudioControls;
   readonly configured: boolean;
@@ -73,7 +75,7 @@ export interface AudioSystem {
   warm(ids: readonly string[], voices: readonly string[]): void;
   stopVoice(): void;
   speaking(): readonly string[];
-  startAmbience(zone: ZoneAmbience): void;
+  startAmbience(zone: ZoneAmbience, locate: StingerLocator): void;
   stopAmbience(): void;
   update(dt: number): void;
   setMuffled(on: boolean): void;
@@ -113,6 +115,8 @@ interface Graph {
   readonly muffle: BiquadFilterNode;
 }
 
+const NOWHERE: StingerLocator = (): Placement | null => null;
+
 export function createAudioSystem(options: AudioOptions): AudioSystem {
   const { base, controls, random, clock } = options;
   const limiter: VoiceLimiter = createVoiceLimiter(clock);
@@ -123,6 +127,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   const hold: VoiceHold = createVoiceHold();
   const loops: Running[] = [];
   let timers: StingerTimer[] = [];
+  let locateStinger: StingerLocator = NOWHERE;
   const loader: ManifestLoader = createManifestLoader({
     base,
     clock,
@@ -466,8 +471,9 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     speaking(): readonly string[] {
       return echoes > 0 ? [...lines.speaking(), SYSTEM.echoSpeaker] : lines.speaking();
     },
-    startAmbience(zone: ZoneAmbience): void {
+    startAmbience(zone: ZoneAmbience, locate: StingerLocator): void {
       this.stopAmbience();
+      locateStinger = locate;
       zoneLoops.start(zone.loops);
       loopRetryLeft = SYSTEM.loopRetrySeconds;
       attemptLoops();
@@ -520,8 +526,11 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         timer.left -= dt;
         if (timer.left > 0) continue;
         timer.left = delayBetween(timer.stinger.minDelay, timer.stinger.maxDelay, random);
-        const cue: SoundCue = { sound: timer.stinger.sound, volume: timer.stinger.volume, maxVoices: 1, cooldown: 0, reach: MIX.farDistance, holdForVoice: 0, pitch: null, volumeJitter: null, position: null };
-        trigger('ambience', cue, { gain: CENTRE.gain, pan: (random() * 2 - 1) * SYSTEM.stingerPan });
+        const near: StingerNear | null = timer.stinger.near;
+        const place: Placement | null = near === null ? { gain: CENTRE.gain, pan: (random() * 2 - 1) * SYSTEM.stingerPan } : locateStinger(near);
+        if (place === null) continue;
+        const cue: SoundCue = { sound: timer.stinger.sound, volume: timer.stinger.volume, maxVoices: 1, cooldown: 0, reach: near?.reach ?? MIX.farDistance, holdForVoice: 0, pitch: timer.stinger.pitch, volumeJitter: null, position: null };
+        trigger('ambience', cue, place);
       }
     },
     onTrigger(listener: (trigger: Trigger) => void): void {

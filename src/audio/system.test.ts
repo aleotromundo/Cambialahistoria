@@ -2,15 +2,18 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import type { SoundCue } from '../../sim/audio.ts';
-import type { ZoneAmbience } from '../../sim/content/audio.ts';
+import type { StingerNear, ZoneAmbience } from '../../sim/content/audio.ts';
+import type { Placement } from './mix.ts';
 import { CENTRE } from './mix.ts';
 import type { AudioControls } from './settings.ts';
 import { createSettingsStore } from './settings.ts';
-import type { AudioSystem, Trigger } from './system.ts';
+import type { AudioSystem, StingerLocator, Trigger } from './system.ts';
 import { createAudioSystem } from './system.ts';
 
 const CUE: SoundCue = { sound: 'bone_hit', volume: 0.9, maxVoices: 2, cooldown: 0, reach: 30, holdForVoice: 0, pitch: null, volumeJitter: null, position: null };
-const ZONE: ZoneAmbience = { loops: [{ sound: 'ambience_wind_fort', volume: 0.8 }], stingers: [{ sound: 'thunder_distant', volume: 0.7, minDelay: 1, maxDelay: 2 }] };
+const ZONE: ZoneAmbience = { loops: [{ sound: 'ambience_wind_fort', volume: 0.8 }], stingers: [{ sound: 'thunder_distant', volume: 0.7, minDelay: 1, maxDelay: 2, pitch: null, near: null }] };
+const VENTS: ZoneAmbience = { loops: [], stingers: [{ sound: 'vent_hiss', volume: 0.5, minDelay: 1, maxDelay: 1, pitch: { min: 0.9, max: 1.1 }, near: { surfaces: ['vent_bed'], reach: 20 } }] };
+const NOWHERE: StingerLocator = (): Placement | null => null;
 
 function controls(): AudioControls {
   return createSettingsStore({
@@ -43,7 +46,7 @@ void test('with no asset base nothing is requested, nothing throws and nothing i
     assert.equal(system.configured, false);
     system.unlock();
     system.play(CUE, CENTRE);
-    system.startAmbience(ZONE);
+    system.startAmbience(ZONE, NOWHERE);
     system.warm(['bone_hit'], []);
     system.update(10);
     system.stopAmbience();
@@ -91,7 +94,7 @@ void test('stingers fire on their timer and nothing fires before it', (): void =
   system.onTrigger((trigger: Trigger): void => {
     seen.push(trigger.sound);
   });
-  system.startAmbience(ZONE);
+  system.startAmbience(ZONE, NOWHERE);
   system.update(1);
   assert.deepEqual(seen, []);
   system.update(0.6);
@@ -99,6 +102,30 @@ void test('stingers fire on their timer and nothing fires before it', (): void =
   system.stopAmbience();
   system.update(60);
   assert.deepEqual(seen, ['thunder_distant']);
+});
+
+void test('a stinger tied to a surface plays where the locator places it, and stays quiet while none is near', (): void => {
+  const system: AudioSystem = build(null);
+  const seen: Trigger[] = [];
+  system.onTrigger((trigger: Trigger): void => {
+    seen.push(trigger);
+  });
+  let place: Placement | null = null;
+  const asked: string[][] = [];
+  system.startAmbience(VENTS, (near: StingerNear): Placement | null => {
+    asked.push([...near.surfaces]);
+    return place;
+  });
+  system.update(1.1);
+  assert.equal(seen.length, 0);
+  assert.deepEqual(asked, [['vent_bed']]);
+  place = { gain: 0.4, pan: -0.5 };
+  system.update(1.1);
+  assert.equal(seen.length, 1);
+  const heard: Trigger = must(seen[0], 'vent stinger');
+  assert.equal(heard.sound, 'vent_hiss');
+  assert.equal(heard.gain, 0.4);
+  assert.equal(heard.pan, -0.5);
 });
 
 void test('a base with no Web Audio available stays silent and requests nothing', async (): Promise<void> => {
