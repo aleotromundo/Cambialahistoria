@@ -6,12 +6,22 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ditheredOutputPass } from '../render/output-dither.ts';
 import { backdropMaterial, bloomMaterials, bloomOutputFragment, LOBBY_RENDER, lobbyPixelRatio, outputDefines, quadScene } from './lobby-render.ts';
 
-void test('the lobby draws at the device ratio up to 2 on desktop and 1.5 on mobile', (): void => {
-  assert.equal(lobbyPixelRatio('desktop', 3), 2);
-  assert.equal(lobbyPixelRatio('desktop', 2), 2);
-  assert.equal(lobbyPixelRatio('desktop', 1), 1);
-  assert.equal(lobbyPixelRatio('mobile', 3), 1.5);
-  assert.equal(lobbyPixelRatio('mobile', 0), 1);
+void test('the lobby draws at the device ratio up to 2 on desktop and 1.5 on mobile when the canvas has that many pixels', (): void => {
+  assert.equal(lobbyPixelRatio('desktop', 3, 3), 2);
+  assert.equal(lobbyPixelRatio('desktop', 2, 2), 2);
+  assert.equal(lobbyPixelRatio('desktop', 1, 2), 1);
+  assert.equal(lobbyPixelRatio('mobile', 3, 3), 1.5);
+  assert.equal(lobbyPixelRatio('mobile', 0, 0), 1);
+});
+
+void test('the lobby never draws more pixels than the canvas shows, so it does not supersample on the GPU every frame', (): void => {
+  assert.equal(lobbyPixelRatio('desktop', 2, 1.5), 1.5);
+  assert.equal(lobbyPixelRatio('mobile', 3, 1.25), 1.25);
+  for (const name of ['desktop', 'mobile'] as const) {
+    for (const device of [1, 1.5, 2, 3]) {
+      for (const canvas of [0.75, 1, 1.25, 1.5, 2]) assert.ok(lobbyPixelRatio(name, device, canvas) <= canvas, `${name} at ${device} on a ${canvas} canvas`);
+    }
+  }
 });
 
 void test('every lobby tier keeps multisampling on', (): void => {

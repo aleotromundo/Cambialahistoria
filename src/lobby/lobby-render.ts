@@ -30,8 +30,8 @@ export const LOBBY_RENDER: { readonly tiers: Readonly<Record<QualityName, LobbyR
   },
 };
 
-export function lobbyPixelRatio(name: QualityName, devicePixelRatio: number): number {
-  return Math.min(LOBBY_RENDER.tiers[name].pixelRatio, devicePixelRatio > 0 ? devicePixelRatio : 1);
+export function lobbyPixelRatio(name: QualityName, devicePixelRatio: number, canvasPixelRatio: number): number {
+  return Math.min(LOBBY_RENDER.tiers[name].pixelRatio, devicePixelRatio > 0 ? devicePixelRatio : 1, canvasPixelRatio > 0 ? canvasPixelRatio : 1);
 }
 
 export interface LobbyPipeline {
@@ -256,7 +256,7 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
   };
 
   const fit = (name: QualityName, devicePixelRatio: number, active: Built): boolean => {
-    const next: number = lobbyPixelRatio(name, devicePixelRatio);
+    const next: number = lobbyPixelRatio(name, devicePixelRatio, renderer.getPixelRatio());
     renderer.getSize(size);
     if (size.x <= 0 || size.y <= 0) return false;
     if (drawn.x !== size.x || drawn.y !== size.y || ratio !== next) {
