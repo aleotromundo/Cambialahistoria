@@ -4,7 +4,7 @@ import { Camera, Group, Mesh, Scene, ShaderMaterial } from 'three';
 import { roadZone } from '../../test/road-support.ts';
 import { unsafeGlsl } from '../../test/glsl-support.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
-import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, groundDecalBox, groundDecalsIn, groundDecalUniforms, layOnGround, liftOffGround, setLevel } from './ground-decal.ts';
+import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, awaitsDecalDraw, groundDecalBox, groundDecalsIn, groundDecalUniforms, layOnGround, liftOffGround, setLevel } from './ground-decal.ts';
 import { liftAt, useTerrain } from './terrain-lift.ts';
 
 const SIZE = 4;
@@ -77,4 +77,14 @@ void test('the main camera never draws a decal; only the decal pass does, while 
   group.visible = true;
   liftOffGround(mesh);
   assert.equal(groundDecalsIn(scene).includes(mesh), false);
+});
+
+void test('a decal laid on the ground awaits its first draw, and a lifted or plain mesh never does', (): void => {
+  const plain: Mesh = new Mesh(groundDecalBox(1), new ShaderMaterial());
+  const laid: Mesh = new Mesh(groundDecalBox(1), new ShaderMaterial());
+  layOnGround(laid);
+  assert.equal(awaitsDecalDraw(plain), false);
+  assert.equal(awaitsDecalDraw(laid), true);
+  liftOffGround(laid);
+  assert.equal(awaitsDecalDraw(laid), false);
 });

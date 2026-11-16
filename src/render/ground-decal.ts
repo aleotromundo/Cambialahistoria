@@ -142,6 +142,7 @@ export function isSharedGeometry(geometry: object): boolean {
 
 const anchors: Set<WeakRef<Mesh>> = new Set<WeakRef<Mesh>>();
 const handles: WeakMap<Object3D, WeakRef<Mesh>> = new WeakMap<Object3D, WeakRef<Mesh>>();
+const drawn: WeakSet<Mesh> = new WeakSet<Mesh>();
 
 export function layOnGround(mesh: Mesh): void {
   mesh.layers.set(GROUND_DECAL.layer);
@@ -159,6 +160,10 @@ export function liftOffGround(mesh: Object3D): void {
   if (handle === undefined) return;
   anchors.delete(handle);
   handles.delete(mesh);
+}
+
+export function awaitsDecalDraw(mesh: Mesh): boolean {
+  return handles.has(mesh) && !drawn.has(mesh);
 }
 
 export function shownIn(object: Object3D, scene: Object3D): boolean {
@@ -219,6 +224,7 @@ export function groundDecalPass(): GroundDecalPass {
         proxy.renderOrder = anchor.renderOrder;
         proxy.matrixWorld.copy(anchor.matrixWorld);
         proxy.visible = true;
+        drawn.add(anchor);
       });
       for (let index: number = shown.length; index < proxies.length; index += 1) {
         const spare: Mesh | undefined = proxies[index];

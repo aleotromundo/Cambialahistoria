@@ -37,6 +37,7 @@ import type { EffectKit, KitBudget, MotionWatch } from './effect-kit.ts';
 import { createEffectKit, heft, KIT, kitBudget, watchMotion } from './effect-kit.ts';
 import type { FlashLights } from './flash-lights.ts';
 import { createFlashLights } from './flash-lights.ts';
+import { awaitsDecalDraw } from './ground-decal.ts';
 import type { ProjectileViews, ShotTint } from './projectile-views.ts';
 import { createProjectileViews, PROJECTILE_VIEWS } from './projectile-views.ts';
 import type { TorchFlames } from './torch-flames.ts';
@@ -162,6 +163,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   const keepers: Mesh[] = [...programKeepers(WHITE), dashTrailKeeper(WHITE)];
   let warmFrames: number = EFFECTS.warmFrames;
+  let warming: Mesh[] = keepers;
   for (const keeper of keepers) {
     keeper.position.set(0, EFFECTS.warmDepth, 0);
     keeper.scale.setScalar(EFFECTS.warmScale);
@@ -598,9 +600,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       }
       kit.update(dt);
       shots.update(dt, world);
-      if (warmFrames > 0) {
-        warmFrames -= 1;
-        if (warmFrames === 0) for (const keeper of keepers) keeper.visible = false;
+      if (warmFrames > 0) warmFrames -= 1;
+      if (warmFrames === 0 && warming.length > 0) {
+        for (const keeper of warming) if (!awaitsDecalDraw(keeper)) keeper.visible = false;
+        warming = warming.filter((keeper: Mesh): boolean => awaitsDecalDraw(keeper));
       }
       flashes.update(dt);
       wash = stepWash(wash, world.player.maxLife > 0 ? world.player.life / world.player.maxLife : 1, dt);
