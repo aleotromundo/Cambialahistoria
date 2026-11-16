@@ -32,6 +32,9 @@ export interface WeaponGroup {
   readonly kinds: readonly WeaponKind[];
   readonly starter: string;
   readonly needs: string;
+  readonly icon: string;
+  readonly holds: string;
+  readonly path: string;
 }
 
 export interface PointGrant {

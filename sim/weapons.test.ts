@@ -6,7 +6,7 @@ import type { Content, SkillDef, SkillMod, SkillTreeNodeDef } from './content/ty
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { computeStats, resolveSkill } from './stats.ts';
-import { ANY_WEAPON, groupOfKind, heldGroup, heldPlace, placeLive, placeNeed, skillAllowed, weaponGroup, weaponNeed } from './weapons.ts';
+import { ANY_WEAPON, groupOfKind, heldGroup, heldPlace, placeBound, placeLive, placeNeed, skillAllowed, weaponGroup, weaponNeed } from './weapons.ts';
 import { addToInventory, equipFromInventory, refreshPlayer } from './world/character.ts';
 import { createWorld } from './world/create.ts';
 import { stepWorld } from './world/step.ts';
@@ -148,4 +148,18 @@ void test('a skill or a place for a group not in hand names the weapon it needs,
   assert.equal(weaponNeed(content, bolt.weapons, ANY_WEAPON), null);
   assert.equal(placeNeed(content, place, 'blade'), 'Needs a staff');
   assert.equal(placeNeed(content, place, 'staff'), null);
+});
+
+void test('a place is bound to its weapon only when something on it turns off without that weapon', (): void => {
+  const place = (id: string): SkillTreeNodeDef => must(content.skillTree.find((entry: SkillTreeNodeDef): boolean => entry.id === id), id);
+  assert.equal(placeBound(content, place('endless_turn')), true);
+  assert.equal(placeBound(content, place('heavy_hands')), true);
+  assert.equal(placeBound(content, place('forked_bolt')), false);
+  const loose: SkillTreeNodeDef = { ...place('heavy_hands'), weapon: null };
+  assert.equal(placeBound(content, loose), false);
+  for (const node of content.skillTree) {
+    const off: SkillTreeNodeDef = heldPlace(content, node, null);
+    const loses: boolean = off.statMods.length < node.statMods.length || off.skillMods.length < node.skillMods.length || off.variants.length < node.variants.length || off.triggers.length < node.triggers.length;
+    assert.equal(placeBound(content, node), loses, node.id);
+  }
 });

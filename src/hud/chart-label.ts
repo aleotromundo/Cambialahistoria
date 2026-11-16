@@ -1,13 +1,17 @@
 import type { FrameLabel, FrameTargets } from './chart-frame.ts';
 import type { ChartPoint } from './chart-model.ts';
-import { label } from './dom.ts';
+import type { WeaponGroup } from '../../sim/content/types.ts';
+import { el, label } from './dom.ts';
+import { familyRow } from './weapon-family.ts';
 
 export interface NameView extends FrameLabel {
   measure(): void;
 }
 
-export function createNameView(host: HTMLElement, text: string, tint: string, at: ChartPoint): NameView {
-  const name: HTMLDivElement = label('chart-path-name', text, host);
+export function createNameView(host: HTMLElement, text: string, tint: string, at: ChartPoint, family: WeaponGroup | null): NameView {
+  const name: HTMLDivElement = el('div', 'chart-path-name', host);
+  label('chart-path-title', text, name);
+  if (family !== null) familyRow(family, 'chart-path-family', family.name, name);
   name.style.setProperty('--tint', tint);
   let half: ChartPoint = { x: 0, y: 0 };
   let pinnedNow: boolean = false;

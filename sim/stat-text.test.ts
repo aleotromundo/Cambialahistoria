@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from './content/content.ts';
 import type { Content } from './content/types.ts';
-import { describeMod, describeSkillMod, isRatio, roundStat, statLabel } from './stat-text.ts';
+import { describeExactMod, describeMod, describeSkillMod, isRatio, roundStat, statLabel } from './stat-text.ts';
 
 void test('flat mods read as signed numbers with the stat label', (): void => {
   assert.equal(describeMod({ stat: 'maxLife', op: 'add', value: 30 }), '+30 Maximum Life');
@@ -32,4 +32,10 @@ void test('a skill mod reads as a signed amount, the field and the skill or grou
   assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'held_breath' }, field: 'cooldownPercent', value: -0.3 }), '-30% cooldown (Held Breath)');
   assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'standing_storm' }, field: 'lifeOnHit', value: 2 }), '+2 life on hit (Standing Storm)');
   assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'storm_bolt' }, field: 'manaCostPercent', value: -0.2 }), '-20% mana cost (Storm Bolt)');
+});
+
+void test('a tree line keeps the half percent the place gives', (): void => {
+  assert.equal(describeExactMod({ stat: 'critChance', op: 'add', value: 0.015 }), '+1.5% Critical Strike Chance');
+  assert.equal(describeExactMod({ stat: 'damagePercent', op: 'add', value: -0.2 }), '−20% Damage');
+  assert.equal(describeExactMod({ stat: 'maxLife', op: 'add', value: 30 }), '+30 Maximum Life');
 });

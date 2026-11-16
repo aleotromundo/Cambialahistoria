@@ -1,4 +1,4 @@
-import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, ItemUse, RarityDef } from '../../sim/content/types.ts';
+import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, ItemUse, RarityDef, WeaponGroup } from '../../sim/content/types.ts';
 import { itemVerdict, readItem, readingLines, verdictParts } from '../../sim/item-reading.ts';
 import type { Headline, ItemReading, ReadingRow, Verdict, VerdictKind } from '../../sim/item-reading.ts';
 import { baseOf, itemName, rarityOf, slotOf } from '../../sim/items.ts';
@@ -8,6 +8,7 @@ import type { ItemInstance } from '../../sim/world/types.ts';
 import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
 import { setPicture } from './item-picture.ts';
+import { baseFamily, familyLine, familyRow } from './weapon-family.ts';
 
 export const TOOLTIP_WORDS: { readonly unverified: string } = { unverified: 'Unverified' };
 
@@ -106,6 +107,8 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   label('tip-sub', `Item level ${item.level}`, heading);
   if (api.unverified(item)) label('tip-sub tip-unverified', TOOLTIP_WORDS.unverified, heading);
   el('div', 'tip-sep', root);
+  const weaponFamily: WeaponGroup | null = baseFamily(content, base);
+  if (weaponFamily !== null) familyRow(weaponFamily, 'tip-weapon-family', familyLine(content, weaponFamily), root);
   appendReading(root, readItem(content, item, equipped));
   const use: ItemUse | null = base?.use ?? null;
   if (use !== null) label('tip-line use', USE_WORDS[use.type], root);

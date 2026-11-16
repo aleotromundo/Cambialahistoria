@@ -38,11 +38,11 @@ void test('a skill the tree makes from another is turned again by one place only
 });
 
 void test('the chart needs whole points per level and a plain colour for each path', (): void => {
-  const base = { title: 'The Skill Tree', pointsPerLevel: 2, revision: 1, respec: { goldPerPoint: 1, goldPerLevel: 1 }, grants: [], twist: 0.08, paths: [{ id: 'a', name: 'A', tint: '#aabbcc', description: '' }], groups: [], weaponGroups: [{ id: 'blade', name: 'Blade', kinds: ['blade'], starter: 'warden_shortsword', needs: 'a blade' }] };
+  const base = { title: 'The Skill Tree', pointsPerLevel: 2, revision: 1, respec: { goldPerPoint: 1, goldPerLevel: 1 }, grants: [], twist: 0.08, paths: [{ id: 'a', name: 'A', tint: '#aabbcc', description: '' }], groups: [], weaponGroups: [{ id: 'blade', name: 'Blade', kinds: ['blade'], starter: 'warden_shortsword', needs: 'a blade', icon: 'sword', holds: 'swords', path: 'blade' }] };
   assert.equal(chartDef(base, 'chart').pointsPerLevel, 2);
   assert.throws((): unknown => chartDef({ ...base, pointsPerLevel: 1.5 }, 'chart'), /whole number/);
   assert.throws((): unknown => chartDef({ ...base, paths: [{ id: 'a', name: 'A', tint: 'blue', description: '' }] }, 'chart'), /colour/);
-  assert.throws((): unknown => chartDef({ ...base, weaponGroups: [{ id: 'blade', name: 'Blade', kinds: ['wand'], starter: 'warden_shortsword', needs: 'a blade' }] }, 'chart'), /kinds/);
+  assert.throws((): unknown => chartDef({ ...base, weaponGroups: [{ id: 'blade', name: 'Blade', kinds: ['wand'], starter: 'warden_shortsword', needs: 'a blade', icon: 'sword', holds: 'swords', path: 'blade' }] }, 'chart'), /kinds/);
 });
 
 void test('a place and a skill name weapon groups the chart knows, and every weapon kind sits in exactly one group', (): void => {
@@ -55,12 +55,12 @@ void test('a place and a skill name weapon groups the chart knows, and every wea
   const lines: string[] = chartProblems({ ...content, skills });
   assert.ok(lines.includes('skill cleave needs unknown weapon group wand'));
   assert.ok(lines.includes('skill cleave names a weapon group twice'));
-  const loose = { ...content, chart: { ...content.chart, weaponGroups: [...content.chart.weaponGroups.filter((group): boolean => group.id !== 'staff'), { id: 'rods', name: 'Rods', kinds: ['staff' as const, 'blade' as const], starter: 'driftwood_staff', needs: 'a rod' }] } };
+  const loose = { ...content, chart: { ...content.chart, weaponGroups: [...content.chart.weaponGroups.filter((group): boolean => group.id !== 'staff'), { id: 'rods', name: 'Rods', kinds: ['staff' as const, 'blade' as const], starter: 'driftwood_staff', needs: 'a rod', icon: 'staff', holds: 'rods', path: 'storm' }] } };
   assert.ok(chartProblems(loose).includes('weapon kind blade is in more than one weapon group'));
   const missing = { ...content, chart: { ...content.chart, weaponGroups: content.chart.weaponGroups.filter((group): boolean => group.id !== 'staff') } };
   assert.ok(chartProblems(missing).includes('weapon kind staff is in no weapon group'));
   const others = content.chart.weaponGroups.filter((group): boolean => group.id !== 'staff' && group.id !== 'blade');
-  const starters = { ...content, chart: { ...content.chart, weaponGroups: [...others, { id: 'staff', name: 'Staff', kinds: ['staff' as const], starter: 'warden_shortsword', needs: 'a staff' }, { id: 'blade', name: 'Blade', kinds: ['blade' as const, 'axe' as const], starter: 'no_such_blade', needs: 'a blade' }] } };
+  const starters = { ...content, chart: { ...content.chart, weaponGroups: [...others, { id: 'staff', name: 'Staff', kinds: ['staff' as const], starter: 'warden_shortsword', needs: 'a staff', icon: 'staff', holds: 'staves', path: 'storm' }, { id: 'blade', name: 'Blade', kinds: ['blade' as const, 'axe' as const], starter: 'no_such_blade', needs: 'a blade', icon: 'sword', holds: 'swords', path: 'blade' }] } };
   assert.ok(chartProblems(starters).includes('weapon group staff starts with warden_shortsword, which is not one of its weapons'));
   assert.ok(chartProblems(starters).includes('weapon group blade starts with unknown item no_such_blade'));
 });

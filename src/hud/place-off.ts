@@ -1,6 +1,6 @@
 import type { Content, PowerEffect, PowerTriggerDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatMod, WeaponGroup } from '../../sim/content/types.ts';
 import { itemName } from '../../sim/items.ts';
-import { describeMod, describeSkillMod } from '../../sim/stat-text.ts';
+import { describeExactMod, describeMod, describeSkillMod } from '../../sim/stat-text.ts';
 import { heldGroup, liveSkillMod, liveStatMod, placeLive, weaponGroup } from '../../sim/weapons.ts';
 import type { Equipment, ItemInstance } from '../../sim/world/types.ts';
 
@@ -43,11 +43,11 @@ export function placeOff(content: Content, node: SkillTreeNodeDef, equipped: Equ
   const group: WeaponGroup | null = node.weapon === null ? null : weaponGroup(content, node.weapon);
   if (group === null || placeLive(node, heldGroup(content, equipped))) return null;
   const lines: string[] = [
-    ...node.statMods.filter((mod: StatMod): boolean => !liveStatMod(mod)).map(describeMod),
+    ...node.statMods.filter((mod: StatMod): boolean => !liveStatMod(mod)).map(describeExactMod),
     ...node.skillMods.filter((mod: SkillMod): boolean => !liveSkillMod(content, mod)).map((mod: SkillMod): string => describeSkillMod(content, mod)),
     ...node.variants.map((variant: SkillVariant): string => variantLine(content, variant)),
     ...node.triggers.map((trigger: PowerTriggerDef): string => effectLine(content, trigger.effect)),
   ];
   if (lines.length === 0) return null;
-  return { lines, need: `Off: needs ${group.needs}.`, holding: holdingLine(content, equipped) };
+  return { lines, need: `Inactive: needs ${group.needs}.`, holding: holdingLine(content, equipped) };
 }

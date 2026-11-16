@@ -149,10 +149,10 @@
     }
   ],
   "weaponGroups": [
-    { "id": "blade", "name": "Blade", "kinds": ["blade", "axe"], "starter": "warden_shortsword", "needs": "a blade" },
-    { "id": "heavy", "name": "Heavy weapon", "kinds": ["greatsword", "blunt"], "starter": "tempest_greatsword", "needs": "a heavy weapon" },
-    { "id": "crossbow", "name": "Crossbow", "kinds": ["crossbow"], "starter": "hand_crossbow", "needs": "a crossbow" },
-    { "id": "staff", "name": "Staff", "kinds": ["staff"], "starter": "driftwood_staff", "needs": "a staff" }
+    { "id": "blade", "name": "Blade", "kinds": ["blade", "axe"], "starter": "warden_shortsword", "needs": "a blade", "icon": "sword", "holds": "swords, sabres, knives, dirks and axes", "path": "blade" },
+    { "id": "heavy", "name": "Heavy weapon", "kinds": ["greatsword", "blunt"], "starter": "tempest_greatsword", "needs": "a heavy weapon", "icon": "greatsword", "holds": "greatswords, maces and mauls", "path": "stone" },
+    { "id": "crossbow", "name": "Crossbow", "kinds": ["crossbow"], "starter": "hand_crossbow", "needs": "a crossbow", "icon": "crossbow", "holds": "crossbows, arbalests and repeaters", "path": "wind" },
+    { "id": "staff", "name": "Staff", "kinds": ["staff"], "starter": "driftwood_staff", "needs": "a staff", "icon": "staff", "holds": "staves and rods", "path": "storm" }
   ],
   "grants": [
     {"id": "first_moment", "when": [{"type": "flag", "flag": "first_moment", "is": "cleared"}], "points": 1},

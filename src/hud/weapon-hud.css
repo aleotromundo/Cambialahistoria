@@ -204,3 +204,79 @@
 .change-seg-option.off {
   opacity: 0.45;
 }
+
+.family-mark {
+  display: inline-flex;
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+.family-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.family-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.family-row-mark {
+  width: 14px;
+  height: 14px;
+}
+
+.tree-socket-family {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 11px;
+  height: 11px;
+  padding: 1px;
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--tint) 70%, #ffffff);
+  background: rgba(6, 9, 14, 0.9);
+  pointer-events: none;
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.tree-socket.notable .tree-socket-family,
+.tree-socket.keystone .tree-socket-family {
+  right: -1px;
+  bottom: -1px;
+  width: 13px;
+  height: 13px;
+}
+
+.tree-socket.unheld {
+  filter: saturate(0.2) brightness(0.7);
+}
+
+.tree-socket.unheld .tree-socket-family {
+  color: #d98572;
+}
+
+.chart-card-family {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.chart-card-family.unheld {
+  color: #d98572;
+}
+
+.chart-path-family {
+  justify-content: center;
+  margin-top: 3px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.tip-weapon-family {
+  margin: 2px 0 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+}

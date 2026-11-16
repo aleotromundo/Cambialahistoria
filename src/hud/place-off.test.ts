@@ -23,7 +23,7 @@ void test('a staff place held with a blade lists its weapon damage lines as off,
   const off: PlaceOff = must(placeOff(content, node('storm_5'), holding('woodsman_hatchet')), 'off');
   assert.equal(off.lines.length, 1);
   assert.ok(off.lines.every((line: string): boolean => line.includes('Critical Strike Chance')));
-  assert.equal(off.need, 'Off: needs a staff.');
+  assert.equal(off.need, 'Inactive: needs a staff.');
   assert.equal(off.holding, "You hold a blade: Woodsman's Hatchet.");
   assert.equal(placeOff(content, node('thunder_in_the_bones'), holding('woodsman_hatchet')), null);
 });

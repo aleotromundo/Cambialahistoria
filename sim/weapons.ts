@@ -54,6 +54,11 @@ export function liveSkillMod(content: Content, mod: SkillMod): boolean {
   return members.length > 0 && members.every((skill: string): boolean => weaponFree(content, skill));
 }
 
+export function placeBound(content: Content, node: SkillTreeNodeDef): boolean {
+  if (node.weapon === null) return false;
+  return node.variants.length > 0 || node.triggers.length > 0 || node.statMods.some((mod: StatMod): boolean => !liveStatMod(mod)) || node.skillMods.some((mod: SkillMod): boolean => !liveSkillMod(content, mod));
+}
+
 export function heldPlace(content: Content, node: SkillTreeNodeDef, held: string | null): SkillTreeNodeDef {
   if (placeLive(node, held)) return node;
   return { ...node, statMods: node.statMods.filter(liveStatMod), skillMods: node.skillMods.filter((mod: SkillMod): boolean => liveSkillMod(content, mod)), variants: [], triggers: [] };

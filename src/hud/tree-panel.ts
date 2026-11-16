@@ -1,4 +1,4 @@
-import type { ChartPath, SkillTreeNodeDef } from '../../sim/content/types.ts';
+import type { ChartPath, SkillTreeNodeDef, WeaponGroup } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { refundBlock, refundCost, refundState, respecCost, respecState } from '../../sim/progression.ts';
 import type { ChartChange } from '../../sim/progression.ts';
@@ -19,6 +19,7 @@ import { kindWord, line, reachable } from './chart-parts.ts';
 import { createChangeSegment } from './change-segment.ts';
 import type { ChangeSegment } from './change-segment.ts';
 import { placeOff } from './place-off.ts';
+import { ANY_WEAPON_LINE, familyMark, familyRow, needLine, pathFamily, placeFamily } from './weapon-family.ts';
 import type { PlaceOff } from './place-off.ts';
 import { changesShape, placeChanges } from './skill-changes.ts';
 import type { SkillChanges } from './skill-changes.ts';
@@ -156,7 +157,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
   }
 
-  const names: NameView[] = pathLabels(content).map((entry: PathLabel): NameView => createNameView(viewport, entry.path.name, entry.path.tint, place(entry.at)));
+  const names: NameView[] = pathLabels(content).map((entry: PathLabel): NameView => createNameView(viewport, entry.path.name, entry.path.tint, place(entry.at), pathFamily(content, entry.path.id)));
   const prompt: HTMLDivElement = el('div', 'chart-prompt', viewport);
   const card: HTMLDivElement = el('div', 'chart-card', viewport);
   const cardBody: HTMLDivElement = el('div', 'chart-card-body', card);
@@ -226,6 +227,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const body: HTMLDivElement = el('div', 'chart-card-inner', null);
     const path: ChartPath | undefined = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path);
     label('chart-card-path', path === undefined ? node.kind : `${path.name} · ${kindWord(node)}`, body);
+    const family: WeaponGroup | null = placeFamily(content, node);
+    if (family !== null) familyRow(family, off === null ? 'chart-card-family' : 'chart-card-family unheld', needLine(family), body);
+    else if (node.weapon !== null) label('chart-card-family', ANY_WEAPON_LINE, body);
     label('tree-tip-name', node.name, body);
     if (ability !== null) label('chart-card-tags', ability.tags, body);
     label('tree-tip-effect', node.description, body);
@@ -470,6 +474,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     el('span', 'tree-socket-fill', button);
     const glyph: HTMLSpanElement = el('span', 'tree-socket-glyph', button);
     glyph.innerHTML = placeGlyph(content, node);
+    const family: WeaponGroup | null = placeFamily(content, node);
+    if (family !== null) familyMark(family, 'tree-socket-family', button);
     const view: NodeView = { def: node, button };
     button.addEventListener('click', (): void => {
       sendCard({ type: 'pin', node: node.id });
@@ -570,6 +576,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     for (const view of views) {
       const status: TreeNodeStatus = statusOf(view.def);
       for (const name of STATUS_CLASSES) view.button.classList.toggle(name, name === status.kind);
+      view.button.classList.toggle('unheld', placeOff(content, view.def, you.equipped) !== null);
     }
     for (const link of links) {
       const fromTaken: boolean = you.allocated.includes(link.from);

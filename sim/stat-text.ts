@@ -42,6 +42,12 @@ export function describeMod(mod: StatMod): string {
   return `${sign}${size} ${statLabel(mod.stat)}`;
 }
 
+export function describeExactMod(mod: StatMod): string {
+  if (!isRatio(mod.stat, mod.op)) return describeMod(mod);
+  const sign: string = mod.value < 0 ? '−' : '+';
+  return `${sign}${Number((Math.abs(mod.value) * 100).toFixed(1))}% ${statLabel(mod.stat)}`;
+}
+
 function targetName(content: Content, target: SkillTarget): string {
   if (target.type === 'skill') return content.skills.get(target.skill)?.name ?? target.skill;
   return content.chart.groups.find((group: ChartGroup): boolean => group.id === target.group)?.name ?? target.group;
