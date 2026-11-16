@@ -6,7 +6,7 @@ import type { GlitchDef, GlitchKind, GlitchRules } from '../content/glitches.ts'
 import { loadContent } from '../content/content.ts';
 import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneExit } from '../content/types.ts';
-import { distance } from '../math.ts';
+import { distance, facingOf } from '../math.ts';
 import { readSave, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
 import { glitchBlock, heldCommands, inMist, requestGlitch, setGlitchesEnabled, stageOf, stepGlitch, storyProgress } from './glitch.ts';
@@ -417,7 +417,7 @@ void test('early in the story a zone change stays clear of the mist', (): void =
   assert.equal(ofType(world.events, 'glitch_start').length, 0);
 });
 
-void test('in the build-up the hero keeps control; from the tear he stands still and worldly commands are dropped', (): void => {
+void test('in the build-up the hero keeps control; from the tear he still walks where he is sent, and every other worldly command is dropped', (): void => {
   const { world } = fight(9);
   world.monsters = [];
   requestGlitch(world, 'hard_cut', 'debug');
@@ -427,11 +427,52 @@ void test('in the build-up the hero keeps control; from the tear he stands still
   assert.deepEqual(heldCommands(world, [command]), [command]);
   untilPhase(world, 'tear');
   const before = { ...world.player.pos };
-  assert.deepEqual(heldCommands(world, [{ type: 'move', held: false, dest: { x: 2, z: 2 } }, { type: 'stop' }]), [{ type: 'stop' }]);
-  run(world, 0.5);
+  const walk = { type: 'walk', held: true, dest: { x: 2, z: 2 } } as const;
+  assert.deepEqual(heldCommands(world, [command, walk, { type: 'skill', slot: 0, aim: { x: 2, z: 2 }, targetId: null }, { type: 'pickup', groundId: 1 }, { type: 'stop' }]), [command, walk, { type: 'stop' }]);
+  untilPhase(world, 'mist');
   stepWorld(world, [{ type: 'move', held: false, dest: { x: before.x + 6, z: before.z } }], DT);
+  run(world, 0.6);
+  assert.equal(inMist(world), true);
+  assert.ok(world.player.pos.x - before.x > 1);
+});
+
+void test('a hero who walks into the tear keeps walking through the mist, and one who stands is left standing', (): void => {
+  const { world } = fight(9);
+  world.monsters = [];
+  requestGlitch(world, 'hard_cut', 'debug');
+  run(world, world.glitch.def.seam.buildUp - 0.2);
+  assert.equal(world.glitch.active?.phase, 'build_up');
+  const from = { ...world.player.pos };
+  stepWorld(world, [{ type: 'move', held: false, dest: { x: from.x + 6, z: from.z } }], DT);
+  untilPhase(world, 'tear');
+  assert.equal(world.player.intent.type, 'move');
+  const atTear = { ...world.player.pos };
+  untilPhase(world, 'mist');
   run(world, 0.3);
-  assert.ok(distance(world.player.pos, before) < 0.5);
+  assert.equal(inMist(world), true);
+  assert.ok(world.player.pos.x - atTear.x > 1);
+  const standing = fight(9).world;
+  standing.monsters = [];
+  requestGlitch(standing, 'hard_cut', 'debug');
+  untilPhase(standing, 'mist');
+  assert.equal(standing.player.intent.type, 'idle');
+});
+
+void test('a hero who is walking as the tear back begins is not turned round', (): void => {
+  const { world } = fight(10);
+  world.monsters = [];
+  world.glitch.progress = 0;
+  requestGlitch(world, 'hard_cut', 'debug');
+  untilPhase(world, 'mist');
+  assert.equal(world.glitch.active?.edit, 'hero_turn');
+  run(world, 1.2);
+  assert.equal(world.glitch.active.phase, 'mist');
+  const from = { ...world.player.pos };
+  stepWorld(world, [{ type: 'move', held: false, dest: { x: from.x + 6, z: from.z } }], DT);
+  untilPhase(world, 'tear_back');
+  assert.equal(world.player.intent.type, 'move');
+  run(world, 0.1);
+  assert.ok(Math.cos(world.player.facing - facingOf({ x: 1, z: 0 })) > 0.9);
 });
 
 void test('the hero faces the other way only as the tear back begins, while the world is still hidden', (): void => {

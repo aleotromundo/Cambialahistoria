@@ -162,8 +162,8 @@ const WORLDLY: Readonly<Record<Command['type'], boolean>> = {
   strike: false,
   spawn: false,
   bench: false,
-  move: true,
-  walk: true,
+  move: false,
+  walk: false,
   skill: true,
   hold: false,
   slot: false,
@@ -251,9 +251,10 @@ function interruptMonsters(world: World): void {
 
 function still(world: World): void {
   const player = world.player;
+  player.queued = null;
+  if (player.intent.type === 'move') return;
   player.intent = { type: 'idle' };
   player.path = [];
-  player.queued = null;
 }
 
 function holdFor(world: World, seconds: number): void {
@@ -320,7 +321,7 @@ function enterPhase(world: World, active: ActiveGlitch, plan: SeamPlan, phase: S
       break;
     }
     case 'tear_back':
-      if (active.turn) turnHero(world);
+      if (active.turn && world.player.intent.type !== 'move') turnHero(world);
       active.turn = false;
       break;
     case 'settle':

@@ -192,6 +192,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   const enter = (kind: GlitchKind, silhouettes: readonly Silhouette[]): void => {
     soft = settings.get().reduceFlashes || kind === 'quiet_pass';
     pendingShades = silhouettes;
+    document.body.classList.add(GLITCH_VIEW.mistClass);
     if (soft) {
       setWhite(kind === 'quiet_pass' && !settings.get().reduceFlashes ? GLITCH_VIEW.quietPeak : GLITCH_VIEW.softPeak, true);
       phase = { type: 'entering', left: GLITCH_VIEW.softSwap };
