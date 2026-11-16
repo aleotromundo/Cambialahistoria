@@ -276,6 +276,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   const toCamera: Vector3 = new Vector3();
   let pipeline: LobbyPipeline | null = null;
   const dressing: SetDressing = createSetDressing(set, content, loader, contact, skirtGround(floor, groundDef), random);
+  scene.add(dressing.lamps);
   let dressed: boolean = false;
   let life: LobbyLife | null = null;
   const orbit: LobbyOrbit = createLobbyOrbit();

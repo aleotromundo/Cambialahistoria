@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
-import { LOBBY_ORBIT } from './lobby-orbit.ts';
+import { Color, PerspectiveCamera, Vector3 } from 'three';
+import { createLobbyOrbit, LOBBY_ORBIT, stepOrbit } from './lobby-orbit.ts';
+import type { LobbyOrbit, OrbitView } from './lobby-orbit.ts';
 import { LOBBY_SETS, pickSet, readLobbySets, setMounds } from './lobby-sets.ts';
 import type { LobbySet, SetPiece, Skyline, SkylinePiece } from './lobby-sets.ts';
+import { LOBBY_STAGE, lobbyFraming } from './lobby-stage.ts';
+import type { Framing } from './lobby-stage.ts';
 
 const content: Content = loadContent();
 
@@ -41,6 +45,53 @@ void test('the gate road has a horizon in depth: walls, then ruined towers, then
   assert.ok(radii.length >= 3);
   assert.ok(gate.skylines.some((skyline: Skyline): boolean => skyline.pieces.some((piece: SkylinePiece): boolean => piece.kind === 'hill' || piece.kind === 'cliff')));
   assert.ok(gate.skylines.some((skyline: Skyline): boolean => skyline.pieces.some((piece: SkylinePiece): boolean => piece.lit > 0)));
+});
+
+function frameDrop(radius: number, height: number, width: number, tall: number): number {
+  const orbit: LobbyOrbit = createLobbyOrbit();
+  let view: OrbitView = stepOrbit(orbit, 0);
+  for (let step: number = 0; step < 300; step += 1) view = stepOrbit(orbit, 1 / 60);
+  const camera: PerspectiveCamera = new PerspectiveCamera(LOBBY_STAGE.fov, width / tall, LOBBY_STAGE.near, LOBBY_STAGE.far);
+  camera.position.set(view.x, view.y, view.z);
+  camera.lookAt(0, view.lookHeight, 0);
+  const framing: Framing = lobbyFraming(width, tall);
+  camera.zoom = framing.zoom;
+  camera.setViewOffset(width, tall, (0.5 - framing.across) * width, framing.down * tall, width, tall);
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+  const behind: Vector3 = new Vector3(-view.x, 0, -view.z).normalize().multiplyScalar(radius).setY(height).project(camera);
+  return (1 - behind.y) / 2;
+}
+
+void test('from the lobby camera every skyline top stands inside the frame, so towers and hills show their outline instead of running off the top', (): void => {
+  for (const set of LOBBY_SETS.sets.values()) {
+    for (const skyline of set.skylines) {
+      for (const piece of skyline.pieces) {
+        for (const [width, tall] of [[1440, 900], [390, 844]] as const) {
+          const drop: number = frameDrop(skyline.radius, piece.height, width, tall);
+          assert.ok(drop > 0.015, `${set.id} ${piece.kind} at ${piece.angleDegrees} on ${skyline.radius} tops out ${drop.toFixed(3)} down a ${width}x${tall} frame`);
+        }
+      }
+    }
+  }
+});
+
+void test('the gate horizon pales with distance, so each layer stands apart from the one in front of it', (): void => {
+  const gate: LobbySet | undefined = LOBBY_SETS.sets.get('gate');
+  assert.ok(gate !== undefined);
+  const layers: readonly Skyline[] = gate.skylines.toSorted((near: Skyline, far: Skyline): number => near.radius - far.radius);
+  const lightness: readonly number[] = layers.map((skyline: Skyline): number => new Color(skyline.color).getHSL({ h: 0, s: 0, l: 0 }).l);
+  for (let layer: number = 1; layer < lightness.length; layer += 1) assert.ok((lightness[layer] ?? 0) > (lightness[layer - 1] ?? 1), `${layers[layer]?.radius}`);
+});
+
+void test('the gate camp fire and lanterns throw real light, each lamp set by a lit piece', (): void => {
+  const gate: LobbySet | undefined = LOBBY_SETS.sets.get('gate');
+  assert.ok(gate !== undefined);
+  assert.ok(gate.lamps.length >= 1);
+  for (const lamp of gate.lamps) {
+    const nearest: number = Math.min(...gate.pieces.filter((piece: SetPiece): boolean => piece.prop === 'fire_pit' || piece.prop === 'gate_lantern_lit').map((piece: SetPiece): number => Math.hypot(piece.x - lamp.x, piece.z - lamp.z)));
+    assert.ok(nearest < 1, `${lamp.x}, ${lamp.z}`);
+  }
 });
 
 function blocksView(piece: SetPiece): boolean {

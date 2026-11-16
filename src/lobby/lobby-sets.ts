@@ -76,6 +76,16 @@ export interface Glow {
   readonly strength: number;
 }
 
+export interface Lamp {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly color: string;
+  readonly intensity: number;
+  readonly distance: number;
+  readonly flicker: number;
+}
+
 export interface LobbySet {
   readonly id: string;
   readonly ground: string;
@@ -91,6 +101,7 @@ export interface LobbySet {
   readonly flash: Flash | null;
   readonly roosts: readonly Roost[];
   readonly glows: readonly Glow[];
+  readonly lamps: readonly Lamp[];
 }
 
 export interface LobbySets {
@@ -173,6 +184,19 @@ function readGlow(value: unknown, where: string): Glow {
   return { x: numeric(source, 'x', where), y: numeric(source, 'y', where), z: numeric(source, 'z', where), size: positive(source, 'size', where), color: colour(source, 'color', where), strength: share(source, 'strength', where) };
 }
 
+function readLamp(value: unknown, where: string): Lamp {
+  const source: Fields = fields(value, where);
+  return {
+    x: numeric(source, 'x', where),
+    y: numeric(source, 'y', where),
+    z: numeric(source, 'z', where),
+    color: colour(source, 'color', where),
+    intensity: positive(source, 'intensity', where),
+    distance: positive(source, 'distance', where),
+    flicker: source['flicker'] === undefined ? 0 : share(source, 'flicker', where),
+  };
+}
+
 function readSet(value: unknown, where: string): LobbySet {
   const source: Fields = fields(value, where);
   const id: string = text(source, 'id', where);
@@ -192,6 +216,7 @@ function readSet(value: unknown, where: string): LobbySet {
     flash: readFlash(source['flash'], `${at} flash`),
     roosts: source['roosts'] === undefined ? [] : each(source['roosts'], `${at} roosts`, readRoost),
     glows: source['glows'] === undefined ? [] : each(source['glows'], `${at} glows`, readGlow),
+    lamps: source['lamps'] === undefined ? [] : each(source['lamps'], `${at} lamps`, readLamp),
   };
   if (set.fogFar <= set.fogNear) throw new ContentError(at, 'fogFar is not beyond fogNear');
   return set;

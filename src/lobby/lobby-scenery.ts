@@ -1,5 +1,5 @@
 import type { Camera, Material, Object3D, Scene, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, BufferGeometry, Color, ConeGeometry, DataTexture, Euler, Group, InstancedMesh, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, RGBAFormat, Vector3 } from 'three';
+import { AdditiveBlending, Box3, BufferGeometry, Color, ConeGeometry, DataTexture, Euler, Group, InstancedMesh, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, PointLight, Quaternion, RGBAFormat, Vector3 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, PropDef } from '../../sim/content/types.ts';
 import { loadModel } from '../render/character-loader.ts';
@@ -12,7 +12,7 @@ import { groundHeight } from './lobby-ground.ts';
 import type { Mound } from './lobby-ground.ts';
 import { stepSpring } from './lobby-orbit.ts';
 import type { Spring } from './lobby-orbit.ts';
-import type { Flash, Glow, LobbySet, Roost, Rubble, SetPiece, Skyline } from './lobby-sets.ts';
+import type { Flash, Glow, Lamp, LobbySet, Roost, Rubble, SetPiece, Skyline } from './lobby-sets.ts';
 import { setMounds } from './lobby-sets.ts';
 import { skirtMaterial, skirtRubble, skirtUniforms } from './lobby-skirt.ts';
 import type { SkirtGround, SkirtUniforms } from './lobby-skirt.ts';
@@ -28,7 +28,8 @@ export const LOBBY_SCENERY = {
   roostWidth: 0.4,
   roostSides: 5,
   glowTexture: 64,
-  window: { size: 0.55, strength: 0.55, color: '#ffb766' },
+  window: { size: 0.42, strength: 0.95, color: '#ffb766' },
+  lamp: { decay: 2, slowHz: 1.3, fastHz: 3.7, fastShare: 0.4, slowPhase: 0.37, fastPhase: 0.61 },
   noContact: 1000,
   presence: { freq: 0.45, damping: 1 },
   solidAt: 0.999,
@@ -114,8 +115,24 @@ interface Swaying {
 }
 
 export interface SetDressing {
+  readonly lamps: Group;
   load(renderer: WebGLRenderer, scene: Scene, camera: Camera): Promise<void>;
   step(dt: number, camera: Camera): number;
+}
+
+export function lampFlicker(seconds: number, index: number, flicker: number): number {
+  const spec = LOBBY_SCENERY.lamp;
+  const slow: number = Math.sin((seconds * spec.slowHz + index * spec.slowPhase) * Math.PI * 2);
+  const fast: number = Math.sin((seconds * spec.fastHz + index * spec.fastPhase) * Math.PI * 2);
+  return Math.max(0, 1 + flicker * ((1 - spec.fastShare) * slow + spec.fastShare * fast));
+}
+
+export function lampLights(lamps: readonly Lamp[]): readonly PointLight[] {
+  return lamps.map((lamp: Lamp): PointLight => {
+    const light: PointLight = new PointLight(new Color(lamp.color), 0, lamp.distance, LOBBY_SCENERY.lamp.decay);
+    light.position.set(lamp.x, lamp.y, lamp.z);
+    return light;
+  });
 }
 
 export function windowGlows(skylines: readonly Skyline[]): readonly Glow[] {
@@ -179,8 +196,12 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
   const swaying: Swaying[] = [];
   const presence: Spring = { x: 0, v: 0 };
   const flashState: FlashState = { wait: set.flash === null ? 0 : set.flash.everyMin * random(), since: Number.POSITIVE_INFINITY };
+  const lamps: Group = new Group();
+  const bulbs: readonly PointLight[] = lampLights(set.lamps);
+  if (bulbs.length > 0) lamps.add(...bulbs);
   let shown: boolean = false;
   let solid: boolean = false;
+  let amount: number = 0;
   let seconds: number = 0;
   let roosts: RoostMesh | null = null;
   let glows: GlowMesh | null = null;
@@ -270,6 +291,7 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
   const size: Vector3 = new Vector3();
 
   return {
+    lamps,
     async load(renderer: WebGLRenderer, scene: Scene, camera: Camera): Promise<void> {
       await build();
       await renderer.compileAsync(group, camera, scene);
@@ -279,13 +301,18 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
     step(dt: number, camera: Camera): number {
       seconds += dt;
       if (shown && !solid) {
-        const amount: number = Math.min(1, Math.max(0, stepSpring(presence, 1, LOBBY_SCENERY.presence.freq, LOBBY_SCENERY.presence.damping, dt)));
+        amount = Math.min(1, Math.max(0, stepSpring(presence, 1, LOBBY_SCENERY.presence.freq, LOBBY_SCENERY.presence.damping, dt)));
         solid = amount >= LOBBY_SCENERY.solidAt;
+        if (solid) amount = 1;
         for (const entry of fading) {
           entry.material.opacity = entry.base * (solid ? 1 : amount);
           if (solid && !entry.keepsBlend) entry.material.transparent = false;
         }
       }
+      bulbs.forEach((light: PointLight, index: number): void => {
+        const lamp: Lamp | undefined = set.lamps[index];
+        light.intensity = lamp === undefined ? 0 : lamp.intensity * amount * lampFlicker(seconds, index, lamp.flicker);
+      });
       for (const sway of swaying) {
         sway.mesh.setMatrixAt(sway.slot, at.multiplyMatrices(pieceMatrix(sway.piece, sway.scale, mounds, swayAngle(sway.piece, seconds, sway.index)), sway.object));
         sway.mesh.instanceMatrix.needsUpdate = true;

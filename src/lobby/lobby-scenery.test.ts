@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import type { PointLight } from 'three';
 import { Vector3 } from 'three';
 import { must } from '../../test/support.ts';
 import { groundHeight } from './lobby-ground.ts';
-import { featherShare, LOBBY_SCENERY, pieceMatrix, pieceSeat, stepFlash, strikeShape, swayAngle } from './lobby-scenery.ts';
+import { featherShare, lampFlicker, lampLights, LOBBY_SCENERY, pieceMatrix, pieceSeat, stepFlash, strikeShape, swayAngle } from './lobby-scenery.ts';
 import type { FlashState } from './lobby-scenery.ts';
 import { LOBBY_SETS, setMounds } from './lobby-sets.ts';
-import type { Flash, LobbySet, SetPiece } from './lobby-sets.ts';
+import type { Flash, Lamp, LobbySet, SetPiece } from './lobby-sets.ts';
 
 const STONES: LobbySet = must(LOBBY_SETS.sets.get('stones'), 'the stones set');
 
@@ -58,4 +59,18 @@ void test('a lamp glow is soft all the way out and has no edge', (): void => {
   assert.equal(featherShare(1), 0);
   assert.equal(featherShare(1.3), 0);
   assert.ok(featherShare(0.98) < 0.002);
+});
+
+void test('a lamp starts dark where its data puts it, and a flickering fire wavers round its strength without going out while a steady lantern holds still', (): void => {
+  const lamps: readonly Lamp[] = [
+    { x: 3, y: 0.8, z: -12, color: '#ff8a3a', intensity: 12, distance: 7, flicker: 0.3 },
+    { x: -2, y: 3, z: 14, color: '#ffc874', intensity: 8, distance: 8, flicker: 0 },
+  ];
+  const lights: readonly PointLight[] = lampLights(lamps);
+  assert.equal(lights.length, 2);
+  assert.deepEqual(lights.map((light: PointLight): readonly number[] => [light.position.x, light.position.y, light.position.z, light.intensity, light.distance, light.decay]), [[3, 0.8, -12, 0, 7, LOBBY_SCENERY.lamp.decay], [-2, 3, 14, 0, 8, LOBBY_SCENERY.lamp.decay]]);
+  const fire: readonly number[] = Array.from({ length: 200 }, (_unused: unknown, step: number): number => lampFlicker(step * 0.05, 0, 0.3));
+  assert.ok(Math.min(...fire) >= 0.7 - 1e-9 && Math.max(...fire) <= 1.3 + 1e-9);
+  assert.ok(Math.max(...fire) - Math.min(...fire) > 0.2);
+  for (let step: number = 0; step < 50; step += 1) assert.equal(lampFlicker(step * 0.1, 1, 0), 1);
 });
