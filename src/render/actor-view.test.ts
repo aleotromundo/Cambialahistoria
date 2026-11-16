@@ -299,3 +299,25 @@ void test('a frame that moves no time, as in a hit-stop, keeps the head and ches
   view.sync(0, standing(0, false, null), STUN_SYNC);
   assert.ok(bone.quaternion.angleTo(posed) < 1e-6, `the head moved ${String(bone.quaternion.angleTo(posed))} rad in a frame that moved no time`);
 });
+
+void test('a fresh body has its death and hit clips bound before its first death, and binding them plays nothing', (): void => {
+  const def: RigDef = must(content.rigs.get(content.player.hero.rig), 'player rig');
+  const idle: AnimationClip = new AnimationClip('idle', 1, []);
+  const death: AnimationClip = new AnimationClip('death', 1, []);
+  const hit: AnimationClip = new AnimationClip('hit', 1, []);
+  const clips: RigClipSet = { idle, run: new AnimationClip('run', 1, []), gaits: [], hit: [hit], death: [death], rise: null, actions: new Map(), unarmed: null, stances: new Map() };
+  const loaded: LoadedRig = { def, template: new Group(), clips, bodyParts: [], bodyMasks: new Map(), fitted: new Map() };
+  const library: CharacterLibrary = { rigs: new Map([[def.id, loaded]]), attachments: new Map(), wearables: new Map() };
+  const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost: null, feather: false }), 1, 0, ACTOR.hostileHover, (): number => 0);
+  assert.equal(view.rig.mixer.existingAction(death), null);
+  view.prime();
+  const dying = must(view.rig.mixer.existingAction(death), 'death action');
+  const struck = must(view.rig.mixer.existingAction(hit), 'hit action');
+  view.sync(1 / 60, { pos: { x: 0, z: 0 }, facing: 0, motion: 'still', gait: 0, knockTime: 0, busy: false, held: false, beat: null, deadTime: 0 }, STUN_SYNC);
+  assert.equal(dying.isRunning(), false);
+  assert.equal(struck.isRunning(), false);
+  assert.equal(must(view.rig.mixer.existingAction(idle), 'idle action').getEffectiveWeight(), 1);
+  view.die();
+  assert.equal(view.rig.mixer.existingAction(death), dying);
+  assert.equal(dying.isRunning(), true);
+});

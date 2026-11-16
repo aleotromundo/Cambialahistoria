@@ -137,6 +137,7 @@ export interface ActorView {
   face(facing: number): void;
   spin(animation: string | null, turn: number): void;
   bounds(out: Box3): void;
+  prime(): void;
   dispose(): void;
 }
 
@@ -605,6 +606,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     },
     bounds(out: Box3): void {
       out.setFromObject(rig.root);
+    },
+    prime(): void {
+      for (const clip of rig.clips.death) rig.mixer.clipAction(clip);
+      for (const clip of rig.clips.hit) rig.mixer.clipAction(clip);
     },
     setShadowOpacity(amount: number): void {
       shade(amount);

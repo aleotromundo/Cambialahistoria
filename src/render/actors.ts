@@ -4,7 +4,10 @@ import { drawnBy, SEES_ALL } from './sight.ts';
 import type { Box3, Object3D, Scene } from 'three';
 import { isTimeHeld, knockTime } from '../../sim/world/movement.ts';
 import { Color } from 'three';
-import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
+import type { Content, MonsterDef, ZoneDef, ZonePack } from '../../sim/content/types.ts';
+import { modsNamed, withMods } from '../../sim/world/elites.ts';
+import type { CostLimit, FramePacer } from './paced-work.ts';
+import { browserPacer, PACED_WORK, workPaced } from './paced-work.ts';
 import type { Look } from '../../sim/wear.ts';
 import { HERO, heroRig } from '../../sim/hero.ts';
 import { heroBase, lookOf, wearKey, wornWearables } from '../../sim/wear.ts';
@@ -56,8 +59,15 @@ export const ACTORS = {
   turnRim: 4,
   leaveTime: 1.2,
   pooledPerKind: 8,
+  sparesCap: 16,
+  sparesPerFrame: 1,
   wearWait: 4,
 } as const;
+
+export interface ZoneBody {
+  readonly def: MonsterDef;
+  readonly spares: number;
+}
 
 interface EchoLook {
   readonly ghost: GhostUniforms;
@@ -121,8 +131,47 @@ function poseOf(actor: ActorState, beat: number | null): ActorPose {
   return { pos: actor.pos, facing: actor.facing, motion: actor.motion, gait: actor.gait, knockTime: knockTime(actor), busy: actor.action !== null, held: isTimeHeld(actor), beat, deadTime: actor.deadTime };
 }
 
-function monsterKey(def: MonsterDef): string {
+export function monsterKey(def: MonsterDef): string {
   return `${def.id}|${def.rig}|${def.tint}|${def.color}|${def.scale}`;
+}
+
+function wantBody(bodies: Map<string, ZoneBody>, def: MonsterDef, spares: number): boolean {
+  const key: string = monsterKey(def);
+  const known: ZoneBody | undefined = bodies.get(key);
+  const wanted: number = Math.min(ACTORS.sparesCap, Math.max(1, spares));
+  if (known === undefined) {
+    bodies.set(key, { def, spares: wanted });
+    return true;
+  }
+  if (known.spares < wanted) bodies.set(key, { def: known.def, spares: wanted });
+  return false;
+}
+
+function packBodies(content: Content, zone: ZoneDef, pack: ZonePack, bodies: Map<string, ZoneBody>): void {
+  const woken: Map<string, ZoneBody> = new Map<string, ZoneBody>();
+  const extra: number = zone.surge?.maxExtraMonsters ?? 0;
+  pack.members.forEach((member, index: number): void => {
+    const base: MonsterDef | undefined = content.monsters.get(member.monster);
+    if (base === undefined) return;
+    wantBody(bodies, base, 1);
+    const def: MonsterDef = withMods(base, modsNamed(content.monsterMods, member.mods));
+    const key: string = monsterKey(def);
+    const count: number = member.count + (index === 0 ? extra : 0);
+    woken.set(key, { def, spares: (woken.get(key)?.spares ?? 0) + count });
+  });
+  for (const body of woken.values()) wantBody(bodies, body.def, pack.waits === undefined ? 1 : body.spares);
+}
+
+export function zoneBodies(content: Content, zone: ZoneDef): ReadonlyMap<string, ZoneBody> {
+  const bodies: Map<string, ZoneBody> = new Map<string, ZoneBody>();
+  for (const pack of zone.packs) packBodies(content, zone, pack, bodies);
+  const callers: MonsterDef[] = [...bodies.values()].map((body: ZoneBody): MonsterDef => body.def);
+  for (let caller: MonsterDef | undefined = callers.pop(); caller !== undefined; caller = callers.pop()) {
+    if (caller.summon === null) continue;
+    const minion: MonsterDef | undefined = content.monsters.get(caller.summon.monster ?? caller.id);
+    if (minion !== undefined && wantBody(bodies, minion, caller.summon.limit)) callers.push(minion);
+  }
+  return bodies;
 }
 
 function npcPose(npc: NpcState): ActorPose {
@@ -157,7 +206,7 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
   return { ghost: createGhostUniforms(from, ACTORS.echoMix), from, to };
 }
 
-export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL, particles: ParticleSystem | null = null): Actors {
+export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL, particles: ParticleSystem | null = null, pacer: FramePacer = browserPacer()): Actors {
   const content: Content = world.content;
   const spin: SpinView = createSpinView(scene, particles);
   const heroView = (loaded: LoadedRig, current: World): ActorView => {
@@ -212,6 +261,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const leaving: LeavingEcho[] = [];
 
   const pool: Map<string, ActorView[]> = new Map<string, ActorView[]>();
+  let bodies: ReadonlyMap<string, ZoneBody> = new Map<string, ZoneBody>();
+  let spareRound: number = 0;
+  let sparesDue: readonly ZoneBody[] | null = null;
 
   const guard: ActorGuard = createActorGuard(warnInConsole);
   const waiting: Map<number, number> = new Map<number, number>();
@@ -231,6 +283,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     dress(content, def.rig, view.rig, partial ? def.wear.filter((id: string): boolean => library.wearables.has(wearKey(rig.def.frame, id))) : def.wear, null);
     view.rig.setOpacity(ACTORS.echoOpacity);
     if (echo !== null) view.setShadowOpacity(ACTORS.echoOpacity);
+    view.prime();
     return view;
   };
 
@@ -246,7 +299,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const keep = (def: MonsterDef, view: ActorView): void => {
     view.detach();
     const kept: ActorView[] = pool.get(monsterKey(def)) ?? [];
-    if (kept.length >= ACTORS.pooledPerKind) {
+    if (kept.length >= Math.max(ACTORS.pooledPerKind, bodies.get(monsterKey(def))?.spares ?? 0)) {
       view.dispose();
       return;
     }
@@ -309,6 +362,23 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     return next;
   };
 
+  const short = (body: ZoneBody): boolean => (pool.get(monsterKey(body.def))?.length ?? 0) < body.spares;
+  const spareLimit: CostLimit<ZoneBody> = { perFrame: ACTORS.sparesPerFrame, cost: (body: ZoneBody): number => (short(body) ? 1 : 0) };
+  const buildSpares = (due: readonly ZoneBody[], round: number): void => {
+    const jobs: ZoneBody[] = due.flatMap((body: ZoneBody): ZoneBody[] => Array.from({ length: body.spares }, (): ZoneBody => body));
+    const work = (body: ZoneBody): void => {
+      if (round !== spareRound || !short(body)) return;
+      const view: ActorView | null = makeMonsterView(body.def, 0, null);
+      if (view !== null) keep(body.def, view);
+    };
+    pacer
+      .next()
+      .then((): Promise<void> => workPaced(jobs, work, pacer, PACED_WORK.frameBudgetMs, spareLimit))
+      .catch((error: unknown): void => {
+        warnInConsole(`Building spare monster bodies failed: ${String(error)}`);
+      });
+  };
+
   const viewOf = (actorId: number): ActorView | null => {
     if (actorId === world.player.id) return playerView;
     return monsters.get(actorId)?.view ?? npcs.get(actorId)?.view ?? null;
@@ -319,14 +389,13 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       return playerView.rig.root;
     },
     standIns(zone: ZoneDef): Object3D[] {
-      const defs: MonsterDef[] = [...new Set<string>(zone.packs.flatMap((pack): string[] => pack.members.map((member): string => member.monster)))].flatMap((id: string): MonsterDef[] => {
-        const def: MonsterDef | undefined = content.monsters.get(id);
-        return def === undefined ? [] : [def];
-      });
-      const wanted: Set<string> = new Set<string>(defs.map(monsterKey));
+      bodies = zoneBodies(content, zone);
+      spareRound += 1;
+      sparesDue = [...bodies.values()];
+      const defs: MonsterDef[] = sparesDue.map((body: ZoneBody): MonsterDef => body.def);
       const unwanted: ActorView[] = [];
       for (const [look, views] of pool) {
-        if (wanted.has(look)) continue;
+        if (bodies.has(look)) continue;
         unwanted.push(...views);
         pool.delete(look);
       }
@@ -353,6 +422,10 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       return viewOf(actorId)?.height ?? ACTORS.defaultHeight;
     },
     sync(dt: number, current: World, hoveredId: number | null): void {
+      if (sparesDue !== null) {
+        buildSpares(sparesDue, spareRound);
+        sparesDue = null;
+      }
       const floorAt = (x: number, z: number): number => heightAt(current.zone, x, z);
       sight.refresh();
       const seen = (view: ActorView, x: number, z: number): boolean => sight.sees(x, floorAt(x, z) + view.height / 2, z, view.height);
@@ -421,7 +494,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             entry.swap = null;
           }
         }
-        if (readyToInspect({ checked: entry.checked, alive: monster.alive, swapping: entry.swap !== null, fadingOut: entry.echo !== null && echoFade(current, monster.id) !== 0 })) {
+        if (!entry.checked && readyToInspect({ checked: entry.checked, alive: monster.alive, swapping: entry.swap !== null, fadingOut: entry.echo !== null && echoFade(current, monster.id) !== 0 })) {
           entry.checked = true;
           if (!guard.inspect(monster.id, entry.view.rig.root, monster.def.id)) {
             entry.view.rig.setGear([]);
@@ -534,6 +607,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           }
           case 'zone_changed':
+            spareRound += 1;
+            sparesDue = null;
             spin.clear();
             waiting.clear();
             for (const entry of monsters.values()) retire(entry);
