@@ -1,4 +1,4 @@
-import type { ActDef, AtlasPoint, AtlasRoad, Content, MapPlace, ZoneDef, ZoneExit } from './types.ts';
+import type { ActDef, AtlasChain, AtlasPoint, AtlasRoad, Content, MapPlace, ZoneDef, ZoneExit } from './types.ts';
 
 export const ATLAS_RULES = {
   placeGap: 100,
@@ -23,6 +23,7 @@ function actProblems(content: Content, act: ActDef): string[] {
     if (spots.has(`${place.x},${place.y}`)) problems.push(`${at} puts two zones at ${place.x},${place.y}`);
     if (!within(place, act)) problems.push(`${at} places zone ${place.zone} off the map`);
     if (place.label?.trim() === '') problems.push(`${at} gives zone ${place.zone} an empty map label`);
+    if (place.chain !== null && !act.atlas.chains.some((chain: AtlasChain): boolean => chain.id === place.chain)) problems.push(`${at} puts zone ${place.zone} in unknown chain ${place.chain}`);
     placed.add(place.zone);
     spots.add(`${place.x},${place.y}`);
   }

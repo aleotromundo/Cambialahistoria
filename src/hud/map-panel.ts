@@ -1,5 +1,5 @@
 import { actOf } from '../../sim/content/atlas.ts';
-import type { ActDef, AtlasRoad, MapPlace, ZoneDef } from '../../sim/content/types.ts';
+import type { ActDef, AtlasChain, AtlasRoad, MapPlace, ZoneDef } from '../../sim/content/types.ts';
 import { placeState, roadState, roadWalked, shownPlaces, zoneMark } from '../../sim/world/atlas.ts';
 import type { PlaceState, RoadState, ZoneMark } from '../../sim/world/atlas.ts';
 import type { World } from '../../sim/world/types.ts';
@@ -26,6 +26,7 @@ const MAP = {
   legendSize: 44,
   labelStroke: 2,
   labelMargin: 3,
+  labelClear: 24,
   labelKeep: { here: 4, landmark: 3, named: 2, level: 1 },
   hintAway: 'Stand on a waypoint to travel',
   hintReady: 'Choose a lit waypoint to travel',
@@ -109,6 +110,17 @@ function localSpot(node: NodeView, width: number, height: number): LabelSpot {
   return { x: 0, y: 0, reach: node.parts.reach, width: width + 2 * MAP.labelStroke, height: height + 2 * MAP.labelStroke, keep: labelKeep(node) };
 }
 
+function chainTint(act: ActDef, place: MapPlace): string | null {
+  if (place.chain === null) return null;
+  return act.atlas.chains.find((chain: AtlasChain): boolean => chain.id === place.chain)?.tint ?? null;
+}
+
+function tint(node: Element, colour: string | null): void {
+  if (!(node instanceof SVGElement) || colour === null) return;
+  node.classList.add('chained');
+  node.style.setProperty('--chain-tint', colour);
+}
+
 function setState<T extends string>(node: Element, states: readonly T[], state: T): void {
   for (const each of states) node.classList.toggle(each, each === state);
 }
@@ -171,6 +183,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       const group: SVGGElement = svg('g', 'atlas-road', roadLayer, {});
       svg('path', 'atlas-road-bed', group, { d: shape });
       svg('path', 'atlas-road-line', group, { d: shape });
+      if (from.chain !== null && from.chain === to.chain) tint(group, chainTint(act, from));
       roads.push({ road, group, state: null });
     }
     const nodes: NodeView[] = [];
@@ -179,7 +192,9 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
       if (zone === undefined) continue;
       const mark: ZoneMark = zoneMark(world.content, zone);
       const clear: SVGCircleElement = svg('circle', 'atlas-clear', mask, { cx: place.x, cy: place.y, r: MAP.fogRadius, fill: `url(#${MAP.ids.clear})` });
-      nodes.push({ zone, place, mark, parts: drawNode(nodeLayer, mark, zone.waypoint !== null, place.x, place.y), clear, state: null, side: null });
+      const parts: NodeParts = drawNode(nodeLayer, mark, zone.waypoint !== null, place.x, place.y);
+      tint(parts.group, chainTint(act, place));
+      nodes.push({ zone, place, mark, parts, clear, state: null, side: null });
     }
     setText(actTitle, act.title, false);
     setText(actName, act.name, false);
@@ -246,7 +261,7 @@ export function createMapPanel(parent: HTMLElement, context: HudContext, close: 
     const halfWidth: number = frame.width / (2 * opened.scale);
     const halfHeight: number = frame.height / (2 * opened.scale);
     const bounds: LabelBox = { left: Math.max(0, opened.x - halfWidth), top: Math.max(0, opened.y - halfHeight), right: Math.min(frame.mapWidth, opened.x + halfWidth), bottom: Math.min(frame.mapHeight, opened.y + halfHeight) };
-    const sides: LabelSide[] = placeLabels(spots, { bounds, gap: NODE.nameGap * scale, margin: MAP.labelMargin * scale });
+    const sides: LabelSide[] = placeLabels(spots, { bounds, gap: NODE.nameGap * scale, margin: MAP.labelMargin * scale, clear: MAP.labelClear * scale });
     shown.nodes.forEach((node: NodeView, index: number): void => {
       const side: LabelSide = sides[index] ?? 'hidden';
       const spot: LabelSpot | undefined = local[index];

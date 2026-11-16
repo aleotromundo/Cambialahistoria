@@ -22,6 +22,9 @@ import type { SkillVfx } from './vfx-types.ts';
 import type { XpCurve } from './xp-types.ts';
 import type { BossDef, PieceStrikes } from './boss-types.ts';
 import type { SceneDef } from './scene-types.ts';
+import type { AtlasDef } from './atlas-types.ts';
+export type { AtlasChain, AtlasDef, AtlasFeature, AtlasFeatureKind, AtlasLabel, AtlasPoint, AtlasRoad, MapPlace } from './atlas-types.ts';
+export { ATLAS_FEATURE_KINDS } from './atlas-types.ts';
 export type { BossAnchor, BossBarks, BossDef, BossDrop, BossFirstKill, BossPhase, BossPoise, BossPresence, BossSkill, CountBreak, PieceStrikes } from './boss-types.ts';
 export type { XpCurve, XpGap, XpReduction } from './xp-types.ts';
 export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
@@ -528,51 +531,6 @@ export interface MonsterScaling {
   readonly damagePerLevel: number;
   readonly xpPerLevel: number;
   readonly ramp: ScalingRamp | null;
-}
-
-export interface MapPlace {
-  readonly zone: string;
-  readonly x: number;
-  readonly y: number;
-  readonly label: string | null;
-  readonly when: readonly Condition[];
-}
-
-export interface AtlasPoint {
-  readonly x: number;
-  readonly y: number;
-}
-
-export const ATLAS_FEATURE_KINDS = ['coast', 'ridge', 'river', 'forest', 'marsh'] as const;
-export type AtlasFeatureKind = (typeof ATLAS_FEATURE_KINDS)[number];
-
-export interface AtlasFeature {
-  readonly kind: AtlasFeatureKind;
-  readonly points: readonly AtlasPoint[];
-}
-
-export interface AtlasRoad {
-  readonly from: string;
-  readonly to: string;
-  readonly via: readonly AtlasPoint[];
-}
-
-export interface AtlasLabel {
-  readonly text: string;
-  readonly x: number;
-  readonly y: number;
-  readonly size: number;
-  readonly tilt: number;
-}
-
-export interface AtlasDef {
-  readonly width: number;
-  readonly height: number;
-  readonly compass: AtlasPoint;
-  readonly places: readonly MapPlace[];
-  readonly roads: readonly AtlasRoad[];
-  readonly features: readonly AtlasFeature[];
-  readonly labels: readonly AtlasLabel[];
 }
 
 export interface ActDef {

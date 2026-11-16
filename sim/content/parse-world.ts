@@ -1,8 +1,9 @@
 import type { Fields } from './read.ts';
 import { packMods } from './parse-combat.ts';
-import { byId, choice, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
+import { byId, choice, colour, ContentError, each, fields, flag, nonNegative, nullableText, numeric, positive, text, textList } from './read.ts';
 import type {
   ActDef,
+  AtlasChain,
   AtlasDef,
   AtlasFeature,
   AtlasLabel,
@@ -355,7 +356,12 @@ export function npcs(value: unknown, where: string): Map<string, NpcDef> {
 
 function mapPlace(value: unknown, where: string): MapPlace {
   const source: Fields = fields(value, where);
-  return { zone: text(source, 'zone', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where), label: nullableText(source, 'label', where), when: conditions(source, 'when', where) };
+  return { zone: text(source, 'zone', where), x: numeric(source, 'x', where), y: numeric(source, 'y', where), label: nullableText(source, 'label', where), chain: nullableText(source, 'chain', where), when: conditions(source, 'when', where) };
+}
+
+function atlasChain(value: unknown, where: string): AtlasChain {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), tint: colour(source, 'tint', where) };
 }
 
 function atlasPoint(value: unknown, where: string): AtlasPoint {
@@ -387,6 +393,7 @@ function atlas(value: unknown, where: string): AtlasDef {
     height: positive(source, 'height', where),
     compass: atlasPoint(source['compass'], `${where}.compass`),
     places: each(source['places'], `${where}.places`, mapPlace),
+    chains: source['chains'] === undefined ? [] : each(source['chains'], `${where}.chains`, atlasChain),
     roads: each(source['roads'], `${where}.roads`, atlasRoad),
     features: each(source['features'], `${where}.features`, atlasFeature),
     labels: each(source['labels'], `${where}.labels`, atlasLabel),

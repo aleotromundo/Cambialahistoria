@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import { boxesMeet, labelBox, nodeBox, placeLabels } from './atlas-labels.ts';
 import type { LabelBox, LabelRoom, LabelSide, LabelSpot, ShownSide } from './atlas-labels.ts';
 
-const ROOM: LabelRoom = { bounds: { left: 0, top: 0, right: 1000, bottom: 600 }, gap: 6, margin: 4 };
+const ROOM: LabelRoom = { bounds: { left: 0, top: 0, right: 1000, bottom: 600 }, gap: 6, margin: 4, clear: 0 };
+const OWNED: LabelRoom = { ...ROOM, clear: 24 };
 
 function spot(x: number, y: number, width: number = 80, keep: number = 1): LabelSpot {
   return { x, y, reach: 19, width, height: 16, keep };
@@ -68,4 +69,17 @@ void test('a label is never placed over another node', (): void => {
   const shown: ShownSide | 'hidden' = sides[0] ?? 'hidden';
   assert.notEqual(shown, 'below');
   assert.deepEqual(overlaps(spots, sides, ROOM), []);
+});
+
+void test('two labels never face each other in the gap between their nodes', (): void => {
+  const room: LabelRoom = { ...OWNED, bounds: { ...OWNED.bounds, bottom: 430 } };
+  const spots: LabelSpot[] = [spot(500, 300, 60), spot(500, 400, 990)];
+  assert.deepEqual(placeLabels(spots, { ...room, clear: 0 }), ['below', 'above']);
+  assert.deepEqual(placeLabels(spots, room), ['right', 'above']);
+});
+
+void test('a label sits nearer its own node than any other by the clear distance', (): void => {
+  const spots: LabelSpot[] = [spot(500, 300, 60), spot(560, 345, 60)];
+  assert.deepEqual(placeLabels(spots, ROOM), ['below', 'below']);
+  assert.deepEqual(placeLabels(spots, OWNED), ['left', 'below']);
 });

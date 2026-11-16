@@ -217,6 +217,10 @@
   stroke: var(--ember);
 }
 
+.atlas-road.walked:where(.chained) .atlas-road-line {
+  stroke: var(--chain-tint);
+}
+
 .atlas-road.locked .atlas-road-bed {
   opacity: 0.6;
 }
@@ -379,6 +383,11 @@
 
 .atlas-node.visited .atlas-name {
   fill: var(--text);
+}
+
+.atlas-node.visited:where(.chained) .atlas-name,
+.atlas-node.visited:where(.chained) .atlas-mark {
+  fill: var(--chain-tint);
 }
 
 .atlas-node.visited .atlas-way,

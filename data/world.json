@@ -53,12 +53,14 @@
             "zone": "under_hall",
             "x": 655,
             "y": 410,
+            "chain": "hourfall",
             "when": [{"type": "flag", "flag": "keeper_defeated", "is": "defeated", "not": false}]
           },
           {
             "zone": "ledger_hall",
             "x": 665,
             "y": 245,
+            "chain": "columned_hall",
             "when": [{"type": "visited", "zone": "ledger_hall", "not": false}]
           },
           {
@@ -66,6 +68,7 @@
             "x": 555,
             "y": 395,
             "label": "Level 2",
+            "chain": "hourfall",
             "when": [{"type": "visited", "zone": "under_hall", "not": false}]
           },
           {
@@ -73,6 +76,7 @@
             "x": 455,
             "y": 365,
             "label": "Level 3",
+            "chain": "hourfall",
             "when": [{"type": "visited", "zone": "under_hall_2", "not": false}]
           },
           {
@@ -80,6 +84,7 @@
             "x": 765,
             "y": 270,
             "label": "Level 2",
+            "chain": "columned_hall",
             "when": [{"type": "visited", "zone": "ledger_hall_2", "not": false}]
           },
           {
@@ -87,18 +92,21 @@
             "x": 865,
             "y": 255,
             "label": "Level 3",
+            "chain": "columned_hall",
             "when": [{"type": "visited", "zone": "ledger_hall_3", "not": false}]
           },
           {
             "zone": "ledger_court",
             "x": 955,
             "y": 300,
+            "chain": "columned_hall",
             "when": [{"type": "visited", "zone": "ledger_court", "not": false}]
           },
           {
             "zone": "lava_depths",
             "x": 375,
             "y": 305,
+            "chain": "lava",
             "when": [{"type": "visited", "zone": "under_hall_3", "not": false}]
           },
           {
@@ -106,6 +114,7 @@
             "x": 465,
             "y": 260,
             "label": "Level 2",
+            "chain": "lava",
             "when": [{"type": "visited", "zone": "lava_depths", "not": false}]
           },
           {
@@ -113,8 +122,14 @@
             "x": 565,
             "y": 285,
             "label": "Level 3",
+            "chain": "lava",
             "when": [{"type": "visited", "zone": "lava_depths_2", "not": false}]
           }
+        ],
+        "chains": [
+          {"id": "hourfall", "tint": "#a9c4b0"},
+          {"id": "lava", "tint": "#e0876b"},
+          {"id": "columned_hall", "tint": "#c9b8e6"}
         ],
         "roads": [
           {

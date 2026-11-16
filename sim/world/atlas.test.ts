@@ -26,7 +26,7 @@ const peak: ZoneDef = roadZone({ id: 'peak', exits: [exitTo('vale', [], false)] 
 const hollow: ZoneDef = roadZone({ id: 'hollow', exits: [exitTo('vale', [], false)] });
 const atlas: AtlasDef = {
   ...act.atlas,
-  places: ['hub', 'vale', 'keep', 'peak', 'hollow'].map((zone: string, index: number): MapPlace => ({ zone, x: 100 + index * 100, y: 200, label: null, when: [] })),
+  places: ['hub', 'vale', 'keep', 'peak', 'hollow'].map((zone: string, index: number): MapPlace => ({ zone, x: 100 + index * 100, y: 200, label: null, chain: null, when: [] })),
   roads: [['hub', 'vale'], ['hub', 'keep'], ['vale', 'peak'], ['vale', 'hollow']].map(([from, to]): AtlasRoad => ({ from: from ?? '', to: to ?? '', via: [] })),
 };
 const mapped: Content = { ...roadAct([hub, vale, keep, peak, hollow], 'hub'), quests: new Map<string, QuestDef>([[errand.id, errand]]) };

@@ -29,3 +29,9 @@ void test('a map label may not be empty', (): void => {
   const blank: MapPlace = { ...must(first, 'first place'), label: ' ' };
   assert.ok(atlasProblems(withPlaces([blank, ...rest])).includes(`act ${act.id} gives zone ${blank.zone} an empty map label`));
 });
+
+void test('a place may only join a chain its act names', (): void => {
+  const [first, ...rest] = act.atlas.places;
+  const lost: MapPlace = { ...must(first, 'first place'), chain: 'nowhere' };
+  assert.ok(atlasProblems(withPlaces([lost, ...rest])).includes(`act ${act.id} puts zone ${lost.zone} in unknown chain nowhere`));
+});
