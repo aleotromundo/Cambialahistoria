@@ -48,6 +48,7 @@ export interface CaveJob {
   readonly raise: number;
   readonly gear: readonly string[];
   readonly dress?: boolean;
+  readonly arm?: readonly string[];
   readonly enterLevel: number;
   readonly minutes: number;
   readonly skill: string;
@@ -331,9 +332,12 @@ function wear(world: World, bases: readonly string[]): void {
   }
 }
 
-export function dressHero(world: World, build: BuildPolicy, seed: number): void {
+export function dressHero(world: World, build: BuildPolicy, seed: number, arm: readonly string[] = []): void {
+  const strange: string | undefined = arm.find((kind: string): boolean => !WEAPON_KINDS.some((known: string): boolean => known === kind));
+  if (strange !== undefined) throw new Error(`no weapon kind ${strange}; the kinds are ${WEAPON_KINDS.join(', ')}`);
   const held: string | null = world.player.equipped.weapon === null ? null : (world.content.itemBases.get(world.player.equipped.weapon.base)?.weaponKind ?? null);
-  const plan: ArmPlan = { arm: { name: build.name, build: build.name, kinds: held === null ? [...WEAPON_KINDS] : [held] }, weights: build.weights, focus: build.focus, route: world.player.allocated };
+  const kinds: string[] = arm.length > 0 ? [...arm] : held === null ? [...WEAPON_KINDS] : [held];
+  const plan: ArmPlan = { arm: { name: build.name, build: build.name, kinds }, weights: build.weights, focus: build.focus, route: world.player.allocated };
   world.player.equipped = typicalGear(world.content, plan, world.player.level, createRng(seed));
   refreshPlayer(world);
   world.player.life = world.player.maxLife;
@@ -360,7 +364,7 @@ export function runCave(job: CaveJob, policies: Policies): CaveRun {
   farm(bot, world.time + CAVE.climbMinutes * 60, skill.loot, (): boolean => world.player.level >= job.enterLevel);
   for (const before of through) if (before !== undefined) sweepZone(bot, { zone: before, tally: emptyTally(), skill: job.skill, stopWhenClear: true }, world.time + CAVE.throughMinutes * 60);
   raiseTo(world, job.raise);
-  if (job.dress === true) dressHero(world, build, job.seed);
+  if (job.dress === true) dressHero(world, build, job.seed, job.arm ?? []);
   wear(world, job.gear);
   const enteredAtLevel: number = world.player.level;
   inside = true;

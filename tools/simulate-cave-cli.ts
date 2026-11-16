@@ -40,7 +40,7 @@ for (const build of option('build', CAVE_CLI.builds).split(',')) {
   for (const skill of option('skill', CAVE_CLI.skills).split(',')) {
     const done: CaveRun[] = [];
     for (let seed: number = 1; seed <= runs; seed += 1) {
-      done.push(runCave({ zone: option('zone', CAVE_CLI.zone), through: list(option('through', CAVE_CLI.through)), raise, gear: list(option('gear', CAVE_CLI.gear)), dress: process.argv.includes('--dress'), enterLevel, minutes, skill, build, seed }, POLICIES));
+      done.push(runCave({ zone: option('zone', CAVE_CLI.zone), through: list(option('through', CAVE_CLI.through)), raise, gear: list(option('gear', CAVE_CLI.gear)), dress: process.argv.includes('--dress'), arm: list(option('arm', '')), enterLevel, minutes, skill, build, seed }, POLICIES));
       process.stderr.write(`${build} ${skill} ${seed}/${runs}\n`);
     }
     const row: CaveRow | null = caveRow(done);

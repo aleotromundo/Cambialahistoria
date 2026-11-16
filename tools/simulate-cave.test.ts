@@ -53,3 +53,14 @@ void test('a dressed hero wears gear of the level in every slot and starts at fu
   assert.ok(world.player.maxLife > before);
   assert.equal(world.player.life, world.player.maxLife);
 });
+
+void test('a dressed hero given an arm holds a weapon of that arm, and an unknown arm is refused', (): void => {
+  for (const arm of [['staff'], ['crossbow'], ['greatsword', 'blunt']]) {
+    const world: World = createWorld(CONTENT, { seed: 1, save: null });
+    world.player.level = 20;
+    dressHero(world, must(POLICIES.builds.get('tank'), 'tank'), 3, arm);
+    const weapon: string = must(world.player.equipped.weapon, 'weapon').base;
+    assert.ok(arm.includes(CONTENT.itemBases.get(weapon)?.weaponKind ?? ''), `${arm.join('/')} got ${weapon}`);
+  }
+  assert.throws((): void => dressHero(createWorld(CONTENT, { seed: 1, save: null }), must(POLICIES.builds.get('tank'), 'tank'), 3, ['spear']), /no weapon kind spear/);
+});
