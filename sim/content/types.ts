@@ -292,11 +292,17 @@ export interface ScalingRamp {
   readonly damagePerLevel: number;
 }
 
+export interface ScalingPoint {
+  readonly level: number;
+  readonly times: number;
+}
+
 export interface MonsterScaling {
   readonly lifePerLevel: number;
   readonly damagePerLevel: number;
   readonly xpPerLevel: number;
   readonly ramp: ScalingRamp | null;
+  readonly lifeTimes: readonly ScalingPoint[];
 }
 
 export interface ActDef {

@@ -20,6 +20,7 @@ import type {
   PackReturn,
   SurgeRules,
   TalkDef,
+  ScalingPoint,
   ScalingRamp,
   WorldDef,
   ZoneAmbience,
@@ -443,6 +444,23 @@ function scalingRamp(value: unknown, where: string): ScalingRamp | null {
   return { from, to, lifePerLevel: nonNegative(source, 'lifePerLevel', where), damagePerLevel: nonNegative(source, 'damagePerLevel', where) };
 }
 
+function scalingPoint(value: unknown, where: string): ScalingPoint {
+  const source: Fields = fields(value, where);
+  const level: number = positive(source, 'level', where);
+  if (!Number.isInteger(level)) throw new ContentError(`${where}.level`, 'expected a whole level');
+  return { level, times: positive(source, 'times', where) };
+}
+
+function lifeTimes(value: unknown, where: string): ScalingPoint[] {
+  if (value === undefined) return [];
+  const points: ScalingPoint[] = each(value, where, scalingPoint);
+  points.forEach((entry: ScalingPoint, index: number): void => {
+    const before: ScalingPoint | undefined = points[index - 1];
+    if (before !== undefined && entry.level <= before.level) throw new ContentError(`${where}[${index}].level`, 'levels must rise from one point to the next');
+  });
+  return points;
+}
+
 export function worldDef(value: unknown, where: string): WorldDef {
   const source: Fields = fields(value, where);
   const scaling: Fields = fields(source['scaling'], `${where}.scaling`);
@@ -459,6 +477,7 @@ export function worldDef(value: unknown, where: string): WorldDef {
       damagePerLevel: numeric(scaling, 'damagePerLevel', `${where}.scaling`),
       xpPerLevel: numeric(scaling, 'xpPerLevel', `${where}.scaling`),
       ramp: scalingRamp(scaling['ramp'], `${where}.scaling.ramp`),
+      lifeTimes: lifeTimes(scaling['lifeTimes'], `${where}.scaling.lifeTimes`),
     },
   };
 }

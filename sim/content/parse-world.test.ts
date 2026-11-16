@@ -60,6 +60,16 @@ void test('the monster toughness ramp is read when given, absent means flat, and
   assert.throws((): WorldDef => withScaling({ ...flat, ramp: { ...ramp, lifePerLevel: -1 } }), /world\.scaling\.ramp/);
 });
 
+void test('monster life times are read in rising order, absent means none, and a falling level or a part level is refused', (): void => {
+  const flat = { lifePerLevel: 0.3, damagePerLevel: 0.28, xpPerLevel: 0.15 };
+  const lifeTimes = [{ level: 13, times: 1 }, { level: 20, times: 3.2 }];
+  assert.deepEqual(withScaling({ ...flat, lifeTimes }).scaling.lifeTimes, lifeTimes);
+  assert.deepEqual(withScaling(flat).scaling.lifeTimes, []);
+  assert.throws((): WorldDef => withScaling({ ...flat, lifeTimes: [{ level: 20, times: 2 }, { level: 15, times: 3 }] }), /must rise/);
+  assert.throws((): WorldDef => withScaling({ ...flat, lifeTimes: [{ level: 13.5, times: 2 }] }), /whole level/);
+  assert.throws((): WorldDef => withScaling({ ...flat, lifeTimes: [{ level: 13, times: 0 }] }), /world\.scaling\.lifeTimes/);
+});
+
 void test('a zone parses with its kind, level, exits, checkpoints, surge rules and ambience', (): void => {
   const lit = { type: 'flag', flag: 'opening', is: 'read' };
   const dressed = { ...waystation, props: [...waystation.props, { prop: 'candles', x: 26, z: 30, y: 0, rotationDegrees: 0, when: [lit] }] };
