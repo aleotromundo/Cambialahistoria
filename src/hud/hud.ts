@@ -344,6 +344,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     handleEvents(events: readonly WorldEvent[]): void {
       pending.push(...events);
+      let characterChanged: boolean = false;
       for (const event of events) {
         switch (event.type) {
           case 'damage':
@@ -427,9 +428,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             xp.gained(event.reduced);
             break;
           case 'character_changed':
-            refreshOpen('inventory');
-            refreshOpen('character');
-            refreshOpen('tree');
+            characterChanged = true;
             break;
           case 'pickup': {
             refreshOpen('inventory');
@@ -494,6 +493,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'flasks_refilled':
             break;
         }
+      }
+      if (characterChanged) {
+        refreshOpen('inventory');
+        refreshOpen('character');
+        refreshOpen('tree');
       }
     },
     showGroundItem(item: ItemInstance, x: number, y: number): void {
