@@ -30,6 +30,7 @@ export const OVERLAYS = {
   pinGlyph: '!',
   numberLife: 1,
   numberDrift: 26,
+  numberPool: 48,
   chestHeight: 1.6,
   labelLift: 1.35,
   findLift: 3.15,
@@ -53,8 +54,13 @@ export const OVERLAYS = {
   waypointName: 'Waypoint',
 } as const;
 
-interface FloatingNumber {
+interface NumberNode {
   readonly element: HTMLDivElement;
+  readonly inner: HTMLSpanElement;
+}
+
+interface FloatingNumber {
+  readonly node: NumberNode;
   readonly x: number;
   readonly y: number;
   readonly z: number;
@@ -181,6 +187,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   let hudRects: ScreenRect[] = [];
   let sinceHudRead: number = Infinity;
   const numbers: FloatingNumber[] = [];
+  const spareNumbers: NumberNode[] = [];
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
   let view: ViewSize = { width: root.clientWidth, height: root.clientHeight };
@@ -274,15 +281,25 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const healthBars: HealthBars = createHealthBars(root, camera);
   const targetBar: TargetBar = createTargetBar(root);
 
-  const float = (text: string, kind: string, x: number, y: number, z: number): void => {
+  const numberNode = (): NumberNode => {
+    const spare: NumberNode | undefined = spareNumbers.pop();
+    if (spare !== undefined) {
+      spare.element.style.transform = '';
+      return spare;
+    }
     const element: HTMLDivElement = document.createElement('div');
-    element.className = `damage-number ${kind}`;
     const inner: HTMLSpanElement = document.createElement('span');
-    inner.textContent = text;
-    inner.style.setProperty('--drift', `${((Math.random() - 0.5) * 2 * OVERLAYS.numberDrift).toFixed(0)}px`);
     element.append(inner);
-    numberLayer.append(element);
-    numbers.push({ element, x, y, z, age: 0 });
+    return { element, inner };
+  };
+
+  const float = (text: string, kind: string, x: number, y: number, z: number): void => {
+    const node: NumberNode = numberNode();
+    node.element.className = `damage-number ${kind}`;
+    node.inner.textContent = text;
+    node.inner.style.setProperty('--drift', `${((Math.random() - 0.5) * 2 * OVERLAYS.numberDrift).toFixed(0)}px`);
+    numberLayer.append(node.element);
+    numbers.push({ node, x, y, z, age: 0 });
   };
 
   const foldLabel = (label: LootLabel, folded: boolean, more: number): void => {
@@ -604,12 +621,13 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (number === undefined) continue;
         number.age += dt;
         if (number.age > OVERLAYS.numberLife) {
-          number.element.remove();
+          number.node.element.remove();
+          if (spareNumbers.length < OVERLAYS.numberPool) spareNumbers.push(number.node);
           numbers.splice(index, 1);
           continue;
         }
         camera.project(number.x, number.y, number.z, point);
-        place(number.element, point);
+        place(number.node.element, point);
       }
 
       healthBars.update(dt, world, (actorId: number): number => hooks.heightOf(actorId));
