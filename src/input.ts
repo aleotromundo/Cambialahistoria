@@ -24,8 +24,10 @@ import { PICK, pickActor } from './pick.ts';
 import { exitPress } from './exit-press.ts';
 import type { ItemPress } from './item-press.ts';
 import { itemPress } from './item-press.ts';
-import type { KeyWalk } from './move-keys.ts';
-import { createKeyWalk } from './move-keys.ts';
+import type { KeyWalk, MoveKeys } from './move-keys.ts';
+import { createKeyWalk, keysDirection } from './move-keys.ts';
+import { heroMotion, motionAim } from './skill-steer.ts';
+import type { SkillDef } from '../sim/content/types.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import { CAMERA } from './render/iso-camera.ts';
 import { clickThrough } from './render/prop-cutaway.ts';
@@ -130,7 +132,9 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let dropToggle: boolean = false;
   let overUi: boolean = false;
   const extra: Command[] = [];
-  const keyWalk: KeyWalk = createKeyWalk((CAMERA.yawDegrees * Math.PI) / INPUT.halfTurnDegrees);
+  const yaw: number = (CAMERA.yawDegrees * Math.PI) / INPUT.halfTurnDegrees;
+  const keyWalk: KeyWalk = createKeyWalk(yaw);
+  let touching: boolean = false;
   const down = (action: ActionId): boolean => settings.keys().bindingsOf(action).some((binding: string): boolean => held.has(binding));
   const canvasRect: SurfaceRect = surfaceRect(canvas);
 
@@ -171,12 +175,14 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     track(event);
     shift = event.shiftKey;
     pointerInside = true;
+    touching = event.pointerType === 'touch';
     follow(event);
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener('pointermove', (event: PointerEvent): void => {
     track(event);
     mouse = event.pointerType === 'mouse';
+    touching = event.pointerType === 'touch';
     shift = event.shiftKey;
     pointerInside = true;
     follow(event);
@@ -321,7 +327,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     return stationNear(world, ground) ?? cacheNear(world, ground);
   };
 
-  const reading = (): InputReading => ({ click: lastClick, held: INPUT.mouseButtons.filter((mouseButton: MouseButton): boolean => held.has(mouseButton.binding)).map((mouseButton: MouseButton): string => mouseButton.name), inside: pointerInside, overUi, toggled: toggled === null ? null : (world.player.skills[toggled.slot]?.name ?? null) });
+  const reading = (): InputReading => ({ click: lastClick, held: INPUT.mouseButtons.filter((mouseButton: MouseButton): boolean => held.has(mouseButton.binding)).map((mouseButton: MouseButton): string => mouseButton.name), inside: pointerInside, overUi, toggled: toggled === null ? null : (world.player.skills[toggled.slot]?.name ?? null), movement: settings.get().movement === 'keys' && !touching ? 'keys' : 'click' });
   hud.readInput((): string => describeInput(reading()));
 
   return {
@@ -336,6 +342,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     },
     tap(clientX: number, clientY: number): void {
       trackPoint(clientX, clientY);
+      touching = true;
       pointerInside = true;
       tapping = true;
       shift = false;
@@ -344,6 +351,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     },
     holdAt(clientX: number, clientY: number): void {
       trackPoint(clientX, clientY);
+      touching = true;
       pointerInside = true;
       shift = false;
       press(INPUT.leftBinding);
@@ -397,7 +405,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       }
       canvas.style.cursor = target !== null ? 'crosshair' : item !== null || exit !== null || person !== null || other !== null || chest !== null || station !== null || portal !== null || marked ? 'pointer' : 'default';
       const aim: Vec2 | null = target === null ? ground : { x: target.pos.x, z: target.pos.z };
-      const byKeys: boolean = settings.get().movement === 'keys';
+      const byKeys: boolean = settings.get().movement === 'keys' && !touching;
       const leftSlot: number = slotFor(INPUT.leftBinding);
       const fresh: Set<string> = new Set<string>(pressed.splice(0, pressed.length));
       const up: Set<string> = new Set<string>(lifted.splice(0, lifted.length));
@@ -453,10 +461,14 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         const action: ActionId | null = flaskAction(slot);
         if (action !== null && settings.keys().bindingsOf(action).some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'flask', slot });
       });
-      if (byKeys) commands.push(...keyWalk.step({ up: down('moveUp'), down: down('moveDown'), left: down('moveLeft'), right: down('moveRight') }, world.player.pos));
-      if (aim === null || ground === null) return commands;
+      const moveKeys: MoveKeys = { up: down('moveUp'), down: down('moveDown'), left: down('moveLeft'), right: down('moveRight') };
+      if (byKeys) commands.push(...keyWalk.step(moveKeys, world.player.pos));
+      const keyWay: Vec2 | null = byKeys ? keysDirection(moveKeys, yaw) : null;
+      const aimFor = (skill: SkillDef | null, cursor: Vec2 | null): Vec2 | null => (skill === null ? cursor : motionAim(heroMotion(skill), { movement: byKeys ? 'keys' : 'click', keys: keyWay, cursor, from: world.player.pos }));
       const steering = world.player.action;
-      if (steering !== null && steering.slot !== null && steering.skill.press !== null && (toggled?.slot === steering.slot || settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding)))) commands.push({ type: 'steer', aim });
+      const steerAim: Vec2 | null = steering === null ? null : aimFor(steering.skill, aim === null || ground === null ? null : aim);
+      if (steering !== null && steerAim !== null && steering.slot !== null && steering.skill.press !== null && (toggled?.slot === steering.slot || settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding)))) commands.push({ type: 'steer', aim: steerAim });
+      if (aim === null || ground === null) return commands;
 
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);
       if (leftFresh) hud.requestMap(marked && !shift);
@@ -473,7 +485,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         switch (click.kind) {
           case 'skill':
             if (leftFresh && (world.player.skills[leftSlot] ?? null) !== null) endToggle();
-            if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: target === null ? ground : aim, targetId: target?.id ?? null });
+            if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: aimFor(world.player.skills[leftSlot] ?? null, target === null ? ground : aim) ?? ground, targetId: target?.id ?? null });
             if (leftFresh && target !== null) hooks.clickMarker(target.pos.x, target.pos.z, true);
             break;
           case 'talk':
@@ -531,7 +543,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
           if (binding === INPUT.leftBinding || spent.has(binding)) continue;
           const isFresh: boolean = fresh.has(binding);
           if (!isFresh && !(held.has(binding) && readyToRepeat(world.player, world.player.skills[slot]))) continue;
-          commands.push({ type: 'skill', slot, aim, targetId: null });
+          commands.push({ type: 'skill', slot, aim: aimFor(world.player.skills[slot] ?? null, aim) ?? aim, targetId: null });
           return;
         }
       });

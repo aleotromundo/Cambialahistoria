@@ -121,3 +121,59 @@ void test('a move key held while a text field takes the focus is let go, and a b
   setup.focus(field);
   assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'stop' }]);
 });
+
+const KEY_WAYS: readonly { readonly codes: readonly string[]; readonly keys: MoveKeys }[] = [
+  { codes: ['KeyW'], keys: { ...NONE, up: true } },
+  { codes: ['KeyS'], keys: { ...NONE, down: true } },
+  { codes: ['KeyA'], keys: { ...NONE, left: true } },
+  { codes: ['KeyD'], keys: { ...NONE, right: true } },
+  { codes: ['KeyW', 'KeyA'], keys: { ...NONE, up: true, left: true } },
+  { codes: ['KeyW', 'KeyD'], keys: { ...NONE, up: true, right: true } },
+  { codes: ['KeyS', 'KeyA'], keys: { ...NONE, down: true, left: true } },
+  { codes: ['KeyS', 'KeyD'], keys: { ...NONE, down: true, right: true } },
+];
+
+function walkToward(setup: Rig, target: Vec2, seconds: number): void {
+  const { pos } = setup.world.player;
+  const yaw: number = (CAMERA.yawDegrees * Math.PI) / 180;
+  const score = (keys: MoveKeys): number => {
+    const way: Vec2 | null = keysDirection(keys, yaw);
+    return way === null ? -Infinity : way.x * (target.x - pos.x) + way.z * (target.z - pos.z);
+  };
+  const best = must(KEY_WAYS.toSorted((a, b): number => score(b.keys) - score(a.keys))[0], 'a way');
+  for (const code of best.codes) setup.fire('keydown', { code });
+  run(setup, seconds, (): boolean => false);
+  for (const code of best.codes) setup.fire('keyup', { code });
+  run(setup, DT * 2, (): boolean => false);
+}
+
+void test('walking by the keys into an exit, over an item or up to a person never travels, picks up or talks: each needs a click', (): void => {
+  const world: World = worldIn(content, 'hideout', 23);
+  const setup: Rig = rig(world);
+  setup.settings.setMovement('keys');
+  const exit = must(world.zone.exits[0], 'an exit');
+  const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  world.ground.push({ id: world.nextId++, pos: { x: start.x + (exit.x - start.x) * 0.3, z: start.z + (exit.z - start.z) * 0.3 }, from: { x: start.x, z: start.z }, content: { kind: 'item', item: { ...must(world.player.equipped.weapon, 'a weapon to drop'), uid: 99001 } }, find: null, age: 10, kept: false });
+  const lying: number = world.ground.length;
+  walkToward(setup, exit, 4);
+  assert.equal(world.zone.id, 'hideout', 'walked through the exit');
+  assert.ok(Math.hypot(world.player.pos.x - exit.x, world.player.pos.z - exit.z) < Math.hypot(start.x - exit.x, start.z - exit.z) - 3, 'the hero walked toward the exit');
+  assert.equal(world.ground.length, lying, 'walked over the item and picked it up');
+  const person = must(world.npcs[0], 'a person');
+  walkToward(setup, person.pos, 4);
+  assert.equal(world.dialogue, null, 'walked into a person and talked');
+});
+
+void test('a touch tap moves the hero by click even with the keys setting on, and the readout says which mode is live', (): void => {
+  const world: World = worldIn(content, 'under_hall_2', 22);
+  const setup: Rig = rig(world);
+  setup.settings.setMovement('keys');
+  setup.fire('pointermove', { clientX: 10, clientY: 10, pointerType: 'mouse' });
+  setup.input.collect(DT);
+  assert.equal(setup.input.reading.movement, 'keys');
+  const point: Vec2 = floorAhead(world);
+  setup.input.tap(point.x, point.z);
+  const commands: Command[] = setup.input.collect(DT);
+  assert.equal(commands.filter((command: Command): boolean => command.type === 'move').length, 1, JSON.stringify(commands));
+  assert.equal(setup.input.reading.movement, 'click');
+});

@@ -53,8 +53,8 @@ void test('with the keys moving the hero, a press on the ground attacks, and a p
 });
 
 void test('the readout line names the last press, the held buttons and where the pointer counts', (): void => {
-  assert.equal(describeInput({ click: null, held: [], inside: false, overUi: false, toggled: null }), 'no click yet · held none · off canvas');
-  assert.equal(describeInput({ click: { kind: 'talk', reason: 'label hover' }, held: ['left', 'right'], inside: true, overUi: true, toggled: null }), 'click talk: label hover · held left+right · in canvas · over UI');
-  assert.equal(describeInput({ click: { kind: 'move', reason: null }, held: ['left'], inside: true, overUi: false, toggled: null }), 'click move · held left · in canvas');
-  assert.equal(describeInput({ click: { kind: 'move', reason: 'held over exit' }, held: [], inside: true, overUi: false, toggled: 'Millwheel' }), 'click move: held over exit · held none · in canvas · Millwheel toggled on');
+  assert.equal(describeInput({ click: null, held: [], inside: false, overUi: false, toggled: null, movement: 'click' }), 'no click yet · held none · off canvas · moves by click');
+  assert.equal(describeInput({ click: { kind: 'talk', reason: 'label hover' }, held: ['left', 'right'], inside: true, overUi: true, toggled: null, movement: 'keys' }), 'click talk: label hover · held left+right · in canvas · over UI · moves by keys');
+  assert.equal(describeInput({ click: { kind: 'move', reason: null }, held: ['left'], inside: true, overUi: false, toggled: null, movement: 'click' }), 'click move · held left · in canvas · moves by click');
+  assert.equal(describeInput({ click: { kind: 'move', reason: 'held over exit' }, held: [], inside: true, overUi: false, toggled: 'Millwheel', movement: 'keys' }), 'click move: held over exit · held none · in canvas · Millwheel toggled on · moves by keys');
 });

@@ -1,3 +1,5 @@
+import type { Movement } from './settings/bindings.ts';
+
 export type ClickKind = 'move' | 'talk' | 'skill' | 'pickup' | 'open' | 'use' | 'portal' | 'exit' | 'player' | 'advance' | 'swallowed' | 'none';
 
 export type PersonPick = 'none' | 'body' | 'label';
@@ -32,6 +34,7 @@ export interface InputReading {
   readonly inside: boolean;
   readonly overUi: boolean;
   readonly toggled: string | null;
+  readonly movement: Movement;
 }
 
 export function resolveClick(facts: ClickFacts): ClickResolution {
@@ -61,8 +64,10 @@ export function resolveClick(facts: ClickFacts): ClickResolution {
   return { kind: 'move', reason: null };
 }
 
+const MOVED_BY: Readonly<Record<Movement, string>> = { click: 'moves by click', keys: 'moves by keys' };
+
 export function describeInput(reading: InputReading): string {
   const click: string = reading.click === null ? 'no click yet' : `click ${reading.click.kind}${reading.click.reason === null ? '' : `: ${reading.click.reason}`}`;
   const held: string = reading.held.length === 0 ? 'none' : reading.held.join('+');
-  return `${click} · held ${held} · ${reading.inside ? 'in canvas' : 'off canvas'}${reading.overUi ? ' · over UI' : ''}${reading.toggled === null ? '' : ` · ${reading.toggled} toggled on`}`;
+  return `${click} · held ${held} · ${reading.inside ? 'in canvas' : 'off canvas'}${reading.overUi ? ' · over UI' : ''}${reading.toggled === null ? '' : ` · ${reading.toggled} toggled on`} · ${MOVED_BY[reading.movement]}`;
 }
