@@ -7,6 +7,7 @@ import { namedSkill } from '../builds.ts';
 import type { GuideData } from '../data.ts';
 import { buildMeasure, focusSkill, levelForPlace, measuredNow, path, place, route, topLevel } from '../data.ts';
 import { bullets, decimal, esc, list, minutes, note, para, percent, section, signedPercent } from '../html.ts';
+import { signatureSection } from '../signature.ts';
 import { treePicture } from '../tree-picture.ts';
 import type { NamedMeasure } from './measured-view.ts';
 import { barChart, bossAt, levelMinutes, measuredTable } from './measured-view.ts';
@@ -175,6 +176,7 @@ export function buildPage(data: GuideData, notes: BuildNotes): string {
   const top: number = topLevel(data.spec);
   return [
     section('glance', 'At a glance', glance(data, notes, order)),
+    signatureSection(data, notes.id),
     section('plays', 'How it plays', para(...notes.plays)),
     section(
       'route',
