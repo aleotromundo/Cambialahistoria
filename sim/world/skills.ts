@@ -17,7 +17,7 @@ import { skillAllowed } from '../weapons.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
-import { feedMomentum, glidesWith, momentumOf, momentumStep } from './momentum.ts';
+import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
 import type { ActionState, Actor, EchoState, NoticeReason, PlayerState, ProjectileState, QueuedShot, Team, World } from './types.ts';
@@ -167,7 +167,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const target: Vec2 | null = aimsAhead ? { x: actor.pos.x + aim.x * reach, z: actor.pos.z + aim.z * reach } : null;
   const travelSpeed: number = skill.leap === null ? 0 : reach / Math.min(windup, skill.leap.airTime);
   const goal: Vec2 | null = glidesWith(skill.press) ? { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z } : null;
-  actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal };
+  actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0 };
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });
 }
@@ -313,6 +313,14 @@ export function channelInterval(actor: Actor, skill: SkillDef, interval: number)
   return interval / (speed * turn);
 }
 
+export function turnRate(actor: Actor, action: ActionState): number {
+  const press: PressDef | null = action.skill.press;
+  if (press?.type !== 'channel' || !glidesWith(press) || action.phase === 'recovery') return 0;
+  const full: number = MOMENTUM.fullTurn / channelInterval(actor, action.skill, press.interval);
+  if (action.phase === 'channel' || action.windup <= 0) return full;
+  return full * Math.min(1, Math.max(0, 1 - action.timeLeft / action.windup));
+}
+
 function resolveImpact(world: World, actor: Actor, action: ActionState, skill: SkillDef): void {
   const hits: number = resolve(world, { actor, offence: offenceOf(actor), skill: spunSkill(actor, skill), origin: actor.pos, direction: action.direction, target: action.target, echo: false }, teamOf(actor));
   feedMomentum(actor, skill, hits);
@@ -341,7 +349,8 @@ function land(world: World, actor: Actor, action: ActionState): void {
   action.travelLeft = 0;
 }
 
-function toRecovery(action: ActionState): void {
+function toRecovery(actor: Actor, action: ActionState): void {
+  settleTurn(actor, action);
   action.phase = 'recovery';
   action.timeLeft = Math.max(0, action.timeLeft) + action.recovery;
 }
@@ -349,13 +358,13 @@ function toRecovery(action: ActionState): void {
 function stepChannel(world: World, actor: Actor, action: ActionState): void {
   const hold: PressDef | null = action.skill.press;
   if (hold?.type !== 'channel' || !isHeld(actor, action) || action.elapsed >= hold.max) {
-    toRecovery(action);
+    toRecovery(actor, action);
     return;
   }
   while (action.timeLeft <= 0) {
     if (!payCost(actor, action.skill)) {
       world.events.push({ type: 'notice', reason: 'no_mana' });
-      toRecovery(action);
+      toRecovery(actor, action);
       return;
     }
     action.timeLeft += channelInterval(actor, action.skill, hold.interval);
@@ -375,6 +384,7 @@ function finishWindup(world: World, actor: Actor, action: ActionState): void {
     action.timeLeft = Math.max(0, action.timeLeft) + channelInterval(actor, action.skill, hold.interval);
     action.elapsed = 0;
   } else {
+    settleTurn(actor, action);
     action.phase = 'recovery';
     action.timeLeft += action.recovery;
   }
@@ -389,6 +399,7 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
   stepDash(gridFor(world, actor), actor, action, dt);
   action.timeLeft -= dt;
   action.elapsed += dt;
+  action.turned = (action.turned + turnRate(actor, action) * dt) % MOMENTUM.fullTurn;
   if (action.phase === 'windup' && action.travelLeft > 0 && action.timeLeft < action.travelLeft / action.travelSpeed + dt) {
     const step: number = Math.min(action.travelLeft, action.travelSpeed * dt);
     moveWithCollision(gridFor(world, actor), actor.pos, action.direction.x * step, action.direction.z * step);

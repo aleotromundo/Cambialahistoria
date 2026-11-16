@@ -18,7 +18,7 @@ import { mayStrike, provoke, regardOf } from './factions.ts';
 import { gainFlaskCharges } from './flask-charges.ts';
 import { dropOnGround } from './ground.ts';
 import { steadiness } from './poise.ts';
-import { steadied } from './momentum.ts';
+import { settleTurn, steadied } from './momentum.ts';
 import { flinchTogether } from './unison.ts';
 import { dealtScale } from './weaken.ts';
 import { holdLine, openScale, strike } from './count.ts';
@@ -128,6 +128,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   target.alive = false;
   target.life = 0;
   if (target.kind === 'monster' && target.def.boss?.yields === true) target.yielded = true;
+  if (target.action !== null) settleTurn(target, target.action);
   target.action = null;
   target.moving = false;
   target.deadTime = 0;
@@ -220,6 +221,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
       target.stagger = Math.max(target.stagger, stagger);
       if (target.action?.phase === 'windup') {
         target.interrupts += 1;
+        settleTurn(target, target.action);
         target.action = null;
         world.events.push({ type: 'skill_interrupt', actorId: target.id });
       }

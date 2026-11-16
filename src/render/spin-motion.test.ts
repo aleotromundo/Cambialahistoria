@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { arena, ARENA_CENTRE } from '../../test/arena-support.ts';
+import { must } from '../../test/support.ts';
 import { shapeSkill } from '../../test/shape-support.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { World } from '../../sim/world/types.ts';
@@ -12,12 +13,12 @@ const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', animation:
 
 function spinning(world: World): void {
   world.player.skills = [SPIN];
-  world.player.action = { skill: SPIN, phase: 'channel', timeLeft: 0.2, windup: 0.1, recovery: 0.1, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: 0, elapsed: 0, goal: null };
+  world.player.action = { skill: SPIN, phase: 'channel', timeLeft: 0.2, windup: 0.1, recovery: 0.1, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: 0, elapsed: 0, goal: null, turned: 0 };
 }
 
 void test('the spin reads its turn rate, reach, momentum share and steadiness from the sim, and nothing while the hero is not spinning', (): void => {
   const world: World = arena(1);
-  assert.deepEqual(readSpin(world.player), { spinning: false, turnSpeed: 0, share: 0, steady: false, reach: SPIN_MOTION.restReach, animation: null });
+  assert.deepEqual(readSpin(world.player), { spinning: false, turnSpeed: 0, turned: 0, share: 0, steady: false, reach: SPIN_MOTION.restReach, animation: null });
   spinning(world);
   const slow: SpinRead = readSpin(world.player);
   assert.ok(slow.spinning);
@@ -34,7 +35,7 @@ void test('the spin reads its turn rate, reach, momentum share and steadiness fr
 
 void test('turn speed, reach and the momentum share ease toward the sim, never jumping in one frame', (): void => {
   const motion: SpinMotion = createSpinMotion();
-  const read: SpinRead = { spinning: true, turnSpeed: 25, share: 1, steady: true, reach: 4, animation: 'sweep' };
+  const read: SpinRead = { spinning: true, turnSpeed: 25, turned: 0, share: 1, steady: true, reach: 4, animation: 'sweep' };
   stepSpinMotion(motion, read, ARENA_CENTRE, DT);
   assert.ok(motion.speed.value > 0 && motion.speed.value < 25 * 0.5, `${motion.speed.value}`);
   assert.ok(motion.share.value > 0 && motion.share.value < 0.5);
@@ -52,7 +53,7 @@ void test('turn speed, reach and the momentum share ease toward the sim, never j
 
 void test('a wake is dropped behind the hero once he has spun far enough, from where the last one ended', (): void => {
   const motion: SpinMotion = createSpinMotion();
-  const read: SpinRead = { spinning: true, turnSpeed: 25, share: 0.5, steady: false, reach: 3, animation: 'sweep' };
+  const read: SpinRead = { spinning: true, turnSpeed: 25, turned: 0, share: 0.5, steady: false, reach: 3, animation: 'sweep' };
   const drops: WakeDrop[] = [];
   for (let frame: number = 0; frame < 60; frame += 1) {
     const drop: WakeDrop | null = stepSpinMotion(motion, read, { x: frame * 0.1, z: 0 }, DT);
@@ -64,4 +65,17 @@ void test('a wake is dropped behind the hero once he has spun far enough, from w
     if (index > 0) assert.equal(drop.from.x, drops[index - 1]?.to.x);
   });
   assert.equal(stepSpinMotion(motion, { ...read, spinning: false }, { x: 10, z: 0 }, DT), null);
+});
+
+void test('the drawn turn is the turn the sim has made, so the body stops where the sim says it faces', (): void => {
+  const world: World = arena(1);
+  spinning(world);
+  must(world.player.action, 'spinning').turned = 1.2;
+  assert.equal(readSpin(world.player).turned, 1.2);
+  const motion: SpinMotion = createSpinMotion();
+  stepSpinMotion(motion, readSpin(world.player), ARENA_CENTRE, DT);
+  assert.equal(motion.angle, 1.2);
+  world.player.action = null;
+  stepSpinMotion(motion, readSpin(world.player), ARENA_CENTRE, DT);
+  assert.equal(motion.angle, 0);
 });

@@ -10,6 +10,7 @@ import type { ActionState, Actor, PlayerState } from './types.ts';
 export const MOMENTUM = {
   arrive: 0.5,
   moved: 1e-4,
+  fullTurn: Math.PI * 2,
 } as const;
 
 export interface MomentumStep {
@@ -106,4 +107,17 @@ export function glide(grid: NavGrid, player: PlayerState, dt: number): boolean {
   if (distance(from, player.pos) <= MOMENTUM.moved) return false;
   player.facing = facingOf(toward);
   return true;
+}
+
+function wrapTurn(angle: number): number {
+  const wrapped: number = angle % MOMENTUM.fullTurn;
+  if (wrapped > Math.PI) return wrapped - MOMENTUM.fullTurn;
+  if (wrapped <= -Math.PI) return wrapped + MOMENTUM.fullTurn;
+  return wrapped;
+}
+
+export function settleTurn(actor: Actor, action: ActionState): void {
+  if (action.turned === 0) return;
+  actor.facing = wrapTurn(actor.facing + action.turned);
+  action.turned = 0;
 }

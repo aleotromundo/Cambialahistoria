@@ -34,7 +34,7 @@ function lightsOf(parent: Object3D): Lit[] {
 
 function windingUp(world: World, monster: MonsterState, windup: number): SkillDef {
   const skill: SkillDef = must(world.content.skills.get('test_slam'), 'test_slam');
-  monster.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery: 0.5, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null };
+  monster.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery: 0.5, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null, turned: 0 };
   return skill;
 }
 

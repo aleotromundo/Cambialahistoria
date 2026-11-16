@@ -16,6 +16,7 @@ export const SPIN_MOTION = {
 export interface SpinRead {
   readonly spinning: boolean;
   readonly turnSpeed: number;
+  readonly turned: number;
   readonly share: number;
   readonly steady: boolean;
   readonly reach: number;
@@ -75,10 +76,10 @@ export function readSpin(player: PlayerState): SpinRead {
   const share: number = momentumShare(player);
   const steady: boolean = steadied(player);
   if (action === null || press?.type !== 'channel' || !glidesWith(press) || action.phase === 'recovery') {
-    return { spinning: false, turnSpeed: 0, share, steady, reach: SPIN_MOTION.restReach, animation: null };
+    return { spinning: false, turnSpeed: 0, turned: 0, share, steady, reach: SPIN_MOTION.restReach, animation: null };
   }
   const interval: number = channelInterval(player, action.skill, press.interval);
-  return { spinning: true, turnSpeed: SPIN_MOTION.fullTurn / interval, share, steady, reach: reachOf(spunSkill(player, action.skill)), animation: action.skill.animation };
+  return { spinning: true, turnSpeed: SPIN_MOTION.fullTurn / interval, turned: action.turned, share, steady, reach: reachOf(spunSkill(player, action.skill)), animation: action.skill.animation };
 }
 
 export interface WakeDrop {
@@ -96,7 +97,7 @@ export function stepSpinMotion(motion: SpinMotion, read: SpinRead, at: Vec2, dt:
   stepSpring(motion.steady, dt);
   stepSpring(motion.reach, dt);
   motion.animation = read.spinning ? read.animation : null;
-  motion.angle = read.spinning ? (motion.angle + Math.max(0, motion.speed.value) * dt) % SPIN_MOTION.fullTurn : 0;
+  motion.angle = read.spinning ? read.turned : 0;
   const last: Vec2 | null = motion.last;
   motion.last = { x: at.x, z: at.z };
   if (!read.spinning || last === null || motion.mark === null) {

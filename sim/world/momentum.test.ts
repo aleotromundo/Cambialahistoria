@@ -5,9 +5,9 @@ import { damageTo, dummy, offset, run, shapeArena, shapeSkill, SHAPE_DT } from '
 import type { MomentumDef } from '../content/shape-types.ts';
 import type { SkillDef } from '../content/types.ts';
 import { distance } from '../math.ts';
-import { applyHit, offenceOf } from './combat.ts';
+import { applyHit, kill, offenceOf } from './combat.ts';
 import { momentumShare, momentumStep, steadied } from './momentum.ts';
-import { channelInterval, spunSkill } from './skills.ts';
+import { channelInterval, spunSkill, turnRate } from './skills.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
 
@@ -60,6 +60,61 @@ void test('a moving channel carries the hero toward the aim at full speed while 
   run(still, 0.5);
   assert.equal(still.player.action?.phase, 'channel');
   assert.ok(distance(start, still.player.pos) < 1e-6);
+});
+
+function turnGap(from: number, to: number): number {
+  const full: number = Math.PI * 2;
+  const delta: number = (((to - from) % full) + full) % full;
+  return Math.min(delta, full - delta);
+}
+
+void test('a turning channel turns the hero with the spin, and when it ends she keeps the facing she turned to', (): void => {
+  const world: World = spinner();
+  startSpin(world, offset(0.3, 0));
+  const aimed: number = world.player.facing;
+  run(world, 0.45);
+  const action = must(world.player.action, 'spinning');
+  assert.equal(action.phase, 'channel');
+  assert.ok(turnGap(world.player.facing, aimed) < 1e-9);
+  assert.ok(action.turned > 0.5, `turned ${action.turned}`);
+  const shown: number = world.player.facing + action.turned;
+  const step: number = turnRate(world.player, action) * SHAPE_DT;
+  stepWorld(world, [{ type: 'hold', slot: 0, down: false }], SHAPE_DT);
+  assert.equal(world.player.action?.phase, 'recovery');
+  assert.equal(world.player.action.turned, 0);
+  assert.ok(turnGap(shown, world.player.facing) <= 2 * step + 1e-9, `gap ${turnGap(shown, world.player.facing)}`);
+  const settled: number = world.player.facing;
+  run(world, 1);
+  assert.equal(world.player.action, null);
+  assert.ok(turnGap(world.player.facing, settled) < 1e-9);
+  const rooted: World = spinner(ROOTED);
+  startSpin(rooted, offset(9, 0));
+  run(rooted, 0.4);
+  assert.equal(rooted.player.action?.turned, 0);
+});
+
+void test('a turn begun in the windup is kept when the press is let go before the spin starts, and when the hero falls mid-spin', (): void => {
+  const tapped: World = spinner();
+  startSpin(tapped, offset(0.3, 0));
+  run(tapped, SPIN.windup * 0.8);
+  const early = must(tapped.player.action, 'winding up');
+  assert.equal(early.phase, 'windup');
+  const aimed: number = tapped.player.facing;
+  const turned: number = early.turned;
+  assert.ok(turned > 0.2, `turned ${turned}`);
+  const rest: number = turnRate(tapped.player, { ...early, phase: 'channel' }) * (SPIN.windup * 0.2 + 2 * SHAPE_DT);
+  run(tapped, 1, [{ type: 'hold', slot: 0, down: false }]);
+  assert.equal(tapped.player.action, null);
+  const moved: number = turnGap(aimed, tapped.player.facing);
+  assert.ok(moved >= turned - 1e-9 && moved <= turned + rest, `moved ${moved} turned ${turned} rest ${rest}`);
+  const felled: World = spinner();
+  startSpin(felled, offset(0.3, 0));
+  run(felled, 0.4);
+  const spun = must(felled.player.action, 'spinning');
+  const facing: number = felled.player.facing + spun.turned;
+  kill(felled, felled.player, { x: 1, z: 0 });
+  assert.equal(felled.player.action, null);
+  assert.ok(turnGap(facing, felled.player.facing) < 1e-9);
 });
 
 void test('steering, a walk or a move while spinning changes where the hero goes instead of waiting for the spin to end', (): void => {

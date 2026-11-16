@@ -3,6 +3,8 @@ import type { GlitchKind } from '../content/glitches.ts';
 import type { GlitchEvent, GlitchState, PathAct, PathLog } from './glitch-types.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, XpReduction, ZoneDef, ZonePack } from '../content/types.ts';
 import type { PowerState } from './power-types.ts';
+import type { ActionState } from './action-types.ts';
+export type { ActionPhase, ActionState } from './action-types.ts';
 export type { BuffState, EmpowerState, PowerState } from './power-types.ts';
 import type { OpenService } from './service-types.ts';
 import type { ReplayCommand } from './dialogue-types.ts';
@@ -44,23 +46,6 @@ export interface ItemInstance {
 }
 
 export type Equipment = Record<ItemSlot, ItemInstance | null>;
-
-export type ActionPhase = 'windup' | 'channel' | 'recovery';
-
-export interface ActionState {
-  readonly skill: SkillDef;
-  phase: ActionPhase;
-  timeLeft: number;
-  readonly windup: number;
-  readonly recovery: number;
-  direction: Vec2;
-  target: Vec2 | null;
-  readonly travelSpeed: number;
-  travelLeft: number;
-  readonly slot: number | null;
-  elapsed: number;
-  goal: Vec2 | null;
-}
 
 export interface Offence {
   readonly sourceId: number;

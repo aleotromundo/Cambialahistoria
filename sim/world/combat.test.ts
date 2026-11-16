@@ -54,7 +54,7 @@ void test('the guard opens from behind, while the brute is staggered, and in the
   target.stagger = 0.5;
   assert.equal(guardOutcome(target, light, front), 'open');
   target.stagger = 0;
-  target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null };
+  target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null, turned: 0 };
   assert.equal(guardOutcome(target, light, front), 'open');
   target.action = { ...target.action, phase: 'windup' };
   assert.equal(guardOutcome(target, light, front), 'blocked');

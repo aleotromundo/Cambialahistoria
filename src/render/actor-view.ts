@@ -20,6 +20,8 @@ import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
 import type { AnimationBank } from './animation-bank.ts';
 import { animationBank } from './animation-bank.ts';
+import type { SpinCentre } from './spin-centre.ts';
+import { centreShift, createSpinCentre, holdSpinCentre, measurePivot } from './spin-centre.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -215,6 +217,11 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   const above: Object3D | null = head?.parent ?? null;
   const neck: Object3D | undefined = above === null || spine.includes(above) ? undefined : above;
   const chest: Object3D[] = spine.slice(-ACTOR.chestJoints);
+  const hips: Object3D | null = spine[0]?.parent ?? null;
+  const centre: SpinCentre = createSpinCentre();
+  const hipsAt: Vector3 = new Vector3();
+  let centring: boolean = false;
+  let spinPose: AnimationAction | null = null;
   const contacts: { readonly bone: Object3D; readonly radius: number }[] = rig.def.contacts.flatMap((contact: RigContact): { readonly bone: Object3D; readonly radius: number }[] => {
     const bone: Object3D | undefined = findNode(rig.root, contact.bone);
     return bone === undefined ? [] : [{ bone, radius: contact.radius }];
@@ -388,6 +395,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     sync(dt: number, actor: ActorPose, options: SyncOptions): void {
       rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
       rig.root.rotation.x = 0;
+      centring = false;
       clock += dt;
       if (fading) {
         const fall: number = fallAt(actor.deadTime);
@@ -411,6 +419,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
           if (glance.left <= 0) glance = null;
         }
         rig.root.rotation.y = yaw + turned;
+        centring = hips !== null && holdSpinCentre(centre, spinPose !== null && spinPose.enabled ? spinPose.getEffectiveWeight() : 0);
+        if (!centring && !spinning) spinPose = null;
+        if (centring) {
+          const shift: ReadonlyVec2 = centreShift(centre, rig.root.rotation.y);
+          rig.root.position.x += shift.x;
+          rig.root.position.z += shift.z;
+        }
         const kind: ClipKind = clipKindOf(actor.motion);
         if (flinchLeft > 0 && kind === 'knock') {
           flinchLeft = 0;
@@ -475,6 +490,11 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         if (length > 0) current.time = (((actor.beat - step) % length) + length) % length;
       }
       if (step !== null) rig.mixer.update(step);
+      if (centring && hips !== null) {
+        rig.root.updateMatrixWorld(true);
+        hips.getWorldPosition(hipsAt);
+        measurePivot(centre, { x: hipsAt.x, z: hipsAt.z }, { x: rig.root.position.x, z: rig.root.position.z }, rig.root.rotation.y);
+      }
       rig.stepWear(dt);
       if (lying && woke !== null) {
         layerWake(woke);
@@ -505,6 +525,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       current.time = entry.impactTime > 0 ? entry.impactTime : entry.clip.duration * ACTOR.spinPose;
       current.timeScale = 0;
       acting = current;
+      spinPose = current;
     },
     startAction(animation: string, windup: number, recovery: number): boolean {
       const entry: ActionClip | undefined = actionClip(rig, animation);
