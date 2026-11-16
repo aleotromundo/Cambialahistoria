@@ -41,6 +41,7 @@ import type { ProjectileViews, ShotTint } from './projectile-views.ts';
 import { createProjectileViews, PROJECTILE_VIEWS } from './projectile-views.ts';
 import type { TorchFlames } from './torch-flames.ts';
 import { createTorchFlames } from './torch-flames.ts';
+import { breaker } from './water-look.ts';
 
 export const EFFECTS = {
   levelLight: 45,
@@ -250,6 +251,10 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   const burst = (x: number, z: number, radius: number, skill: SkillDef): void => {
     const color: Color = colorOf(skill.vfx.color);
+    if (skill.vfx.water !== null) {
+      breaker({ spray, ring }, { x, z }, radius, colorOf(skill.vfx.water.foam));
+      return;
+    }
     const look: NovaLook = novaLook(skill.vfx.style);
     if (look === 'shockwave') shockwave(x, z, radius, color, skill);
     else if (look === 'whirl') cues.whirl(x, z, radius, color);

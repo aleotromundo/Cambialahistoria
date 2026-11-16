@@ -1186,7 +1186,7 @@
     "stagger": 0.5,
     "shake": 0.45,
     "hitStop": 0.06,
-    "vfx": { "style": "wind", "color": "#5fa9cf", "cue": "ground", "light": 0.8 }
+    "vfx": { "style": "wind", "color": "#5fa9cf", "cue": "ground", "light": 0.8, "water": { "deep": "#0b3352", "foam": "#d6efff", "depth": 0.75 } }
   },
   {
     "id": "thunderclap_gathered",

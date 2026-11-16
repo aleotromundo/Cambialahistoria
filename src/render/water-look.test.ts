@@ -5,7 +5,7 @@ import { must } from '../../test/support.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import { lap, lapSpot, poolOf, splash, surge, swell, swirlHeading, whirl, WATER_LOOK } from './water-look.ts';
+import { breaker, breakerHeading, lap, lapSpot, poolOf, splash, surge, swell, swirlHeading, whirl, WATER_LOOK } from './water-look.ts';
 import type { WaterKit } from './water-look.ts';
 
 const content: Content = loadContent();
@@ -74,4 +74,20 @@ void test('a whirlpool that pulls under throws one fountain of drops from its mi
   const seen: Recorded = recorder();
   surge(seen.kit, { x: 0, z: 0 }, new Color(1, 1, 1));
   assert.deepEqual(seen.sprays, [WATER_LOOK.surgeDrops]);
+});
+
+void test('a breaker lays one crest at its full reach and throws its drops out all round', (): void => {
+  const seen: Recorded = recorder();
+  breaker(seen.kit, { x: 0, z: 0 }, 5, new Color(1, 1, 1));
+  assert.deepEqual(seen.rings, [5]);
+  assert.equal(seen.sprays.length, WATER_LOOK.breakerDrops);
+  let sumX: number = 0;
+  let sumZ: number = 0;
+  for (let index: number = 0; index < WATER_LOOK.breakerDrops; index += 1) {
+    const heading: Vec2 = breakerHeading(index);
+    assert.ok(Math.abs(Math.hypot(heading.x, heading.z) - 1) < 1e-9);
+    sumX += heading.x;
+    sumZ += heading.z;
+  }
+  assert.ok(Math.abs(sumX) < 1e-9 && Math.abs(sumZ) < 1e-9);
 });

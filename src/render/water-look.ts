@@ -24,6 +24,11 @@ export const WATER_LOOK = {
   swirlFast: 0.75,
   surgeHeight: 0.3,
   surgeDrops: 28,
+  crestShine: 0.6,
+  crestTime: 0.55,
+  breakerDrops: 36,
+  breakerStart: 0.5,
+  breakerHeight: 0.3,
   swellReach: 0.9,
   swellShine: 0.22,
   swellTime: 0.9,
@@ -80,4 +85,17 @@ export function whirl(kit: WaterKit, center: Vec2, radius: number, pull: number,
 
 export function surge(kit: WaterKit, center: Vec2, foam: Color): void {
   kit.spray(center.x, WATER_LOOK.surgeHeight, center.z, foam, WATER_LOOK.surgeDrops, SURGE);
+}
+
+export function breakerHeading(index: number): Vec2 {
+  const angle: number = (index / WATER_LOOK.breakerDrops) * Math.PI * 2;
+  return { x: Math.sin(angle), z: Math.cos(angle) };
+}
+
+export function breaker(kit: WaterKit, center: Vec2, radius: number, foam: Color): void {
+  kit.ring(center.x, center.z, radius, new Color().copy(foam).multiplyScalar(WATER_LOOK.crestShine), WATER_LOOK.crestTime);
+  for (let index: number = 0; index < WATER_LOOK.breakerDrops; index += 1) {
+    const heading: Vec2 = breakerHeading(index);
+    kit.spray(center.x + heading.x * WATER_LOOK.breakerStart, WATER_LOOK.breakerHeight, center.z + heading.z * WATER_LOOK.breakerStart, foam, 1, { dirX: heading.x, dirZ: heading.z, spread: 0.25, speed: { min: radius * 1.4, max: radius * 2.4 }, lift: { min: 2.5, max: 5 }, life: { min: 0.5, max: 0.8 }, size: { min: 0.14, max: 0.3 }, gravity: 12, drag: 0.4, jitter: 0.1 });
+  }
 }
