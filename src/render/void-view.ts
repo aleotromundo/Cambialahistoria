@@ -195,10 +195,21 @@ function findsIn(world: World): Vec2[] {
   return [...items, ...lights];
 }
 
-export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: SurfaceDef | null, glimpse: VoidGlimpses | null): ZoneView {
+let sharedNoise: DataTexture | null = null;
+
+export function voidNoiseTexture(): DataTexture {
+  sharedNoise ??= createVoidNoise();
+  return sharedNoise;
+}
+
+export interface VoidView extends ZoneView {
+  park(): void;
+}
+
+export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: SurfaceDef | null, glimpse: VoidGlimpses | null): VoidView {
   const tier: VoidTier = VOID_VIEW.tiers[quality];
   const defines: Record<string, number | string> = { VOID_OCTAVES: tier.octaves, VOID_EDDIES: MIST.eddies, VOID_NOISE_SIZE: VOID_NOISE.size.toFixed(1) };
-  const noiseTexture: DataTexture = createVoidNoise();
+  const noiseTexture: DataTexture = voidNoiseTexture();
   const noise: IUniform<DataTexture> = { value: noiseTexture };
   const group: Group = new Group();
   const shift: IUniform<Vector2> = { value: new Vector2() };
@@ -480,6 +491,13 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
       for (const layer of layers) layer.mesh.position.set(world.player.pos.x, layer.mesh.position.y, world.player.pos.z);
       hookScene();
     },
+    park(): void {
+      group.removeFromParent();
+      unhook();
+      for (const layer of layers) layer.target.dispose();
+      fieldTexture.dispose();
+      WAKE_LAMPS.value = 0;
+    },
     dispose(): void {
       group.removeFromParent();
       groundGeometry.dispose();
@@ -494,7 +512,6 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
       moteGeometryBuilt.dispose();
       moteMaterial.dispose();
       fieldTexture.dispose();
-      noiseTexture.dispose();
       glimpse?.dispose();
       light.dispose();
       wakeLights.dispose();

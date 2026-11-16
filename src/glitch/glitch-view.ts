@@ -16,10 +16,10 @@ import type { Silhouette } from '../../sim/world/glitch-types.ts';
 import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
 import { createOverlayWatch } from '../hud/overlay-mark.ts';
 import type { OverlayWatch } from '../hud/overlay-mark.ts';
+import type { VoidView } from '../render/void-view.ts';
 import { buildVoidView } from '../render/void-view.ts';
 import type { FigureGauge } from '../render/figure-gauge.ts';
 import { createFigureGauge, figureJoints } from '../render/figure-gauge.ts';
-import type { ZoneView } from '../render/zone-view.ts';
 import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
 import type { GlitchSettings, GlitchSettingsStore, SettingRequest, SettingStep } from './glitch-settings.ts';
@@ -111,7 +111,8 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   const hidden: Set<Object3D> = new Set<Object3D>();
   const history: Sample[] = [];
   const shades: Ghost[] = [];
-  let mist: ZoneView | null = null;
+  let mist: VoidView | null = null;
+  let parked: VoidView | null = null;
   let phase: Phase = { type: 'idle' };
   let soft: boolean = settings.get().reduceFlashes;
   let pendingShades: readonly Silhouette[] = [];
@@ -159,8 +160,15 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     pendingShades = [];
   };
 
+  const retire = (view: VoidView | null): void => {
+    if (view === null) return;
+    parked?.dispose();
+    view.park();
+    parked = view;
+  };
+
   const showMist = (): void => {
-    mist?.dispose();
+    retire(mist);
     mist = buildVoidView({ ...deps.mistZone, floorHeight: world.zone.floorHeight }, deps.quality, null, null);
     scene.add(mist.group);
     deps.setAmbience(deps.mistZone.ambience);
@@ -171,7 +179,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   };
 
   const hideMist = (): void => {
-    mist?.dispose();
+    retire(mist);
     mist = null;
     for (const object of hidden) object.visible = true;
     hidden.clear();
