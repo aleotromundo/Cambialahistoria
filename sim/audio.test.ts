@@ -14,6 +14,8 @@ import type { BodyMaterial, Content, SkillDef } from './content/types.ts';
 import type { Vec2 } from './math.ts';
 import { forceStrike } from './world/moments.ts';
 import { stepWorld } from './world/step.ts';
+import { placeArea, stepAreas } from './world/areas.ts';
+import { offenceOf } from './world/combat.ts';
 import type { GroundItem, MomentState, MonsterState, World, WorldEvent } from './world/types.ts';
 
 const content: Content = loadContent();
@@ -409,4 +411,58 @@ void test('the mite bite is a quiet pop, not the roll whoosh', (): void => {
   const bite: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_start', actorId: world.player.id, skill: skill('mite_bite'), direction: AWAY, windup: 0.1, recovery: 0.1 });
   assert.deepEqual(sounds(bite), ['lava_bubble']);
   assert.ok((bite[0]?.volume ?? 1) <= 0.5);
+});
+
+void test('Standing Storm crackles and rumbles when it starts, crackles quietly on each pulse, snaps once for a pulse that strikes however many it hits, and fades when it ends', (): void => {
+  const world: World = fresh();
+  const storm: SkillDef = skill('standing_storm');
+  const lists = (): SoundCue[][] => world.events.splice(0).flatMap((event: WorldEvent): SoundCue[][] => (event.type === 'area' ? [[...cuesForEvent(audio, world, event)]] : []));
+  const names = (): string[][] => lists().map(sounds);
+  world.events.length = 0;
+  placeArea(world, offenceOf(world.player), storm, world.player.pos);
+  assert.deepEqual(names(), [['storm_rumble', 'storm_crackle']]);
+  stepAreas(world, 0.5);
+  const quiet: SoundCue[][] = lists();
+  assert.deepEqual(quiet.map(sounds), [['storm_crackle']]);
+  assert.ok((quiet[0]?.[0]?.volume ?? 1) <= 0.15);
+  assert.ok((quiet[0]?.[0]?.cooldown ?? 0) >= 1);
+  for (const spot of [1, 1.5, 2]) place(world, 'mended', { x: world.player.pos.x + spot, z: world.player.pos.z + 1 });
+  stepAreas(world, 0.5);
+  assert.deepEqual(names(), [['storm_crackle', 'storm_snap']]);
+  stepAreas(world, 5);
+  assert.deepEqual(names().at(-1), ['storm_rumble']);
+});
+
+void test('a lasting area sounds from its own form, and a pulse that strikes adds its strike sound', (): void => {
+  const world: World = fresh();
+  const owner: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const area = (id: string, stage: 'start' | 'pulse' | 'end', hits: number): string[] => sounds(cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, timeLeft: 1, pulseLeft: 1, pulses: 0 }, stage, hits }));
+  assert.deepEqual(area('still_water', 'start', 0), ['water_cast']);
+  assert.deepEqual(area('still_water', 'pulse', 0), ['water_splash']);
+  assert.deepEqual(area('still_water', 'pulse', 3), ['water_splash', 'water_douse']);
+  assert.deepEqual(area('banked_fire', 'start', 0), ['fire_ignite']);
+  assert.deepEqual(area('banked_fire', 'pulse', 2), ['lava_bubble', 'burn_sizzle']);
+  assert.deepEqual(area('cinder_patch', 'start', 0), ['fire_ignite']);
+  assert.deepEqual(area('umbra', 'end', 0), ['shadow_cast']);
+  assert.deepEqual(area('ground_heat', 'start', 0), []);
+});
+
+void test('a brand sounds when it lands and when it bursts, and the Timekeeper count is heard when it comes due', (): void => {
+  const world: World = fresh();
+  const thrall: MonsterState = monster(world, 'mended');
+  const brand = (id: string, burst: boolean): string[] => sounds(cuesForEvent(audio, world, { type: 'brand', targetId: thrall.id, skill: skill(id), pos: thrall.pos, burst }));
+  assert.deepEqual(brand('static_brand', false), ['spell_flick']);
+  assert.deepEqual(brand('static_brand_burst', true), ['bolt_impact', 'electric_crackle']);
+  assert.deepEqual(brand('tally_due', true), ['tally_due']);
+});
+
+void test('a crossbow shot and its changes sound as shots, and the ground flare of a Shoulder Through lands with fire', (): void => {
+  const world: World = fresh();
+  armed(world, 'hand_crossbow');
+  for (const id of ['quarrel', 'quarrel_fan', 'quarrel_heave']) {
+    const shot: readonly string[] = swung(world, id);
+    assert.deepEqual(shot, ['hit_wood', 'bolt_whoosh']);
+  }
+  const lands: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'skill_impact', actorId: world.player.id, team: 'player', skill: skill('shoulder_flare'), origin: AWAY, direction: AWAY, hits: 0, echo: true });
+  assert.deepEqual(sounds(lands), ['fire_ignite', 'ground_boom']);
 });

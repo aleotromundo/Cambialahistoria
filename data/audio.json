@@ -8,6 +8,9 @@
     "settle": { "synth": false, "cues": [{ "sound": "seam_return", "volume": 0.61, "maxVoices": 1 }] }
   },
   "skillStart": {
+    "quarrel": [{ "sound": "hit_wood", "volume": 0.5, "maxVoices": 3, "pitch": [1.3, 1.5], "volumeJitter": 0.15 }, { "sound": "bolt_whoosh", "volume": 0.4, "maxVoices": 3, "pitch": [1.1, 1.3] }],
+    "quarrel_fan": [{ "sound": "hit_wood", "volume": 0.5, "maxVoices": 3, "pitch": [1.2, 1.4], "volumeJitter": 0.15 }, { "sound": "bolt_whoosh", "volume": 0.55, "maxVoices": 3, "pitch": [1, 1.2] }],
+    "quarrel_heave": [{ "sound": "hit_wood", "volume": 0.7, "maxVoices": 2, "pitch": [1, 1.15] }, { "sound": "bolt_whoosh", "volume": 0.6, "maxVoices": 2, "pitch": [0.8, 0.95] }],
     "cinder_pounce": [{ "sound": "growl_hound", "volume": 0.6, "maxVoices": 2, "cooldown": 1.5 }],
     "alpha_pounce": [{ "sound": "growl_hound", "volume": 0.75, "maxVoices": 1, "cooldown": 2 }],
     "ember_spit": [{ "sound": "spit_launch", "volume": 0.6, "maxVoices": 2, "cooldown": 0.4 }],
@@ -87,8 +90,8 @@
     "slag_eruption": [{ "sound": "lava_boil", "volume": 0.6, "maxVoices": 2 }],
     "elder_eruption": [{ "sound": "lava_boil", "volume": 0.7, "maxVoices": 1 }],
     "custodian_push": [{ "sound": "ground_boom", "volume": 0.6, "maxVoices": 2 }],
-    "tally_due": [{ "sound": "tally_due", "volume": 0.9, "maxVoices": 2 }],
     "keeper_field": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 2 }],
+    "shoulder_flare": [{ "sound": "fire_ignite", "volume": 0.8, "maxVoices": 1 }, { "sound": "ground_boom", "volume": 0.45, "maxVoices": 1 }],
     "volatile_burst": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }],
     "brute_haymaker": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "first_haymaker": [{ "sound": "ground_boom", "volume": 0.7, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
@@ -112,6 +115,48 @@
     "storm_bolt": [{ "sound": "bolt_impact", "volume": 0.9, "maxVoices": 3 }],
     "mender_needle": [{ "sound": "hex_impact", "volume": 0.8, "maxVoices": 2 }],
     "thunderclap": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 3, "cooldown": 0.04 }]
+  },
+  "areaStart": {
+    "standing_storm": [{ "sound": "storm_rumble", "volume": 0.4, "maxVoices": 1, "pitch": [0.95, 1.05] }, { "sound": "storm_crackle", "volume": 0.3, "maxVoices": 2 }],
+    "thunderclap_standing": [{ "sound": "storm_rumble", "volume": 0.4, "maxVoices": 1, "pitch": [0.95, 1.05] }, { "sound": "storm_crackle", "volume": 0.3, "maxVoices": 2 }],
+    "still_water": [{ "sound": "water_cast", "volume": 0.55, "maxVoices": 1 }],
+    "banked_fire": [{ "sound": "fire_ignite", "volume": 0.6, "maxVoices": 1 }],
+    "cinder_patch": [{ "sound": "fire_ignite", "volume": 0.45, "maxVoices": 2, "cooldown": 0.15 }],
+    "alpha_patch": [{ "sound": "fire_ignite", "volume": 0.55, "maxVoices": 2, "cooldown": 0.15 }, { "sound": "lava_boil", "volume": 0.3, "maxVoices": 1 }]
+  },
+  "areaPulse": {
+    "standing_storm": [{ "sound": "storm_crackle", "volume": 0.12, "maxVoices": 1, "cooldown": 1.3, "pitch": [0.9, 1.15], "volumeJitter": 0.35 }],
+    "thunderclap_standing": [{ "sound": "storm_crackle", "volume": 0.12, "maxVoices": 1, "cooldown": 1.3, "pitch": [0.9, 1.15], "volumeJitter": 0.35 }],
+    "squall": [{ "sound": "storm_crackle", "volume": 0.14, "maxVoices": 1, "cooldown": 1.1, "pitch": [0.9, 1.15], "volumeJitter": 0.35 }],
+    "umbra": [{ "sound": "wisp_whoosh", "volume": 0.2, "maxVoices": 1, "cooldown": 2.5, "pitch": [0.85, 1.05], "volumeJitter": 0.3 }],
+    "still_water": [{ "sound": "water_splash", "volume": 0.55, "maxVoices": 1, "cooldown": 1.8, "pitch": [0.9, 1.1], "volumeJitter": 0.3 }],
+    "banked_fire": [{ "sound": "lava_bubble", "volume": 0.5, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.9, 1.2], "volumeJitter": 0.3 }],
+    "cinder_patch": [{ "sound": "lava_bubble", "volume": 0.45, "maxVoices": 2, "cooldown": 0.4, "pitch": [0.9, 1.2], "volumeJitter": 0.3 }],
+    "alpha_patch": [{ "sound": "lava_bubble", "volume": 0.5, "maxVoices": 2, "cooldown": 0.4, "pitch": [0.85, 1.15], "volumeJitter": 0.3 }]
+  },
+  "areaStrike": {
+    "standing_storm": [{ "sound": "storm_snap", "volume": 0.4, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.2], "volumeJitter": 0.25 }],
+    "thunderclap_standing": [{ "sound": "storm_snap", "volume": 0.4, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.2], "volumeJitter": 0.25 }],
+    "squall": [{ "sound": "storm_snap", "volume": 0.4, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.2], "volumeJitter": 0.25 }],
+    "still_water": [{ "sound": "water_douse", "volume": 0.3, "maxVoices": 2, "cooldown": 0.25, "pitch": [1, 1.25], "volumeJitter": 0.25 }],
+    "banked_fire": [{ "sound": "burn_sizzle", "volume": 0.3, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.95, 1.15], "volumeJitter": 0.25 }]
+  },
+  "areaEnd": {
+    "standing_storm": [{ "sound": "storm_rumble", "volume": 0.22, "maxVoices": 1, "pitch": [0.8, 0.9] }],
+    "thunderclap_standing": [{ "sound": "storm_rumble", "volume": 0.22, "maxVoices": 1, "pitch": [0.8, 0.9] }],
+    "squall": [{ "sound": "storm_rumble", "volume": 0.18, "maxVoices": 1, "pitch": [0.8, 0.9] }],
+    "umbra": [{ "sound": "shadow_cast", "volume": 0.3, "maxVoices": 1, "pitch": [0.7, 0.8] }],
+    "still_water": [{ "sound": "water_splash", "volume": 0.5, "maxVoices": 1, "pitch": [0.7, 0.8] }],
+    "banked_fire": [{ "sound": "burn_sizzle", "volume": 0.25, "maxVoices": 1, "pitch": [0.75, 0.85] }]
+  },
+  "brand": {
+    "static_brand": [{ "sound": "spell_flick", "volume": 0.45, "maxVoices": 2, "cooldown": 0.1 }],
+    "static_brand_burst": [{ "sound": "bolt_impact", "volume": 0.8, "maxVoices": 2 }, { "sound": "electric_crackle", "volume": 0.5, "maxVoices": 1 }],
+    "tally_mark": [{ "sound": "glass_clink", "volume": 0.5, "maxVoices": 2, "cooldown": 0.1 }],
+    "tally_due": [{ "sound": "tally_due", "volume": 0.9, "maxVoices": 2 }]
+  },
+  "silent": {
+    "ground_heat": "the burning ground is a surface, not a cast: its burn events play hero_burn"
   },
   "hit": {
     "bone": [{ "sound": "bone_hit", "volume": 0.85, "maxVoices": 4 }],

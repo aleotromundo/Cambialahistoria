@@ -110,6 +110,12 @@ export interface AudioDef {
   readonly projectileSpawn: CueTable;
   readonly projectileExpire: CueTable;
   readonly skillHit: CueTable;
+  readonly areaStart: CueTable;
+  readonly areaPulse: CueTable;
+  readonly areaStrike: CueTable;
+  readonly areaEnd: CueTable;
+  readonly brand: CueTable;
+  readonly silent: ReadonlyMap<string, string>;
   readonly hit: CueTable;
   readonly critHit: CueTable;
   readonly guarded: CueTable;
@@ -129,6 +135,7 @@ export interface AudioDef {
 export interface KnownIds {
   readonly skills: ReadonlySet<string>;
   readonly projectileSkills: ReadonlySet<string>;
+  readonly areaSkills: ReadonlySet<string>;
   readonly monsters: ReadonlySet<string>;
   readonly rarities: ReadonlySet<string>;
   readonly zones: ReadonlySet<string>;
@@ -220,6 +227,16 @@ function withExtras(ids: ReadonlySet<string>, ...extras: readonly string[]): Rea
   return new Set<string>([...ids, ...extras]);
 }
 
+function silentSkills(value: unknown, skills: ReadonlySet<string>, where: string): ReadonlyMap<string, string> {
+  const entries: Fields = fields(value, where);
+  const result: Map<string, string> = new Map<string, string>();
+  for (const id of Object.keys(entries)) {
+    if (!skills.has(id)) throw new ContentError(`${where}.${id}`, 'unknown skill');
+    result.set(id, text(entries, id, where));
+  }
+  return result;
+}
+
 function zone(value: unknown, where: string): ZoneAmbience {
   const source: Fields = fields(value, where);
   return {
@@ -276,6 +293,12 @@ export function parseAudio(value: unknown, known: KnownIds): AudioDef {
     projectileSpawn: read('projectileSpawn', known.projectileSkills),
     projectileExpire: read('projectileExpire', known.projectileSkills),
     skillHit: read('skillHit', known.skills),
+    areaStart: read('areaStart', known.areaSkills),
+    areaPulse: read('areaPulse', known.areaSkills),
+    areaStrike: read('areaStrike', known.areaSkills),
+    areaEnd: read('areaEnd', known.areaSkills),
+    brand: read('brand', known.skills),
+    silent: silentSkills(source['silent'], known.skills, `${where}.silent`),
     hit: read('hit', targets),
     critHit: read('critHit', targets),
     guarded: read('guarded', new Set<string>(GUARD_OUTCOMES)),
@@ -298,6 +321,7 @@ export function knownIdsOf(content: Content): KnownIds {
   return {
     skills: new Set<string>(skills),
     projectileSkills: new Set<string>(skills.filter((id: string): boolean => content.skills.get(id)?.delivery.type === 'projectile')),
+    areaSkills: new Set<string>(skills.filter((id: string): boolean => content.skills.get(id)?.delivery.type === 'area')),
     monsters: new Set<string>(content.monsters.keys()),
     rarities: new Set<string>(content.rarities.map((rarity: RarityDef): string => rarity.id)),
     zones: new Set<string>(content.zones.keys()),

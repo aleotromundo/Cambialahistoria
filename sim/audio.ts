@@ -4,7 +4,7 @@ import { FALLBACK_KEY, GOLD_KEY, PLAYER_KEY } from './content/audio.ts';
 import type { ItemBaseDef, SkillDef, WeaponKind } from './content/types.ts';
 import { baseOf } from './items.ts';
 import type { Vec2 } from './math.ts';
-import type { Command, GroundItem, ItemInstance, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
+import type { AreaStage, Command, GroundItem, ItemInstance, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
 
 export interface SoundCue extends CueDef {
   readonly position: Vec2 | null;
@@ -12,11 +12,11 @@ export interface SoundCue extends CueDef {
 
 const NONE: readonly SoundCue[] = [];
 
-type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'seam'>;
+type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'seam' | 'silent'>;
 
 const NO_KEYS: readonly string[] = [];
 
-const WARM_TABLES: readonly CueTableName[] = ['world', 'encounterNearing', 'encounterShown', 'life', 'skillStart', 'hit', 'critHit', 'guarded', 'skillHit', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui'];
+const WARM_TABLES: readonly CueTableName[] = ['world', 'encounterNearing', 'encounterShown', 'life', 'skillStart', 'hit', 'critHit', 'guarded', 'skillHit', 'areaStart', 'areaPulse', 'areaStrike', 'areaEnd', 'brand', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui'];
 
 function heldBy(entry: WeaponCue, weapon: WeaponKind | null): boolean {
   return entry.weapons.length === 0 || (weapon !== null && entry.weapons.includes(weapon));
@@ -80,6 +80,23 @@ const PORTAL_SOUNDS: Readonly<Record<PortalStage, WorldSoundEvent | null>> = { c
 function portalCues(audio: AudioDef, stage: PortalStage, position: Vec2): readonly SoundCue[] {
   const sound: WorldSoundEvent | null = PORTAL_SOUNDS[stage];
   return sound === null ? NONE : worldCues(audio, sound, position);
+}
+
+function areaCues(audio: AudioDef, skill: SkillDef, stage: AreaStage, hits: number, at: Vec2): readonly SoundCue[] {
+  const position: Vec2 = { x: at.x, z: at.z };
+  let found: readonly SoundCue[] = NONE;
+  switch (stage) {
+    case 'start':
+      found = bySkill(audio.areaStart, skill, position);
+      break;
+    case 'pulse':
+      found = bySkill(audio.areaPulse, skill, position).concat(hits > 0 ? bySkill(audio.areaStrike, skill, position) : NONE);
+      break;
+    case 'end':
+      found = bySkill(audio.areaEnd, skill, position);
+      break;
+  }
+  return found;
 }
 
 export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): readonly SoundCue[] {
@@ -186,13 +203,17 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'hazard':
       if (event.burst) found = bySkill(audio.skillImpact, event.hazard.skill, event.hazard.pos);
       break;
-    case 'skill_interrupt':
     case 'area':
+      found = areaCues(audio, event.area.skill, event.stage, event.hits, event.area.pos);
+      break;
+    case 'brand':
+      found = bySkill(audio.brand, event.skill, event.pos);
+      break;
+    case 'skill_interrupt':
     case 'chain':
     case 'beam':
     case 'blink':
     case 'soak':
-    case 'brand':
     case 'skill_unlocked':
     case 'chart_point':
     case 'monster_remove':
