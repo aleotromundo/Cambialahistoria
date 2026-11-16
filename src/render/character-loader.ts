@@ -12,6 +12,7 @@ import { fadeMaterials } from './body-swap.ts';
 import { anyUnsettled, dropSettled, sameIds, settledPiece, springTo, WEAR_FADE } from './wear-spring.ts';
 import { bindShade, seeThrough, shadeHeld, SHADOW_BODY, SHADOW_LIGHT, SHADOW_UNIFORMS, shadowRim } from './shadow-shade.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
+import { RestingGroup } from './resting-group.ts';
 
 export type { ActionClip, CharacterLibrary, Dresser, GaitClip, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
 export { forgetModel, hasWear, loadCharacters, loadKeptModel, loadModel, loadNeeds, loadRemainingCharacters } from './character-library.ts';
@@ -170,7 +171,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   shareSkeletons(model);
   model.scale.setScalar(def.scale);
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
-  const root: Group = new Group();
+  const root: Group = new RestingGroup();
   root.add(model);
   const glow: RigGlow = createRigGlow();
   let faded: number = 1;

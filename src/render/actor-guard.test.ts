@@ -4,6 +4,7 @@ import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Scen
 import type { ActorGuard } from './actor-guard.ts';
 import { createActorGuard, drawable, readyToInspect, setOffView, shownMaterial } from './actor-guard.ts';
 import { fadeMaterials, startSwap, stepSwap } from './body-swap.ts';
+import { RestingGroup } from './resting-group.ts';
 
 function body(): { readonly root: Group; readonly mesh: Mesh<BoxGeometry, MeshStandardMaterial> } {
   const root: Group = new Group();
@@ -102,6 +103,28 @@ void test('an actor left undrawn off view is still drawable, so its first check 
   assert.equal(root.visible, true);
   root.visible = false;
   assert.equal(drawable(root), false);
+});
+
+void test('a rig left off view rests, so the scene skips its bones, and it is up to date the moment it is back in view', (): void => {
+  const scene: Scene = new Scene();
+  const root: RestingGroup = new RestingGroup();
+  const mesh: Mesh<BoxGeometry, MeshStandardMaterial> = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
+  root.add(mesh);
+  scene.add(root);
+  scene.updateMatrixWorld();
+  setOffView(root, true);
+  assert.equal(root.resting, true);
+  assert.equal(drawable(root), true);
+  root.position.set(3, 0, 5);
+  scene.updateMatrixWorld();
+  assert.equal(mesh.matrixWorld.elements[12], 0);
+  setOffView(root, false);
+  assert.equal(root.resting, false);
+  assert.equal(root.visible, true);
+  assert.equal(mesh.matrixWorld.elements[12], 3);
+  assert.equal(mesh.matrixWorld.elements[14], 5);
+  setOffView(root, false);
+  assert.equal(root.resting, false);
 });
 
 void test('a real body that arrives on a still frame is not inspected until its cross-fade has finished, so it keeps its gear', (): void => {

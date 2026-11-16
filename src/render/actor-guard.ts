@@ -1,5 +1,6 @@
 import type { Material, Object3D } from 'three';
 import { Mesh } from 'three';
+import { RestingGroup } from './resting-group.ts';
 
 export interface ActorGuard {
   keep(id: number, root: Object3D, scene: Object3D, label: string): boolean;
@@ -34,6 +35,9 @@ export function setOffView(root: Object3D, off: boolean): void {
   if (off) offView.add(root);
   else offView.delete(root);
   if (root.visible === off) root.visible = !off;
+  if (!(root instanceof RestingGroup)) return;
+  if (off) root.rest();
+  else root.wake();
 }
 
 export function drawable(root: Object3D): boolean {
