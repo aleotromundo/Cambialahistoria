@@ -5,7 +5,7 @@ import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { decodeExplored, encodeExplored, EXPLORE, exploredSize, isExplored, revealAround, shiftExplored } from './exploration.ts';
+import { decodeExplored, encodeExplored, EXPLORE, exploredSize, isExplored, revealAround, savedExplored, shiftExplored } from './exploration.ts';
 import { stepWorld } from './step.ts';
 import type { World } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -92,4 +92,29 @@ void test('ground shifted off the edge of the zone is forgotten', (): void => {
   const grid = world.zone.tiles.length * world.zone.cellSize;
   shiftExplored(world, { x: grid * 2, z: 0 });
   assert.ok(must(world.explored[world.zone.id], 'explored').every((cell: number): boolean => cell === 0));
+});
+
+function freshlyEncoded(world: World): Record<string, string> {
+  return Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, encodeExplored(cells)]));
+}
+
+void test('the saved explored text always matches a fresh encoding as the hero walks, shifts and changes zone', (): void => {
+  const world: World = worldIn(content, content.world.start, 7);
+  stepWorld(world, [], DT);
+  assert.deepEqual(toSave(world).explored, freshlyEncoded(world));
+  const home: Uint8Array = must(world.explored[content.world.start], 'home ground');
+  const first: string = savedExplored(home);
+  world.player.pos = { x: world.player.pos.x + EXPLORE.revealRadius * 2, z: world.player.pos.z };
+  stepWorld(world, [], DT);
+  assert.notEqual(savedExplored(home), first);
+  assert.deepEqual(toSave(world).explored, freshlyEncoded(world));
+  enterZone(world, zoneOf(content, 'hall_of_time'), { type: 'start' });
+  stepWorld(world, [], DT);
+  assert.deepEqual(toSave(world).explored, freshlyEncoded(world));
+  world.player.pos = { x: world.player.pos.x + EXPLORE.revealRadius * 2, z: world.player.pos.z };
+  stepWorld(world, [], DT);
+  assert.deepEqual(toSave(world).explored, freshlyEncoded(world));
+  shiftExplored(world, { x: 5, z: -3 });
+  assert.deepEqual(toSave(world).explored, freshlyEncoded(world));
+  assert.equal(JSON.stringify(toSave(world).explored), JSON.stringify(freshlyEncoded(world)));
 });

@@ -22,7 +22,7 @@ import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
 import { readGlitchSave } from './world/glitch-save.ts';
 import { emptyPathLog, pathToSave, readPathLog } from './world/path-log.ts';
 import { LEDGER_ID } from './world/ledger.ts';
-import { decodeExplored, encodeExplored, exploredSize } from './world/exploration.ts';
+import { decodeExplored, exploredSize, savedExplored } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 import type { PortalSave } from './world/portal-types.ts';
 import { portalToSave, readPortal } from './world/portal-save.ts';
@@ -111,7 +111,7 @@ export function toSave(world: World): SaveData {
     heard: [...world.heard],
     quests: { ...world.quests },
     waypoints: [...world.waypoints],
-    explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, encodeExplored(cells)])),
+    explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, savedExplored(cells)])),
     flasks: flaskCharges(player.flasks),
     stash: [...world.stash],
     vendors: copyVendors(world.vendors),

@@ -57,7 +57,10 @@ export function revealAround(world: World, centre: ReadonlyVec2): boolean {
       changed = true;
     }
   }
-  if (changed) world.exploredRevision += 1;
+  if (changed) {
+    world.exploredRevision += 1;
+    ENCODED.delete(cells);
+  }
   return changed;
 }
 
@@ -97,6 +100,16 @@ export function encodeExplored(cells: Uint8Array): string {
   }
   runs.push(run);
   return runs.join(EXPLORE.runSeparator);
+}
+
+const ENCODED: WeakMap<Uint8Array, string> = new WeakMap<Uint8Array, string>();
+
+export function savedExplored(cells: Uint8Array): string {
+  const known: string | undefined = ENCODED.get(cells);
+  if (known !== undefined) return known;
+  const text: string = encodeExplored(cells);
+  ENCODED.set(cells, text);
+  return text;
 }
 
 export function decodeExplored(text: unknown, size: number): Uint8Array | null {
