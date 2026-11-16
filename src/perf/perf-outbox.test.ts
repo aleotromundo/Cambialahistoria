@@ -51,7 +51,9 @@ void test('a batch carries at most six windows and the device facts until a send
 });
 
 void test('a final send on hiding the page skips the usual gap but not a burst', (): void => {
-  const sent: PerfOutbox = answered(take(filled(1), 0).box, take(filled(1), 0).batch, { kind: 'sent' }, 0);
+  const taken: Taken = take(filled(1), 0);
+  const sent: PerfOutbox = answered(taken.box, taken.batch, { kind: 'sent' }, 0);
+  assert.equal(sent.queue.length, 0);
   const waiting: PerfOutbox = queued(sent, window(9));
   assert.equal(due(waiting, PERF_OUTBOX.finalGapMs - 1, true), false);
   assert.equal(due(waiting, PERF_OUTBOX.finalGapMs, true), true);
