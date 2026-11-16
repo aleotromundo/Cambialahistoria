@@ -2,6 +2,7 @@ import { LABEL_EDGE } from './label-edge.ts';
 
 export const SETTLE = {
   downWeight: 4,
+  hudStep: LABEL_EDGE.hudGap + 1,
 } as const;
 
 export interface LabelBox {
@@ -29,52 +30,103 @@ export interface SettleView {
   readonly height: number;
 }
 
-function rectOf(box: LabelBox, x: number, y: number): ScreenRect {
-  return { left: x - box.width / 2, top: y - box.height, right: x + box.width / 2, bottom: y };
-}
-
-function touches(a: ScreenRect, b: ScreenRect, gap: number): boolean {
-  return a.left < b.right + gap && b.left - gap < a.right && a.top < b.bottom + gap && b.top - gap < a.bottom;
-}
-
 function centred(x: number, width: number, view: SettleView): number {
   const low: number = LABEL_EDGE.side + width / 2;
   const high: number = view.width - LABEL_EDGE.side - width / 2;
   return low > high ? view.width / 2 : Math.min(high, Math.max(low, x));
 }
 
+interface Settling {
+  readonly gap: number;
+  readonly view: SettleView;
+  readonly placed: ScreenRect[];
+  readonly blockers: readonly ScreenRect[];
+  box: RankedBox;
+  home: number;
+  x: number;
+  y: number;
+  cost: number;
+  found: boolean;
+}
+
+function clearAt(settling: Settling, x: number, y: number): boolean {
+  const { box, gap }: Settling = settling;
+  if (y - box.height < LABEL_EDGE.topClear || y > settling.view.height - LABEL_EDGE.side) return false;
+  const left: number = x - box.width / 2;
+  const top: number = y - box.height;
+  const right: number = x + box.width / 2;
+  for (const other of settling.placed) {
+    if (left < other.right + gap && other.left - gap < right && top < other.bottom + gap && other.top - gap < y) return false;
+  }
+  for (const other of settling.blockers) {
+    if (left < other.right + LABEL_EDGE.hudGap && other.left - LABEL_EDGE.hudGap < right && top < other.bottom + LABEL_EDGE.hudGap && other.top - LABEL_EDGE.hudGap < y) return false;
+  }
+  return true;
+}
+
+function consider(settling: Settling, x: number, y: number): void {
+  const { box }: Settling = settling;
+  const option: number = Math.abs(x - settling.home) + (y <= box.y ? box.y - y : (y - box.y) * SETTLE.downWeight);
+  if (option < settling.cost && clearAt(settling, x, y)) {
+    settling.cost = option;
+    settling.x = x;
+    settling.y = y;
+    settling.found = true;
+  }
+}
+
+function scanColumn(settling: Settling, raw: number): void {
+  const { box, gap }: Settling = settling;
+  const x: number = centred(raw, box.width, settling.view);
+  consider(settling, x, box.y);
+  for (const rect of settling.placed) {
+    consider(settling, x, rect.top - gap);
+    consider(settling, x, rect.bottom + gap + box.height);
+  }
+  for (const rect of settling.blockers) {
+    consider(settling, x, rect.top - SETTLE.hudStep);
+    consider(settling, x, rect.bottom + SETTLE.hudStep + box.height);
+  }
+}
+
+function scanSides(settling: Settling, rects: readonly ScreenRect[]): void {
+  const { box, gap }: Settling = settling;
+  for (const rect of rects) {
+    scanColumn(settling, rect.left - gap - box.width / 2 - LABEL_EDGE.hudGap);
+    scanColumn(settling, rect.right + gap + box.width / 2 + LABEL_EDGE.hudGap);
+  }
+}
+
+function homeFree(settling: Settling): boolean {
+  settling.cost = Infinity;
+  settling.found = false;
+  scanColumn(settling, settling.home);
+  return settling.found;
+}
+
+function sideFree(settling: Settling): boolean {
+  scanSides(settling, settling.placed);
+  scanSides(settling, settling.blockers);
+  return settling.found;
+}
+
+function settleOne(settling: Settling): LabelSpot {
+  const { box, view }: Settling = settling;
+  if (homeFree(settling) || sideFree(settling)) return { x: settling.x, y: settling.y };
+  return { x: settling.home, y: Math.min(view.height - LABEL_EDGE.side, Math.max(LABEL_EDGE.topClear + box.height, box.y)) };
+}
+
 export function settleLabels(boxes: readonly RankedBox[], gap: number, view: SettleView, blockers: readonly ScreenRect[]): Map<number, LabelSpot> {
   const ordered: RankedBox[] = boxes.toSorted((a: RankedBox, b: RankedBox): number => (a.rank !== b.rank ? b.rank - a.rank : a.y !== b.y ? b.y - a.y : a.id - b.id));
-  const placed: ScreenRect[] = [];
   const spots: Map<number, LabelSpot> = new Map<number, LabelSpot>();
-  const hudGap: number = LABEL_EDGE.hudGap + 1;
+  const first: RankedBox | undefined = ordered[0];
+  if (first === undefined) return spots;
+  const settling: Settling = { gap, view, placed: [], blockers, box: first, home: 0, x: 0, y: 0, cost: Infinity, found: false };
   for (const box of ordered) {
-    const free = (x: number, y: number): boolean => {
-      if (y - box.height < LABEL_EDGE.topClear || y > view.height - LABEL_EDGE.side) return false;
-      const rect: ScreenRect = rectOf(box, x, y);
-      return !placed.some((other: ScreenRect): boolean => touches(rect, other, gap)) && !blockers.some((other: ScreenRect): boolean => touches(rect, other, LABEL_EDGE.hudGap));
-    };
-    const ys: number[] = [box.y, ...placed.flatMap((rect: ScreenRect): number[] => [rect.top - gap, rect.bottom + gap + box.height]), ...blockers.flatMap((rect: ScreenRect): number[] => [rect.top - hudGap, rect.bottom + hudGap + box.height])];
-    const home: number = centred(box.x, box.width, view);
-    const lean = (x: number, y: number): number => Math.abs(x - home) + (y <= box.y ? box.y - y : (y - box.y) * SETTLE.downWeight);
-    const pick = (xs: readonly number[]): LabelSpot | null => {
-      let best: LabelSpot | null = null;
-      let cost: number = Infinity;
-      for (const raw of xs) {
-        const x: number = centred(raw, box.width, view);
-        for (const y of ys) {
-          const option: number = lean(x, y);
-          if (option < cost && free(x, y)) {
-            cost = option;
-            best = { x, y };
-          }
-        }
-      }
-      return best;
-    };
-    const sides: number[] = [...placed, ...blockers].flatMap((rect: ScreenRect): number[] => [rect.left - gap - box.width / 2 - LABEL_EDGE.hudGap, rect.right + gap + box.width / 2 + LABEL_EDGE.hudGap]);
-    const spot: LabelSpot = pick([home]) ?? pick([home, ...sides]) ?? { x: home, y: Math.min(view.height - LABEL_EDGE.side, Math.max(LABEL_EDGE.topClear + box.height, box.y)) };
-    placed.push(rectOf(box, spot.x, spot.y));
+    settling.box = box;
+    settling.home = centred(box.x, box.width, view);
+    const spot: LabelSpot = settleOne(settling);
+    settling.placed.push({ left: spot.x - box.width / 2, top: spot.y - box.height, right: spot.x + box.width / 2, bottom: spot.y });
     spots.set(box.id, spot);
   }
   return spots;
@@ -97,15 +149,20 @@ export function foldPiles(boxes: readonly RankedBox[], reach: number, keep: numb
     return root;
   };
   for (const box of boxes) groupOf.set(box.id, box.id);
-  boxes.forEach((a: RankedBox, index: number): void => {
-    for (const b of boxes.slice(index + 1)) {
-      if (Math.hypot(a.x - b.x, a.y - b.y) <= reach) groupOf.set(find(a.id), find(b.id));
+  for (let index: number = 0; index < boxes.length; index += 1) {
+    const a: RankedBox | undefined = boxes[index];
+    if (a === undefined) continue;
+    for (let other: number = index + 1; other < boxes.length; other += 1) {
+      const b: RankedBox | undefined = boxes[other];
+      if (b !== undefined && Math.hypot(a.x - b.x, a.y - b.y) <= reach) groupOf.set(find(a.id), find(b.id));
     }
-  });
+  }
   const groups: Map<number, RankedBox[]> = new Map<number, RankedBox[]>();
   for (const box of boxes) {
     const root: number = find(box.id);
-    groups.set(root, [...(groups.get(root) ?? []), box]);
+    const members: RankedBox[] | undefined = groups.get(root);
+    if (members === undefined) groups.set(root, [box]);
+    else members.push(box);
   }
   const folded: Set<number> = new Set<number>();
   const more: Map<number, number> = new Map<number, number>();

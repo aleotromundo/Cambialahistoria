@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { test } from 'node:test';
+import { createRng } from '../../sim/rng.ts';
+import type { Rng } from '../../sim/rng.ts';
 import type { PhoneScreen, Rect } from '../mobile/phone-layout.ts';
 import { layoutRects, phoneLayout } from '../mobile/phone-layout.ts';
 import type { BandRect, HudBand, HudFit } from '../hud/hud-fit.ts';
 import { hudBand, hudFit } from '../hud/hud-fit.ts';
 import { anchorInView, heldReach, keepApart, keepBelowTop, keepInside, keepTagInView, LABEL_EDGE, placeTag, stackAtEdges } from './label-edge.ts';
-import type { EdgeStack, EdgeTag, ViewSize } from './label-edge.ts';
+import type { EdgeStack, EdgeTag, TagPlace, ViewSize } from './label-edge.ts';
 import type { ScreenRect } from './label-stack.ts';
 
 const VIEW = { width: 844, height: 390 };
@@ -224,4 +227,18 @@ void test('a label keeps its place in the order until its reach moves past the h
   assert.equal(heldReach(undefined, 300), 300);
   assert.equal(heldReach(300, 300 + LABEL_EDGE.reachHold - 1), 300);
   assert.equal(heldReach(300, 300 + LABEL_EDGE.reachHold + 1), 300 + LABEL_EDGE.reachHold + 1);
+});
+
+void test('two thousand tags among HUD panels land exactly where they always have', (): void => {
+  const rng: Rng = createRng(11);
+  const places: TagPlace[] = Array.from({ length: 2000 }, (): TagPlace => {
+    const view: ViewSize = rng.chance(0.3) ? VIEW : { width: 1280, height: 720 };
+    const rects: ScreenRect[] = Array.from({ length: rng.int(0, 14) }, (): ScreenRect => {
+      const left: number = rng.range(0, view.width);
+      const top: number = rng.range(0, view.height);
+      return { left, top, right: left + rng.range(20, 420), bottom: top + rng.range(10, 210) };
+    });
+    return placeTag(rng.range(-40, view.width + 40), rng.range(-40, view.height + 40), rng.range(40, 200), rng.range(16, 26), view, rects);
+  });
+  assert.equal(createHash('sha256').update(JSON.stringify(places)).digest('hex'), '4ecf0538895c75e633ec9ced6791e7bafe1002ff1daeea844c8cbe566129928a');
 });

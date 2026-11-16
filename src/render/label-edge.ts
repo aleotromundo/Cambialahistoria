@@ -57,27 +57,33 @@ export interface ItemPoint {
 }
 
 export function placeTag(anchorX: number, anchorY: number, width: number, height: number, view: ViewSize, rects: readonly ScreenRect[], item: ItemPoint = { x: anchorX, y: anchorY }): TagPlace {
-  const inView = ([x, y]: readonly [number, number]): [number, number] => [keepInside(x, width, view), keepBelowTop(y, height, view)];
-  const free = ([x, y]: readonly [number, number]): boolean => !rects.some((rect: ScreenRect): boolean => hits(boxOf(x, y, width, height), rect));
-  const start: [number, number] = inView([anchorX, anchorY]);
-  let chosen: [number, number] = start;
-  if (!free(start)) {
+  const free = (x: number, y: number): boolean => {
+    const box: ScreenRect = boxOf(x, y, width, height);
+    for (const rect of rects) {
+      if (hits(box, rect)) return false;
+    }
+    return true;
+  };
+  let x: number = keepInside(anchorX, width, view);
+  let y: number = keepBelowTop(anchorY, height, view);
+  if (!free(x, y)) {
     const gap: number = LABEL_EDGE.hudGap + 1;
-    const xs: number[] = [start[0], ...rects.flatMap((rect: ScreenRect): number[] => [rect.left - gap - width / 2, rect.right + gap + width / 2])];
-    const ys: number[] = [start[1], ...rects.flatMap((rect: ScreenRect): number[] => [rect.top - gap, rect.bottom + gap + height])];
+    const xs: number[] = [x, ...rects.flatMap((rect: ScreenRect): number[] => [rect.left - gap - width / 2, rect.right + gap + width / 2])];
+    const ys: number[] = [y, ...rects.flatMap((rect: ScreenRect): number[] => [rect.top - gap, rect.bottom + gap + height])];
     let best: number = Infinity;
     for (const cx of xs) {
       for (const cy of ys) {
-        const option: [number, number] = inView([cx, cy]);
-        const distance: number = Math.hypot(option[0] - anchorX, option[1] - anchorY);
-        if (distance < best && free(option)) {
+        const optionX: number = keepInside(cx, width, view);
+        const optionY: number = keepBelowTop(cy, height, view);
+        const distance: number = Math.hypot(optionX - anchorX, optionY - anchorY);
+        if (distance < best && free(optionX, optionY)) {
           best = distance;
-          chosen = option;
+          x = optionX;
+          y = optionY;
         }
       }
     }
   }
-  const [x, y] = chosen;
   const away: boolean = Math.hypot(x - anchorX, y - anchorY) > LABEL_EDGE.awayDistance;
   return { x, y, away, turn: Math.atan2(item.y - (y - height / 2), item.x - x) };
 }

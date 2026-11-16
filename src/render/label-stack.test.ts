@@ -1,10 +1,46 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { test } from 'node:test';
+import { createRng } from '../../sim/rng.ts';
+import type { Rng } from '../../sim/rng.ts';
 import { LABEL_EDGE } from './label-edge.ts';
 import { foldPiles, settleLabels } from './label-stack.ts';
 import type { LabelSpot, RankedBox, ScreenRect, SettleView } from './label-stack.ts';
 
 const VIEW: SettleView = { width: 1280, height: 720 };
+
+interface Crowd {
+  readonly view: SettleView;
+  readonly boxes: readonly RankedBox[];
+  readonly blockers: readonly ScreenRect[];
+}
+
+function crowds(seed: number, count: number): Crowd[] {
+  const rng: Rng = createRng(seed);
+  return Array.from({ length: count }, (): Crowd => {
+    const view: SettleView = rng.chance(0.3) ? { width: 844, height: 390 } : { width: 1280, height: 720 };
+    const middle: { readonly x: number; readonly y: number } = { x: rng.range(0, view.width), y: rng.range(0, view.height) };
+    const spread: number = rng.chance(0.5) ? 20 : 200;
+    const boxes: RankedBox[] = Array.from({ length: rng.int(1, 40) }, (_: unknown, index: number): RankedBox => ({
+      id: index + 1,
+      x: rng.chance(0.2) ? Math.round(middle.x) : middle.x + rng.range(-spread, spread) / 2,
+      y: rng.chance(0.2) ? Math.round(middle.y) : middle.y + rng.range(-spread, spread) / 2,
+      width: rng.chance(0.3) ? 90 : rng.range(40, 200),
+      height: rng.chance(0.5) ? 20 : rng.range(16, 26),
+      rank: rng.int(0, 3),
+    }));
+    const blockers: ScreenRect[] = Array.from({ length: rng.int(0, 12) }, (): ScreenRect => {
+      const left: number = rng.range(0, view.width);
+      const top: number = rng.range(0, view.height);
+      return { left, top, right: left + rng.range(20, 420), bottom: top + rng.range(10, 210) };
+    });
+    return { view, boxes, blockers };
+  });
+}
+
+function digest(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
 
 function box(id: number, x: number, y: number, rank: number = 0): RankedBox {
   return { id, x, y, width: 80, height: 18, rank };
@@ -104,4 +140,17 @@ void test('three or fewer labels together, or labels far apart, are never folded
   const folding = foldPiles(apart, 36, 3);
   assert.equal(folding.folded.size, 0);
   assert.equal(folding.more.size, 0);
+});
+
+void test('three hundred crowded piles settle exactly where they always have', (): void => {
+  const spots = crowds(7, 300).map((crowd: Crowd) => Array.from(settleLabels(crowd.boxes, 2, crowd.view, crowd.blockers)));
+  assert.equal(digest(spots), '5c0b29fca284e931a6f3bcc8933bd275a5c5749f381fcb2b98b55c37872e941c');
+});
+
+void test('three hundred crowded piles fold exactly as they always have', (): void => {
+  const folds = crowds(7, 300).map((crowd: Crowd) => {
+    const folding = foldPiles(crowd.boxes, 36, 3);
+    return [[...folding.folded], [...folding.more]];
+  });
+  assert.equal(digest(folds), '03243493200bdc13e70d9f06d9b109c0bec163c2b97b5faa591464fb5b77acb7');
 });

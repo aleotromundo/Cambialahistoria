@@ -5,7 +5,6 @@ import { itemName, rarityOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { allHold } from '../../sim/world/conditions.ts';
 import { questPins } from '../../sim/world/quest-pins.ts';
-import type { QuestPin } from '../../sim/world/quest-pins.ts';
 import type { GroundItem, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
 import { createTargetBar } from '../hud/target-bar.ts';
 import type { TargetBar } from '../hud/target-bar.ts';
@@ -219,6 +218,14 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     return { size, view };
   };
   const pending: PendingTag[] = [];
+  const pinnedExits: Set<string> = new Set<string>();
+  const pinnedNpcs: Set<number> = new Set<number>();
+  const onGround: Set<GroundItem> = new Set<GroundItem>();
+  const lootBlockers: ScreenRect[] = [];
+  const boxes: RankedBox[] = [];
+  const settled: RankedBox[] = [];
+  const items: Map<number, ItemPoint> = new Map<number, ItemPoint>();
+  const moved: Set<number> = new Set<number>();
   const reaches: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
   const settleTag = (element: HTMLElement, glide: LabelGlide, stack: LabelGlide, dt: number, shown: boolean): void => {
     const bound: TagBound | null = shown ? keepClear(element) : null;
@@ -540,9 +547,20 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       tagRects.length = 0;
       plateRects.length = 0;
       for (const rect of hudRects) tagRects.push(rect);
-      const pins: readonly QuestPin[] = questPins(world);
+      pinnedExits.clear();
+      pinnedNpcs.clear();
+      for (const pin of questPins(world)) {
+        switch (pin.kind) {
+          case 'exit':
+            pinnedExits.add(pin.exit);
+            break;
+          case 'npc':
+            pinnedNpcs.add(pin.npcId);
+            break;
+        }
+      }
       for (const label of exits) {
-        const pinned: boolean = pins.some((pin: QuestPin): boolean => pin.kind === 'exit' && pin.exit === label.id);
+        const pinned: boolean = pinnedExits.has(label.id);
         if (pinned !== label.pinned) {
           label.pinned = pinned;
           label.element.classList.toggle('pinned', pinned);
@@ -558,7 +576,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       }
       if (peopleOf !== world.npcs) showPeople(world);
       for (const label of people) {
-        const pinned: boolean = pins.some((pin: QuestPin): boolean => pin.kind === 'npc' && pin.npcId === label.npc.id);
+        const pinned: boolean = pinnedNpcs.has(label.npc.id);
         if (pinned !== label.pinned) {
           label.pinned = pinned;
           label.element.classList.toggle('pinned', pinned);
@@ -598,22 +616,26 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       targetBar.update(dt, world, hoveredId);
 
       seenZone = world.zone;
+      onGround.clear();
+      for (const ground of world.ground) onGround.add(ground);
       tip.check((id: number): TipCheck => {
         const label: LootLabel | undefined = labels.get(id);
         const under: Element | null = document.elementFromPoint(pointer.x, pointer.y);
         return {
-          present: label !== undefined && world.ground.includes(label.ground),
+          present: label !== undefined && onGround.has(label.ground),
           leaving: label === undefined || label.leaving >= 0,
           sameZone: tipZone === world.zone,
           underPointer: label !== undefined && under !== null && label.element.contains(under),
         };
       });
       for (const ground of world.ground) labelFor(world, ground);
-      const lootBlockers: readonly ScreenRect[] = [...hudRects, ...plateRects];
-      const boxes: RankedBox[] = [];
-      const settled: RankedBox[] = [];
-      const items: Map<number, ItemPoint> = new Map<number, ItemPoint>();
-      const moved: Set<number> = new Set<number>();
+      lootBlockers.length = 0;
+      for (const rect of hudRects) lootBlockers.push(rect);
+      for (const rect of plateRects) lootBlockers.push(rect);
+      boxes.length = 0;
+      settled.length = 0;
+      items.clear();
+      moved.clear();
       const all: boolean = itemNames.shown();
       for (const [id, label] of labels) {
         if (label.leaving >= 0) {
@@ -623,7 +645,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             labels.delete(id);
             continue;
           }
-        } else if (!world.ground.includes(label.ground)) {
+        } else if (!onGround.has(label.ground)) {
           label.leaving = OVERLAYS.labelExit;
           label.element.classList.add('taken');
         }
