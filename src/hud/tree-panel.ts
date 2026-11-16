@@ -37,6 +37,8 @@ import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNo
 import type { TreeNodeStatus } from './tree-status.ts';
 import { cardNode, CLOSED_CARD, stepCard } from './tree-card.ts';
 import type { CardEvent, CardState } from './tree-card.ts';
+import { createTreeHead } from './tree-head.ts';
+import type { TreeHead } from './tree-head.ts';
 
 const CHART = {
   unit: TREE_NODES.unit,
@@ -76,43 +78,7 @@ interface LinkView {
 export function createTreePanel(parent: HTMLElement, context: HudContext, close: () => void): ChartPanel {
   const content = context.api.world.content;
   const element: HTMLDivElement = el('div', 'hud-panel left tree-panel', parent);
-  element.style.setProperty('--socket', `${TREE_NODES.minor}px`);
-  element.style.setProperty('--notable', `${TREE_NODES.notable}px`);
-  element.style.setProperty('--keystone', `${TREE_NODES.keystone}px`);
-  element.style.setProperty('--ability', `${TREE_NODES.ability}px`);
-  element.style.setProperty('--ability-rim', `${TREE_NODES.abilityRim}px`);
-  element.style.setProperty('--variant-rim', `${TREE_NODES.variantRim}px`);
-  const head: HTMLDivElement = el('div', 'tree-head', element);
-  label('tree-title', content.chart.title, head);
-  const points: HTMLDivElement = el('div', 'tree-points', head);
-  const pointCount: HTMLSpanElement = el('span', 'tree-points-count', points);
-  const pointWord: HTMLSpanElement = el('span', 'tree-points-word', points);
-  const search: HTMLInputElement = el('input', 'chart-search', head);
-  search.type = 'search';
-  search.placeholder = 'Find a place';
-  search.setAttribute('aria-label', 'Find a place on the skill tree');
-  const zoomOut: HTMLButtonElement = el('button', 'chart-zoom', head);
-  zoomOut.type = 'button';
-  zoomOut.textContent = '−';
-  zoomOut.setAttribute('aria-label', 'Zoom out');
-  const zoomIn: HTMLButtonElement = el('button', 'chart-zoom', head);
-  zoomIn.type = 'button';
-  zoomIn.textContent = '+';
-  zoomIn.setAttribute('aria-label', 'Zoom in');
-  const recentre: HTMLButtonElement = el('button', 'chart-zoom chart-centre', head);
-  recentre.type = 'button';
-  recentre.textContent = 'Centre';
-  recentre.setAttribute('aria-label', 'Centre the skill tree on where you are');
-  const restart: HTMLButtonElement = el('button', 'chart-restart', head);
-  restart.type = 'button';
-  const shut: HTMLButtonElement = el('button', 'chart-close', head);
-  shut.type = 'button';
-  shut.textContent = '×';
-  shut.setAttribute('aria-label', 'Close the skill tree');
-  shut.addEventListener('click', (event: MouseEvent): void => {
-    event.stopPropagation();
-    close();
-  });
+  const { points, pointCount, pointWord, search, zoomOut, zoomIn, recentre, restart }: TreeHead = createTreeHead(element, content.chart.title, close);
 
   const nodes: readonly SkillTreeNodeDef[] = content.skillTree;
   const bounds: ChartBounds = chartBounds(nodes);
