@@ -14,6 +14,7 @@ const PATH = {
   pocketCells: 400,
   faceStep: 0.1,
   goalRing: 2,
+  lastSearch: 0x7ffffffe,
 } as const;
 
 const STEPS: readonly Step[] = [
@@ -33,6 +34,11 @@ class MinHeap {
 
   get size(): number {
     return this.nodes.length;
+  }
+
+  clear(): void {
+    this.nodes.length = 0;
+    this.scores.length = 0;
   }
 
   push(node: number, score: number): void {
@@ -117,21 +123,49 @@ function sealedFrom(grid: NavGrid, start: number, goal: number): boolean {
   return true;
 }
 
+interface SearchScratch {
+  cost: Float32Array;
+  parent: Int32Array;
+  stamp: Uint32Array;
+  search: number;
+  readonly open: MinHeap;
+}
+
+const SCRATCH: SearchScratch = { cost: new Float32Array(0), parent: new Int32Array(0), stamp: new Uint32Array(0), search: 0, open: new MinHeap() };
+
+function beginSearch(total: number): number {
+  if (SCRATCH.stamp.length < total) {
+    SCRATCH.cost = new Float32Array(total);
+    SCRATCH.parent = new Int32Array(total);
+    SCRATCH.stamp = new Uint32Array(total);
+    SCRATCH.search = 0;
+  }
+  if (SCRATCH.search >= PATH.lastSearch) {
+    SCRATCH.stamp.fill(0);
+    SCRATCH.search = 0;
+  }
+  SCRATCH.search += 1;
+  SCRATCH.open.clear();
+  return SCRATCH.search * 2;
+}
+
 function searchCells(grid: NavGrid, start: number, goal: number): number[] | null {
   if (goal !== start && sealedFrom(grid, start, goal)) return null;
-  const total: number = grid.columns * grid.rows;
-  const cost: Float32Array = new Float32Array(total).fill(Infinity);
-  const parent: Int32Array = new Int32Array(total).fill(-1);
-  const closed: Uint8Array = new Uint8Array(total);
-  const open: MinHeap = new MinHeap();
+  const seen: number = beginSearch(grid.columns * grid.rows);
+  const shut: number = seen + 1;
+  const { cost, parent, stamp, open } = SCRATCH;
+  const costOf = (cell: number): number => ((stamp[cell] ?? 0) >= seen ? (cost[cell] ?? Infinity) : Infinity);
+  const parentOf = (cell: number): number => ((stamp[cell] ?? 0) >= seen ? (parent[cell] ?? -1) : -1);
   cost[start] = 0;
+  parent[start] = -1;
+  stamp[start] = seen;
   open.push(start, heuristic(grid, start, goal));
   let expansions: number = 0;
   while (open.size > 0 && expansions < PATH.maxExpansions) {
     const current: number = open.pop();
     if (current === goal) break;
-    if (closed[current] === 1) continue;
-    closed[current] = 1;
+    if (stamp[current] === shut) continue;
+    stamp[current] = shut;
     expansions += 1;
     const column: number = current % grid.columns;
     const row: number = Math.floor(current / grid.columns);
@@ -140,18 +174,19 @@ function searchCells(grid: NavGrid, start: number, goal: number): number[] | nul
       const nextRow: number = row + step.dr;
       if (nextColumn < 0 || nextRow < 0 || nextColumn >= grid.columns || nextRow >= grid.rows) continue;
       const next: number = nextRow * grid.columns + nextColumn;
-      if (grid.walkable[next] !== 1 || closed[next] === 1) continue;
+      if (grid.walkable[next] !== 1 || stamp[next] === shut) continue;
       if (step.dc !== 0 && step.dr !== 0 && (grid.walkable[row * grid.columns + nextColumn] !== 1 || grid.walkable[nextRow * grid.columns + column] !== 1)) continue;
-      const nextCost: number = (cost[current] ?? Infinity) + step.cost / (grid.pace[next] ?? 1);
-      if (nextCost >= (cost[next] ?? Infinity)) continue;
+      const nextCost: number = costOf(current) + step.cost / (grid.pace[next] ?? 1);
+      if (nextCost >= costOf(next)) continue;
       cost[next] = nextCost;
       parent[next] = current;
+      stamp[next] = seen;
       open.push(next, nextCost + heuristic(grid, next, goal));
     }
   }
-  if (parent[goal] === -1 && goal !== start) return null;
+  if (parentOf(goal) === -1 && goal !== start) return null;
   const cells: number[] = [];
-  for (let cell: number = goal; cell !== -1 && cell !== start; cell = parent[cell] ?? -1) cells.unshift(cell);
+  for (let cell: number = goal; cell !== -1 && cell !== start; cell = parentOf(cell)) cells.unshift(cell);
   return cells;
 }
 

@@ -130,3 +130,17 @@ void test('the nearest reached spot to a sealed point lies just outside the seal
   assert.equal(nearestReached(sealed, new Uint8Array(reach.length), pocket, 6), null);
   assert.deepEqual(cellCenter(sealed, cellIndex(sealed, out.x, out.z)), out);
 });
+
+void test('a search on a larger grid in between leaves the next search on a smaller one unchanged', (): void => {
+  const from: Vec2 = { x: 16, z: 14 };
+  const goal: Vec2 = { x: 24, z: 14 };
+  const first: Vec2[] = findPath(grid, from, goal);
+  const wide: NavGrid = buildNavGrid(must(content.zones.get('lava_depths'), 'lava_depths'), content.props, content.surfaces, content.player.radius);
+  assert.ok(wide.columns * wide.rows > grid.columns * grid.rows);
+  const across: readonly [Vec2, Vec2] = [cellCenter(wide, wide.walkable.indexOf(1)), cellCenter(wide, wide.walkable.lastIndexOf(1))];
+  const far: Vec2[] = findPath(wide, across[0], across[1]);
+  assert.deepEqual(findPath(wide, across[0], across[1]), far);
+  assert.deepEqual(findPath(grid, from, goal), first);
+  for (let again: number = 0; again < 3; again += 1) assert.deepEqual(findPath(grid, from, goal), first);
+  assert.deepEqual(findPath(grid, { x: 7, z: 23 }, { x: 49, z: 25 }), findPath(grid, { x: 7, z: 23 }, { x: 49, z: 25 }));
+});
