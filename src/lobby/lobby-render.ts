@@ -191,7 +191,6 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
       }
       const active: Built = ready(tier.samples, tier.bloom);
       const next: number = lobbyPixelRatio(name, devicePixelRatio);
-      if (renderer.getPixelRatio() !== next) renderer.setPixelRatio(next);
       renderer.getSize(size);
       if (size.x <= 0 || size.y <= 0) return;
       if (drawn.x !== size.x || drawn.y !== size.y || ratio !== next) {
