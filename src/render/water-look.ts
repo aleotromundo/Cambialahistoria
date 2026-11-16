@@ -14,6 +14,16 @@ export const WATER_LOOK = {
   lapRingTime: 1.1,
   lapRingShine: 0.16,
   surface: 0.08,
+  swirlEvery: 0.05,
+  swirlMotes: 5,
+  swirlInner: 0.2,
+  swirlTurn: 1.15,
+  swirlLift: 0.3,
+  swirlShine: 0.75,
+  swirlSlow: 0.45,
+  swirlFast: 0.75,
+  surgeHeight: 0.3,
+  surgeDrops: 28,
   swellReach: 0.9,
   swellShine: 0.22,
   swellTime: 0.9,
@@ -50,4 +60,24 @@ export function lap(kit: WaterKit, center: Vec2, radius: number, foam: Color, ra
 
 export function swell(kit: WaterKit, center: Vec2, radius: number, foam: Color): void {
   kit.ring(center.x, center.z, radius * WATER_LOOK.swellReach, new Color().copy(foam).multiplyScalar(WATER_LOOK.swellShine), WATER_LOOK.swellTime);
+}
+
+const SURGE: Partial<BurstOptions> = { speed: { min: 0.4, max: 2.6 }, lift: { min: 3.5, max: 6.5 }, life: { min: 0.55, max: 0.9 }, size: { min: 0.14, max: 0.3 }, gravity: 13, drag: 0.3, jitter: 0.3 };
+
+export function swirlHeading(angle: number): number {
+  return angle + Math.PI + WATER_LOOK.swirlTurn;
+}
+
+export function whirl(kit: WaterKit, center: Vec2, radius: number, pull: number, foam: Color, random: () => number): void {
+  const shine: Color = new Color().copy(foam).multiplyScalar(WATER_LOOK.swirlShine);
+  for (let mote: number = 0; mote < WATER_LOOK.swirlMotes; mote += 1) {
+    const angle: number = random() * Math.PI * 2;
+    const reach: number = radius * (WATER_LOOK.swirlInner + random() * (1 - WATER_LOOK.swirlInner));
+    const heading: number = swirlHeading(angle);
+    kit.spray(center.x + Math.sin(angle) * reach, WATER_LOOK.surface + random() * WATER_LOOK.swirlLift, center.z + Math.cos(angle) * reach, shine, 1, { dirX: Math.sin(heading), dirZ: Math.cos(heading), spread: 0.15, speed: { min: pull * WATER_LOOK.swirlSlow, max: pull * WATER_LOOK.swirlFast }, lift: { min: 0, max: 0.2 }, life: { min: 0.35, max: 0.6 }, size: { min: 0.18, max: 0.38 }, gravity: 0, drag: 0.6, jitter: 0.05 });
+  }
+}
+
+export function surge(kit: WaterKit, center: Vec2, foam: Color): void {
+  kit.spray(center.x, WATER_LOOK.surgeHeight, center.z, foam, WATER_LOOK.surgeDrops, SURGE);
 }

@@ -5,7 +5,7 @@ import { must } from '../../test/support.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content, SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
-import { lap, lapSpot, poolOf, splash, swell, WATER_LOOK } from './water-look.ts';
+import { lap, lapSpot, poolOf, splash, surge, swell, swirlHeading, whirl, WATER_LOOK } from './water-look.ts';
 import type { WaterKit } from './water-look.ts';
 
 const content: Content = loadContent();
@@ -57,4 +57,21 @@ void test('a pulse of still water swells out as one faint ring inside the pool, 
   swell(seen.kit, { x: 0, z: 0 }, 4, new Color(1, 1, 1));
   assert.deepEqual(seen.rings, [4 * WATER_LOOK.swellReach]);
   assert.deepEqual(seen.sprays, []);
+});
+
+void test('a whirlpool turns its foam inward and around, never straight out', (): void => {
+  for (const angle of [0, 1, 2.5, 4, 6]) {
+    const heading: number = swirlHeading(angle);
+    const outward: number = Math.sin(angle) * Math.sin(heading) + Math.cos(angle) * Math.cos(heading);
+    assert.ok(outward < 0, `foam at ${String(angle)} heads outward`);
+  }
+  const seen: Recorded = recorder();
+  whirl(seen.kit, { x: 0, z: 0 }, 5, 10, new Color(1, 1, 1), (): number => 0.5);
+  assert.equal(seen.sprays.length, WATER_LOOK.swirlMotes);
+});
+
+void test('a whirlpool that pulls under throws one fountain of drops from its middle', (): void => {
+  const seen: Recorded = recorder();
+  surge(seen.kit, { x: 0, z: 0 }, new Color(1, 1, 1));
+  assert.deepEqual(seen.sprays, [WATER_LOOK.surgeDrops]);
 });

@@ -13,7 +13,7 @@ import { glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
 import type { GroundLight, GroundLightForm } from './ground-light.ts';
 import type { ShotTint } from './projectile-views.ts';
 import { createGroundLight, GROUND_LIGHT } from './ground-light.ts';
-import { lap, poolOf, splash, swell, WATER_LOOK } from './water-look.ts';
+import { lap, poolOf, splash, surge, swell, whirl, WATER_LOOK } from './water-look.ts';
 import { STRAND } from './strand-shape.ts';
 import { dripsDue, SOAK_COLOR, SOAK_LOOK } from './soak-look.ts';
 import type { BurstOptions } from './particles.ts';
@@ -305,7 +305,8 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const { delivery, color } = view;
     if (delivery.pull > 0) {
       kit.burst(area.pos.x, area.pos.z, delivery.radius * 0.55, area.skill);
-      kit.spray(area.pos.x, 0.3, area.pos.z, color, STORM_EFFECTS.pullSpray, { speed: { min: 3, max: 9 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.5, max: 1.1 }, drag: 3 });
+      if (view.foam !== null) surge(kit, area.pos, view.foam);
+      else kit.spray(area.pos.x, 0.3, area.pos.z, color, STORM_EFFECTS.pullSpray, { speed: { min: 3, max: 9 }, lift: { min: 0.2, max: 1.4 }, life: { min: 0.3, max: 0.7 }, size: { min: 0.5, max: 1.1 }, drag: 3 });
       if (hits > 0) kit.trauma(area.skill.shake);
       return;
     }
@@ -406,9 +407,10 @@ export function createStormEffects(kit: StormKit): StormEffects {
     const { delivery, color } = view;
     view.moteTimer -= dt;
     if (view.moteTimer > 0) return;
-    if (view.foam !== null && delivery.pull === 0) {
-      view.moteTimer = WATER_LOOK.lapEvery;
-      lap(kit, area.pos, delivery.radius, view.foam, Math.random);
+    if (view.foam !== null) {
+      view.moteTimer = delivery.pull > 0 ? WATER_LOOK.swirlEvery : WATER_LOOK.lapEvery;
+      if (delivery.pull > 0) whirl(kit, area.pos, delivery.radius, delivery.pull, view.foam, Math.random);
+      else lap(kit, area.pos, delivery.radius, view.foam, Math.random);
       return;
     }
     view.moteTimer = 0.05;
