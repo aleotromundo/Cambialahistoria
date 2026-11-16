@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Group, Object3D, PointLight } from 'three';
-import { AdditiveBlending, Mesh, MeshBasicMaterial, MeshStandardMaterial, Vector3 } from 'three';
+import { AdditiveBlending, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { loadContent } from '../../sim/content/content.ts';
 import { must } from '../../test/support.ts';
 import { groundContact } from './lobby-contact.ts';
 import { groundHeight } from './lobby-ground.ts';
-import { createSetDressing, featherShare, lampFlicker, lampLights, LOBBY_SCENERY, pieceMatrix, pieceSeat, stepFlash, strikeShape, swayAngle } from './lobby-scenery.ts';
+import { createSetDressing, featherShare, lampFlicker, lampLights, LOBBY_SCENERY, pieceMatrix, pieceMatrixInto, pieceSeat, stepFlash, strikeShape, swayAngle } from './lobby-scenery.ts';
 import type { FlashState, SetDressing } from './lobby-scenery.ts';
 import { LOBBY_SETS, setMounds } from './lobby-sets.ts';
 import type { Flash, Lamp, LobbySet, SetPiece } from './lobby-sets.ts';
@@ -33,6 +33,16 @@ void test('a piece is placed on the ground under it, turned, tilted and sized fr
   assert.ok(Math.abs(across.z + 1) < 1e-9, 'a quarter turn sends the model\'s width away from the camera');
   const hanging: Vector3 = new Vector3(0, 1, 0).transformDirection(pieceMatrix({ ...piece, pitchDegrees: 180 }, 1, [], 0));
   assert.ok(hanging.y < -0.999, 'a piece turned over hangs down');
+});
+
+void test('a swaying piece is placed into a kept matrix, the same as a fresh one', (): void => {
+  const piece: SetPiece = { prop: 'banner_blue', x: 2, z: -9, y: 0, yawDegrees: 30, pitchDegrees: 10, rollDegrees: 5, size: 1.2, sink: 0, mound: false, swayDegrees: 3, skirt: false };
+  const kept: Matrix4 = new Matrix4();
+  const written: Matrix4 = pieceMatrixInto(kept, piece, 2, [], 0.04);
+  assert.equal(written, kept);
+  assert.deepEqual(kept.elements, pieceMatrix(piece, 2, [], 0.04).elements);
+  pieceMatrixInto(kept, piece, 2, [], -0.04);
+  assert.deepEqual(kept.elements, pieceMatrix(piece, 2, [], -0.04).elements);
 });
 
 void test('a banner sways a few degrees and comes back, and a still piece never moves', (): void => {

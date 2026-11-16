@@ -42,9 +42,23 @@ export function pieceSeat(piece: SetPiece, mounds: readonly Mound[]): number {
   return groundHeight(piece.x, piece.z, mounds) - piece.sink + piece.y;
 }
 
+interface PieceScratch {
+  readonly tilt: Euler;
+  readonly turn: Quaternion;
+  readonly seat: Vector3;
+  readonly size: Vector3;
+}
+
+const PIECE_SCRATCH: PieceScratch = { tilt: new Euler(), turn: new Quaternion(), seat: new Vector3(), size: new Vector3() };
+
+export function pieceMatrixInto(target: Matrix4, piece: SetPiece, scale: number, mounds: readonly Mound[], swayRadians: number): Matrix4 {
+  const { tilt, turn, seat, size }: PieceScratch = PIECE_SCRATCH;
+  turn.setFromEuler(tilt.set(piece.pitchDegrees * DEGREES, piece.yawDegrees * DEGREES + swayRadians, piece.rollDegrees * DEGREES, 'YXZ'));
+  return target.compose(seat.set(piece.x, pieceSeat(piece, mounds), piece.z), turn, size.setScalar(scale * piece.size));
+}
+
 export function pieceMatrix(piece: SetPiece, scale: number, mounds: readonly Mound[], swayRadians: number): Matrix4 {
-  const turn: Quaternion = new Quaternion().setFromEuler(new Euler(piece.pitchDegrees * DEGREES, piece.yawDegrees * DEGREES + swayRadians, piece.rollDegrees * DEGREES, 'YXZ'));
-  return new Matrix4().compose(new Vector3(piece.x, pieceSeat(piece, mounds), piece.z), turn, new Vector3().setScalar(scale * piece.size));
+  return pieceMatrixInto(new Matrix4(), piece, scale, mounds, swayRadians);
 }
 
 export function swayAngle(piece: SetPiece, seconds: number, index: number): number {
@@ -284,6 +298,7 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
       toFade(lit.material, true);
       group.add(lit);
       glows = lit;
+      faced.set(Number.NaN, Number.NaN, Number.NaN, Number.NaN);
     }
   };
 
@@ -299,6 +314,9 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
   const facing: Quaternion = new Quaternion();
   const point: Vector3 = new Vector3();
   const size: Vector3 = new Vector3();
+  const swung: Matrix4 = new Matrix4();
+  const tilt: Euler = new Euler();
+  const faced: Quaternion = new Quaternion(Number.NaN, Number.NaN, Number.NaN, Number.NaN);
 
   return {
     lamps,
@@ -334,27 +352,32 @@ export function createSetDressing(set: LobbySet, content: Content, loader: GLTFL
           if (solid && !entry.keepsBlend) entry.material.transparent = false;
         }
       }
-      bulbs.forEach((light: PointLight, index: number): void => {
+      for (let index: number = 0; index < bulbs.length; index += 1) {
+        const light: PointLight | undefined = bulbs[index];
         const lamp: Lamp | undefined = set.lamps[index];
-        light.intensity = lamp === undefined ? 0 : lamp.intensity * amount * lampFlicker(seconds, index, lamp.flicker);
-      });
+        if (light !== undefined) light.intensity = lamp === undefined ? 0 : lamp.intensity * amount * lampFlicker(seconds, index, lamp.flicker);
+      }
       for (const sway of swaying) {
-        sway.mesh.setMatrixAt(sway.slot, at.multiplyMatrices(pieceMatrix(sway.piece, sway.scale, mounds, swayAngle(sway.piece, seconds, sway.index)), sway.object));
+        sway.mesh.setMatrixAt(sway.slot, at.multiplyMatrices(pieceMatrixInto(swung, sway.piece, sway.scale, mounds, swayAngle(sway.piece, seconds, sway.index)), sway.object));
         sway.mesh.instanceMatrix.needsUpdate = true;
       }
       const hanging: RoostMesh | null = roosts;
       if (hanging !== null) {
-        set.roosts.forEach((roost: Roost, index: number): void => {
+        for (let index: number = 0; index < set.roosts.length; index += 1) {
+          const roost: Roost | undefined = set.roosts[index];
+          if (roost === undefined) continue;
           const swing: number = Math.sin(seconds * LOBBY_SCENERY.roostSwayHz * Math.PI * 2 + index * 2.3) * LOBBY_SCENERY.roostSwayDegrees * DEGREES;
-          hanging.setMatrixAt(index, at.compose(point.set(roost.x, roost.y, roost.z), facing.setFromEuler(new Euler(0, index, swing)), size.setScalar(roost.size)));
-        });
+          hanging.setMatrixAt(index, at.compose(point.set(roost.x, roost.y, roost.z), facing.setFromEuler(tilt.set(0, index, swing)), size.setScalar(roost.size)));
+        }
         hanging.instanceMatrix.needsUpdate = true;
       }
       const lit: GlowMesh | null = glows;
-      if (lit !== null) {
-        allGlows.forEach((glow: Glow, index: number): void => {
-          lit.setMatrixAt(index, at.compose(point.set(glow.x, glow.y, glow.z), camera.quaternion, size.setScalar(glow.size)));
-        });
+      if (lit !== null && !faced.equals(camera.quaternion)) {
+        faced.copy(camera.quaternion);
+        for (let index: number = 0; index < allGlows.length; index += 1) {
+          const glow: Glow | undefined = allGlows[index];
+          if (glow !== undefined) lit.setMatrixAt(index, at.compose(point.set(glow.x, glow.y, glow.z), camera.quaternion, size.setScalar(glow.size)));
+        }
         lit.instanceMatrix.needsUpdate = true;
       }
       return set.flash === null ? 0 : stepFlash(flashState, set.flash, dt, random);
