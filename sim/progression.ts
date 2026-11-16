@@ -1,4 +1,4 @@
-import type { Content, SkillTreeNodeDef, SkillVariant, XpCurve, XpGap, XpReduction } from './content/types.ts';
+import type { Content, SkillTreeNodeDef, SkillVariant, XpAfter, XpCurve, XpGap, XpReduction } from './content/types.ts';
 import { ANY_WEAPON, placeLive } from './weapons.ts';
 
 export interface XpResult {
@@ -8,7 +8,9 @@ export interface XpResult {
 }
 
 export function xpToNextLevel(curve: XpCurve, level: number): number {
-  return Math.round(curve.base * Math.pow(curve.growth, level - 1));
+  const after: XpAfter | null = curve.after;
+  if (after === null || level <= after.from) return Math.round(curve.base * Math.pow(curve.growth, level - 1));
+  return Math.round(curve.base * Math.pow(curve.growth, after.from - 1) * Math.pow(after.growth, level - after.from));
 }
 
 export function gapBand(gap: XpGap, heroLevel: number): number {

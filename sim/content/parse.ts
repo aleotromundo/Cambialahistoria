@@ -24,6 +24,7 @@ import { surface } from './parse-surface.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { skillVfx } from './parse-vfx.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
+import { xpAfter } from './parse-xp.ts';
 import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, share, text, textList } from './read.ts';
 import type {
   ActDef,
@@ -348,7 +349,7 @@ function player(value: unknown, where: string): PlayerDef {
     perLevel: each(source['perLevel'], `${where}.perLevel`, statMod),
     skillBar: each(source['skillBar'], `${where}.skillBar`, skillBinding),
     skillBook: each(source['skillBook'], `${where}.skillBook`, skillUnlock),
-    xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`), gap: xpGap(xp['gap'], `${where}.xp.gap`) },
+    xp: { base: numeric(xp, 'base', `${where}.xp`), growth: numeric(xp, 'growth', `${where}.xp`), after: xpAfter(xp['after'], `${where}.xp.after`), maxLevel: numeric(xp, 'maxLevel', `${where}.xp`), gap: xpGap(xp['gap'], `${where}.xp.gap`) },
     startingItems: textList(source, 'startingItems', where),
     dressedFlag: text(source, 'dressedFlag', where),
     firstDrop: firstDrop(source['firstDrop'], `${where}.firstDrop`),

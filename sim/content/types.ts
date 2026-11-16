@@ -19,7 +19,7 @@ import type { AtlasDef } from './atlas-types.ts';
 export type { AtlasChain, AtlasDef, AtlasFeature, AtlasFeatureKind, AtlasLabel, AtlasPoint, AtlasRoad, MapPlace } from './atlas-types.ts';
 export { ATLAS_FEATURE_KINDS } from './atlas-types.ts';
 export type { BossAnchor, BossBarks, BossDef, BossDrop, BossFirstKill, BossPhase, BossPoise, BossPresence, BossSkill, CountBreak, PieceStrikes } from './boss-types.ts';
-export type { XpCurve, XpGap, XpReduction } from './xp-types.ts';
+export type { XpAfter, XpCurve, XpGap, XpReduction } from './xp-types.ts';
 export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-types.ts';
 export type { ExitLook, PackMember, PackReturn, PackWait, SurgeRules, ZoneCheckpoint, ZoneDef, ZoneEdge, ZoneExit, ZoneKind, ZoneNpc, ZoneOutside, ZonePack, ZonePoint, ZoneProp, ZoneReturn, ZoneVoice, ZoneWalls, ZoneWaypoint } from './zone-types.ts';

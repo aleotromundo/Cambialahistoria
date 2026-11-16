@@ -58,6 +58,7 @@
   "xp": {
     "base": 105,
     "growth": 1.332,
+    "after": { "from": 9, "growth": 1.2 },
     "maxLevel": 30,
     "gap": { "band": 5, "widenEvery": 10, "soft": 2, "power": 3, "floor": 0.05, "above": true }
   },

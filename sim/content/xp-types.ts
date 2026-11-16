@@ -7,9 +7,15 @@ export interface XpGap {
   readonly above: boolean;
 }
 
+export interface XpAfter {
+  readonly from: number;
+  readonly growth: number;
+}
+
 export interface XpCurve {
   readonly base: number;
   readonly growth: number;
+  readonly after: XpAfter | null;
   readonly maxLevel: number;
   readonly gap: XpGap;
 }

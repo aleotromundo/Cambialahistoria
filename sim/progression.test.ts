@@ -6,7 +6,7 @@ import { adoptLearned, applyXp, gapBand, gapScale, canAllocate, canRefund, findN
 import type { HeldChange, XpResult } from './progression.ts';
 
 const content: Content = loadContent();
-const curve: XpCurve = { base: 60, growth: 1.42, maxLevel: 30, gap: { band: 5, widenEvery: 10, soft: 2, power: 3, floor: 0.05, above: true } };
+const curve: XpCurve = { base: 60, growth: 1.42, after: null, maxLevel: 30, gap: { band: 5, widenEvery: 10, soft: 2, power: 3, floor: 0.05, above: true } };
 
 function node(id: string): SkillTreeNodeDef {
   const found: SkillTreeNodeDef | null = findNode(content, id);
@@ -18,6 +18,14 @@ void test('the xp curve grows level by level', (): void => {
   assert.equal(xpToNextLevel(curve, 1), 60);
   assert.equal(xpToNextLevel(curve, 2), 85);
   assert.ok(xpToNextLevel(curve, 10) > xpToNextLevel(curve, 9));
+});
+
+void test('a second growth takes over above its level and leaves the levels below as they were', (): void => {
+  const bent: XpCurve = { ...curve, after: { from: 3, growth: 1.1 } };
+  assert.equal(xpToNextLevel(bent, 2), xpToNextLevel(curve, 2));
+  assert.equal(xpToNextLevel(bent, 3), xpToNextLevel(curve, 3));
+  assert.equal(xpToNextLevel(bent, 4), Math.round(60 * 1.42 * 1.42 * 1.1));
+  assert.equal(xpToNextLevel(bent, 6), Math.round(60 * 1.42 * 1.42 * Math.pow(1.1, 3)));
 });
 
 void test('xp below the threshold changes nothing but the total', (): void => {
