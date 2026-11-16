@@ -1,5 +1,5 @@
 import type { Object3D } from 'three';
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, DynamicDrawUsage, Mesh, ShaderMaterial } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, DynamicDrawUsage, InterleavedBuffer, InterleavedBufferAttribute, Mesh, ShaderMaterial } from 'three';
 import type { StrandBuffers, StrandEnds, StrandForm } from './strand-shape.ts';
 import { createStrandBuffers, restrikeAge, STRAND_POINTS, strandGrow, strandLight, strandSpan, strandStrips, TRUNK_POINTS, writeStrand } from './strand-shape.ts';
 
@@ -41,6 +41,15 @@ export const STRANDS = {
 const KNOT_VERTICES: number = 8;
 const RIBBON_VERTICES: number = STRAND_POINTS * 2;
 const VERTICES: number = RIBBON_VERTICES + KNOT_VERTICES;
+
+const LAYOUT = {
+  stride: 9,
+  position: 0,
+  heading: 3,
+  weight: 6,
+  heat: 7,
+  along: 8,
+} as const;
 
 const glsl = (value: number): string => value.toFixed(4);
 
@@ -152,16 +161,8 @@ interface Point {
 interface Slot {
   readonly mesh: Mesh<BufferGeometry, ShaderMaterial>;
   readonly buffers: StrandBuffers;
-  readonly positions: BufferAttribute;
-  readonly tangents: BufferAttribute;
-  readonly weights: BufferAttribute;
-  readonly heats: BufferAttribute;
-  readonly alongs: BufferAttribute;
-  readonly positionData: Float32Array;
-  readonly tangentData: Float32Array;
-  readonly weightData: Float32Array;
-  readonly heatData: Float32Array;
-  readonly alongData: Float32Array;
+  readonly vertices: InterleavedBuffer;
+  readonly data: Float32Array;
   readonly color: Color;
   readonly strength: { value: number };
   readonly glow: { value: number };
@@ -211,43 +212,43 @@ export function sheathColor(color: Color, out: Color): Color {
 function knotAt(slot: Slot, knot: number, point: number, weight: number, along: number): void {
   const points: Float32Array = slot.buffers.points;
   for (let corner: number = 0; corner < 4; corner += 1) {
-    const vertex: number = RIBBON_VERTICES + knot * 4 + corner;
-    for (let axis: number = 0; axis < 3; axis += 1) slot.positionData[vertex * 3 + axis] = points[point * 3 + axis] ?? 0;
-    slot.weightData[vertex] = weight;
-    slot.alongData[vertex] = along;
+    const vertex: number = (RIBBON_VERTICES + knot * 4 + corner) * LAYOUT.stride;
+    for (let axis: number = 0; axis < 3; axis += 1) slot.data[vertex + LAYOUT.position + axis] = points[point * 3 + axis] ?? 0;
+    slot.data[vertex + LAYOUT.weight] = weight;
+    slot.data[vertex + LAYOUT.along] = along;
   }
+}
+
+function edgeAt(slot: Slot, vertex: number, point: number): void {
+  slot.data[vertex + LAYOUT.weight] = slot.buffers.weights[point] ?? 0;
+  slot.data[vertex + LAYOUT.heat] = slot.buffers.heats[point] ?? 0;
+  slot.data[vertex + LAYOUT.along] = slot.buffers.alongs[point] ?? 0;
 }
 
 function expand(slot: Slot): void {
   const points: Float32Array = slot.buffers.points;
-  const positions: Float32Array = slot.positionData;
-  const tangents: Float32Array = slot.tangentData;
+  const data: Float32Array = slot.data;
   for (const [start, count] of STRIPS) {
     for (let point: number = start; point < start + count; point += 1) {
       const before: number = Math.max(start, point - 1);
       const after: number = Math.min(start + count - 1, point + 1);
+      const left: number = point * 2 * LAYOUT.stride;
+      const right: number = left + LAYOUT.stride;
       for (let axis: number = 0; axis < 3; axis += 1) {
         const at: number = points[point * 3 + axis] ?? 0;
         const toward: number = (points[after * 3 + axis] ?? 0) - (points[before * 3 + axis] ?? 0);
-        positions[point * 6 + axis] = at;
-        positions[point * 6 + 3 + axis] = at;
-        tangents[point * 6 + axis] = toward;
-        tangents[point * 6 + 3 + axis] = toward;
+        data[left + LAYOUT.position + axis] = at;
+        data[right + LAYOUT.position + axis] = at;
+        data[left + LAYOUT.heading + axis] = toward;
+        data[right + LAYOUT.heading + axis] = toward;
       }
-      for (let edge: number = 0; edge < 2; edge += 1) {
-        slot.weightData[point * 2 + edge] = slot.buffers.weights[point] ?? 0;
-        slot.heatData[point * 2 + edge] = slot.buffers.heats[point] ?? 0;
-        slot.alongData[point * 2 + edge] = slot.buffers.alongs[point] ?? 0;
-      }
+      edgeAt(slot, left, point);
+      edgeAt(slot, right, point);
     }
   }
   knotAt(slot, 0, 0, STRANDS.knotStart, 0);
   knotAt(slot, 1, TRUNK_POINTS - 1, STRANDS.knotEnd, 1);
-  slot.positions.needsUpdate = true;
-  slot.tangents.needsUpdate = true;
-  slot.weights.needsUpdate = true;
-  slot.heats.needsUpdate = true;
-  slot.alongs.needsUpdate = true;
+  slot.vertices.needsUpdate = true;
 }
 
 const CORNERS: readonly (readonly [number, number])[] = [
@@ -259,16 +260,8 @@ const CORNERS: readonly (readonly [number, number])[] = [
 
 function createSlot(indices: readonly number[]): Slot {
   const geometry: BufferGeometry = new BufferGeometry();
-  const positionData: Float32Array = new Float32Array(VERTICES * 3);
-  const tangentData: Float32Array = new Float32Array(VERTICES * 3);
-  const weightData: Float32Array = new Float32Array(VERTICES);
-  const heatData: Float32Array = new Float32Array(VERTICES);
-  const alongData: Float32Array = new Float32Array(VERTICES);
-  const positions: BufferAttribute = new BufferAttribute(positionData, 3).setUsage(DynamicDrawUsage);
-  const tangents: BufferAttribute = new BufferAttribute(tangentData, 3).setUsage(DynamicDrawUsage);
-  const weights: BufferAttribute = new BufferAttribute(weightData, 1).setUsage(DynamicDrawUsage);
-  const heats: BufferAttribute = new BufferAttribute(heatData, 1).setUsage(DynamicDrawUsage);
-  const alongs: BufferAttribute = new BufferAttribute(alongData, 1).setUsage(DynamicDrawUsage);
+  const data: Float32Array = new Float32Array(VERTICES * LAYOUT.stride);
+  const vertices: InterleavedBuffer = new InterleavedBuffer(data, LAYOUT.stride).setUsage(DynamicDrawUsage);
   const sides: Float32Array = new Float32Array(VERTICES);
   const corners: Float32Array = new Float32Array(VERTICES * 2);
   for (let point: number = 0; point < STRAND_POINTS; point += 1) {
@@ -280,11 +273,11 @@ function createSlot(indices: readonly number[]): Slot {
     corners[(RIBBON_VERTICES + vertex) * 2] = corner[0];
     corners[(RIBBON_VERTICES + vertex) * 2 + 1] = corner[1];
   }
-  geometry.setAttribute('position', positions);
-  geometry.setAttribute('heading', tangents);
-  geometry.setAttribute('weight', weights);
-  geometry.setAttribute('heat', heats);
-  geometry.setAttribute('along', alongs);
+  geometry.setAttribute('position', new InterleavedBufferAttribute(vertices, 3, LAYOUT.position));
+  geometry.setAttribute('heading', new InterleavedBufferAttribute(vertices, 3, LAYOUT.heading));
+  geometry.setAttribute('weight', new InterleavedBufferAttribute(vertices, 1, LAYOUT.weight));
+  geometry.setAttribute('heat', new InterleavedBufferAttribute(vertices, 1, LAYOUT.heat));
+  geometry.setAttribute('along', new InterleavedBufferAttribute(vertices, 1, LAYOUT.along));
   geometry.setAttribute('side', new BufferAttribute(sides, 1));
   geometry.setAttribute('corner', new BufferAttribute(corners, 2));
   geometry.setIndex([...indices]);
@@ -311,16 +304,8 @@ function createSlot(indices: readonly number[]): Slot {
   return {
     mesh,
     buffers: createStrandBuffers(),
-    positions,
-    tangents,
-    weights,
-    heats,
-    alongs,
-    positionData,
-    tangentData,
-    weightData,
-    heatData,
-    alongData,
+    vertices,
+    data,
     color,
     strength,
     glow,

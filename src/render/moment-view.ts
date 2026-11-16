@@ -269,6 +269,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
   let keptStrike: readonly Object3D[] = [];
   let warmed: WarmTarget | null = null;
   let warmedRigs: number = 0;
+  let warmedFigures: number = 0;
   let warming: boolean = false;
   const pacer: FramePacer = browserPacer();
   const flashes: Flash[] = [];
@@ -345,14 +346,30 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     if (entry.chest !== null) stepChest(entry.chest, { state: moment.chest, fade, clock }, dt);
   };
 
-  const makeFigure = (entry: MomentEntry, figure: MomentFigure, echo: MomentEcho): FigureView | null => {
+  const readyRig = (echo: MomentEcho): LoadedRig | null => {
     const monster: MonsterDef | undefined = content.monsters.get(echo.monster);
     if (monster === undefined) return null;
     const rigId: string = echo.look?.rig ?? monster.rig;
+    const loaded: LoadedRig | undefined = library.rigs.get(rigId);
+    if (loaded === undefined || !hasWear(library, loaded.def.frame, wornWearables(content, rigId, echo.look?.wear ?? monster.wear, null), echo.look?.gear ?? monster.gear)) return null;
+    return loaded;
+  };
+
+  const readyFigures = (): number => {
+    let count: number = 0;
+    for (const def of content.moments.defs.values()) {
+      for (const echo of def.echoes) if (readyRig(echo) !== null) count += 1;
+    }
+    return count;
+  };
+
+  const makeFigure = (entry: MomentEntry, figure: MomentFigure, echo: MomentEcho): FigureView | null => {
+    const monster: MonsterDef | undefined = content.monsters.get(echo.monster);
+    const loaded: LoadedRig | null = readyRig(echo);
+    if (monster === undefined || loaded === null) return null;
+    const rigId: string = echo.look?.rig ?? monster.rig;
     const wear: readonly string[] = echo.look?.wear ?? monster.wear;
     const gear: readonly string[] = echo.look?.gear ?? monster.gear;
-    const loaded: LoadedRig | undefined = library.rigs.get(rigId);
-    if (loaded === undefined || !hasWear(library, loaded.def.frame, wornWearables(content, rigId, wear, null), gear)) return null;
     const ghost: GhostUniforms = createGhostUniforms(STILL, MOMENT_VIEW.echoMix);
     ghost.phases.value.copy(rimPhases(entry.seed));
     const rig: RigInstance = instantiateRig(loaded, library, { tint: '#ffffff', glow: '#ffffff', ghost, feather: deps.tier.msaaSamples > 0 });
@@ -492,10 +509,10 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     const reach: number = distance(world.player.pos, moment.pos);
     entry.press = stepPress(entry.press, moment.phase === 'awake' && world.player.alive ? pressTarget(reach, moment.def.radius) : 0, dt);
     const angle: number = pressAngle(world.player.pos, moment.pos);
-    for (const uniforms of [entry.domeUniforms, entry.floorUniforms]) {
-      uniforms.uPress.value = entry.press.level;
-      uniforms.uAngle.value = angle;
-    }
+    entry.domeUniforms.uPress.value = entry.press.level;
+    entry.domeUniforms.uAngle.value = angle;
+    entry.floorUniforms.uPress.value = entry.press.level;
+    entry.floorUniforms.uAngle.value = angle;
     const strength: number = entry.shown * (1 - fade);
     entry.domeUniforms.uStrength.value = MOMENT_VIEW.domeAlpha * strength * (1 + entry.awake * 0.5);
     entry.floorUniforms.uStrength.value = MOMENT_VIEW.floorAlpha * strength * (1 + entry.awake * 0.4) * (phone ? MOMENT_VIEW.phoneEdge : 1);
@@ -520,7 +537,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       entry.light.intensity = (MOMENT_VIEW.dormantLight + (MOMENT_VIEW.awakeLight - MOMENT_VIEW.dormantLight) * entry.awake) * strength;
     }
     for (const view of entry.figures) {
-      const figure: MomentFigure | undefined = moment.figures.find((candidate: MomentFigure): boolean => candidate.echo === view.echo);
+      const indexed: MomentFigure | undefined = moment.figures[view.echo];
+      const figure: MomentFigure | undefined = indexed?.echo === view.echo ? indexed : moment.figures.find((candidate: MomentFigure): boolean => candidate.echo === view.echo);
       const walker: TransitWalker | null = walkerOf(moment.transit, view.echo);
       const gone: boolean = figure?.turned === true;
       view.shown = gone ? Math.max(0, view.shown - dt / MOMENT_VIEW.turnFade) : easeToward(view.shown, marking ? 0 : 1, MOMENT_VIEW.appearRate, dt);
@@ -563,7 +581,10 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       }
     },
     update(dt: number, world: World): void {
-      if (warmed !== null && !warming && library.rigs.size !== warmedRigs) void view.warm(warmed.renderer, warmed.camera);
+      if (warmed !== null && !warming && library.rigs.size !== warmedRigs) {
+        if (readyFigures() === warmedFigures) warmedRigs = library.rigs.size;
+        else void view.warm(warmed.renderer, warmed.camera);
+      }
       clock += dt;
       const live: Set<number> = new Set<number>();
       for (const moment of world.moments) {
@@ -597,6 +618,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     async prepare(renderer: WebGLRenderer, camera: Camera): Promise<void> {
       warmed = { renderer, camera };
       warmedRigs = library.rigs.size;
+      warmedFigures = readyFigures();
       await loadProps(content.moments.defs.values());
       const warm: MomentEntry[] = [];
       for (const def of content.moments.defs.values()) {

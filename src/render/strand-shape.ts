@@ -69,17 +69,25 @@ function smooth(t: number): number {
 }
 
 interface Frame {
-  readonly ax: number;
-  readonly ay: number;
-  readonly az: number;
-  readonly sx: number;
-  readonly sz: number;
-  readonly ux: number;
-  readonly uy: number;
-  readonly uz: number;
+  ax: number;
+  ay: number;
+  az: number;
+  sx: number;
+  sz: number;
+  ux: number;
+  uy: number;
+  uz: number;
 }
 
-function frameOf(dx: number, dy: number, dz: number): Frame {
+function blankFrame(): Frame {
+  return { ax: 0, ay: 0, az: 0, sx: 0, sz: 0, ux: 0, uy: 0, uz: 0 };
+}
+
+const TRUNK_FRAME: Frame = blankFrame();
+const LOCAL_FRAME: Frame = blankFrame();
+const BRANCH_FRAME: Frame = blankFrame();
+
+function frameOf(dx: number, dy: number, dz: number, out: Frame): Frame {
   const length: number = Math.max(1e-4, Math.hypot(dx, dy, dz));
   const ax: number = dx / length;
   const ay: number = dy / length;
@@ -87,7 +95,15 @@ function frameOf(dx: number, dy: number, dz: number): Frame {
   const flat: number = Math.hypot(ax, az);
   const sx: number = flat > 1e-3 ? az / flat : 1;
   const sz: number = flat > 1e-3 ? -ax / flat : 0;
-  return { ax, ay, az, sx, sz, ux: ay * sz, uy: az * sx - ax * sz, uz: -ay * sx };
+  out.ax = ax;
+  out.ay = ay;
+  out.az = az;
+  out.sx = sx;
+  out.sz = sz;
+  out.ux = ay * sz;
+  out.uy = az * sx - ax * sz;
+  out.uz = -ay * sx;
+  return out;
 }
 
 const SIDE: Float32Array = new Float32Array(TRUNK_POINTS);
@@ -139,7 +155,7 @@ export function writeStrand(from: StrandEnds, to: StrandEnds, form: StrandForm, 
   const dy: number = to.y - from.y;
   const dz: number = to.z - from.z;
   const length: number = Math.max(1e-4, Math.hypot(dx, dy, dz));
-  const frame: Frame = frameOf(dx, dy, dz);
+  const frame: Frame = frameOf(dx, dy, dz, TRUNK_FRAME);
   const jitter: number = Math.max(0, form.jitter);
   displace(TRUNK_POINTS, Math.min(length * STRAND.kinkShare, STRAND.kinkReach) * jitter, length / (TRUNK_POINTS - 1), random);
   const share: number = Math.min(STRAND.taperShareMax, STRAND.taperReach / length);
@@ -162,7 +178,7 @@ export function writeStrand(from: StrandEnds, to: StrandEnds, form: StrandForm, 
     const ry: number = out.points[root * 3 + 1] ?? from.y;
     const rz: number = out.points[root * 3 + 2] ?? from.z;
     const ahead: number = Math.min(TRUNK_POINTS - 1, root + 1);
-    const local: Frame = frameOf((out.points[ahead * 3] ?? to.x) - rx, (out.points[ahead * 3 + 1] ?? to.y) - ry, (out.points[ahead * 3 + 2] ?? to.z) - rz);
+    const local: Frame = frameOf((out.points[ahead * 3] ?? to.x) - rx, (out.points[ahead * 3 + 1] ?? to.y) - ry, (out.points[ahead * 3 + 2] ?? to.z) - rz, LOCAL_FRAME);
     const turn: number = (STRAND.forkTurnMin + STRAND.forkTurnSpan * random()) * (random() < 0.5 ? -1 : 1);
     const tilt: number = (random() - 0.5) * STRAND.forkTurnMin;
     const fx: number = frame.ax * 0.5 + local.ax * 0.5;
@@ -173,7 +189,7 @@ export function writeStrand(from: StrandEnds, to: StrandEnds, form: StrandForm, 
     const hz: number = fz * Math.cos(turn) + frame.sz * Math.sin(turn) + frame.uz * tilt;
     const norm: number = Math.max(1e-4, Math.hypot(hx, hy, hz));
     const reach: number = reachMax * (STRAND.forkLengthMin + (1 - STRAND.forkLengthMin) * random());
-    const branch: Frame = frameOf(hx, hy, hz);
+    const branch: Frame = frameOf(hx, hy, hz, BRANCH_FRAME);
     const drawn: boolean = fork < forks;
     const rootWeight: number = drawn ? (out.weights[root] ?? 0) * STRAND.forkWeight : 0;
     const rootAlong: number = root / (TRUNK_POINTS - 1);
