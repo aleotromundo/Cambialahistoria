@@ -12,6 +12,7 @@ import { stepWorld } from '../sim/world/step.ts';
 import type { Command, EncounterState, World } from '../sim/world/types.ts';
 import { wakeLength } from '../sim/world/wake.ts';
 import { enterZone } from '../sim/world/zones.ts';
+import { refreshPlayer } from '../sim/world/character.ts';
 import type { KeyValueStore } from './backend/backend.ts';
 import type { Input, InputCamera, InputHooks, InputHud, InputSurface, KeySource } from './input.ts';
 import { createInput, isTextField } from './input.ts';
@@ -51,6 +52,7 @@ interface FakePointer {
   readonly pointerType: string;
   readonly shiftKey: boolean;
   readonly code: string;
+  readonly repeat: boolean;
 }
 
 type Heard = Map<string, EventListenerOrEventListenerObject[]>;
@@ -76,12 +78,12 @@ function noPlayers(): PlayerHooks {
   return { at: null, takes: (): boolean => false, pressed: [], hovered: [] };
 }
 
-function rig(world: World, overUi: () => boolean = (): boolean => false, players: PlayerHooks = noPlayers(), label: () => number | null = (): number | null => null): Rig {
+function rig(world: World, overUi: () => boolean = (): boolean => false, players: PlayerHooks = noPlayers(), label: () => number | null = (): number | null => null, slots: readonly SlotDefault[] = SLOTS): Rig {
   const heard: Heard = new Map<string, EventListenerOrEventListenerObject[]>();
   const canvas: InputSurface = { addEventListener: hearing(heard), getBoundingClientRect: rect, setPointerCapture: (): void => undefined, style: { cursor: 'default' } };
   const keys: KeySource = { addEventListener: hearing(heard) };
   const fire = (type: string, pointer: Partial<FakePointer> = {}): void => {
-    const event: Event = Object.assign(new Event(type), { button: -1, buttons: 0, clientX: 0, clientY: 0, pointerId: 1, pointerType: 'mouse', shiftKey: false }, pointer);
+    const event: Event = Object.assign(new Event(type), { button: -1, buttons: 0, clientX: 0, clientY: 0, pointerId: 1, pointerType: 'mouse', shiftKey: false, code: '', repeat: false }, pointer);
     for (const listener of heard.get(type) ?? []) {
       if (typeof listener === 'function') listener(event);
       else listener.handleEvent(event);
@@ -95,7 +97,7 @@ function rig(world: World, overUi: () => boolean = (): boolean => false, players
   };
   const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, readInput: (): void => undefined };
   const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
-  const settings: SettingsStore = createSettingsStore(store, SLOTS, { flasks: 0, ladder: false });
+  const settings: SettingsStore = createSettingsStore(store, slots, { flasks: 0, ladder: false });
   const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: label, clickMarker: (): void => undefined, aimExit: (): void => undefined, aimItem: (): void => undefined,
     playerAt: (): string | null => players.at,
     hoverPlayer: (id: string | null): void => {
@@ -478,7 +480,7 @@ void test('a name label that is still reported hovered never turns a click on op
   assert.deepEqual(commands.filter((command: Command): boolean => command.type === 'talk'), []);
   assert.equal(freshMoves(commands).length, 1);
   assert.equal(setup.input.hoveredId, null);
-  assert.deepEqual(setup.input.reading, { click: { kind: 'move', reason: null }, held: [], inside: true, overUi: false });
+  assert.deepEqual(setup.input.reading, { click: { kind: 'move', reason: null }, held: [], inside: true, overUi: false, toggled: null });
 });
 
 void test('the input reading reports a held press, a no-ground click and a press taken by another player, as collect resolved them', (): void => {
@@ -489,7 +491,7 @@ void test('the input reading reports a held press, a no-ground click and a press
   setup.fire('pointermove', at(point, -1, 0));
   setup.fire('pointerdown', at(point, LEFT.button, LEFT.bit));
   setup.input.collect(DT);
-  assert.deepEqual(setup.input.reading, { click: { kind: 'player', reason: 'another player under pointer or their menu open' }, held: ['left'], inside: true, overUi: false });
+  assert.deepEqual(setup.input.reading, { click: { kind: 'player', reason: 'another player under pointer or their menu open' }, held: ['left'], inside: true, overUi: false, toggled: null });
   setup.fire('pointerup', at(point, LEFT.button, 0));
   setup.input.collect(DT);
   assert.deepEqual(setup.input.reading.held, []);
@@ -566,3 +568,121 @@ void test('a move key held while a text field takes the focus is let go, and a b
   setup.focus(field);
   assert.deepEqual(walks(setup.input.collect(DT)), [{ type: 'stop' }]);
 });
+
+const KEYED_SPIN: readonly SlotDefault[] = [
+  { name: 'Left', bindings: ['mouse_left'] },
+  { name: 'Spin', bindings: ['KeyQ'] },
+  { name: 'Bolt', bindings: ['KeyW'] },
+];
+
+function spinner(seed: number): World {
+  const world: World = worldIn(content, 'under_hall_2', seed);
+  world.monsters = [];
+  world.player.bar = world.player.bar.map((_id: string | null, slot: number): string | null => (slot === 1 ? 'cleave_millwheel' : slot === 2 ? 'storm_bolt' : null));
+  refreshPlayer(world);
+  assert.equal(world.player.skills[1]?.id, 'cleave_millwheel');
+  assert.equal(world.player.skills[0] ?? null, null);
+  return world;
+}
+
+function spinning(world: World): boolean {
+  return world.player.action?.skill.id === 'cleave_millwheel' && world.player.action.phase !== 'recovery';
+}
+
+function play(setup: Rig, seconds: number, sent: Command[] = []): Command[] {
+  for (let clock: number = 0; clock < seconds; clock += DT) {
+    setup.world.player.mana = setup.world.player.stats.maxMana;
+    const commands: Command[] = setup.input.collect(DT);
+    sent.push(...commands);
+    stepWorld(setup.world, commands, DT);
+  }
+  return sent;
+}
+
+function pointAt(setup: Rig, ground: Vec2): Vec2 {
+  const point: Vec2 = screenOf(setup.world, ground);
+  setup.fire('pointermove', at(point, -1, 0));
+  return point;
+}
+
+void test('the Millwheel held on a key spins while the key is held, glides toward the cursor and left clicks, and a left click walks once it ends', (): void => {
+  const world: World = spinner(31);
+  const setup: Rig = rig(world, (): boolean => false, noPlayers(), (): number | null => null, KEYED_SPIN);
+  const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  pointAt(setup, { x: start.x + 6, z: start.z });
+  setup.fire('keydown', { code: 'KeyQ' });
+  const steered: Command[] = play(setup, 1.2);
+  assert.ok(spinning(world), `spin started: ${JSON.stringify(world.player.action?.phase ?? null)}`);
+  assert.ok(steered.some((command: Command): boolean => command.type === 'steer'), 'the held key steers');
+  assert.ok(world.player.pos.x > start.x + 1, `glided toward the cursor: ${(world.player.pos.x - start.x).toFixed(2)} m`);
+  const before: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const west: Vec2 = { x: before.x - 6, z: before.z };
+  const point: Vec2 = pointAt(setup, west);
+  setup.fire('pointerdown', at(point, LEFT.button, LEFT.bit));
+  const clicked: Command[] = play(setup, 0.1);
+  setup.fire('pointerup', at(point, LEFT.button, 0));
+  play(setup, 0.8, clicked);
+  assert.ok(clicked.some((command: Command): boolean => command.type === 'move' && !command.held), 'the left click sends a move');
+  assert.equal(setup.input.reading.click?.kind, 'move');
+  assert.ok(spinning(world), 'the left click does not end the spin');
+  assert.ok(world.player.pos.x < before.x - 1, `glided toward the click: ${(world.player.pos.x - before.x).toFixed(2)} m`);
+  setup.fire('keyup', { code: 'KeyQ' });
+  play(setup, 1.5);
+  assert.ok(!spinning(world), 'releasing the key ends the spin');
+  const after: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+  const walk: Command[] = clickOn(setup, pointAt(setup, { x: after.x, z: after.z + 5 }));
+  assert.equal(freshMoves(walk).length, 1);
+  stepWorld(world, walk, DT);
+  play(setup, 0.6);
+  assert.ok(world.player.pos.z > after.z + 1, `a click after the spin walks: ${JSON.stringify({ intent: world.player.intent, action: world.player.action?.phase ?? null, queued: world.player.queued, from: after, now: world.player.pos })}`);
+});
+
+void test('with held skills on press to toggle, one press keeps the Millwheel turning and steering until the same key, another skill or the sim ends it', (): void => {
+  for (const ending of ['same key', 'another skill', 'no mana']) {
+    const world: World = spinner(32);
+    const setup: Rig = rig(world, (): boolean => false, noPlayers(), (): number | null => null, KEYED_SPIN);
+    setup.settings.setHeldSkills('toggle');
+    const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
+    pointAt(setup, { x: start.x + 6, z: start.z });
+    setup.fire('keydown', { code: 'KeyQ' });
+    play(setup, 0.05);
+    setup.fire('keyup', { code: 'KeyQ' });
+    const sent: Command[] = play(setup, 1.5);
+    assert.ok(spinning(world), `${ending}: the spin keeps turning after the key is let go`);
+    assert.ok(sent.some((command: Command): boolean => command.type === 'steer'), `${ending}: the toggled spin steers`);
+    assert.ok(world.player.pos.x > start.x + 1, `${ending}: glided toward the cursor`);
+    assert.equal(setup.input.reading.toggled, 'Millwheel');
+    if (ending === 'same key') {
+      setup.fire('keydown', { code: 'KeyQ' });
+      const off: Command[] = play(setup, 0.05);
+      setup.fire('keyup', { code: 'KeyQ' });
+      assert.deepEqual(off.filter((command: Command): boolean => command.type === 'skill'), [], 'the second press only ends the spin');
+    } else if (ending === 'another skill') {
+      setup.fire('keydown', { code: 'KeyW' });
+      play(setup, 0.05);
+      setup.fire('keyup', { code: 'KeyW' });
+    } else {
+      for (let clock: number = 0; clock < 2 && spinning(world); clock += DT) {
+        world.player.mana = 0;
+        stepWorld(world, setup.input.collect(DT), DT);
+      }
+    }
+    play(setup, 1.5);
+    assert.ok(!spinning(world), `${ending}: the spin ended`);
+    assert.equal(setup.input.reading.toggled, null, ending);
+    assert.deepEqual(world.player.held, [], ending);
+  }
+});
+
+void test('with held skills on hold, letting go of the key ends the spin as before', (): void => {
+  const world: World = spinner(33);
+  const setup: Rig = rig(world, (): boolean => false, noPlayers(), (): number | null => null, KEYED_SPIN);
+  setup.fire('keydown', { code: 'KeyQ' });
+  play(setup, 0.6);
+  assert.ok(spinning(world));
+  setup.fire('keyup', { code: 'KeyQ' });
+  play(setup, 1.5);
+  assert.ok(!spinning(world));
+  assert.equal(setup.input.reading.toggled, null);
+});
+

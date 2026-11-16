@@ -1,5 +1,7 @@
 import type { ActionDef, ActionId, Movement, RebindResult, ResolvedKeys } from '../settings/bindings.ts';
 import { ACTION_GROUPS, BINDING, keyLabel, MOVEMENTS } from '../settings/bindings.ts';
+import type { HeldSkills } from '../settings/settings.ts';
+import { HELD_SKILLS } from '../settings/settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
 import { el, label, setText } from './dom.ts';
 
@@ -13,6 +15,32 @@ const COPY = {
 } as const;
 
 const MOVEMENT_LABELS: Readonly<Record<Movement, string>> = { click: 'Click', keys: 'WASD' };
+
+const HELD_LABELS: Readonly<Record<HeldSkills, string>> = { hold: 'Hold', toggle: 'Press to toggle' };
+
+function mountHeldSkills(page: HTMLElement, settings: SettingsStore): () => void {
+  const row: HTMLDivElement = el('div', 'set-row', page);
+  label('set-name', 'Held skills', row);
+  const segment: HTMLDivElement = el('div', 'set-seg wide', row);
+  segment.setAttribute('role', 'radiogroup');
+  segment.setAttribute('aria-label', 'Held skills');
+  segment.style.setProperty('--count', String(HELD_SKILLS.length));
+  el('div', 'set-seg-thumb', segment);
+  const buttons: Map<HeldSkills, HTMLButtonElement> = new Map<HeldSkills, HTMLButtonElement>();
+  for (const mode of HELD_SKILLS) {
+    const button: HTMLButtonElement = el('button', 'set-seg-btn', segment);
+    button.type = 'button';
+    button.textContent = HELD_LABELS[mode];
+    button.setAttribute('role', 'radio');
+    button.addEventListener('click', (): void => settings.setHeldSkills(mode));
+    buttons.set(mode, button);
+  }
+  return (): void => {
+    const current: HeldSkills = settings.get().heldSkills;
+    segment.style.setProperty('--index', String(HELD_SKILLS.indexOf(current)));
+    for (const [mode, button] of buttons) button.setAttribute('aria-checked', String(mode === current));
+  };
+}
 
 interface RowView {
   readonly id: ActionId;
@@ -66,6 +94,7 @@ export function mountControls(page: HTMLElement, settings: SettingsStore): Contr
     select(null);
     say(COPY.moved[next], false);
   });
+  const showHeld: () => void = mountHeldSkills(page, settings);
   const list: HTMLDivElement = el('div', 'ctl-list', page);
   const note: HTMLDivElement = label('ctl-note', COPY.idle, page);
   const footer: HTMLDivElement = el('div', 'ctl-foot', page);
@@ -83,6 +112,7 @@ export function mountControls(page: HTMLElement, settings: SettingsStore): Contr
   };
 
   const refresh = (): void => {
+    showHeld();
     const keys: ResolvedKeys = settings.keys();
     movement.render();
     for (const fold of folds) fold.classList.toggle('open', settings.get().movement === 'keys');

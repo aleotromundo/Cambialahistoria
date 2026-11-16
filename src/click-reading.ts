@@ -30,6 +30,7 @@ export interface InputReading {
   readonly held: readonly string[];
   readonly inside: boolean;
   readonly overUi: boolean;
+  readonly toggled: string | null;
 }
 
 export function resolveClick(facts: ClickFacts): ClickResolution {
@@ -61,5 +62,5 @@ export function resolveClick(facts: ClickFacts): ClickResolution {
 export function describeInput(reading: InputReading): string {
   const click: string = reading.click === null ? 'no click yet' : `click ${reading.click.kind}${reading.click.reason === null ? '' : `: ${reading.click.reason}`}`;
   const held: string = reading.held.length === 0 ? 'none' : reading.held.join('+');
-  return `${click} · held ${held} · ${reading.inside ? 'in canvas' : 'off canvas'}${reading.overUi ? ' · over UI' : ''}`;
+  return `${click} · held ${held} · ${reading.inside ? 'in canvas' : 'off canvas'}${reading.overUi ? ' · over UI' : ''}${reading.toggled === null ? '' : ` · ${reading.toggled} toggled on`}`;
 }

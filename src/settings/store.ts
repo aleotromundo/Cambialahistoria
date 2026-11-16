@@ -1,7 +1,7 @@
 import type { KeyValueStore } from '../backend/backend.ts';
 import type { ActionDef, ActionId, Movement, Overrides, RebindResult, ResolvedKeys, SlotDefault, Shipped } from './bindings.ts';
 import { actionTable, freeMoveKeys, rebind, resolveKeys, sanitizeOverrides } from './bindings.ts';
-import type { GraphicsPreset, GraphicsSettings, Quality, Settings } from './settings.ts';
+import type { GraphicsPreset, GraphicsSettings, HeldSkills, Quality, Settings } from './settings.ts';
 import { mergeSettings, PRESETS, readMovement, readSettings, SETTINGS_KEY } from './settings.ts';
 
 export interface SettingsStore {
@@ -12,6 +12,7 @@ export interface SettingsStore {
   setShowFps(show: boolean): void;
   setLensWater(on: boolean): void;
   setMovement(movement: Movement): void;
+  setHeldSkills(mode: HeldSkills): void;
   rebind(action: ActionId, code: string): RebindResult;
   resetControls(): void;
   saved(): boolean;
@@ -61,6 +62,9 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
       if (movement === settings.movement) return;
       table = actionTable(slots, build, movement);
       commit(mergeSettings(settings, { movement, controls: sanitizeOverrides(table, movement === 'keys' ? freeMoveKeys(settings.controls) : settings.controls) }));
+    },
+    setHeldSkills(heldSkills: HeldSkills): void {
+      if (heldSkills !== settings.heldSkills) commit(mergeSettings(settings, { heldSkills }));
     },
     rebind(action: ActionId, code: string): RebindResult {
       const result: RebindResult = rebind(table, settings.controls, action, code);

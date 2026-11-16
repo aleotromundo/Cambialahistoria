@@ -59,3 +59,13 @@ void test('how the hero moves reads back, and anything else reads as a click', (
   assert.equal(mergeSettings(DEFAULT_SETTINGS, { movement: 'keys' }).movement, 'keys');
   assert.equal(mergeSettings({ ...DEFAULT_SETTINGS, movement: 'keys' }, { controls: {} }).movement, 'keys');
 });
+
+void test('held skills read back as hold or toggle, default hold, and survive a merge of other fields', (): void => {
+  assert.equal(readSettings(null, TABLE).heldSkills, 'hold');
+  assert.equal(readSettings(JSON.stringify({ heldSkills: 'toggle' }), TABLE).heldSkills, 'toggle');
+  assert.equal(readSettings(JSON.stringify({ heldSkills: 'spin' }), TABLE).heldSkills, 'hold');
+  assert.equal(readSettings(JSON.stringify({ graphics: { quality: 'low' } }), TABLE).heldSkills, 'hold');
+  const toggled = mergeSettings(DEFAULT_SETTINGS, { heldSkills: 'toggle' });
+  assert.equal(mergeSettings(toggled, { graphics: { quality: 'low', showFps: true, lensWater: true } }).heldSkills, 'toggle');
+});
+

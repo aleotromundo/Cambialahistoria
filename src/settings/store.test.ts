@@ -152,3 +152,21 @@ void test('going back to a click gives W back to its skill and drops the rebound
   store.setMovement('keys');
   assert.equal(store.keys().actionOf('KeyW'), 'moveUp');
 });
+
+void test('held skills persist, read back in a new store, and a repeat is silent', (): void => {
+  const storage = memory(null);
+  const store: SettingsStore = createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true });
+  let heard: number = 0;
+  store.subscribe((): void => {
+    heard += 1;
+  });
+  assert.equal(store.get().heldSkills, 'hold');
+  store.setHeldSkills('toggle');
+  store.setHeldSkills('toggle');
+  assert.equal(heard, 1);
+  assert.equal(createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true }).get().heldSkills, 'toggle');
+  assert.equal(store.rebind('inventory', 'KeyB').kind, 'ok');
+  store.setQuality('low');
+  assert.equal(store.get().heldSkills, 'toggle');
+  assert.equal(createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true }).get().heldSkills, 'toggle');
+});

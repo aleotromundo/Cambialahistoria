@@ -298,6 +298,10 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.set-seg.wide {
+  grid-template-columns: repeat(var(--count), 104px);
+}
+
 .set-seg-thumb {
   position: absolute;
   top: 0;

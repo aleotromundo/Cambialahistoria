@@ -37,6 +37,7 @@ import { surfaceRect } from './surface-rect.ts';
 
 export const INPUT = {
   holdInterval: 0.09,
+  toggleStartWindow: 0.5,
   leftBinding: 'mouse_left',
   rightBinding: 'mouse_right',
   mouseButtons: [
@@ -79,6 +80,12 @@ export interface MouseButton {
   readonly bit: number;
 }
 
+export interface ToggledSkill {
+  readonly slot: number;
+  started: boolean;
+  waited: number;
+}
+
 export interface PointerReport {
   readonly button: number;
   readonly buttons: number;
@@ -119,6 +126,8 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let pressedPlayer: boolean = false;
   let enteredZone: string = world.zone.id;
   let lastClick: ClickResolution | null = null;
+  let toggled: ToggledSkill | null = null;
+  let dropToggle: boolean = false;
   let overUi: boolean = false;
   const extra: Command[] = [];
   const keyWalk: KeyWalk = createKeyWalk((CAMERA.yawDegrees * Math.PI) / INPUT.halfTurnDegrees);
@@ -221,6 +230,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     for (const binding of held) lifted.push(binding);
     held.clear();
     shift = false;
+    dropToggle = true;
   };
   const releaseKeys = (): void => {
     for (const binding of held) if (!INPUT.mouseButtons.some((mouseButton: MouseButton): boolean => mouseButton.binding === binding)) lift(binding);
@@ -311,7 +321,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     return stationNear(world, ground) ?? cacheNear(world, ground);
   };
 
-  const reading = (): InputReading => ({ click: lastClick, held: INPUT.mouseButtons.filter((mouseButton: MouseButton): boolean => held.has(mouseButton.binding)).map((mouseButton: MouseButton): string => mouseButton.name), inside: pointerInside, overUi });
+  const reading = (): InputReading => ({ click: lastClick, held: INPUT.mouseButtons.filter((mouseButton: MouseButton): boolean => held.has(mouseButton.binding)).map((mouseButton: MouseButton): string => mouseButton.name), inside: pointerInside, overUi, toggled: toggled === null ? null : (world.player.skills[toggled.slot]?.name ?? null) });
   hud.readInput((): string => describeInput(reading()));
 
   return {
@@ -348,9 +358,15 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     },
     collect(dt: number): Command[] {
       const commands: Command[] = extra.splice(0, extra.length);
+      const endToggle = (): void => {
+        if (toggled === null) return;
+        commands.push({ type: 'hold', slot: toggled.slot, down: false });
+        toggled = null;
+      };
       if (world.zone.id !== enteredZone) {
         enteredZone = world.zone.id;
         liftMouse();
+        endToggle();
         pressedExit = null;
         pressedItem = false;
         pressedPlayer = false;
@@ -397,10 +413,33 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         pressedPlayer = false;
         up.delete(INPUT.leftBinding);
       }
+      const toggling: boolean = settings.get().heldSkills === 'toggle';
+      if (dropToggle || !toggling) endToggle();
+      dropToggle = false;
+      if (toggled !== null) {
+        const acting = world.player.action;
+        if (acting !== null && acting.slot === toggled.slot) toggled.started = true;
+        else if (toggled.started) endToggle();
+        else {
+          toggled.waited += dt;
+          if (toggled.waited > INPUT.toggleStartWindow) endToggle();
+        }
+      }
+      const spent: Set<string> = new Set<string>();
       world.content.player.skillBar.forEach((_entry, slot: number): void => {
         const bound: readonly string[] = settings.keys().bindingsOf(slotAction(slot));
+        const keyed: readonly string[] = bound.filter((binding: string): boolean => binding !== INPUT.leftBinding && fresh.has(binding));
+        if (keyed.length > 0 && toggled !== null && toggled.slot !== slot && (world.player.skills[slot] ?? null) !== null) endToggle();
+        if (keyed.length > 0 && toggling && (world.player.skills[slot]?.press ?? null) !== null) {
+          if (toggled?.slot === slot) {
+            endToggle();
+            for (const binding of keyed) spent.add(binding);
+            return;
+          }
+          toggled = { slot, started: false, waited: 0 };
+        }
         if (bound.some((binding: string): boolean => fresh.has(binding))) commands.push({ type: 'hold', slot, down: true });
-        if (bound.some((binding: string): boolean => up.has(binding)) && !bound.some((binding: string): boolean => held.has(binding))) commands.push({ type: 'hold', slot, down: false });
+        if (bound.some((binding: string): boolean => up.has(binding)) && !bound.some((binding: string): boolean => held.has(binding)) && toggled?.slot !== slot) commands.push({ type: 'hold', slot, down: false });
       });
       holdTimer -= dt;
       const holdTick: boolean = holdTimer <= 0;
@@ -416,7 +455,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       if (byKeys) commands.push(...keyWalk.step({ up: down('moveUp'), down: down('moveDown'), left: down('moveLeft'), right: down('moveRight') }, world.player.pos));
       if (aim === null || ground === null) return commands;
       const steering = world.player.action;
-      if (steering !== null && steering.slot !== null && steering.skill.press !== null && settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding))) commands.push({ type: 'steer', aim });
+      if (steering !== null && steering.slot !== null && steering.skill.press !== null && (toggled?.slot === steering.slot || settings.keys().bindingsOf(slotAction(steering.slot)).some((binding: string): boolean => held.has(binding)))) commands.push({ type: 'steer', aim });
 
       const leftSlot: number = slotFor(INPUT.leftBinding);
       const leftFresh: boolean = fresh.has(INPUT.leftBinding);
@@ -433,6 +472,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       if (leftFresh || leftHeld) {
         switch (click.kind) {
           case 'skill':
+            if (leftFresh && (world.player.skills[leftSlot] ?? null) !== null) endToggle();
             if (leftRepeats && leftTick) commands.push({ type: 'skill', slot: leftSlot, aim: target === null ? ground : aim, targetId: target?.id ?? null });
             if (leftFresh && target !== null) hooks.clickMarker(target.pos.x, target.pos.z, true);
             break;
@@ -488,7 +528,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
 
       world.content.player.skillBar.forEach((_entry, slot: number): void => {
         for (const binding of settings.keys().bindingsOf(slotAction(slot))) {
-          if (binding === INPUT.leftBinding) continue;
+          if (binding === INPUT.leftBinding || spent.has(binding)) continue;
           const isFresh: boolean = fresh.has(binding);
           if (!isFresh && !(held.has(binding) && readyToRepeat(world.player, world.player.skills[slot]))) continue;
           commands.push({ type: 'skill', slot, aim, targetId: null });

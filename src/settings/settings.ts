@@ -28,16 +28,22 @@ export interface GraphicsSettings {
   readonly lensWater: boolean;
 }
 
+export const HELD_SKILLS = ['hold', 'toggle'] as const;
+
+export type HeldSkills = (typeof HELD_SKILLS)[number];
+
 export interface Settings {
   readonly graphics: GraphicsSettings;
   readonly controls: Overrides;
   readonly movement: Movement;
+  readonly heldSkills: HeldSkills;
 }
 
 export const SETTINGS_KEY: string = 'the-lost-storm.settings.v1';
 
 export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false, lensWater: true };
-export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {}, movement: DEFAULT_MOVEMENT };
+export const DEFAULT_HELD_SKILLS: HeldSkills = 'hold';
+export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {}, movement: DEFAULT_MOVEMENT, heldSkills: DEFAULT_HELD_SKILLS };
 
 function fieldOf(source: unknown, key: string): unknown {
   if (typeof source !== 'object' || source === null || Array.isArray(source)) return undefined;
@@ -46,6 +52,10 @@ function fieldOf(source: unknown, key: string): unknown {
 
 function qualityOf(value: unknown): Quality {
   return QUALITIES.find((quality: Quality): boolean => quality === value) ?? DEFAULT_GRAPHICS.quality;
+}
+
+function heldSkillsOf(value: unknown): HeldSkills {
+  return HELD_SKILLS.find((mode: HeldSkills): boolean => mode === value) ?? DEFAULT_HELD_SKILLS;
 }
 
 function overridesOf(value: unknown): Overrides {
@@ -91,11 +101,12 @@ export function readSettings(text: string | null, table: readonly ActionDef[]): 
     },
     controls: sanitizeOverrides(table, overridesOf(fieldOf(parsed, 'controls'))),
     movement: movementOf(fieldOf(parsed, 'movement')),
+    heldSkills: heldSkillsOf(fieldOf(parsed, 'heldSkills')),
   };
 }
 
 export function mergeSettings(current: Settings, change: Partial<Settings>): Settings {
-  return { graphics: change.graphics ?? current.graphics, controls: change.controls ?? current.controls, movement: change.movement ?? current.movement };
+  return { graphics: change.graphics ?? current.graphics, controls: change.controls ?? current.controls, movement: change.movement ?? current.movement, heldSkills: change.heldSkills ?? current.heldSkills };
 }
 
 export function describePreset(preset: GraphicsPreset): string {
