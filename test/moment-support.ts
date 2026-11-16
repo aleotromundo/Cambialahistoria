@@ -1,9 +1,13 @@
+import assert from 'node:assert/strict';
 import type { MomentDef, MomentField, MomentLibrary } from '../sim/content/moment-types.ts';
 import type { Content, ZoneDef } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { kill } from '../sim/world/combat.ts';
-import type { MomentState, MonsterState, World } from '../sim/world/types.ts';
+import { forceStrike } from '../sim/world/moments.ts';
+import { stepWorld } from '../sim/world/step.ts';
+import type { MomentState, MonsterState, World, WorldEvent } from '../sim/world/types.ts';
 import { roadContent, roadWorld, roadZone, ROAD_CONTENT } from './road-support.ts';
+import { must } from './support.ts';
 
 const ROW: string = 'w'.repeat(40);
 
@@ -96,4 +100,25 @@ export function standAt(world: World, at: Vec2): void {
   world.player.pos = { x: at.x, z: at.z };
   world.player.path = [];
   world.player.intent = { type: 'idle' };
+}
+
+export const DT: number = 1 / 30;
+export const FAR: Vec2 = { x: 150, z: 150 };
+
+export function run(world: World, seconds: number): WorldEvent[] {
+  const events: WorldEvent[] = [];
+  for (let elapsed: number = 0; elapsed < seconds; elapsed += DT) events.push(...stepWorld(world, [], DT));
+  return events;
+}
+
+export function quietField(patch: Partial<MomentField> = {}): MomentField {
+  return { ...FIELD, start: 0, max: 1, interval: { min: 1000, max: 1000 }, ...patch };
+}
+
+export function struck(world: World, def: string, at = { x: 40, z: 40 }): MomentState {
+  standAt(world, FAR);
+  const moment: MomentState = must(forceStrike(world, at, def), 'forced strike');
+  run(world, world.content.moments.telegraph + DT * 2);
+  assert.equal(moment.phase, 'dormant');
+  return moment;
 }
