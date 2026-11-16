@@ -1,7 +1,7 @@
-import type { ChartGroup, Content, SkillDef, SkillMod, SkillTarget, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { Content, SkillDef, SkillMod, SkillTreeNodeDef, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { emptyEquipment, itemMods } from './items.ts';
-import { describeMod } from './stat-text.ts';
+import { describeMod, describeSkillMod } from './stat-text.ts';
 import { armourReduction, computeStats, damagePerSecond, skillCycle } from './stats.ts';
 import { xpToNextLevel } from './progression.ts';
 import { heldGroup, heldPlace } from './weapons.ts';
@@ -80,25 +80,12 @@ function gearBonuses(content: Content, equipped: Equipment): SheetBonus[] {
   return [...sums.values()].filter((mod: StatMod): boolean => mod.value !== 0).map((mod: StatMod): SheetBonus => ({ source: 'gear', text: describeMod(mod) }));
 }
 
-function targetName(content: Content, target: SkillTarget): string {
-  if (target.type === 'skill') return content.skills.get(target.skill)?.name ?? target.skill;
-  return content.chart.groups.find((group: ChartGroup): boolean => group.id === target.group)?.name ?? target.group;
-}
-
-function skillModText(content: Content, mod: SkillMod): string {
-  const name: string = targetName(content, mod.target);
-  const sign: string = mod.value < 0 ? '-' : '+';
-  const size: number = Math.abs(mod.value);
-  const amount: string = mod.field === 'projectiles' || mod.field === 'pierce' || mod.field === 'chains' || mod.field === 'lifePerHit' || mod.field === 'lifeOnHit' ? String(size) : `${Math.round(size * 100)}%`;
-  return `${sign}${amount} ${mod.field.replace(/Percent$/, '')} (${name})`;
-}
-
 function treeBonuses(content: Content, allocated: readonly string[], held: string | null): SheetBonus[] {
   const bonuses: SheetBonus[] = [];
   for (const place of content.skillTree) {
     if (!allocated.includes(place.id)) continue;
     const node: SkillTreeNodeDef = heldPlace(content, place, held);
-    const parts: string[] = [...node.statMods.map(describeMod), ...node.skillMods.map((mod: SkillMod): string => skillModText(content, mod))];
+    const parts: string[] = [...node.statMods.map(describeMod), ...node.skillMods.map((mod: SkillMod): string => describeSkillMod(content, mod))];
     bonuses.push({ source: 'tree', text: parts.length === 0 ? node.name : `${node.name}: ${parts.join(', ')}` });
   }
   return bonuses;

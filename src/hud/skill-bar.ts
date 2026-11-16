@@ -5,7 +5,7 @@ import type { Command, PlayerState } from '../../sim/world/types.ts';
 import { rowPress } from './row-press.ts';
 import { slotAction } from '../settings/bindings.ts';
 import type { HudContext } from './context.ts';
-import { clamp01, el, label, pulseClass, setText } from './dom.ts';
+import { clamp01, el, label, pulseClass, setClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
 import type { SkillPicker } from './skill-picker.ts';
 import { clearDetails, createSkillPicker, pointerSlotOf, skillDetails } from './skill-picker.ts';
@@ -13,9 +13,15 @@ import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
 import type { MomentumMeter } from './momentum-meter.ts';
 import { createMomentumMeter } from './momentum-meter.ts';
+import { createChangeList } from './change-list.ts';
+import type { ChangeList } from './change-list.ts';
+import { skillChanges, slotNeed } from './skill-changes.ts';
+import type { SkillChanges, SlotNeed } from './skill-changes.ts';
 
 const SKILL_BAR = {
   pressMs: 110,
+  holdMs: 480,
+  holdSlop: 10,
   swapMs: 320,
   learnedMs: 1400,
   fullTurn: 360,
@@ -33,6 +39,8 @@ interface SlotView {
   readonly cost: HTMLElement;
   readonly cooldown: HTMLElement;
   readonly keyNode: HTMLElement;
+  readonly needNode: HTMLElement;
+  readonly badge: HTMLElement;
   key: string | null;
   skill: SkillDef | null;
   empty: boolean | null;
@@ -40,6 +48,13 @@ interface SlotView {
   angle: number;
   cooling: boolean | null;
   dim: boolean | null;
+}
+
+interface SlotHold {
+  readonly pointer: number;
+  readonly x: number;
+  readonly y: number;
+  readonly timer: number;
 }
 
 export interface SkillBar {
@@ -62,12 +77,34 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
   track(element);
   const meter: MomentumMeter = createMomentumMeter(parent.parentElement ?? parent);
   const picker: SkillPicker = createSkillPicker(element, context, track);
+  const changeList: ChangeList = createChangeList(element, (skill: string, becomes: string): void => context.api.send({ type: 'choose_change', skill, becomes }), track);
   document.addEventListener('pointerdown', (event: PointerEvent): void => {
-    if (!(event.target instanceof Node) || !element.contains(event.target)) picker.close();
+    if (!(event.target instanceof Node) || !element.contains(event.target)) {
+      picker.close();
+      changeList.close();
+    }
   });
   const slots: SlotView[] = [];
 
   const keyOf = (index: number): string => context.api.settings.keys().labelOf(slotAction(index));
+  const baseOf = (index: number): string | null => context.api.world.player.bar[index] ?? null;
+  const changesOf = (index: number): SkillChanges | null => {
+    const base: string | null = baseOf(index);
+    return base === null ? null : skillChanges(context.api.world.content, context.api.world.player, base);
+  };
+  const needOf = (index: number, skill: SkillDef): SlotNeed | null => {
+    const base: string | null = baseOf(index);
+    return base === null ? null : slotNeed(context.api.world.content, context.api.world.player, base, skill.weapons);
+  };
+  const openChanges = (index: number, root: HTMLElement): boolean => {
+    const changes: SkillChanges | null = changesOf(index);
+    if (changes === null) return false;
+    picker.close();
+    context.tooltip.hide();
+    if (changeList.shownFor() === changes.skill) changeList.close();
+    else changeList.open(root, changes);
+    return true;
+  };
 
   const paintKey = (view: SlotView, key: string): void => {
     if (view.key === key) return;
@@ -80,8 +117,40 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
 
   const buildSlot = (index: number): SlotView => {
     const root: HTMLDivElement = el('div', 'slot', element);
+    let hold: SlotHold | null = null;
+    let held: boolean = false;
+    const release = (): void => {
+      if (hold === null) return;
+      window.clearTimeout(hold.timer);
+      hold = null;
+    };
+    root.addEventListener('pointerdown', (event: PointerEvent): void => {
+      release();
+      held = false;
+      if (event.pointerType !== 'touch' || changesOf(index) === null) return;
+      const timer: number = window.setTimeout((): void => {
+        hold = null;
+        held = openChanges(index, root);
+      }, SKILL_BAR.holdMs);
+      hold = { pointer: event.pointerId, x: event.clientX, y: event.clientY, timer };
+    });
+    root.addEventListener('pointermove', (event: PointerEvent): void => {
+      if (hold !== null && hold.pointer === event.pointerId && Math.hypot(event.clientX - hold.x, event.clientY - hold.y) > SKILL_BAR.holdSlop) release();
+    });
+    root.addEventListener('pointerup', release);
+    root.addEventListener('pointercancel', release);
+    root.addEventListener('contextmenu', (event: MouseEvent): void => {
+      event.preventDefault();
+      event.stopPropagation();
+      openChanges(index, root);
+    });
     root.addEventListener('click', (event: MouseEvent): void => {
       event.stopPropagation();
+      if (held) {
+        held = false;
+        return;
+      }
+      changeList.close();
       const instead: Command | null = rowPress(context.api.world);
       if (instead !== null) {
         picker.close();
@@ -93,9 +162,11 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     const cooldown: HTMLDivElement = el('div', 'slot-cd', root);
     const keyNode: HTMLDivElement = el('div', 'slot-key', root);
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
-    const view: SlotView = { root, icon, cost, cooldown, keyNode, key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
+    const needNode: HTMLDivElement = el('div', 'slot-need', root);
+    const badge: HTMLDivElement = el('div', 'slot-changes', root);
+    const view: SlotView = { root, icon, cost, cooldown, keyNode, needNode, badge, key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
     paintKey(view, keyOf(index));
-    attachTooltip(context.tooltip, root, (): HTMLElement | null => (picker.slot !== null ? null : view.skill === null ? emptyTooltip(context, index, keyOf(index)) : skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null, weaponNeed(context.api.world.content, view.skill.weapons, context.api.world.player.wielding))));
+    attachTooltip(context.tooltip, root, (): HTMLElement | null => (picker.slot !== null ? null : view.skill === null ? emptyTooltip(context, index, keyOf(index)) : skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null, needOf(index, view.skill)?.line ?? null)));
     return view;
   };
 
@@ -133,12 +204,20 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
         });
       }
       picker.refresh(player);
+      const listed: string | null = changeList.shownFor();
+      if (listed !== null) changeList.refresh(skillChanges(context.api.world.content, player, listed));
       meter.update(player);
       element.classList.toggle('spare', player.learned.some((skill: string): boolean => !player.bar.includes(skill)));
       slots.forEach((view: SlotView, index: number): void => {
         const held: SkillDef | null = player.skills[index] ?? null;
         const skill: SkillDef | null = held !== null && usable(player, held) ? held : null;
         if (view.skill !== skill || view.empty === null) applySkill(view, skill);
+        const need: SlotNeed | null = skill === null ? null : needOf(index, skill);
+        if (need !== null) setText(view.needNode, need.tag, true);
+        setClass(view.root, 'needs', need !== null);
+        const count: number = skill === null ? 0 : (changesOf(index)?.choices.length ?? 0);
+        if (count > 0) setText(view.badge, String(count), true);
+        setClass(view.root, 'changes', count > 0);
         if (skill === null) return;
         const remaining: number = player.cooldowns[skill.id] ?? 0;
         const cooling: boolean = remaining > SKILL_BAR.coolingEpsilon;
@@ -160,7 +239,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
       });
     },
     closePicker(): boolean {
-      return picker.close();
+      return changeList.close() || picker.close();
     },
     press(skillId: string): void {
       for (const view of slots) {

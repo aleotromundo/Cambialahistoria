@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { describeMod, isRatio, roundStat, statLabel } from './stat-text.ts';
+import { loadContent } from './content/content.ts';
+import type { Content } from './content/types.ts';
+import { describeMod, describeSkillMod, isRatio, roundStat, statLabel } from './stat-text.ts';
 
 void test('flat mods read as signed numbers with the stat label', (): void => {
   assert.equal(describeMod({ stat: 'maxLife', op: 'add', value: 30 }), '+30 Maximum Life');
@@ -21,4 +23,11 @@ void test('rounding follows the stat kind', (): void => {
   assert.ok(isRatio('goldFind', 'add'));
   assert.ok(!isRatio('armour', 'add'));
   assert.equal(statLabel('armour'), 'Armour');
+});
+
+void test('a skill mod reads as a signed amount, the field and the skill or group it changes', (): void => {
+  const content: Content = loadContent();
+  assert.equal(describeSkillMod(content, { target: { type: 'group', group: 'lightning' }, field: 'damagePercent', value: 0.3 }), '+30% damage (lightning skills)');
+  assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'forkline' }, field: 'chains', value: 1 }), '+1 chains (Forkline)');
+  assert.equal(describeSkillMod(content, { target: { type: 'skill', skill: 'held_breath' }, field: 'cooldownPercent', value: -0.3 }), '-30% cooldown (Held Breath)');
 });

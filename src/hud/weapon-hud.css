@@ -1,0 +1,206 @@
+.slot-need {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  padding: 1px 0;
+  border-radius: 2px;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 10px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #a9d6ff;
+  background: rgba(6, 9, 14, 0.82);
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  pointer-events: none;
+}
+
+.slot.needs .slot-need {
+  opacity: 1;
+  transform: none;
+}
+
+.slot.needs .slot-cost {
+  opacity: 0;
+}
+
+.slot-cost {
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.slot-changes {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  min-width: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 11px;
+  text-align: center;
+  color: var(--ember);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+  pointer-events: none;
+}
+
+.slot.changes .slot-changes {
+  opacity: 1;
+  transform: none;
+}
+
+.change-list {
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: var(--change-x, 50%);
+  min-width: 180px;
+  transform: translate(-50%, 8px) scale(0.96);
+  transform-origin: 50% 100%;
+}
+
+.change-list.open {
+  transform: translate(-50%, 0);
+}
+
+.change-list-title {
+  padding: 4px 8px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.change-list .dropdown-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.change-list .dropdown-option[aria-selected='true'] {
+  background: rgba(127, 212, 255, 0.12);
+  color: #a9e2ff;
+}
+
+.change-list .dropdown-option.off {
+  opacity: 0.45;
+}
+
+.change-list-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.change-list .dropdown-option[aria-selected='true'] .change-list-dot {
+  opacity: 1;
+  transform: none;
+}
+
+.tree-tip-off {
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: rgba(217, 133, 114, 0.6);
+}
+
+.tree-tip-off-need {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #d98572;
+}
+
+.tree-tip-holding {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.change-seg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.change-seg-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.change-seg-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
+  padding: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.change-seg-lit {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--count, 2));
+  border-radius: 3px;
+  background: rgba(127, 212, 255, 0.16);
+  transform: translateX(calc(var(--lit, 0) * 100%));
+  transition:
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.change-seg-row.unlit .change-seg-lit {
+  opacity: 0;
+}
+
+.change-seg-option {
+  position: relative;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 3px;
+  outline: none;
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.change-seg-option:hover {
+  color: var(--text);
+}
+
+.change-seg-option.lit {
+  color: #a9e2ff;
+}
+
+.change-seg-option.off {
+  opacity: 0.45;
+}

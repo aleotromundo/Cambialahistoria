@@ -1,4 +1,5 @@
 import type { Content, SkillTreeNodeDef, SkillVariant, XpCurve, XpGap, XpReduction } from './content/types.ts';
+import { ANY_WEAPON, placeLive } from './weapons.ts';
 
 export interface XpResult {
   readonly level: number;
@@ -118,6 +119,29 @@ export function joinBlock(content: Content, allocated: readonly string[], node: 
 
 export function offersChange(content: Content, allocated: readonly string[], skill: string, becomes: string): boolean {
   return content.skillTree.some((node: SkillTreeNodeDef): boolean => allocated.includes(node.id) && node.variants.some((variant: SkillVariant): boolean => variant.skill === skill && variant.becomes === becomes));
+}
+
+export interface HeldChange {
+  readonly becomes: string;
+  readonly place: SkillTreeNodeDef;
+}
+
+export function changesHeld(content: Content, allocated: readonly string[], skill: string): HeldChange[] {
+  const held: HeldChange[] = [];
+  for (const id of allocated) {
+    const place: SkillTreeNodeDef | null = findNode(content, id);
+    if (place === null) continue;
+    for (const variant of place.variants) {
+      if (variant.skill === skill && !held.some((entry: HeldChange): boolean => entry.becomes === variant.becomes)) held.push({ becomes: variant.becomes, place });
+    }
+  }
+  return held;
+}
+
+export function activeChange(content: Content, allocated: readonly string[], changes: Readonly<Record<string, string>>, skill: string, held: string | null = ANY_WEAPON): string | null {
+  const live: readonly HeldChange[] = changesHeld(content, allocated, skill).filter((entry: HeldChange): boolean => placeLive(entry.place, held));
+  const chosen: string | undefined = changes[skill];
+  return live.find((entry: HeldChange): boolean => entry.becomes === chosen)?.becomes ?? live[0]?.becomes ?? null;
 }
 
 export function heldChanges(content: Content, allocated: readonly string[], changes: Readonly<Record<string, string>>): Record<string, string> {
