@@ -29,12 +29,11 @@ import type { TagSize, TagSizes } from './tag-sizes.ts';
 import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { TagBound } from './overlay-place.ts';
+import { createFloatingNumbers } from './floating-numbers.ts';
+import type { FloatingNumbers } from './floating-numbers.ts';
 
 export const OVERLAYS = {
   pinGlyph: '!',
-  numberLife: 1,
-  numberDrift: 26,
-  numberPool: 48,
   chestHeight: 1.6,
   labelLift: 1.35,
   findLift: 3.15,
@@ -57,19 +56,6 @@ export const OVERLAYS = {
   waypointId: 'waypoint',
   waypointName: 'Waypoint',
 } as const;
-
-interface NumberNode {
-  readonly element: HTMLDivElement;
-  readonly inner: HTMLSpanElement;
-}
-
-interface FloatingNumber {
-  readonly node: NumberNode;
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-  age: number;
-}
 
 interface LootLabel {
   readonly element: HTMLDivElement;
@@ -155,8 +141,6 @@ export interface Overlays {
 export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: OverlayHooks, targets: TargetSource = LIVE_TARGETS): Overlays {
   let hudRects: ScreenRect[] = [];
   let sinceHudRead: number = Infinity;
-  const numbers: FloatingNumber[] = [];
-  const spareNumbers: NumberNode[] = [];
   const labels: Map<number, LootLabel> = new Map<number, LootLabel>();
   let exits: ExitLabel[] = [];
   let view: ViewSize = { width: root.clientWidth, height: root.clientHeight };
@@ -249,27 +233,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   watchItemNames(itemNames, window);
   const healthBars: HealthBars = createHealthBars(root, camera);
   const targetBar: TargetBar = createTargetBar(root);
-
-  const numberNode = (): NumberNode => {
-    const spare: NumberNode | undefined = spareNumbers.pop();
-    if (spare !== undefined) {
-      spare.element.style.transform = '';
-      return spare;
-    }
-    const element: HTMLDivElement = document.createElement('div');
-    const inner: HTMLSpanElement = document.createElement('span');
-    element.append(inner);
-    return { element, inner };
-  };
-
-  const float = (text: string, kind: string, x: number, y: number, z: number): void => {
-    const node: NumberNode = numberNode();
-    node.element.className = `damage-number ${kind}`;
-    node.inner.textContent = text;
-    node.inner.style.setProperty('--drift', `${((Math.random() - 0.5) * 2 * OVERLAYS.numberDrift).toFixed(0)}px`);
-    numberLayer.append(node.element);
-    numbers.push({ node, x, y, z, age: 0 });
-  };
+  const floating: FloatingNumbers = createFloatingNumbers(numberLayer, camera);
 
   const foldLabel = (label: LootLabel, folded: boolean, more: number): void => {
     if (folded !== label.folded) {
@@ -421,7 +385,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             if (event.amount === 0 && event.targetTeam === 'monster') break;
             const y: number = floorUp(event.pos.x, hooks.heightOf(event.targetId) * OVERLAYS.numberHeight, event.pos.z);
             const kind: string = event.burn ? 'burn' : event.targetTeam === 'player' ? 'hurt' : event.crit ? 'crit' : '';
-            float(event.crit ? `${event.amount}!` : `${event.amount}`, kind, event.pos.x, y, event.pos.z);
+            floating.float(event.crit ? `${event.amount}!` : `${event.amount}`, kind, event.pos.x, y, event.pos.z);
             break;
           }
           case 'drop':
@@ -429,7 +393,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             break;
           case 'chest_opened':
           case 'cache_opened':
-            if (event.gold > 0) float(`+${event.gold} gold`, 'gold', event.pos.x, OVERLAYS.chestHeight, event.pos.z);
+            if (event.gold > 0) floating.float(`+${event.gold} gold`, 'gold', event.pos.x, OVERLAYS.chestHeight, event.pos.z);
             break;
           case 'pickup': {
             const label: LootLabel | undefined = labels.get(event.ground.id);
@@ -437,7 +401,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
               label.leaving = OVERLAYS.labelExit;
               label.element.classList.add('taken');
             }
-            if (event.ground.content.kind === 'gold') float(`+${event.ground.content.amount} gold`, 'gold', event.ground.pos.x, 1.2, event.ground.pos.z);
+            if (event.ground.content.kind === 'gold') floating.float(`+${event.ground.content.amount} gold`, 'gold', event.ground.pos.x, 1.2, event.ground.pos.z);
             break;
           }
           case 'area':
@@ -585,19 +549,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       }
       if (leaving.some((label: LeavingLabel): boolean => label.left <= 0)) leaving = leaving.filter((label: LeavingLabel): boolean => label.left > 0);
 
-      for (let index: number = numbers.length - 1; index >= 0; index -= 1) {
-        const number: FloatingNumber | undefined = numbers[index];
-        if (number === undefined) continue;
-        number.age += dt;
-        if (number.age > OVERLAYS.numberLife) {
-          number.node.element.remove();
-          if (spareNumbers.length < OVERLAYS.numberPool) spareNumbers.push(number.node);
-          numbers.splice(index, 1);
-          continue;
-        }
-        camera.project(number.x, number.y, number.z, point);
-        place(number.node.element, point);
-      }
+      floating.update(dt);
 
       healthBars.update(dt, world, (actorId: number): number => hooks.heightOf(actorId));
       targetBar.update(dt, world, hoveredId);
