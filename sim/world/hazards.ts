@@ -2,7 +2,7 @@ import type { SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { directionOf, normalize } from '../math.ts';
 import type { Offence } from './combat.ts';
-import { applyHit, offenceOf, setTempo, targetsOf } from './combat.ts';
+import { applyHit, offenceOf, setTempo, targetsWhere } from './combat.ts';
 import { timeScaleAt } from './areas.ts';
 import { launchPoint } from './wards.ts';
 import type { Actor, HazardState, MonsterState, World, WorldEvent } from './types.ts';
@@ -60,7 +60,7 @@ export function placeMarks(world: World, offence: Offence, skill: SkillDef, at: 
 }
 
 function inside(world: World, hazard: HazardState): Actor[] {
-  return targetsOf(world, { sourceId: hazard.ownerId, faction: hazard.faction, from: hazard.from }).filter((target: Actor): boolean => Math.hypot(target.pos.x - hazard.pos.x, target.pos.z - hazard.pos.z) <= hazard.radius + target.radius && sameFloor(world, hazard.pos, target.pos));
+  return targetsWhere(world, { sourceId: hazard.ownerId, faction: hazard.faction, from: hazard.from }, (target: Actor): boolean => Math.hypot(target.pos.x - hazard.pos.x, target.pos.z - hazard.pos.z) <= hazard.radius + target.radius && sameFloor(world, hazard.pos, target.pos));
 }
 
 function slowInside(world: World, hazard: HazardState): void {

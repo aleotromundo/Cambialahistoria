@@ -4,7 +4,7 @@ import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { moveWithCollision } from '../nav/grid.ts';
 import { launchPoint } from './wards.ts';
 import { gridFor } from './movement.ts';
-import { applyHit, findActor, targetsOf } from './combat.ts';
+import { applyHit, findActor, targetsWhere } from './combat.ts';
 import { isDashing, rollsSteady } from './dash.ts';
 import { steadiness } from './poise.ts';
 import { sameFloor } from './floors.ts';
@@ -50,7 +50,7 @@ export function timeScaleOf(world: World, actor: Actor): number {
 
 function pull(world: World, area: AreaState, delivery: AreaDelivery, dt: number): void {
   if (delivery.pull <= 0) return;
-  for (const target of targetsOf(world, { sourceId: area.offence.sourceId, faction: area.offence.faction, from: area.from })) {
+  for (const target of targetsWhere(world, { sourceId: area.offence.sourceId, faction: area.offence.faction, from: area.from }, (actor: Actor): boolean => covers(world, area, delivery, actor.pos, actor.radius))) {
     if (!covers(world, area, delivery, target.pos, target.radius) || (target.action !== null && !isDashing(target)) || rollsSteady(target)) continue;
     const offset: Vec2 = { x: area.pos.x - target.pos.x, z: area.pos.z - target.pos.z };
     const gap: number = Math.hypot(offset.x, offset.z);
@@ -70,7 +70,7 @@ export function stokedOffence(area: AreaState, delivery: AreaDelivery): Offence 
 function pulse(world: World, area: AreaState, delivery: AreaDelivery): void {
   const offence: Offence = stokedOffence(area, delivery);
   let hits: number = 0;
-  for (const target of targetsOf(world, { sourceId: area.offence.sourceId, faction: area.offence.faction, from: area.from })) {
+  for (const target of targetsWhere(world, { sourceId: area.offence.sourceId, faction: area.offence.faction, from: area.from }, (actor: Actor): boolean => covers(world, area, delivery, actor.pos, actor.radius))) {
     if (!covers(world, area, delivery, target.pos, target.radius)) continue;
     const offset: Vec2 = { x: target.pos.x - area.pos.x, z: target.pos.z - area.pos.z };
     const gap: number = Math.hypot(offset.x, offset.z);

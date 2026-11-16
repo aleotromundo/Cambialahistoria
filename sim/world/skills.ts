@@ -7,7 +7,8 @@ import { isSolid, isWalkable, moveWithCollision } from '../nav/grid.ts';
 import { gridFor } from './movement.ts';
 import { canReach, sameFloor } from './floors.ts';
 import type { Offence } from './combat.ts';
-import { applyHit, offenceOf, targetsOf, teamOf } from './combat.ts';
+import type { TargetFilter } from './combat.ts';
+import { applyHit, offenceOf, targetsWhere, teamOf } from './combat.ts';
 import { clearSpot, passesThrough, stepDash } from './dash.ts';
 import { refreshPlayer } from './character.ts';
 import { firePowers } from '../powers.ts';
@@ -231,7 +232,8 @@ function strike(world: World, impact: Impact): number {
   switch (delivery.type) {
     case 'arc': {
       const minDot: number = Math.cos((delivery.arcDegrees / 2) * DEGREES_TO_RADIANS);
-      for (const target of targetsOf(world, offence)) {
+      const near: TargetFilter = (target: Actor): boolean => !(Math.hypot(target.pos.x - origin.x, target.pos.z - origin.z) > delivery.reach + target.radius) && sameFloor(world, origin, target.pos);
+      for (const target of targetsWhere(world, offence, near)) {
         const offset: Vec2 = { x: target.pos.x - origin.x, z: target.pos.z - origin.z };
         const gap: number = Math.hypot(offset.x, offset.z);
         if (gap > delivery.reach + target.radius || !sameFloor(world, origin, target.pos)) continue;
@@ -242,7 +244,8 @@ function strike(world: World, impact: Impact): number {
       return hits;
     }
     case 'nova': {
-      for (const target of targetsOf(world, offence)) {
+      const near: TargetFilter = (target: Actor): boolean => !(Math.hypot(target.pos.x - origin.x, target.pos.z - origin.z) > delivery.radius + target.radius) && sameFloor(world, origin, target.pos);
+      for (const target of targetsWhere(world, offence, near)) {
         const offset: Vec2 = { x: target.pos.x - origin.x, z: target.pos.z - origin.z };
         if (Math.hypot(offset.x, offset.z) > delivery.radius + target.radius || !sameFloor(world, origin, target.pos)) continue;
         if (applyHit(world, offence, target, skill, normalize(offset, direction))) hits += 1;
@@ -438,7 +441,8 @@ function stepProjectile(world: World, projectile: ProjectileState, dt: number): 
       world.events.push({ type: 'projectile_end', id: projectile.id, pos: { ...projectile.pos }, hit: true, skill: projectile.skill });
       return false;
     }
-    for (const target of targetsOf(world, { sourceId: projectile.ownerId, faction: projectile.faction, from: projectile.from })) {
+    const near: TargetFilter = (target: Actor): boolean => !projectile.hitIds.includes(target.id) && !(Math.hypot(target.pos.x - projectile.pos.x, target.pos.z - projectile.pos.z) > delivery.radius + target.radius);
+    for (const target of targetsWhere(world, { sourceId: projectile.ownerId, faction: projectile.faction, from: projectile.from }, near)) {
       if (projectile.hitIds.includes(target.id)) continue;
       if (Math.hypot(target.pos.x - projectile.pos.x, target.pos.z - projectile.pos.z) > delivery.radius + target.radius) continue;
       projectile.hitIds.push(target.id);

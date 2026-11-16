@@ -60,9 +60,25 @@ function struckBeside(offence: Side, actor: Actor): boolean {
   return actor.kind === 'monster' && actor.alive && !actor.sealed && actor.id !== offence.sourceId && offence.faction !== null && collateralScale(offence, actor) > 0 && actor.def.behaviour.type === 'fixed';
 }
 
+function strikable(world: World, offence: Side, actor: Actor): boolean {
+  return !isInvulnerable(actor) && (mayStrike(world, offence, actor) || struckBeside(offence, actor));
+}
+
+export type TargetFilter = (actor: Actor) => boolean;
+
+export function targetsWhere(world: World, offence: Side, near: TargetFilter): Actor[] {
+  const found: Actor[] = [];
+  if (near(world.player) && strikable(world, offence, world.player)) found.push(world.player);
+  for (const monster of world.monsters) if (near(monster) && strikable(world, offence, monster)) found.push(monster);
+  return found;
+}
+
+function anyone(): boolean {
+  return true;
+}
+
 export function targetsOf(world: World, offence: Side): Actor[] {
-  const actors: Actor[] = [world.player, ...world.monsters];
-  return actors.filter((actor: Actor): boolean => !isInvulnerable(actor) && (mayStrike(world, offence, actor) || struckBeside(offence, actor)));
+  return targetsWhere(world, offence, anyone);
 }
 
 export function setTempo(actor: Actor, scale: number, time: number): void {
@@ -278,7 +294,8 @@ function burstBrand(world: World, target: Actor, brand: BrandState): void {
   if (delivery.type !== 'nova') return;
   const at: ReadonlyVec2 = { x: target.pos.x, z: target.pos.z };
   world.events.push({ type: 'brand', targetId: target.id, skill: brand.burst, pos: { x: at.x, z: at.z }, burst: true });
-  for (const other of targetsOf(world, brand.offence)) {
+  const near: TargetFilter = (other: Actor): boolean => !(Math.hypot(other.pos.x - at.x, other.pos.z - at.z) > delivery.radius + other.radius) && sameFloor(world, at, other.pos);
+  for (const other of targetsWhere(world, brand.offence, near)) {
     const offset: ReadonlyVec2 = { x: other.pos.x - at.x, z: other.pos.z - at.z };
     const gap: number = Math.hypot(offset.x, offset.z);
     if (gap > delivery.radius + other.radius || !sameFloor(world, at, other.pos)) continue;

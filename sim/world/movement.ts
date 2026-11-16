@@ -66,7 +66,7 @@ export function faceToward(actor: ActorState, direction: Vec2, maxStep: number):
 }
 
 export function stepTimers(actor: ActorState, dt: number): void {
-  for (const key of Object.keys(actor.cooldowns)) {
+  for (const key in actor.cooldowns) {
     const left: number = (actor.cooldowns[key] ?? 0) - dt;
     actor.cooldowns[key] = Math.max(0, left);
   }
@@ -298,18 +298,24 @@ function pushApart(grid: NavGrid, a: Actor, b: Actor, shareA: number, budget: Yi
   if (share < 1) yieldTo(grid, budget, b, overlap * (1 - share), nx, nz);
 }
 
+function apart(a: Actor, b: Actor): boolean {
+  const reach: number = a.radius + b.radius;
+  return Math.abs(b.pos.x - a.pos.x) >= reach || Math.abs(b.pos.z - a.pos.z) >= reach;
+}
+
 export function separateActors(world: World, dt: number, strides: Strides): void {
-  const living: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive);
+  const living: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive && !passesThrough(monster));
   const budget: Yield = { dt, strides, left: new Map<ActorState, number>() };
+  const hero: boolean = world.player.alive && !passesThrough(world.player);
   for (let pass: number = 0; pass < MOVEMENT.separationPasses; pass += 1) {
     for (let first: number = 0; first < living.length; first += 1) {
       const a: MonsterState | undefined = living[first];
       if (a === undefined) continue;
       for (let second: number = first + 1; second < living.length; second += 1) {
         const b: MonsterState | undefined = living[second];
-        if (b !== undefined && !passesThrough(a) && !passesThrough(b)) pushApart(world.grid, a, b, pushShare(a, b), budget);
+        if (b !== undefined && !apart(a, b)) pushApart(world.grid, a, b, pushShare(a, b), budget);
       }
-      if (world.player.alive && !passesThrough(world.player) && !passesThrough(a)) pushApart(world.grid, world.player, a, heroShare(a), budget);
+      if (hero && !apart(world.player, a)) pushApart(world.grid, world.player, a, heroShare(a), budget);
     }
   }
 }

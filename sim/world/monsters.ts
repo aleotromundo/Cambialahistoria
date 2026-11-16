@@ -313,8 +313,15 @@ function strikes(world: World, monster: MonsterState, actor: Actor): boolean {
   return mayStrike(world, { sourceId: monster.id, faction: monster.def.faction }, actor);
 }
 
+function heldFoe(world: World, foeId: number | null): Actor | undefined {
+  if (foeId === null) return undefined;
+  if (world.player.id === foeId) return world.player;
+  for (const other of world.monsters) if (other.id === foeId) return other;
+  return undefined;
+}
+
 function foeOf(world: World, monster: MonsterState): Actor | null {
-  const held: Actor | undefined = monster.foeId === null ? undefined : [world.player, ...world.monsters].find((actor: Actor): boolean => actor.id === monster.foeId);
+  const held: Actor | undefined = heldFoe(world, monster.foeId);
   if (held !== undefined && strikes(world, monster, held)) return held;
   monster.foeId = null;
   let best: Actor | null = strikes(world, monster, world.player) ? world.player : null;
@@ -339,8 +346,19 @@ function fighting(actor: Actor): boolean {
   return actor.kind === 'player' || actor.aggro;
 }
 
+function rousedBy(world: World, monster: MonsterState, actor: Actor, radius: number): boolean {
+  return fighting(actor) && distance(monster.pos, actor.pos) <= radius && strikes(world, monster, actor) && lineOfSight(world.grid, monster.pos, actor.pos);
+}
+
+function seesFight(world: World, monster: MonsterState): boolean {
+  const radius: number = wakeRadius(monster.def);
+  if (rousedBy(world, monster, world.player, radius)) return true;
+  for (const other of world.monsters) if (rousedBy(world, monster, other, radius)) return true;
+  return false;
+}
+
 function wake(world: World, monster: MonsterState): boolean {
-  const roused: boolean = monster.def.dormant !== null ? heard(world, monster, monster.def.dormant.noiseRadius) : [world.player, ...world.monsters].some((actor: Actor): boolean => fighting(actor) && distance(monster.pos, actor.pos) <= wakeRadius(monster.def) && strikes(world, monster, actor) && lineOfSight(world.grid, monster.pos, actor.pos));
+  const roused: boolean = monster.def.dormant !== null ? heard(world, monster, monster.def.dormant.noiseRadius) : seesFight(world, monster);
   if (roused) rouse(world, monster);
   return roused;
 }
@@ -490,10 +508,15 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   }
 }
 
+function rotted(monster: MonsterState): boolean {
+  return !monster.alive && !monster.yielded && monster.deadTime > MONSTERS.corpseTime;
+}
+
 export function removeCorpses(world: World): void {
+  if (!world.monsters.some(rotted)) return;
   const kept: MonsterState[] = [];
   for (const monster of world.monsters) {
-    if (!monster.alive && !monster.yielded && monster.deadTime > MONSTERS.corpseTime) world.events.push({ type: 'monster_remove', monsterId: monster.id });
+    if (rotted(monster)) world.events.push({ type: 'monster_remove', monsterId: monster.id });
     else kept.push(monster);
   }
   world.monsters = kept;
