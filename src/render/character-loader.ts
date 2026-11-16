@@ -24,6 +24,7 @@ import { mergeRigidAlike, mergeSkinnedAlike } from './merge-alike.ts';
 import type { KeepLoadingDeps, NamedLoad } from './keep-loading.ts';
 import { loadAllKeepTrying } from './keep-loading.ts';
 import { fadeMaterials } from './body-swap.ts';
+import { anyUnsettled, dropSettled, sameIds, settledPiece, springTo, WEAR_FADE } from './wear-spring.ts';
 import { bindShade, seeThrough, shadeHeld, SHADOW_BODY, SHADOW_LIGHT, SHADOW_UNIFORMS, shadowRim } from './shadow-shade.ts';
 
 export interface ActionClip {
@@ -128,14 +129,6 @@ export const CHARACTER_SHADE: string = [
 
 export const CHARACTER_FEATHER: string = `diffuseColor.a = smoothstep( ${CHARACTER.featherFrom.toFixed(2)}, ${CHARACTER.featherTo.toFixed(2)}, diffuseColor.a );\nif ( diffuseColor.a <= 0.0 ) discard;`;
 
-export const WEAR_FADE = {
-  stiffness: 240,
-  damping: 31,
-  settle: 0.004,
-  longestStep: 1 / 30,
-  overshoot: 1.2,
-} as const;
-
 interface HeldPiece {
   readonly holder: Group;
   readonly size: number;
@@ -143,22 +136,6 @@ interface HeldPiece {
   value: number;
   velocity: number;
   target: number;
-}
-
-interface Springy {
-  value: number;
-  velocity: number;
-  target: number;
-}
-
-function springTo(piece: Springy, step: number, ceiling: number): boolean {
-  if (piece.value === piece.target && piece.velocity === 0) return false;
-  piece.velocity += (WEAR_FADE.stiffness * (piece.target - piece.value) - WEAR_FADE.damping * piece.velocity) * step;
-  const next: number = Math.min(ceiling, Math.max(0, piece.value + piece.velocity * step));
-  const settled: boolean = Math.abs(piece.target - next) < WEAR_FADE.settle && Math.abs(piece.velocity) < WEAR_FADE.settle * WEAR_FADE.stiffness;
-  piece.value = settled ? piece.target : next;
-  if (settled) piece.velocity = 0;
-  return !settled;
 }
 
 interface WornPiece {
@@ -508,7 +485,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const mixer: AnimationMixer = new AnimationMixer(model);
   const held: Map<string, HeldPiece> = new Map<string, HeldPiece>();
   const lettingGo: HeldPiece[] = [];
-  let heldKey: string = '';
+  let heldIds: readonly string[] | null = null;
   let gearDressed: boolean = false;
   const bodies: BodyMesh[] = skinnedMeshes(model).flatMap((mesh: SkinnedMesh): BodyMesh[] => (Array.isArray(mesh.material) ? [] : [{ mesh, skin: mesh.material }]));
   const anchor: SkinnedMesh | undefined = bodies[0]?.mesh;
@@ -516,9 +493,12 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const leaving: WornPiece[] = [];
   let shownParts: readonly string[] = [];
   let finalParts: readonly string[] = [];
-  const wornMaterials = (): MeshStandardMaterial[] => [...worn.values(), ...leaving].flatMap((piece: WornPiece): MeshStandardMaterial[] => piece.materials);
+  let partsPending: boolean = false;
+  let wearMoving: boolean = false;
+  let dressedCache: MeshStandardMaterial[] | null = null;
   const hide = (parts: readonly string[]): void => {
     shownParts = parts;
+    partsPending = shownParts.join('|') !== finalParts.join('|');
     for (const body of bodies) {
       const masks: readonly number[] | undefined = rig.bodyMasks.get(body.mesh.name);
       body.mesh.material = parts.length === 0 || masks === undefined ? body.skin : masks.map((mask: number): Material => (maskHidden(mask, rig.bodyParts, parts) ? UNSEEN : body.skin));
@@ -557,10 +537,30 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     });
     return piece;
   };
-  const heldMaterials = (): MeshStandardMaterial[] => [...held.values(), ...lettingGo].flatMap((piece: HeldPiece): MeshStandardMaterial[] => piece.materials);
+  const dressed = (): readonly MeshStandardMaterial[] => {
+    if (dressedCache !== null) return dressedCache;
+    const all: MeshStandardMaterial[] = [...materials];
+    for (const piece of worn.values()) all.push(...piece.materials);
+    for (const piece of leaving) all.push(...piece.materials);
+    for (const piece of held.values()) all.push(...piece.materials);
+    for (const piece of lettingGo) all.push(...piece.materials);
+    dressedCache = all;
+    return all;
+  };
   const release = (piece: HeldPiece): void => {
     piece.holder.removeFromParent();
     for (const material of piece.materials) material.dispose();
+  };
+  const stepWornPiece = (piece: WornPiece, step: number): boolean => {
+    if (settledPiece(piece)) return false;
+    const moved: boolean = springTo(piece, step, 1);
+    fade(piece, piece.value);
+    return moved;
+  };
+  const stepHeldPiece = (piece: HeldPiece, step: number): void => {
+    if (settledPiece(piece)) return;
+    springTo(piece, step, WEAR_FADE.overshoot);
+    piece.holder.scale.setScalar(piece.size * piece.value);
   };
   let wornKey: string = '';
 
@@ -570,9 +570,10 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     mixer,
     clips: rig.clips,
     setGear(attachmentIds: readonly string[]): void {
-      const key: string = attachmentIds.join('|');
-      if (key === heldKey) return;
-      heldKey = attachmentIds.every((id: string): boolean => library.attachments.has(id)) ? key : '';
+      if (heldIds === null ? attachmentIds.length === 0 : sameIds(heldIds, attachmentIds)) return;
+      heldIds = attachmentIds.every((id: string): boolean => library.attachments.has(id)) ? [...attachmentIds] : null;
+      dressedCache = null;
+      wearMoving = true;
       const instant: boolean = !gearDressed || look.ghost !== null;
       gearDressed = true;
       for (const [id, piece] of held) {
@@ -620,6 +621,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       if (key === wornKey || anchor === undefined) return;
       const instant: boolean = wornKey === '' || look.ghost !== null;
       wornKey = key;
+      dressedCache = null;
+      wearMoving = true;
       for (const [id, piece] of worn) {
         if (wearableIds.includes(id)) continue;
         worn.delete(id);
@@ -641,27 +644,17 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenParts.includes(part)));
     },
     stepWear(dt: number): void {
+      if (!wearMoving && !partsPending) return;
       const step: number = Math.min(dt, WEAR_FADE.longestStep);
       let moving: boolean = false;
-      for (const piece of [...worn.values(), ...leaving]) {
-        if (piece.value === piece.target && piece.velocity === 0) continue;
-        if (springTo(piece, step, 1)) moving = true;
-        fade(piece, piece.value);
-      }
-      for (const piece of [...held.values(), ...lettingGo]) {
-        if (piece.value === piece.target && piece.velocity === 0) continue;
-        springTo(piece, step, WEAR_FADE.overshoot);
-        piece.holder.scale.setScalar(piece.size * piece.value);
-      }
-      for (const piece of lettingGo.filter((candidate: HeldPiece): boolean => candidate.value === 0 && candidate.velocity === 0)) {
-        release(piece);
-        lettingGo.splice(lettingGo.indexOf(piece), 1);
-      }
-      for (const piece of leaving.filter((candidate: WornPiece): boolean => candidate.value === 0 && candidate.velocity === 0)) {
-        drop(piece);
-        leaving.splice(leaving.indexOf(piece), 1);
-      }
-      if (!moving && shownParts.join('|') !== finalParts.join('|')) hide(finalParts);
+      for (const piece of worn.values()) if (stepWornPiece(piece, step)) moving = true;
+      for (const piece of leaving) if (stepWornPiece(piece, step)) moving = true;
+      for (const piece of held.values()) stepHeldPiece(piece, step);
+      for (const piece of lettingGo) stepHeldPiece(piece, step);
+      const released: boolean = dropSettled(lettingGo, release);
+      if (dropSettled(leaving, drop) || released) dressedCache = null;
+      wearMoving = lettingGo.length > 0 || leaving.length > 0 || anyUnsettled(worn.values()) || anyUnsettled(held.values());
+      if (!moving && partsPending) hide(finalParts);
     },
     setFlash(color: Color, amount: number): void {
       glow.flash.value.copy(color).multiplyScalar(amount * FLASH.boost);
@@ -672,13 +665,13 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     },
     setOpacity(opacity: number): void {
       if (look.ghost === null) return;
-      for (const material of [...materials, ...wornMaterials(), ...heldMaterials()]) material.opacity = opacity;
+      for (const material of dressed()) material.opacity = opacity;
     },
     setFade(amount: number): void {
       if (look.ghost !== null) return;
       faded = amount;
-      seeThrough([...materials, ...wornMaterials(), ...heldMaterials()], faded < 1 || shadeSees);
-      fadeMaterials([...materials, ...wornMaterials(), ...heldMaterials()], amount);
+      seeThrough(dressed(), faded < 1 || shadeSees);
+      fadeMaterials(dressed(), amount);
     },
     setShade(color: Color, amount: number, see: boolean, wet: number): void {
       if (look.ghost !== null) return;
@@ -686,12 +679,12 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       shadeSees = see && amount > 0;
       glow.shade.value.copy(color);
       glow.shadeMix.value = amount;
-      seeThrough([...materials, ...wornMaterials(), ...heldMaterials()], faded < 1 || (see && amount > 0));
+      seeThrough(dressed(), faded < 1 || (see && amount > 0));
     },
     dispose(): void {
       mixer.stopAllAction();
       mixer.uncacheRoot(model);
-      for (const material of [...materials, ...wornMaterials(), ...heldMaterials()]) material.dispose();
+      for (const material of dressed()) material.dispose();
       disposeSkeletons(model);
     },
   };

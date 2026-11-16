@@ -74,3 +74,27 @@ void test('each resting joint gets its own shadow on the floor under it, dark wh
   shadows.hide();
   assert.equal(under.visible, false);
 });
+
+void test('a body that never lies down puts no shadow patches anywhere, and hiding or detaching them is harmless', (): void => {
+  const scene: Group = new Group();
+  const hand: Bone = new Bone();
+  hand.position.set(0.4, FLOOR + RADIUS, -0.2);
+  scene.add(hand);
+  scene.updateMatrixWorld(true);
+  const shadows = createRestShadows([{ bone: hand, radius: RADIUS }]);
+  shadows.hide();
+  shadows.hide();
+  shadows.detach();
+  assert.equal(patches(scene).length, 0);
+  const later = createRestShadows([{ bone: hand, radius: RADIUS }]);
+  later.hide();
+  later.place(scene, FLOOR, 1, 0);
+  const [under] = patches(scene);
+  assert.ok(under !== undefined);
+  assert.equal(opacityOf(under), REST_SHADOW.opacity);
+  later.hide();
+  assert.equal(under.visible, false);
+  assert.equal(opacityOf(under), 0);
+  later.place(scene, FLOOR, 1, 0);
+  assert.equal(under.visible, true);
+});

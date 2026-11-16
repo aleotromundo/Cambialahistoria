@@ -38,8 +38,10 @@ export interface KnockPose {
   readonly lean: number;
 }
 
+const NO_KNOCK: KnockPose = { lift: 0, lean: 0 };
+
 export function knockPose(span: number, left: number): KnockPose {
-  if (span <= 0) return { lift: 0, lean: 0 };
+  if (span <= 0) return NO_KNOCK;
   const arc: number = Math.sin(Math.PI * Math.min(1, Math.max(0, 1 - left / span)));
   const size: number = Math.min(1, span / LOCOMOTION.fullHopTime);
   return { lift: LOCOMOTION.hop * size * arc, lean: LOCOMOTION.tilt * size * arc };

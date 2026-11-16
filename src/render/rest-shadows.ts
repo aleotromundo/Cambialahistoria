@@ -50,7 +50,7 @@ interface Patch {
   readonly material: MeshBasicMaterial;
 }
 
-export function createRestShadows(joints: readonly RestJoint[]): RestShadows {
+function patchesFor(joints: readonly RestJoint[]): Patch[] {
   const patches: Patch[] = [];
   for (const joint of joints) {
     const mesh: Mesh = contactShadow();
@@ -61,11 +61,19 @@ export function createRestShadows(joints: readonly RestJoint[]): RestShadows {
     mesh.visible = false;
     patches.push({ joint, mesh, material });
   }
+  return patches;
+}
+
+export function createRestShadows(joints: readonly RestJoint[]): RestShadows {
+  let built: Patch[] | null = null;
+  let shown: boolean = false;
   const at: Vector3 = new Vector3();
   return {
     place(parent: Object3D | null, floor: number, scale: number, share: number): void {
       const fade: number = restFade(share);
-      for (const patch of patches) {
+      built ??= patchesFor(joints);
+      shown = true;
+      for (const patch of built) {
         if (parent !== null && patch.mesh.parent !== parent) parent.add(patch.mesh);
         patch.joint.bone.getWorldPosition(at);
         const radius: number = patch.joint.radius * scale;
@@ -77,13 +85,16 @@ export function createRestShadows(joints: readonly RestJoint[]): RestShadows {
       }
     },
     hide(): void {
-      for (const patch of patches) {
+      if (built === null || !shown) return;
+      shown = false;
+      for (const patch of built) {
         patch.material.opacity = 0;
         patch.mesh.visible = false;
       }
     },
     detach(): void {
-      for (const patch of patches) {
+      if (built === null) return;
+      for (const patch of built) {
         patch.mesh.removeFromParent();
         patch.material.dispose();
       }
