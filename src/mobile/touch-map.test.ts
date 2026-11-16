@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Candidate } from './touch-map.ts';
-import { aimedSkill, autoAimTarget, buttonKey, clampKnob, glideAim, cooldownTurn, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { loadContent } from '../../sim/content/content.ts';
+import { FLASK_RESOURCES } from '../../sim/content/flasks.ts';
+import type { SkillDef } from '../../sim/content/types.ts';
+import type { HudView } from '../../sim/world/hud.ts';
+import { hudView } from '../../sim/world/hud.ts';
+import type { FlaskState, ItemInstance, PlayerState, World } from '../../sim/world/types.ts';
+import { worldIn } from '../../test/support.ts';
+import type { ButtonInputs, Candidate } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, buttonInputsChanged, buttonKey, createButtonInputs, clampKnob, glideAim, cooldownTurn, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, prefersTouch, readStick, rotateHintShows, sideForPoint, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 
 const YAW: number = Math.PI / 4;
 const near = (actual: number, expected: number): void => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
@@ -170,4 +177,63 @@ void test('a held button keeps its finger when the bar moves it, and loses it on
 void test('while a spin carries the hero, the stick points where he goes and a resting stick holds him where he is', (): void => {
   assert.deepEqual(glideAim({ x: 1, z: 2 }, { x: 0, z: 1 }), { x: 1, z: 2 + TOUCH.stickReach });
   assert.deepEqual(glideAim({ x: 1, z: 2 }, null), { x: 1, z: 2 });
+});
+
+const SHOWN = (world: World): string => {
+  const view: HudView = hudView(world);
+  const flasks: string = world.player.flasks.map((flask: FlaskState): string => (view.parts.includes(flask.def.resource) ? flask.def.id : '-')).join(',');
+  return `${view.slots.join(',')}#${flasks}#${world.player.bar.join(',')}`;
+};
+
+void test('the touch buttons skip their rebuild only while the filled slots, mana, the bar and the flasks they show are unchanged', (): void => {
+  assert.deepEqual([...FLASK_RESOURCES], ['life', 'mana']);
+  const world: World = worldIn(loadContent(), 'hideout', 7);
+  const player: PlayerState = world.player;
+  const kept: ButtonInputs = createButtonInputs();
+  let last: string = SHOWN(world);
+  const check = (expected: boolean): void => {
+    const changed: boolean = buttonInputsChanged(kept, player, world.content.player.manaShows);
+    assert.equal(changed, expected);
+    if (!changed) assert.equal(SHOWN(world), last);
+    if (SHOWN(world) !== last) assert.equal(changed, true);
+    last = SHOWN(world);
+  };
+  check(true);
+  check(false);
+  player.gold += 50;
+  player.pos = { x: player.pos.x + 3, z: player.pos.z };
+  check(false);
+  const first: string | null = player.bar[0] ?? null;
+  player.bar[0] = first === null ? 'cleave' : null;
+  check(true);
+  check(false);
+  const skills: (SkillDef | null)[] = [...player.skills];
+  const cheap: SkillDef | undefined = [...world.content.skills.values()].find((skill: SkillDef): boolean => skill.manaCost <= 0 && skill.damage.weaponPercent <= 0);
+  const dear: SkillDef | undefined = [...world.content.skills.values()].find((skill: SkillDef): boolean => skill.manaCost > 0 && skill.damage.weaponPercent <= 0);
+  assert.ok(cheap !== undefined && dear !== undefined);
+  player.skills.fill(null);
+  check(true);
+  player.skills[2] = cheap;
+  check(true);
+  player.skills[2] = { ...cheap, name: `${cheap.name} again` };
+  check(false);
+  player.skills[3] = dear;
+  check(true);
+  player.skills[3] = null;
+  check(true);
+  player.skills.splice(0, player.skills.length, ...skills);
+  check(true);
+  const weapon: ItemInstance | null = player.equipped.weapon;
+  player.equipped.weapon = null;
+  buttonInputsChanged(kept, player, world.content.player.manaShows);
+  last = SHOWN(world);
+  player.equipped.weapon = weapon;
+  check(SHOWN(world) !== last);
+  const flask: FlaskState | undefined = player.flasks[0];
+  assert.ok(flask !== undefined);
+  player.flasks.splice(0, 1);
+  check(true);
+  player.flasks.unshift(flask);
+  check(true);
+  check(false);
 });

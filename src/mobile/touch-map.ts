@@ -1,5 +1,8 @@
 import type { Vec2 } from '../../sim/math.ts';
-import type { SkillCommand, WalkCommand } from '../../sim/world/types.ts';
+import type { FlaskDef } from '../../sim/content/flasks.ts';
+import type { ManaShows, SkillDef } from '../../sim/content/types.ts';
+import { usable } from '../../sim/world/hud.ts';
+import type { PlayerState, SkillCommand, WalkCommand } from '../../sim/world/types.ts';
 
 export const TOUCH = {
   stickRadius: 52,
@@ -183,4 +186,63 @@ export function cooldownTurn(remaining: number, total: number): number {
 
 export function isTap(dx: number, dy: number, ms: number): boolean {
   return Math.hypot(dx, dy) <= TOUCH.tapSlopPx && ms <= TOUCH.tapMs;
+}
+
+export interface ButtonInputs {
+  readonly slots: number[];
+  readonly flasks: FlaskDef[];
+  readonly bar: (string | null)[];
+  mana: boolean;
+  read: boolean;
+}
+
+export function createButtonInputs(): ButtonInputs {
+  return { slots: [], flasks: [], bar: [], mana: false, read: false };
+}
+
+function costly(skill: SkillDef | null): boolean {
+  return skill !== null && skill.manaCost > 0;
+}
+
+function sameSlots(kept: readonly number[], player: PlayerState): boolean {
+  let at: number = 0;
+  for (let slot: number = 0; slot < player.skills.length; slot += 1) {
+    const skill: SkillDef | null = player.skills[slot] ?? null;
+    if (skill === null || !usable(player, skill)) continue;
+    if (kept[at] !== slot) return false;
+    at += 1;
+  }
+  return at === kept.length;
+}
+
+function sameBar(kept: readonly (string | null)[], player: PlayerState): boolean {
+  if (kept.length !== player.bar.length) return false;
+  for (let index: number = 0; index < player.bar.length; index += 1) {
+    if (kept[index] !== player.bar[index]) return false;
+  }
+  return true;
+}
+
+function sameFlasks(kept: readonly FlaskDef[], player: PlayerState): boolean {
+  if (kept.length !== player.flasks.length) return false;
+  for (let index: number = 0; index < player.flasks.length; index += 1) {
+    if (kept[index] !== player.flasks[index]?.def) return false;
+  }
+  return true;
+}
+
+export function buttonInputsChanged(kept: ButtonInputs, player: PlayerState, manaShows: ManaShows): boolean {
+  const mana: boolean = manaShows === 'always' || player.skills.some(costly);
+  if (kept.read && kept.mana === mana && sameSlots(kept.slots, player) && sameBar(kept.bar, player) && sameFlasks(kept.flasks, player)) return false;
+  kept.read = true;
+  kept.mana = mana;
+  kept.slots.length = 0;
+  player.skills.forEach((skill: SkillDef | null, slot: number): void => {
+    if (skill !== null && usable(player, skill)) kept.slots.push(slot);
+  });
+  kept.bar.length = 0;
+  kept.bar.push(...player.bar);
+  kept.flasks.length = 0;
+  for (const flask of player.flasks) kept.flasks.push(flask.def);
+  return true;
 }

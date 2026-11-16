@@ -6,7 +6,7 @@ import type { SkillDef } from '../../sim/content/types.ts';
 import type { Vec2 } from '../../sim/math.ts';
 import { readyToRepeat } from '../../sim/world/skills.ts';
 import { glidesWith } from '../../sim/world/momentum.ts';
-import type { Command, FlaskState, MonsterState, World } from '../../sim/world/types.ts';
+import type { Command, FlaskState, World } from '../../sim/world/types.ts';
 import { cannotStep, isTimeHeld } from '../../sim/world/movement.ts';
 import type { KeyValueStore } from '../backend/backend.ts';
 import { el } from '../hud/dom.ts';
@@ -21,8 +21,8 @@ import type { ItemNames } from '../render/item-names.ts';
 import { INPUT } from '../input.ts';
 import { createBrowserStore } from '../storage.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
-import type { ButtonPlan, Candidate, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
-import { aimedSkill, autoAimTarget, buttonKey, glideAim, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import type { ButtonInputs, ButtonPlan, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, buttonInputsChanged, buttonKey, createButtonInputs, glideAim, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
 import { PHONE, phoneLayout } from './phone-layout.ts';
 import touchCss from './touch.css?inline';
@@ -391,7 +391,9 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     place();
   };
 
+  const buttonInputs: ButtonInputs = createButtonInputs();
   const refreshButtons = (): void => {
+    if (!buttonInputsChanged(buttonInputs, world.player, world.content.player.manaShows)) return;
     const view: HudView = hudView(world);
     const bar: SkillBarEntry[] = world.content.player.skillBar.map((entry: { readonly bindings: readonly string[] }, slot: number): SkillBarEntry => ({ bindings: entry.bindings, filled: view.slots.includes(slot) }));
     const specs: TouchButton[] = touchButtons(bar, INPUT.leftBinding, world.player.flasks.map((flask: FlaskState): FlaskEntry | null => (view.parts.includes(flask.def.resource) ? flask.def : null)));
@@ -535,7 +537,6 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
     if (document.hidden) reset();
   });
 
-  const monsters = (): Candidate[] => world.monsters.map((monster: MonsterState): Candidate => ({ id: monster.id, pos: monster.pos, alive: monster.alive }));
 
   return {
     collect(dt: number): Command[] {
@@ -574,13 +575,13 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
         switch (view.spec.kind) {
           case 'attack':
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
-            if (isFresh || (isHeld && tick && player.skills[view.spec.slot]?.press === null)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
+            if (isFresh || (isHeld && tick && player.skills[view.spec.slot]?.press === null)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead)));
             return;
           case 'skill': {
             const skill: SkillDef | undefined = player.skills[view.spec.slot] ?? undefined;
             if (isFresh) commands.push({ type: 'hold', slot: view.spec.slot, down: true });
             const ready: boolean = readyToRepeat(player, skill);
-            if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)));
+            if (isFresh || (isHeld && tick && ready)) commands.push(aimedSkill(view.spec.slot, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead)));
             return;
           }
           case 'flask': {
@@ -596,7 +597,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       lifted.clear();
       const holding = player.action;
       if (holding !== null && holding.skill.press !== null && views.some((view: ButtonView, index: number): boolean => heldButtons.has(index) && view.spec.kind !== 'flask' && view.spec.slot === holding.slot)) {
-        const aim: Vec2 = glidesWith(holding.skill.press) ? glideAim(player.pos, direction) : aimedSkill(holding.slot ?? 0, player.pos, ahead, autoAimTarget(monsters(), player.pos, ahead)).aim;
+        const aim: Vec2 = glidesWith(holding.skill.press) ? glideAim(player.pos, direction) : aimedSkill(holding.slot ?? 0, player.pos, ahead, autoAimTarget(world.monsters, player.pos, ahead)).aim;
         commands.push({ type: 'steer', aim });
       }
       return commands;
