@@ -1,4 +1,4 @@
-import type { ChartGroup, Content, DamageType, Delivery, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, DamageType, Delivery, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, SkillVfx, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
@@ -78,7 +78,7 @@ function scaledDelivery(delivery: Delivery, scale: DeliveryScale): Delivery {
       scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range };
       break;
     case 'projectile':
-      scaled = { ...delivery, range: delivery.range * range, count: delivery.count + scale.projectiles, pierce: delivery.pierce + scale.pierce };
+      scaled = { ...delivery, radius: delivery.radius * area, range: delivery.range * range, count: delivery.count + scale.projectiles, pierce: delivery.pierce + scale.pierce };
       break;
     case 'dash':
       scaled = { ...delivery, distance: delivery.distance * range };
@@ -182,6 +182,11 @@ function heldEchoScale(skill: SkillDef, share: number): number {
   return 1 + Math.min(1, share) * ADDED_ECHO.heldDamage;
 }
 
+function widerWave(vfx: SkillVfx, area: number): SkillVfx {
+  if (vfx.wave === null || area === 1) return vfx;
+  return { ...vfx, wave: { ...vfx.wave, halfWidth: vfx.wave.halfWidth * area } };
+}
+
 function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
   return Math.max(0, 1 + sumSkillMod(mods, field));
 }
@@ -191,8 +196,9 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
   const { skill, through }: ChosenSkill = chainFrom(content, base, placed, allocated, powers, worn, chosen);
   const mods: SkillMod[] = [...placed.flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
   if (mods.length === 0) return skill;
+  const area: number = scaleOf(mods, 'areaPercent');
   const delivery: Delivery = scaledDelivery(skill.delivery, {
-    area: scaleOf(mods, 'areaPercent'),
+    area,
     range: scaleOf(mods, 'rangePercent'),
     duration: scaleOf(mods, 'durationPercent'),
     projectiles: sumSkillMod(mods, 'projectiles'),
@@ -204,6 +210,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
   return {
     ...skill,
     delivery,
+    vfx: widerWave(skill.vfx, area),
     damage: { type: skill.damage.type, weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
     cooldown: skill.cooldown * scaleOf(mods, 'cooldownPercent'),
     manaCost: Math.round(skill.manaCost * scaleOf(mods, 'manaCostPercent')),

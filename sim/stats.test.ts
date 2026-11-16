@@ -373,3 +373,19 @@ void test('a node allocated twice or a name the tree does not hold changes nothi
   assert.deepEqual(resolveSkill(content, skillOf('cleave'), noisy), resolveSkill(content, skillOf('cleave'), MILLRACE));
   assert.deepEqual(computeStats(content, 3, emptyEquipment(), noisy), computeStats(content, 3, emptyEquipment(), MILLRACE));
 });
+
+void test('area widens a projectile as it widens every other shape, and a wave is drawn as wide as it now strikes', (): void => {
+  const wave: SkillDef = must(content.skills.get('ghost_wave'), 'ghost wave');
+  const wailing: SkillDef = resolveSkill(content, wave, ['wailing_wave'], [], [], 'crossbow');
+  assert.ok(wave.delivery.type === 'projectile' && wailing.delivery.type === 'projectile');
+  assert.ok(Math.abs(wailing.delivery.radius - wave.delivery.radius * 1.2) < 1e-9, `radius ${wailing.delivery.radius}`);
+  const drawn = must(wave.vfx.wave, 'wave look');
+  const widened = must(wailing.vfx.wave, 'widened wave look');
+  assert.ok(Math.abs(widened.halfWidth - drawn.halfWidth * 1.2) < 1e-9);
+  assert.equal(widened.depth, drawn.depth);
+  const bolt: SkillDef = must(content.skills.get('storm_bolt'), 'storm bolt');
+  const charged: SkillDef = resolveSkill(content, bolt, ['storm_3']);
+  assert.ok(bolt.delivery.type === 'projectile' && charged.delivery.type === 'projectile');
+  assert.ok(charged.delivery.radius > bolt.delivery.radius);
+  assert.equal(charged.vfx, bolt.vfx);
+});
