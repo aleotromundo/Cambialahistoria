@@ -154,7 +154,7 @@ export function createOthers(options: OthersOptions): Others {
     const ghost: GhostUniforms = createGhostUniforms(WHITE, 0);
     ghost.rim.value = 0;
     ghost.dissolve.value = 1;
-    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost, feather: options.feather }), 1, facing, ACTOR.friendlyHover);
+    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost, feather: options.feather }, 'together'), 1, facing, ACTOR.friendlyHover);
     view.rig.setGear(dressed.look.held);
     view.rig.setWear(dressed.look.wearables, dressed.look.hidden);
     view.setShadowOpacity(0);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { AnimationClip, Bone, BufferGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
+import { AnimationClip, Bone, BufferAttribute, BufferGeometry, Group, Mesh, MeshStandardMaterial, Skeleton, SkinnedMesh } from 'three';
 import type { Object3D } from 'three';
 import { unsafeGlsl } from '../../test/glsl-support.ts';
 import { must } from '../../test/support.ts';
@@ -8,6 +8,9 @@ import { loadContent } from '../../sim/content/content.ts';
 import type { AttachmentDef, Content, RigDef } from '../../sim/content/types.ts';
 import type { CharacterLibrary, LoadedRig, RigClipSet, RigInstance } from './character-loader.ts';
 import { CHARACTER_SHADE, instantiateRig } from './character-loader.ts';
+import { createGhost } from '../glitch/ghost.ts';
+import { isShadowCaster } from './shadow-caster.ts';
+import { skinnedMeshes } from './wearables.ts';
 
 const content: Content = loadContent();
 const rigDef: RigDef = must(content.rigs.get(content.player.hero.rig), 'player rig');
@@ -107,3 +110,75 @@ void test('fading a body reaches a weapon taken up after the last fade, and no l
   assert.equal(second.opacity, 0.25);
   assert.equal(first.opacity, 0.5);
 });
+
+interface SkinnedSource {
+  readonly loaded: LoadedRig;
+  readonly library: CharacterLibrary;
+}
+
+function skinnedSource(): SkinnedSource {
+  const template: Group = new Group();
+  const spine: Bone = new Bone();
+  spine.name = 'spine';
+  const geometry: BufferGeometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
+  geometry.setAttribute('skinIndex', new BufferAttribute(new Uint16Array(12), 4));
+  geometry.setAttribute('skinWeight', new BufferAttribute(new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]), 4));
+  const skin: SkinnedMesh = new SkinnedMesh(geometry, new MeshStandardMaterial());
+  skin.name = 'body';
+  template.add(spine);
+  template.add(skin);
+  template.updateMatrixWorld(true);
+  skin.bind(new Skeleton([spine]));
+  const loaded: LoadedRig = { def: rigDef, template, clips, bodyParts: [], bodyMasks: new Map(), fitted: new Map() };
+  return { loaded, library: { rigs: new Map([[rigDef.id, loaded]]), attachments: new Map(), wearables: new Map() } };
+}
+
+function skinnedRig(shadows: 'pieces' | 'together', source: SkinnedSource = skinnedSource()): { readonly rig: RigInstance; readonly body: SkinnedMesh } {
+  const rig: RigInstance = instantiateRig(source.loaded, source.library, { tint: '#ffffff', glow: '#ffffff', ghost: null, feather: false }, shadows);
+  return { rig, body: must(skinnedMeshes(rig.root).find((mesh: SkinnedMesh): boolean => !isShadowCaster(mesh)), 'body') };
+}
+
+function castersIn(root: Object3D): SkinnedMesh[] {
+  return skinnedMeshes(root).filter((mesh: SkinnedMesh): boolean => isShadowCaster(mesh));
+}
+
+void test('a rig that casts in pieces is as it always was: every mesh casts its own shadow and there is no caster', (): void => {
+  const { rig, body } = skinnedRig('pieces');
+  assert.equal(body.castShadow, true);
+  assert.equal(castersIn(rig.root).length, 0);
+});
+
+void test('a rig that casts together has one caster on the body\'s skeleton holding the body\'s triangles, and the body no longer casts', (): void => {
+  const { rig, body } = skinnedRig('together');
+  const caster: SkinnedMesh = must(castersIn(rig.root)[0], 'caster');
+  assert.equal(castersIn(rig.root).length, 1);
+  assert.equal(body.castShadow, false);
+  assert.equal(caster.castShadow, true);
+  assert.equal(caster.skeleton, body.skeleton);
+  assert.equal(caster.parent, body.parent);
+  assert.equal(must(caster.geometry.attributes['position'], 'position').count, 3);
+  assert.equal(must(caster.geometry.index, 'index').count, 3);
+});
+
+void test('two rigs of one kind dressed alike share one caster geometry, and a rig of another source has its own', (): void => {
+  const source: SkinnedSource = skinnedSource();
+  const first: SkinnedMesh = must(castersIn(skinnedRig('together', source).rig.root)[0], 'first caster');
+  const second: SkinnedMesh = must(castersIn(skinnedRig('together', source).rig.root)[0], 'second caster');
+  const other: SkinnedMesh = must(castersIn(skinnedRig('together').rig.root)[0], 'other caster');
+  assert.equal(first.geometry, second.geometry);
+  assert.notEqual(first.geometry, other.geometry);
+  assert.notEqual(first.skeleton, second.skeleton);
+});
+
+void test('the hero\'s ghost is copied without the shadow caster, so it never shows as a second body', (): void => {
+  const { rig } = skinnedRig('together');
+  const ghost = createGhost(rig.root, 0xffffff, 0.4);
+  assert.equal(castersIn(ghost.root).length, 0);
+  let meshes: number = 0;
+  ghost.root.traverse((node: Object3D): void => {
+    if (node instanceof Mesh) meshes += 1;
+  });
+  assert.equal(meshes, 1);
+});
+

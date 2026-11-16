@@ -1,6 +1,7 @@
 import type { Material, Object3D } from 'three';
 import { Color, Mesh, MeshBasicMaterial } from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
+import { isShadowCaster } from '../render/shadow-caster.ts';
 
 export interface Ghost {
   readonly root: Object3D;
@@ -21,6 +22,11 @@ export function createGhost(source: Object3D, tint: number, opacity: number): Gh
   const root: Object3D = clone(source);
   const materials: MeshBasicMaterial[] = [];
   const color: Color = new Color(tint);
+  const casters: Object3D[] = [];
+  root.traverse((object: Object3D): void => {
+    if (isShadowCaster(object)) casters.push(object);
+  });
+  for (const caster of casters) caster.removeFromParent();
   root.traverse((object: Object3D): void => {
     if (!(object instanceof Mesh)) return;
     const worn: Material = new MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, fog: true });

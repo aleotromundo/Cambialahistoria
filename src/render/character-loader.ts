@@ -13,6 +13,8 @@ import { anyUnsettled, dropSettled, sameIds, settledPiece, springTo, WEAR_FADE }
 import { bindShade, seeThrough, shadeHeld, SHADOW_BODY, SHADOW_LIGHT, SHADOW_UNIFORMS, shadowRim } from './shadow-shade.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
 import { RestingGroup } from './resting-group.ts';
+import type { CasterCache, CasterPiece, CasterRange } from './shadow-caster.ts';
+import { casterGeometry, castsTogether, createCasterCache, createShadowCaster } from './shadow-caster.ts';
 
 export type { ActionClip, CharacterLibrary, Dresser, GaitClip, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
 export { forgetModel, hasWear, loadCharacters, loadKeptModel, loadModel, loadNeeds, loadRemainingCharacters } from './character-library.ts';
@@ -164,7 +166,22 @@ export function findNode(model: Object3D, name: string): Object3D | undefined {
   return model.getObjectByName(PropertyBinding.sanitizeNodeName(name)) ?? model.getObjectByName(name);
 }
 
-export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: RigLook): RigInstance {
+export type RigShadows = 'pieces' | 'together';
+
+function shownWithin(object: Object3D, top: Object3D): boolean {
+  for (let node: Object3D | null = object; node !== null && node !== top; node = node.parent) if (!node.visible) return false;
+  return true;
+}
+
+const casters: WeakMap<LoadedRig, CasterCache> = new WeakMap<LoadedRig, CasterCache>();
+
+function castersOf(rig: LoadedRig): CasterCache {
+  const found: CasterCache = casters.get(rig) ?? createCasterCache();
+  casters.set(rig, found);
+  return found;
+}
+
+export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: RigLook, shadows: RigShadows = 'pieces'): RigInstance {
   const def: RigDef = rig.def;
   boundSkins(rig.template);
   const model: Object3D = cloneSkinned(rig.template);
@@ -190,6 +207,9 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   let gearDressed: boolean = false;
   const bodies: BodyMesh[] = skinnedMeshes(model).flatMap((mesh: SkinnedMesh): BodyMesh[] => (Array.isArray(mesh.material) ? [] : [{ mesh, skin: mesh.material }]));
   const anchor: SkinnedMesh | undefined = bodies[0]?.mesh;
+  const caster: SkinnedMesh | null = shadows === 'together' && anchor !== undefined ? createShadowCaster(anchor) : null;
+  let castKey: string | null = null;
+  if (caster !== null && anchor !== undefined) (anchor.parent ?? model).add(caster);
   const worn: Map<string, WornPiece> = new Map<string, WornPiece>();
   const leaving: WornPiece[] = [];
   let shownParts: readonly string[] = [];
@@ -197,6 +217,30 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   let partsPending: boolean = false;
   let wearMoving: boolean = false;
   let dressedCache: MeshStandardMaterial[] | null = null;
+  const shownRanges = (body: BodyMesh): readonly CasterRange[] | null => {
+    const masks: readonly number[] | undefined = rig.bodyMasks.get(body.mesh.name);
+    if (shownParts.length === 0 || masks === undefined) return null;
+    return body.mesh.geometry.groups.filter((_group: CasterRange, at: number): boolean => !maskHidden(masks[at] ?? 0, rig.bodyParts, shownParts));
+  };
+  const castTogether = (): void => {
+    if (caster === null || anchor === undefined) return;
+    const key: string = `${[...worn.keys()].join('|')}#${shownParts.join('|')}`;
+    if (key === castKey) return;
+    const before: string | null = castKey;
+    castKey = key;
+    const cast: BodyMesh[] = bodies.filter((body: BodyMesh): boolean => castsTogether(body.mesh.geometry) && shownWithin(body.mesh, model));
+    for (const body of cast) body.mesh.castShadow = false;
+    const pieces: CasterPiece[] = cast.map((body: BodyMesh): CasterPiece => ({ geometry: body.mesh.geometry, bindMatrix: body.mesh.bindMatrix, ranges: shownRanges(body) }));
+    for (const piece of worn.values()) {
+      for (const mesh of piece.meshes) {
+        if (!castsTogether(mesh.geometry)) continue;
+        mesh.castShadow = false;
+        pieces.push({ geometry: mesh.geometry, bindMatrix: mesh.bindMatrix, ranges: null });
+      }
+    }
+    caster.geometry = castersOf(rig).take(key, (): BufferGeometry => casterGeometry(pieces, anchor.bindMatrix));
+    if (before !== null) castersOf(rig).leave(before);
+  };
   const hide = (parts: readonly string[]): void => {
     shownParts = parts;
     partsPending = shownParts.join('|') !== finalParts.join('|');
@@ -204,6 +248,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       const masks: readonly number[] | undefined = rig.bodyMasks.get(body.mesh.name);
       body.mesh.material = parts.length === 0 || masks === undefined ? body.skin : masks.map((mask: number): Material => (maskHidden(mask, rig.bodyParts, parts) ? UNSEEN : body.skin));
     }
+    castTogether();
   };
   const fade = (piece: WornPiece, value: number): void => {
     piece.value = value;
@@ -264,6 +309,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     piece.holder.scale.setScalar(piece.size * piece.value);
   };
   let wornKey: string = '';
+  castTogether();
 
   return {
     def,
@@ -383,6 +429,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       seeThrough(dressed(), faded < 1 || (see && amount > 0));
     },
     dispose(): void {
+      if (castKey !== null) castersOf(rig).leave(castKey);
+      castKey = null;
       mixer.stopAllAction();
       mixer.uncacheRoot(model);
       for (const material of dressed()) material.dispose();
