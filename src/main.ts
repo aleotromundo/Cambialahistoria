@@ -7,6 +7,9 @@ import { carriedPictures, goodsPictures } from '../sim/pictures.ts';
 import { heroRig } from '../sim/hero.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { keepFrames } from './frame-keeper.ts';
+import type { WatchEffect } from './frame-watch.ts';
+import { startPerfReports } from './perf/perf-start.ts';
+import type { PerfReports } from './perf/perf-start.ts';
 import type { FrameKeeper } from './frame-keeper.ts';
 import { element } from './dom-element.ts';
 import { startKeepPrompt } from './keep/keep-start.ts';
@@ -47,7 +50,7 @@ import { createPauseMenu } from './hud/pause-menu.ts';
 import { frameGate } from './frame-gate.ts';
 import type { FrameGate } from './frame-gate.ts';
 import type { PauseMenu } from './hud/pause-menu.ts';
-import type { GraphicsPreset, SettingsSection } from './settings/settings.ts';
+import type { GraphicsPreset, GraphicsSettings, SettingsSection } from './settings/settings.ts';
 import { createHintStore } from './hints-store.ts';
 import type { ObjectiveMarker } from './objective/objective-marker.ts';
 import { createObjectiveMarker } from './objective/objective-marker.ts';
@@ -274,6 +277,7 @@ async function start(): Promise<void> {
   const glitches: GlitchView = startGameGlitches({ world, content, stage, quality: mobile.quality.tier.name, glitchSettings, audio, audioDef, actors, voice, send, relight: (): void => opening.relight(), startZoneAmbience });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
+  const perf: PerfReports = startPerfReports({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
   const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, send });
 
   let playing: boolean = false;
@@ -302,6 +306,7 @@ async function start(): Promise<void> {
     overlayManager.send({ type: 'interrupt', cause: 'lobby' });
     ladder?.setPlaying(false);
     saveNow();
+    perf.left();
     playing = false;
     markPlaying(document.body, false);
     audio.stopAmbience();
@@ -468,7 +473,12 @@ async function start(): Promise<void> {
     launch.update(world, dt, gate.queue);
     vignette.style.setProperty('--hurt', effects.hurt.toFixed(3));
     if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
-    if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) stage.render();
+    perf.frame(now);
+    if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
+      perf.beforeRender(now);
+      stage.render();
+      perf.afterRender();
+    }
     sinceSave += dt;
     if (urgent || sinceSave > GAME.saveEvery) persist();
   };
@@ -486,6 +496,9 @@ async function start(): Promise<void> {
     inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true,
     hidden: saveNow,
     resumed: (): void => void (last = performance.now()),
+    noted: (effect: WatchEffect): void => {
+      if (effect !== 'clear') perf.note(effect);
+    },
   });
   void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], zoneView.ready).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const loadTheRest = async (): Promise<void> => {

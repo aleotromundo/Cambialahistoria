@@ -15,6 +15,7 @@ export interface FrameKeeperDeps {
   inPlay(): boolean;
   hidden(): void;
   resumed(): void;
+  noted(effect: WatchEffect): void;
 }
 
 export interface FrameKeeper {
@@ -40,7 +41,10 @@ export function keepFrames(deps: FrameKeeperDeps): FrameKeeper {
     rearm,
     offer: (): void => notice.show(),
     clear: (): void => notice.hide(),
-    report: (effect: WatchEffect): void => warnInConsole(WATCH_NOTES[effect]),
+    report: (effect: WatchEffect): void => {
+      warnInConsole(WATCH_NOTES[effect]);
+      deps.noted(effect);
+    },
   });
   const loop: FrameLoop = runFrames((now: number): void => deps.frame(now), (error: unknown): void => deps.fault(error), createBrowserScheduler(), createBrowserFrameClock());
   document.addEventListener('visibilitychange', (): void => {

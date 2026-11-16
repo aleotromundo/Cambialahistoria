@@ -24,6 +24,8 @@ import type { Minter } from './minter.ts';
 import { createBackend, readServerUrl } from './create.ts';
 import type { ServerUrl } from './create.ts';
 import { createPlay, playId } from './play.ts';
+import { createPerfClient } from './perf-api.ts';
+import type { PerfClient } from './perf-api.ts';
 import type { Play } from './play.ts';
 
 const PAGE_PLAY: Play = createPlay(playId(Math.random));
@@ -111,4 +113,10 @@ export function createBrowserAuctionHouse(content: Content, rawUrl: string | und
   const server: ServerUrl = readServerUrl(rawUrl);
   if (server.kind !== 'ok') return null;
   return createAuctionHouse({ serverUrl: server.url, store: createBrowserStore(), api: createAuctionApi(server.url, (url: string, init: RequestInit): Promise<Response> => fetch(url, init), content) });
+}
+
+export function createBrowserPerfClient(rawUrl: string | undefined): PerfClient | null {
+  const server: ServerUrl = readServerUrl(rawUrl);
+  if (server.kind !== 'ok') return null;
+  return createPerfClient({ serverUrl: server.url, store: createBrowserStore(), fetch: browserFetch });
 }

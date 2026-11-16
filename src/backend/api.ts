@@ -83,6 +83,66 @@ export type GuestResult = { readonly kind: 'ok'; readonly account: GuestAccount 
 export type ReadResult = { readonly kind: 'ok'; readonly state: CloudState } | { readonly kind: 'unreadable' } | Failure;
 export type WriteResult = { readonly kind: 'ok'; readonly copy: CloudCopy; readonly fold: SaveFold } | { readonly kind: 'conflict'; readonly current: CloudState } | { readonly kind: 'stale'; readonly epoch: number } | { readonly kind: 'behind' } | { readonly kind: 'elsewhere' } | Failure;
 
+export const PERF_PROTOCOL = {
+  path: '/v1/perf',
+  histogramEdgesMs: [6, 10, 14, 20, 25, 30, 36, 45, 55, 70, 100, 150, 250, 500, 1000],
+  overMs: [33, 50, 100, 250],
+  maxWindows: 6,
+  hardwareChars: 120,
+} as const;
+
+export type PerfEnd = 'time' | 'zone' | 'hidden' | 'left' | 'page';
+export type PerfDevice = 'desktop' | 'phone';
+export type PerfTier = 'desktop' | 'mobile';
+
+export interface PerfFactsBody {
+  readonly quality: string;
+  readonly lensWater: boolean;
+  readonly dpr: number;
+  readonly viewport: readonly [number, number];
+  readonly touch: boolean;
+  readonly cores: number | null;
+  readonly memoryGb: number | null;
+  readonly gpuVendor: string | null;
+  readonly gpuRenderer: string | null;
+}
+
+export interface PerfWindowBody {
+  readonly at: number;
+  readonly end: PerfEnd;
+  readonly zone: string;
+  readonly ms: number;
+  readonly frames: number;
+  readonly histogram: readonly number[];
+  readonly p50: number;
+  readonly p95: number;
+  readonly p99: number;
+  readonly worst: number;
+  readonly over: readonly number[];
+  readonly stallMs: number;
+  readonly monsters: number;
+  readonly hidden: boolean;
+  readonly draws: number;
+  readonly triangles: number;
+  readonly textures: number;
+  readonly geometries: number;
+  readonly canvas: readonly [number, number];
+  readonly pixelRatio: number;
+  readonly lost: number;
+  readonly restored: number;
+  readonly rearms: number;
+  readonly offers: number;
+}
+
+export interface PerfReportBody {
+  readonly play: string;
+  readonly build: string;
+  readonly device: PerfDevice;
+  readonly tier: PerfTier;
+  readonly facts?: PerfFactsBody;
+  readonly windows: readonly PerfWindowBody[];
+}
+
 export const RANKINGS = ['level', 'damage', 'life', 'played', 'kills', 'deaths'] as const;
 
 export type Ranking = (typeof RANKINGS)[number];
@@ -229,7 +289,7 @@ export interface Answer {
 const RETRY_AFTER_CAP_MS: number = 120_000;
 const KEEPALIVE_LIMIT_CHARS: number = 60_000;
 
-function retryAfterMs(header: string | null): number | null {
+export function retryAfterMs(header: string | null): number | null {
   if (header === null || header.trim() === '') return null;
   const seconds: number = Number(header);
   return Number.isFinite(seconds) && seconds > 0 ? Math.min(RETRY_AFTER_CAP_MS, seconds * 1000) : null;
