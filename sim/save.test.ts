@@ -1,54 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { roadContent, roadZone } from '../test/road-support.ts';
 import { must, worldIn } from '../test/support.ts';
 import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
-import { wornPowers } from './powers.ts';
 import { canAllocate } from './progression.ts';
 import { createRng } from './rng.ts';
 import { armedFlag } from './save-arm.ts';
-import { earnedPoints, parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
+import { parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
 import type { SaveData } from './save.ts';
 import { createWorld } from './world/create.ts';
 import { blockedReason } from './world/skills.ts';
 import { areaLevel } from './world/spawn.ts';
 import type { ItemInstance, World } from './world/types.ts';
-
-const OUTPOST: ZoneDef = roadZone({
-  id: 'outpost',
-  waypoint: { x: 21, z: 8, radius: 1.8 },
-  playerStart: { x: 28, z: 12 },
-  exits: [{ id: 'stair', x: 28, z: 14.4, radius: 1.5, to: 'hall_of_time', toExit: 'west_gate', arrival: { x: 28, z: 12 }, requires: [], lockedHint: '', hiddenWhenLocked: false, look: 'ring' }],
-  packs: [{ x: 12, z: 6, members: [{ monster: 'mended', count: 2, mods: [] }], when: [] }],
-});
-const content: Content = roadContent(OUTPOST);
-
-function made(base: string, rarity: string, uid: number): ItemInstance {
-  return must(generateItem(content, createRng(uid), uid, 3, base, rarity), base);
-}
-
-function played(): World {
-  const world: World = createWorld(content, { seed: 1, save: null });
-  const player = world.player;
-  player.level = 4;
-  player.xp = 17;
-  player.gold = 123;
-  player.kills = 9;
-  player.skillPoints = 2;
-  player.allocated = ['stone_thunderclap', 'tempered_body', 'blade_thunderhead', 'heavy_hands'];
-  player.inventory[0] = made('drowned_leathers', 'rare', 5);
-  player.inventory[3] = made('gale_charm', 'magic', 6);
-  player.equipped.weapon = made('stormsteel_sword', 'rare', 7);
-  world.surge = 3;
-  world.nextItemUid = 40;
-  world.flags[armedFlag('heavy')] = 'bag';
-  return world;
-}
-
-function roundTrip(world: World): SaveData {
-  return must(parseSaveText(content, JSON.stringify(toSave(world))), 'save');
-}
+import { made, played, roundTrip, saveContent as content } from '../test/save-support.ts';
 
 void test('a save survives JSON and rebuilds the same character', (): void => {
   const original: World = played();
@@ -515,182 +479,4 @@ void test('a save can never carry the hero into a withheld cave: its flag, the z
   assert.ok(!read.waypoints.includes('under_hall'));
   const restored: World = createWorld(held, { seed: 7, save: read });
   assert.notEqual(restored.zone.id, 'under_hall');
-});
-
-void test('a stored save from before the tree revision loads with one free start over banked, and a spent one stays spent', (): void => {
-  const stored: Record<string, unknown> = Object.fromEntries(Object.entries(toSave(played())).filter(([key]: [string, unknown]): boolean => key !== 'treeRevision' && key !== 'freeReset'));
-  const old: SaveData = must(parseSaveText(content, JSON.stringify(stored)), 'old save');
-  assert.equal(old.freeReset, true);
-  assert.equal(old.treeRevision, content.chart.revision);
-  const spent: World = played();
-  spent.player.freeReset = false;
-  assert.equal(roundTrip(spent).freeReset, false);
-  const kept: World = played();
-  assert.equal(roundTrip(kept).freeReset, true);
-});
-
-void test('a save written at an older tree revision is granted the free start over again', (): void => {
-  const world: World = played();
-  world.player.freeReset = false;
-  const older: SaveData = { ...toSave(world), treeRevision: content.chart.revision - 1 };
-  assert.equal(must(parseSaveText(content, JSON.stringify(older)), 'save').freeReset, true);
-});
-
-void test('a place the tree no longer has is handed back as a point on load, and the rest of the save loads', (): void => {
-  const world: World = played();
-  world.player.allocated = ['stone_thunderclap', 'tempered_body', 'a_place_that_was_removed'];
-  const save: SaveData = roundTrip(world);
-  assert.deepEqual(save.allocated, ['stone_thunderclap', 'tempered_body']);
-  assert.equal(save.skillPoints, 3);
-  const restored: World = createWorld(content, { seed: 2, save });
-  assert.deepEqual(restored.player.allocated, ['stone_thunderclap', 'tempered_body']);
-});
-
-void test('made-up place names in a save hand back no more points than the character could have earned', (): void => {
-  const world: World = played();
-  world.player.allocated = ['stone_thunderclap', 'tempered_body', 'blade_thunderhead', 'heavy_hands', 'junk_a', 'junk_b', 'junk_c', 'junk_d', 'junk_e'];
-  const save: SaveData = roundTrip(world);
-  assert.deepEqual(save.allocated, ['stone_thunderclap', 'tempered_body', 'blade_thunderhead', 'heavy_hands']);
-  assert.equal(save.skillPoints + save.allocated.length, earnedPoints(content, save.level, save.grants));
-});
-
-void test('the chosen change of a skill survives a save, and a choice no held place gives is dropped', (): void => {
-  const world: World = played();
-  world.player.allocated = ['storm_storm_bolt', 'stormcallers_focus', 'storm_1', 'forked_bolt', 'storm_4', 'storm_lance', 'echo_storm_mid', 'twice_told_bolt'];
-  world.player.changes = { storm_bolt: 'storm_bolt_echo' };
-  assert.deepEqual(roundTrip(world).changes, { storm_bolt: 'storm_bolt_echo' });
-  assert.deepEqual(must(readSave(content, { ...toSave(world), changes: { storm_bolt: 'cleave_whirl', cleave: 7, nonsense: 'storm_bolt_echo' } }), 'save').changes, {});
-  assert.deepEqual(must(readSave(content, { ...toSave(world), changes: 'lance' }), 'save').changes, {});
-  const { changes: _changes, ...older } = toSave(world);
-  assert.deepEqual(must(readSave(content, older), 'save').changes, {});
-});
-
-const STORMCALLER_BEFORE: readonly string[] = ['echo_forkline', 'first_echo', 'echo_1', 'long_squall', 'echo_squall', 'echo_2', 'echo_3', 'echo_4', 'twice_told_bolt', 'echo_storm_mid', 'echo_storm_near', 'storm_1', 'stormcallers_focus', 'storm_storm_bolt', 'forked_bolt', 'storm_living_wire', 'storm_2', 'storm_3', 'storm_4', 'echo_7', 'echo_5', 'between_heartbeats', 'storm_blade_near', 'blade_1', 'echo_8', 'echo_10'];
-
-function castsOf(world: World): string[] {
-  return wornPowers(content, world.player.equipped).flatMap((power) => power.triggers.flatMap((trigger) => (trigger.effect.type === 'cast' ? [trigger.effect.skill] : [])));
-}
-
-void test('a Stormcaller saved before the Gathering Storm loads with a free start over, every point it spent, and its Forkline items still casting', (): void => {
-  const world: World = played();
-  world.player.level = 14;
-  world.player.skillPoints = 0;
-  world.player.allocated = [...STORMCALLER_BEFORE];
-  world.player.learned = ['cleave', 'forkline', 'squall', 'storm_bolt', 'living_wire', 'dodge_roll'];
-  world.player.bar = ['cleave', 'forkline', 'squall', 'storm_bolt', 'living_wire', 'dodge_roll'];
-  world.player.freeReset = false;
-  world.player.equipped.weapon = made('stormcaller_stave', 'rare', 8);
-  world.player.equipped.head = made('crown_of_the_struck_hour', 'stormtouched', 9);
-  world.player.equipped.hands = made('wirethread_gloves', 'stormtouched', 10);
-  world.player.equipped.charm = made('lantern_of_second_sounds', 'stormtouched', 11);
-  const before: number = castsOf(world).filter((id: string): boolean => id === 'forkline').length;
-  const stored: SaveData = { ...toSave(world), treeRevision: 1 };
-  const save: SaveData = must(parseSaveText(content, JSON.stringify(stored)), 'save');
-  assert.equal(save.freeReset, true);
-  assert.equal(save.treeRevision, content.chart.revision);
-  assert.ok(!save.allocated.includes('storm_living_wire'));
-  assert.equal(save.allocated.length + save.skillPoints, STORMCALLER_BEFORE.length);
-  assert.ok(['echo_squall', 'long_squall', 'twice_told_bolt', 'storm_4'].every((id: string): boolean => save.allocated.includes(id)));
-  assert.ok(!save.learned.includes('living_wire') && !save.bar.includes('living_wire'));
-  assert.ok(save.learned.includes('squall') && save.learned.includes('forkline'));
-  const restored: World = createWorld(content, { seed: 9, save });
-  assert.ok(before > 0);
-  assert.equal(castsOf(restored).filter((id: string): boolean => id === 'forkline').length, before);
-  assert.equal(restored.player.freeReset, true);
-});
-
-void test('an Echo holding that ran through Squall before it moved to the storm keeps what still joins and gets the rest back as points', (): void => {
-  const world: World = played();
-  world.player.skillPoints = 0;
-  world.player.allocated = ['echo_forkline', 'first_echo', 'echo_1', 'long_squall', 'echo_squall'];
-  world.player.learned = ['cleave', 'forkline', 'squall'];
-  world.player.bar = ['cleave', 'forkline', 'squall', null, null, 'dodge_roll'];
-  const save: SaveData = must(parseSaveText(content, JSON.stringify({ ...toSave(world), treeRevision: 1 })), 'save');
-  assert.deepEqual(save.allocated, ['echo_forkline', 'first_echo', 'echo_1']);
-  assert.equal(save.skillPoints, 2);
-  assert.ok(!save.learned.includes('squall'));
-  assert.equal(save.freeReset, true);
-});
-
-void test('a windrunner saved before the Long Shadow loads with a free start over, Mist Step gone and every point back to spend', (): void => {
-  const world: World = played();
-  world.player.level = 6;
-  world.player.skillPoints = 0;
-  world.player.allocated = ['wind_mist_step', 'windborne', 'wind_1', 'drag_of_the_deep', 'wind_downdraught', 'wind_2', 'wind_4', 'slip_through', 'wind_7', 'through_the_mist'];
-  world.player.learned = ['cleave', 'mist_step', 'downdraught', 'dodge_roll'];
-  world.player.bar = ['cleave', 'mist_step', 'downdraught', null, null, 'dodge_roll'];
-  world.player.freeReset = false;
-  const save: SaveData = must(parseSaveText(content, JSON.stringify({ ...toSave(world), treeRevision: content.chart.revision - 1 })), 'save');
-  assert.equal(save.freeReset, true);
-  assert.deepEqual(save.allocated, []);
-  assert.equal(save.skillPoints, 10);
-  assert.ok(!save.learned.includes('mist_step') && !save.bar.includes('mist_step'));
-  assert.ok(!save.learned.includes('downdraught'));
-  assert.ok(canAllocate(content, save.allocated, save.skillPoints, 'wind_ghost_wave'));
-});
-
-void test('a character saved before the Turning Tide loads with a free start over, keeps what still joins, and gets back what it spent on the Downdraught in the wind', (): void => {
-  const world: World = played();
-  world.player.level = 9;
-  world.player.skillPoints = 0;
-  const edge: readonly string[] = ['blade_thunderhead', 'heavy_hands', 'blade_1', 'whetstone', 'blade_4', 'whirling_cleave', 'blade_wind_near', 'wind_1'];
-  const undertow: readonly string[] = ['drag_of_the_deep', 'wind_downdraught', 'updraught'];
-  world.player.allocated = [...edge, ...undertow];
-  world.player.learned = ['cleave', 'thunderhead', 'downdraught', 'dodge_roll'];
-  world.player.bar = ['cleave', 'thunderhead', 'downdraught', null, null, 'dodge_roll'];
-  world.player.freeReset = false;
-  const stored = (allocated: readonly string[]): SaveData => must(parseSaveText(content, JSON.stringify({ ...toSave(world), allocated, treeRevision: content.chart.revision - 1 })), 'save');
-  const save: SaveData = stored(world.player.allocated);
-  assert.equal(save.freeReset, true);
-  assert.deepEqual(save.allocated, edge);
-  assert.equal(save.skillPoints, undertow.length);
-  assert.ok(!save.learned.includes('downdraught') && !save.bar.includes('downdraught'));
-  const turning: readonly string[] = [...edge, 'endless_turn', 'millstone', ...undertow];
-  const kept: SaveData = stored(turning);
-  assert.deepEqual(kept.allocated, turning);
-  assert.ok(kept.learned.includes('downdraught'));
-  assert.ok(canAllocate(content, kept.allocated, 1, 'riptide'));
-});
-
-void test('a character saved before the Banked Fire loads with a free start over and keeps every stone place it held', (): void => {
-  const world: World = played();
-  world.player.level = 12;
-  world.player.skillPoints = 0;
-  const stone: readonly string[] = ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock', 'stone_held_breath', 'stone_2', 'stone_4', 'gathered_clap', 'stone_5', 'stone_6', 'heaving_cleave'];
-  world.player.allocated = [...stone];
-  world.player.learned = ['cleave', 'thunderclap', 'held_breath', 'dodge_roll'];
-  world.player.bar = ['cleave', 'thunderclap', 'held_breath', null, null, 'dodge_roll'];
-  world.player.freeReset = false;
-  const save: SaveData = must(parseSaveText(content, JSON.stringify({ ...toSave(world), treeRevision: content.chart.revision - 1 })), 'save');
-  assert.equal(save.freeReset, true);
-  assert.deepEqual(save.allocated, stone);
-  assert.equal(save.skillPoints, 0);
-  assert.ok(canAllocate(content, save.allocated, 1, 'shoulder_through'));
-  assert.ok(canAllocate(content, save.allocated, 1, 'stone_fire_burst'));
-});
-
-const ECHO_BEFORE: readonly string[] = ['echo_forkline', 'first_echo', 'echo_1', 'echo_15', 'echo_4', 'twice_swung', 'echo_5', 'echo_6', 'echoing_fork', 'stone_echo_near', 'stone_1', 'bedrock', 'stone_held_breath', 'blade_thunderhead', 'heavy_hands', 'blade_1', 'whetstone', 'blade_static_brand'];
-
-void test('a character saved before the Echo loads with a free start over, keeps Held Breath on the Stone path, gets back Echoing Fork and the Static Brand it can no longer reach, and its Forkline items still cast', (): void => {
-  const world: World = played();
-  world.player.level = 12;
-  world.player.skillPoints = 0;
-  world.player.allocated = [...ECHO_BEFORE];
-  world.player.learned = ['cleave', 'forkline', 'held_breath', 'static_brand', 'thunderhead', 'dodge_roll'];
-  world.player.bar = ['cleave', 'forkline', 'held_breath', 'static_brand', 'thunderhead', 'dodge_roll'];
-  world.player.freeReset = false;
-  world.player.equipped.head = made('crown_of_the_struck_hour', 'stormtouched', 9);
-  world.player.equipped.hands = made('wirethread_gloves', 'stormtouched', 10);
-  const before: number = castsOf(world).filter((id: string): boolean => id === 'forkline').length;
-  const save: SaveData = must(parseSaveText(content, JSON.stringify({ ...toSave(world), treeRevision: content.chart.revision - 1 })), 'save');
-  const gone: readonly string[] = ['echoing_fork', 'blade_static_brand'];
-  assert.equal(save.freeReset, true);
-  assert.deepEqual(save.allocated, ECHO_BEFORE.filter((id: string): boolean => !gone.includes(id)));
-  assert.equal(save.skillPoints, gone.length);
-  assert.ok(!save.learned.includes('static_brand') && !save.bar.includes('static_brand'));
-  assert.ok(['forkline', 'held_breath', 'thunderhead'].every((id: string): boolean => save.bar.includes(id)));
-  assert.ok(canAllocate(content, save.allocated, 1, 'forked'));
-  const restored: World = createWorld(content, { seed: 9, save });
-  assert.ok(before > 0);
-  assert.equal(castsOf(restored).filter((id: string): boolean => id === 'forkline').length, before);
 });
