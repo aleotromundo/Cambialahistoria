@@ -132,23 +132,71 @@ export function terrainNoise(x: number, z: number, salt: number): number {
   const iz: number = Math.floor(z);
   const fx: number = eased(x - ix);
   const fz: number = eased(z - iz);
-  const top: number = terrainHash(ix, iz, salt) + (terrainHash(ix + 1, iz, salt) - terrainHash(ix, iz, salt)) * fx;
-  const bottom: number = terrainHash(ix, iz + 1, salt) + (terrainHash(ix + 1, iz + 1, salt) - terrainHash(ix, iz + 1, salt)) * fx;
+  const northWest: number = terrainHash(ix, iz, salt);
+  const southWest: number = terrainHash(ix, iz + 1, salt);
+  const top: number = northWest + (terrainHash(ix + 1, iz, salt) - northWest) * fx;
+  const bottom: number = southWest + (terrainHash(ix + 1, iz + 1, salt) - southWest) * fx;
   return (top + (bottom - top) * fz) * 2 - 1;
 }
 
-function calmTile(zone: ZoneDef, calm: readonly string[], column: number, row: number): boolean {
-  return rampAt(zone, column, row) || calm.includes(zone.tiles[row]?.charAt(column) ?? '');
+interface CalmTiles {
+  readonly ramps: Uint8Array;
+  readonly rampColumns: number;
+  readonly letters: Uint8Array;
+  readonly width: number;
+  readonly rows: number;
+  readonly quiet: Uint8Array;
+}
+
+const CALM: WeakMap<ZoneDef, CalmTiles> = new WeakMap<ZoneDef, CalmTiles>();
+
+function calmTilesOf(zone: ZoneDef, calm: readonly string[]): CalmTiles {
+  const known: CalmTiles | undefined = CALM.get(zone);
+  if (known !== undefined) return known;
+  const map: TerrainMap | null = terrainMap(zone);
+  const ramps: Uint8Array = new Uint8Array(map === null ? 0 : map.surfaces.length);
+  if (map !== null) {
+    for (let index: number = 0; index < map.surfaces.length; index += 1) ramps[index] = map.surfaces[index]?.kind === 'ramp' ? 1 : 0;
+  }
+  const width: number = zone.tiles.reduce((most: number, line: string): number => Math.max(most, line.length), 0);
+  const letters: Uint8Array = new Uint8Array(width * zone.tiles.length);
+  zone.tiles.forEach((line: string, row: number): void => {
+    for (let column: number = 0; column < line.length; column += 1) letters[row * width + column] = calm.includes(line.charAt(column)) ? 1 : 0;
+  });
+  const quiet: Uint8Array = new Uint8Array(width * zone.tiles.length);
+  const built: CalmTiles = { ramps, rampColumns: map === null ? 0 : map.columns, letters, width, rows: zone.tiles.length, quiet };
+  for (let row: number = 0; row < built.rows; row += 1) {
+    for (let column: number = 0; column < width; column += 1) quiet[row * width + column] = calmAround(built, column, row) ? 0 : 1;
+  }
+  CALM.set(zone, built);
+  return built;
+}
+
+function calmTile(tiles: CalmTiles, column: number, row: number): boolean {
+  const index: number = row * tiles.rampColumns + column;
+  if (index >= 0 && index < tiles.ramps.length && tiles.ramps[index] === 1) return true;
+  return row >= 0 && row < tiles.rows && column >= 0 && column < tiles.width && tiles.letters[row * tiles.width + column] === 1;
+}
+
+function calmAround(tiles: CalmTiles, column: number, row: number): boolean {
+  for (let dr: number = -1; dr <= 1; dr += 1) {
+    for (let dc: number = -1; dc <= 1; dc += 1) {
+      if (calmTile(tiles, column + dc, row + dr)) return true;
+    }
+  }
+  return false;
 }
 
 function calmShare(zone: ZoneDef, calm: readonly string[], x: number, z: number): number {
+  const tiles: CalmTiles = calmTilesOf(zone, calm);
   const size: number = zone.cellSize;
   const column: number = Math.floor(x / size);
   const row: number = Math.floor(z / size);
+  if (row >= 0 && row < tiles.rows && column >= 0 && column < tiles.width && tiles.quiet[row * tiles.width + column] === 1) return eased(1);
   let nearest: number = size;
   for (let dr: number = -1; dr <= 1; dr += 1) {
     for (let dc: number = -1; dc <= 1; dc += 1) {
-      if (!calmTile(zone, calm, column + dc, row + dr)) continue;
+      if (!calmTile(tiles, column + dc, row + dr)) continue;
       const left: number = (column + dc) * size;
       const top: number = (row + dr) * size;
       nearest = Math.min(nearest, Math.hypot(Math.max(left - x, 0, x - left - size), Math.max(top - z, 0, z - top - size)));
@@ -192,14 +240,16 @@ export function floorAt(zone: ZoneDef, x: number, z: number): boolean {
 }
 
 export function standsAt(zone: ZoneDef, x: number, z: number, margin: number): boolean {
-  if (!floorAt(zone, x, z)) return false;
+  const centre: TerrainCell = terrainCell(zone, x, z);
+  if (!isFloorCell(zone, centre.column, centre.row)) return false;
   if (margin <= 0) return true;
-  const here: number = heightAt(zone, x, z);
+  const here: number = tileHeight(zone, centre.column, centre.row, x, z);
   for (let step: number = 0; step < 8; step += 1) {
     const angle: number = (step / 8) * Math.PI * 2;
     const px: number = x + Math.cos(angle) * margin;
     const pz: number = z + Math.sin(angle) * margin;
-    if (!floorAt(zone, px, pz) || Math.abs(heightAt(zone, px, pz) - here) > Math.max(TERRAIN.meet, TERRAIN.slope * margin)) return false;
+    const cell: TerrainCell = terrainCell(zone, px, pz);
+    if (!isFloorCell(zone, cell.column, cell.row) || Math.abs(tileHeight(zone, cell.column, cell.row, px, pz) - here) > Math.max(TERRAIN.meet, TERRAIN.slope * margin)) return false;
   }
   return true;
 }

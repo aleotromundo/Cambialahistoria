@@ -13,6 +13,7 @@ export const HIDDEN_SWEEP = {
   heroTurns: 8,
   radii: [CUTAWAY.radius, CUTAWAY.widest],
   offGrid: 0.25,
+  testSample: 400,
 } as const;
 
 export interface ClickCount {
@@ -73,11 +74,28 @@ function missesFrom(sight: TerrainSight, zone: ZoneDef, heroes: readonly FloorSp
   return { reached, missed: false, covered };
 }
 
-export function sweepZone(content: Content, zone: ZoneDef, sight: TerrainSight): ZoneSweep {
+function walkableSpots(grid: NavGrid, width: number, depth: number): FloorSpot[] {
+  const spots: FloorSpot[] = [];
+  for (let z: number = HIDDEN_SWEEP.spacing / 2; z < depth; z += HIDDEN_SWEEP.spacing) {
+    for (let x: number = HIDDEN_SWEEP.spacing / 2; x < width; x += HIDDEN_SWEEP.spacing) {
+      if (isWalkable(grid, x, z)) spots.push({ x, z });
+    }
+  }
+  return spots;
+}
+
+export function evenSample<T>(items: readonly T[], most: number | null): readonly T[] {
+  if (most === null || items.length <= most) return items;
+  const step: number = items.length / most;
+  return Array.from({ length: most }, (_: unknown, index: number): T | undefined => items[Math.floor(index * step)]).filter((item: T | undefined): item is T => item !== undefined);
+}
+
+export function sweepZone(content: Content, zone: ZoneDef, sight: TerrainSight, most: number | null = null): ZoneSweep {
   const grid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
   const width: number = (zone.tiles[0]?.length ?? 0) * zone.cellSize;
   const depth: number = zone.tiles.length * zone.cellSize;
-  let walkable: number = 0;
+  const spots: readonly FloorSpot[] = walkableSpots(grid, width, depth);
+  const walkable: number = spots.length;
   let hidden: number = 0;
   const cutHidden: string[] = [];
   let missedBefore: number = 0;
@@ -86,54 +104,50 @@ export function sweepZone(content: Content, zone: ZoneDef, sight: TerrainSight):
   let covered: number = 0;
   const window: Tally = { before: 0, after: [] };
   const bare: Tally = { before: 0, after: [] };
-  for (let z: number = HIDDEN_SWEEP.spacing / 2; z < depth; z += HIDDEN_SWEEP.spacing) {
-    for (let x: number = HIDDEN_SWEEP.spacing / 2; x < width; x += HIDDEN_SWEEP.spacing) {
-      if (!isWalkable(grid, x, z)) continue;
-      walkable += 1;
-      const spot: string = `${x},${z}`;
-      if (clickMiss(sight, zone, x, z, false, 'surface') > HIDDEN_SWEEP.clickNear) missedBefore += 1;
-      if (clickMiss(sight, zone, x, z, true) > HIDDEN_SWEEP.clickNear) missed.push(spot);
-      const heroes: FloorSpot[] = heroesNear(grid, x, z);
-      const targets: FloorSpot[] = [{ x, z }, { x: x - HIDDEN_SWEEP.offGrid, z: z - HIDDEN_SWEEP.offGrid }].filter((target: FloorSpot): boolean => isWalkable(grid, target.x, target.z));
-      let front: boolean = false;
-      let bareBefore: boolean = false;
-      let bareAfter: boolean = false;
-      let reached: boolean = false;
-      let before: boolean = false;
-      let after: boolean = false;
-      for (const target of targets) {
-        bareBefore ||= missesFrom(sight, zone, heroes, target, null, 'surface').missed;
-        const bareNow: Reach = missesFrom(sight, zone, heroes, target, null, 'floor');
-        bareAfter ||= bareNow.missed;
-        front ||= bareNow.covered;
-        for (const radius of HIDDEN_SWEEP.radii) {
-          const old: Reach = missesFrom(sight, zone, heroes, target, radius, 'surface');
-          const now: Reach = missesFrom(sight, zone, heroes, target, radius, 'floor');
-          reached ||= old.reached;
-          before ||= old.missed;
-          after ||= now.missed;
-          front ||= now.covered;
-        }
+  for (const { x, z } of evenSample(spots, most)) {
+    const spot: string = `${x},${z}`;
+    if (clickMiss(sight, zone, x, z, false, 'surface') > HIDDEN_SWEEP.clickNear) missedBefore += 1;
+    if (clickMiss(sight, zone, x, z, true) > HIDDEN_SWEEP.clickNear) missed.push(spot);
+    const heroes: FloorSpot[] = heroesNear(grid, x, z);
+    const targets: FloorSpot[] = [{ x, z }, { x: x - HIDDEN_SWEEP.offGrid, z: z - HIDDEN_SWEEP.offGrid }].filter((target: FloorSpot): boolean => isWalkable(grid, target.x, target.z));
+    let front: boolean = false;
+    let bareBefore: boolean = false;
+    let bareAfter: boolean = false;
+    let reached: boolean = false;
+    let before: boolean = false;
+    let after: boolean = false;
+    for (const target of targets) {
+      bareBefore ||= missesFrom(sight, zone, heroes, target, null, 'surface').missed;
+      const bareNow: Reach = missesFrom(sight, zone, heroes, target, null, 'floor');
+      bareAfter ||= bareNow.missed;
+      front ||= bareNow.covered;
+      for (const radius of HIDDEN_SWEEP.radii) {
+        const old: Reach = missesFrom(sight, zone, heroes, target, radius, 'surface');
+        const now: Reach = missesFrom(sight, zone, heroes, target, radius, 'floor');
+        reached ||= old.reached;
+        before ||= old.missed;
+        after ||= now.missed;
+        front ||= now.covered;
       }
-      if (front) covered += 1;
-      if (bareBefore) bare.before += 1;
-      if (bareAfter) bare.after.push(spot);
-      if (reached) inWindow += 1;
-      if (before) window.before += 1;
-      if (after) window.after.push(spot);
-      if (!heroHidden(sight, zone, x, z, false)) continue;
-      hidden += 1;
-      if (heroHidden(sight, zone, x, z, true)) cutHidden.push(spot);
     }
+    if (front) covered += 1;
+    if (bareBefore) bare.before += 1;
+    if (bareAfter) bare.after.push(spot);
+    if (reached) inWindow += 1;
+    if (before) window.before += 1;
+    if (after) window.after.push(spot);
+    if (!heroHidden(sight, zone, x, z, false)) continue;
+    hidden += 1;
+    if (heroHidden(sight, zone, x, z, true)) cutHidden.push(spot);
   }
   return { zone: zone.id, walkable, hidden, cutHidden, missedBefore, missed, inWindow, covered, window, bare };
 }
 
-export function sweepZones(content: Content): ZoneSweep[] {
+export function sweepZones(content: Content, most: number | null = null): ZoneSweep[] {
   const swept: ZoneSweep[] = [];
   for (const zone of content.zones.values()) {
     const sight: TerrainSight | null = createTerrainSight(zone);
-    if (sight !== null) swept.push(sweepZone(content, zone, sight));
+    if (sight !== null) swept.push(sweepZone(content, zone, sight, most));
   }
   return swept;
 }
