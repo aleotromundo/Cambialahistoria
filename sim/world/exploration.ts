@@ -131,3 +131,18 @@ export function exploredSize(zone: ZoneDef): number {
   const grid: ExploreGrid = exploreGrid(zone);
   return grid.columns * grid.rows;
 }
+
+function gridOf(columns: number, rows: number, cellSize: number): ExploreGrid {
+  return { columns: Math.ceil((columns * cellSize) / EXPLORE.cellSize), rows: Math.ceil((rows * cellSize) / EXPLORE.cellSize), cellSize: EXPLORE.cellSize };
+}
+
+export function grownExplored(zone: ZoneDef, text: unknown): Uint8Array | null {
+  if (zone.grewFrom === null) return null;
+  const before: ExploreGrid = gridOf(zone.grewFrom.columns, zone.grewFrom.rows, zone.cellSize);
+  const old: Uint8Array | null = decodeExplored(text, before.columns * before.rows);
+  if (old === null) return null;
+  const now: ExploreGrid = exploreGrid(zone);
+  const cells: Uint8Array = new Uint8Array(now.columns * now.rows);
+  for (let row: number = 0; row < before.rows; row += 1) cells.set(old.subarray(row * before.columns, (row + 1) * before.columns), row * now.columns);
+  return cells;
+}

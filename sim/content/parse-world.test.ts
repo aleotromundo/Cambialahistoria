@@ -309,3 +309,11 @@ void test('a void recentres around the hero, so it cannot hold npcs, checkpoints
   assert.throws((): unknown => parseContent(voidWith({ waypoint: { x: 80, z: 80 } })), (error: unknown): boolean => problem(error, 'cannot hold a waypoint'));
   assert.doesNotThrow((): unknown => parseContent(voidWith({})));
 });
+
+void test('a zone may name the smaller size it grew from, which must fit inside its tiles in whole tiles', (): void => {
+  const columns: number = hall.tiles[0]?.length ?? 0;
+  assert.equal(parsed({}).grewFrom, null);
+  assert.deepEqual(parsed({ grewFrom: { columns: columns - 2, rows: 3 } }).grewFrom, { columns: columns - 2, rows: 3 });
+  assert.throws((): ZoneDef => parsed({ grewFrom: { columns: columns + 1, rows: 3 } }), /only grows/);
+  assert.throws((): ZoneDef => parsed({ grewFrom: { columns: 2.5, rows: 3 } }), /whole tile/);
+});

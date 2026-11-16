@@ -242,8 +242,8 @@ function freshMoves(commands: readonly Command[]): Command[] {
 function besideDownExit(): { readonly world: World; readonly exit: ZoneExit } {
   const world: World = worldIn(content, 'under_hall', 21);
   const exit: ZoneExit = must(world.zone.exits.find((entry: ZoneExit): boolean => entry.to === 'under_hall_2'), 'under_hall down exit');
-  world.player.pos.x = exit.x;
-  world.player.pos.z = exit.z - exit.radius - 2;
+  world.player.pos.x = exit.arrival.x;
+  world.player.pos.z = exit.arrival.z;
   world.monsters = [];
   return { world, exit };
 }

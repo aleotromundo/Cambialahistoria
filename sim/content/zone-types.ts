@@ -126,6 +126,11 @@ export interface ZoneNpc {
   readonly when: readonly Condition[];
 }
 
+export interface ZoneSize {
+  readonly columns: number;
+  readonly rows: number;
+}
+
 export interface ZoneDef {
   readonly id: string;
   readonly name: string;
@@ -137,6 +142,7 @@ export interface ZoneDef {
   readonly floorHeight: number;
   readonly terrain: ZoneTerrain | null;
   readonly tiles: readonly string[];
+  readonly grewFrom: ZoneSize | null;
   readonly floors: Readonly<Record<string, string>>;
   readonly outside: ZoneOutside | null;
   readonly walls: ZoneWalls | null;

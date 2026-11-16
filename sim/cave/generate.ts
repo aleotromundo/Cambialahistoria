@@ -60,6 +60,7 @@ export interface CaveRequest {
   readonly packs: number;
   readonly packScale: number;
   readonly roomScale: number;
+  readonly top: number;
   readonly ranks: readonly CaveRankShare[];
   readonly screen: ScreenLimit;
 }
@@ -476,7 +477,7 @@ export function rankDeepest(packs: readonly CavePack[], ranks: readonly CaveRank
 }
 
 function attempt(rng: Rng, request: CaveRequest, maker: CaveMaker): CaveLayout | null {
-  const shape: CaveShape | null = shapeCave(rng, maker.kit, request.columns, request.rows, request.chambers, request.roomScale);
+  const shape: CaveShape | null = shapeCave(rng, maker.kit, request.columns, request.rows, request.chambers, request.roomScale, request.top);
   if (shape === null) return null;
   const ground: Ground = { raster: shape.raster, clear: rockDistance(shape.raster), size: CAVE_GEN.cellSize };
   const spots: Spots | null = placeSpots(ground, shape);
@@ -497,8 +498,9 @@ function rankShareProblem(ranks: readonly CaveRankShare[]): string | null {
   return total > 1 ? `the rank shares add up to ${total}, more than every pack` : null;
 }
 
-export function requestProblem(request: Pick<CaveRequest, 'chambers' | 'packs' | 'levels' | 'packScale' | 'roomScale' | 'ranks'>): string | null {
-  if (!Number.isInteger(request.chambers) || request.chambers < 2 || request.chambers > deepestChambers()) return `a cave has 2 to ${deepestChambers()} chambers, not ${request.chambers}`;
+export function requestProblem(request: Pick<CaveRequest, 'chambers' | 'packs' | 'levels' | 'packScale' | 'roomScale' | 'top' | 'ranks'>): string | null {
+  if (!Number.isInteger(request.top) || request.top < CAVE_LAYOUT.step || request.top > CAVE_LAYOUT.top) return `a cave's first chamber stands at a whole level from ${CAVE_LAYOUT.step} to ${CAVE_LAYOUT.top}, not ${request.top}`;
+  if (!Number.isInteger(request.chambers) || request.chambers < 2 || request.chambers > deepestChambers(request.top)) return `a cave that starts at level ${request.top} has 2 to ${deepestChambers(request.top)} chambers, not ${request.chambers}`;
   if (!Number.isInteger(request.packs) || request.packs < 1) return `a cave has at least one pack, not ${request.packs}`;
   if (!Number.isInteger(request.levels.from) || !Number.isInteger(request.levels.to) || request.levels.from < 1 || request.levels.to < request.levels.from) return `the level band runs from a whole level of at least 1 up, not ${request.levels.from} to ${request.levels.to}`;
   if (!(request.packScale > 0)) return `the pack scale is above zero, not ${request.packScale}`;

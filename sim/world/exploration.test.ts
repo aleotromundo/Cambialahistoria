@@ -5,7 +5,9 @@ import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import { parseSaveText, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
-import { decodeExplored, encodeExplored, EXPLORE, exploredSize, isExplored, revealAround, savedExplored, shiftExplored } from './exploration.ts';
+import { decodeExplored, encodeExplored, EXPLORE, exploredSize, grownExplored, isExplored, revealAround, savedExplored, shiftExplored } from './exploration.ts';
+import { isWalkable } from '../nav/grid.ts';
+import type { ZoneDef } from '../content/types.ts';
 import { stepWorld } from './step.ts';
 import type { World } from './types.ts';
 import { enterZone } from './zones.ts';
@@ -117,4 +119,24 @@ void test('the saved explored text always matches a fresh encoding as the hero w
   shiftExplored(world, { x: 5, z: -3 });
   assert.deepEqual(toSave(world).explored, freshlyEncoded(world));
   assert.equal(JSON.stringify(toSave(world).explored), JSON.stringify(freshlyEncoded(world)));
+});
+
+void test('a save made before Hourfall grew keeps its explored ground where it was and its hero stands on walkable ground at the checkpoint or the waypoint', (): void => {
+  const hourfall: ZoneDef = must(content.zones.get('under_hall'), 'Hourfall');
+  const before = must(hourfall.grewFrom, 'Hourfall grew');
+  const columns: number = (before.columns * hourfall.cellSize) / EXPLORE.cellSize;
+  const old: Uint8Array = new Uint8Array(columns * ((before.rows * hourfall.cellSize) / EXPLORE.cellSize));
+  const seen = { x: 131, z: 139 };
+  old[seen.z * columns + seen.x] = 1;
+  assert.equal(grownExplored(hourfall, encodeExplored(old))?.length, exploredSize(hourfall));
+  for (const respawn of [{ type: 'checkpoint', checkpoint: 'under_t9' }, { type: 'waypoint' }] as const) {
+    const world: World = worldIn(content, 'under_hall', 11);
+    const save = must(parseSaveText(content, JSON.stringify({ ...toSave(world), respawn, waypoints: ['under_hall'], explored: { under_hall: encodeExplored(old) } })), 'save');
+    const restored: World = createWorld(content, { seed: 5, save });
+    assert.equal(restored.zone.id, 'under_hall');
+    assert.ok(isExplored(restored, seen.x + 0.5, seen.z + 0.5));
+    assert.ok(!isExplored(restored, 60.5, 56.5));
+    assert.ok(isWalkable(restored.grid, restored.player.pos.x, restored.player.pos.z), `${respawn.type} at ${restored.player.pos.x},${restored.player.pos.z}`);
+  }
+  assert.equal(grownExplored({ ...hourfall, grewFrom: null }, encodeExplored(old)), null);
 });

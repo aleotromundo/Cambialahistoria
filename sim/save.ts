@@ -22,7 +22,7 @@ import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
 import { readGlitchSave } from './world/glitch-save.ts';
 import { emptyPathLog, pathToSave, readPathLog } from './world/path-log.ts';
 import { LEDGER_ID } from './world/ledger.ts';
-import { decodeExplored, exploredSize, savedExplored } from './world/exploration.ts';
+import { decodeExplored, encodeExplored, exploredSize, grownExplored, savedExplored } from './world/exploration.ts';
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 import type { PortalSave } from './world/portal-types.ts';
 import { portalToSave, readPortal } from './world/portal-save.ts';
@@ -242,7 +242,12 @@ function readExplored(content: Content, value: unknown): Record<string, string> 
   if (!isFields(value)) return explored;
   for (const zone of content.zones.values()) {
     const text: unknown = value[zone.id];
-    if (typeof text === 'string' && decodeExplored(text, exploredSize(zone)) !== null) explored[zone.id] = text;
+    if (typeof text !== 'string') continue;
+    if (decodeExplored(text, exploredSize(zone)) !== null) explored[zone.id] = text;
+    else {
+      const grown: Uint8Array | null = grownExplored(zone, text);
+      if (grown !== null) explored[zone.id] = encodeExplored(grown);
+    }
   }
   return explored;
 }

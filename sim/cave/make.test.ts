@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { CAVE_LAYOUT } from './layout.ts';
 import hourfall from '../../data/kits/hourfall.json' with { type: 'json' };
 import { loadContent } from '../content/content.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
@@ -19,7 +20,7 @@ const limit: ScreenLimit = screenLoad(content, reference);
 const naming: CaveNaming = { id: 'cave_test', name: 'Test cave', up: { id: 'up', to: 'under_hall', toExit: 'lair', requires: [], lockedHint: '', hiddenWhenLocked: false }, down: { id: 'down', to: 'under_hall', toExit: 'lair', requires: [], lockedHint: '', hiddenWhenLocked: false } };
 
 function request(seed: number): CaveRequest {
-  return { seed, columns: 110, rows: 110, chambers: 10, levels: { from: 14, to: 17 }, packs: 20, packScale: 1, roomScale: 1, ranks: [], screen: limit };
+  return { seed, columns: 110, rows: 110, chambers: 10, levels: { from: 14, to: 17 }, packs: 20, packScale: 1, roomScale: 1, top: CAVE_LAYOUT.top, ranks: [], screen: limit };
 }
 
 void test('over many seeds every cave the maker keeps passes the cave checks: every walkable cell reached from the entrance, the way down and the waypoint reached, packs apart and quiet at every safe point, nothing blocking an exit, no screen fuller than Hourfall Caves', (): void => {

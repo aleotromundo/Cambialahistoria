@@ -31,7 +31,7 @@ function rounded(point: Vec2): Vec2 {
   return { x: Math.round(point.x * 10) / 10, z: Math.round(point.z * 10) / 10 };
 }
 
-function packRecord(pack: CavePack): Record<string, unknown> {
+export function packRecord(pack: CavePack): Record<string, unknown> {
   const base: Record<string, unknown> = { x: pack.x, z: pack.z, members: pack.members.map((member): Record<string, unknown> => ({ monster: member.monster, count: member.count })), level: pack.level };
   const waiting: Record<string, unknown> = pack.waits === null ? base : { ...base, waits: { near: pack.waits } };
   return pack.rank === null ? waiting : { ...waiting, rank: pack.rank };

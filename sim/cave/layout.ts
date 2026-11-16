@@ -90,7 +90,7 @@ function paintBox(raster: CaveRaster, box: CellBox, level: number, feature: numb
   }
 }
 
-function nextChamber(rng: Rng, kit: CaveKit, columns: number, rows: number, chambers: readonly CaveChamber[], rooms: number): CaveChamber | null {
+function nextChamber(rng: Rng, kit: CaveKit, columns: number, rows: number, chambers: readonly CaveChamber[], rooms: number, top: number): CaveChamber | null {
   const last: CaveChamber | undefined = chambers.at(-1);
   if (last === undefined) return null;
   const index: number = chambers.length;
@@ -98,7 +98,7 @@ function nextChamber(rng: Rng, kit: CaveKit, columns: number, rows: number, cham
   let bestScore: number = -Infinity;
   for (let tries: number = 0; tries < CAVE_LAYOUT.candidates; tries += 1) {
     const angle: number = rng.range(0, Math.PI * 2);
-    const shaped: CaveChamber = makeChamber(rng, kit, index, last.centre, rooms);
+    const shaped: CaveChamber = makeChamber(rng, kit, index, last.centre, rooms, top);
     const reach: number = reachOf(kit, shaped.radius, shaped.stretch);
     const hop: number = reach + reachOf(kit, last.radius, last.stretch) + rng.range(CAVE_LAYOUT.passage.least, CAVE_LAYOUT.passage.most);
     const candidate: CaveChamber = { ...shaped, centre: { x: last.centre.x + Math.cos(angle) * hop, z: last.centre.z + Math.sin(angle) * hop } };
@@ -121,18 +121,18 @@ function nextChamber(rng: Rng, kit: CaveKit, columns: number, rows: number, cham
   return best;
 }
 
-function makeChamber(rng: Rng, kit: CaveKit, index: number, centre: Vec2, rooms: number): CaveChamber {
+function makeChamber(rng: Rng, kit: CaveKit, index: number, centre: Vec2, rooms: number, top: number): CaveChamber {
   const radius: number = rng.range(kit.shape.radiusLeast, kit.shape.radiusMost) * rooms;
   const rect: boolean = kit.shape.form === 'rect';
   const stretch: number = rect ? rng.range(CAVE_LAYOUT.rectStretch.least, CAVE_LAYOUT.rectStretch.most) : rng.range(CAVE_LAYOUT.stretch.least, CAVE_LAYOUT.stretch.most);
-  return { index, centre, radius, stretch, turn: rect ? 0 : rng.range(0, Math.PI), level: CAVE_LAYOUT.top - CAVE_LAYOUT.step * index, theme: kit.letters.themes[rng.int(0, kit.letters.themes.length - 1)] ?? kit.letters.passage };
+  return { index, centre, radius, stretch, turn: rect ? 0 : rng.range(0, Math.PI), level: top - CAVE_LAYOUT.step * index, theme: kit.letters.themes[rng.int(0, kit.letters.themes.length - 1)] ?? kit.letters.passage };
 }
 
-function placeChambers(rng: Rng, kit: CaveKit, columns: number, rows: number, count: number, rooms: number): CaveChamber[] | null {
-  const chambers: CaveChamber[] = [makeChamber(rng, kit, 0, { x: rng.range(columns * 0.2, columns * 0.8), z: CAVE_LAYOUT.border + kit.shape.radiusMost * rooms * 1.4 }, rooms)];
+function placeChambers(rng: Rng, kit: CaveKit, columns: number, rows: number, count: number, rooms: number, top: number): CaveChamber[] | null {
+  const chambers: CaveChamber[] = [makeChamber(rng, kit, 0, { x: rng.range(columns * 0.2, columns * 0.8), z: CAVE_LAYOUT.border + kit.shape.radiusMost * rooms * 1.4 }, rooms, top)];
   let backtracks: number = 0;
   while (chambers.length < count) {
-    const next: CaveChamber | null = nextChamber(rng, kit, columns, rows, chambers, rooms);
+    const next: CaveChamber | null = nextChamber(rng, kit, columns, rows, chambers, rooms, top);
     if (next !== null) {
       chambers.push(next);
       continue;
@@ -272,12 +272,12 @@ function paintPassage(raster: CaveRaster, rng: Rng, kit: CaveKit, from: CaveCham
   return { from: from.index, to: to.index, ramp, landing: linePoint(run, begin + sign * (piece + 1)) };
 }
 
-export function deepestChambers(): number {
-  return Math.floor(CAVE_LAYOUT.top / CAVE_LAYOUT.step) + 1;
+export function deepestChambers(top: number): number {
+  return Math.floor(top / CAVE_LAYOUT.step) + 1;
 }
 
-export function shapeCave(rng: Rng, kit: CaveKit, columns: number, rows: number, count: number, rooms: number): CaveShape | null {
-  const chambers: CaveChamber[] | null = placeChambers(rng, kit, columns, rows, count, rooms);
+export function shapeCave(rng: Rng, kit: CaveKit, columns: number, rows: number, count: number, rooms: number, top: number): CaveShape | null {
+  const chambers: CaveChamber[] | null = placeChambers(rng, kit, columns, rows, count, rooms, top);
   if (chambers === null) return null;
   const raster: CaveRaster = createRaster(columns, rows);
   for (const chamber of chambers) paintChamber(raster, rng, kit, chamber);

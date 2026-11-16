@@ -37,6 +37,7 @@ import type {
   ZoneReturn,
   ZoneVoice,
   ZoneWalls,
+  ZoneSize,
   ZoneWaypoint,
 } from './types.ts';
 import { service } from './parse-trade.ts';
@@ -285,6 +286,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     floorHeight: numeric(source, 'floorHeight', where),
     terrain: zoneTerrain(source['terrain'], `${where}.terrain`, tiles, positive(source, 'cellSize', where)),
     tiles,
+    grewFrom: source['grewFrom'] === undefined ? null : zoneSize(source['grewFrom'], `${where}.grewFrom`, tiles),
     floors,
     outside: zoneOutside(source['outside'], `${where}.outside`),
     walls: zoneWalls(source['walls'], `${where}.walls`),
@@ -459,6 +461,15 @@ function lifeTimes(value: unknown, where: string): ScalingPoint[] {
     if (before !== undefined && entry.level <= before.level) throw new ContentError(`${where}[${index}].level`, 'levels must rise from one point to the next');
   });
   return points;
+}
+
+function zoneSize(value: unknown, where: string, tiles: readonly string[]): ZoneSize {
+  const source: Fields = fields(value, where);
+  const columns: number = positive(source, 'columns', where);
+  const rows: number = positive(source, 'rows', where);
+  if (!Number.isInteger(columns) || !Number.isInteger(rows)) throw new ContentError(where, 'expected whole tile counts');
+  if (columns > (tiles[0]?.length ?? 0) || rows > tiles.length) throw new ContentError(where, 'a zone only grows: its earlier size fits inside its tiles');
+  return { columns, rows };
 }
 
 export function worldDef(value: unknown, where: string): WorldDef {

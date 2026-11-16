@@ -21,7 +21,7 @@ const limit: ScreenLimit = screenLoad(content, reference);
 const SEEDS: readonly number[] = [1, 2, 3, 4, 5, 6];
 
 function request(seed: number): CaveRequest {
-  return { seed, columns: 110, rows: 110, chambers: 10, levels: { from: 14, to: 17 }, packs: 20, packScale: 1, roomScale: 1, ranks: [], screen: limit };
+  return { seed, columns: 110, rows: 110, chambers: 10, levels: { from: 14, to: 17 }, packs: 20, packScale: 1, roomScale: 1, top: CAVE_LAYOUT.top, ranks: [], screen: limit };
 }
 
 function made(seed: number): CaveLayout {
@@ -139,4 +139,16 @@ void test('a rank share outside 0 to 1, shares above every pack, or a share with
     const result: CaveResult = generateCave({ ...request(1), ranks }, { kit, defs: content.props, judge: null });
     assert.ok(!result.ok && result.problem.includes('rank'), JSON.stringify(ranks));
   }
+});
+
+void test('a cave can start lower than the top terrace, its chambers step down from there, and it may hold only as many chambers as fit above the floor', (): void => {
+  const low: CaveResult = generateCave({ ...request(2), top: 11, chambers: 6, columns: 130, rows: 130, roomScale: 1.4 }, { kit, defs: content.props, judge: null });
+  assert.ok(low.ok, low.ok ? '' : low.problem);
+  assert.deepEqual(low.layout.chambers.map((chamber): number => chamber.level), [11, 9, 7, 5, 3, 1]);
+  const entrance: string = low.layout.levels[Math.floor(low.layout.entrance.z / CAVE_GEN.cellSize)]?.charAt(Math.floor(low.layout.entrance.x / CAVE_GEN.cellSize)) ?? '';
+  assert.equal(entrance, TERRAIN_MARKS.levels.charAt(11));
+  const deep: CaveResult = generateCave({ ...request(2), top: 11, chambers: 7 }, { kit, defs: content.props, judge: null });
+  assert.ok(!deep.ok && deep.problem.includes('starts at level 11 has 2 to 6 chambers'));
+  const floating: CaveResult = generateCave({ ...request(2), top: 40 }, { kit, defs: content.props, judge: null });
+  assert.ok(!floating.ok && floating.problem.includes('first chamber'));
 });
