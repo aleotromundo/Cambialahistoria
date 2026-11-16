@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Object3D } from 'three';
-import { Color, Group, Mesh, ShaderMaterial } from 'three';
+import { Color, Group, Mesh, Scene, ShaderMaterial } from 'three';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { EchoState, HazardState, MonsterState, World } from '../../sim/world/types.ts';
 import { offenceOf } from '../../sim/world/combat.ts';
 import { placeHazard } from '../../sim/world/hazards.ts';
 import { arena, place } from '../../test/arena-support.ts';
 import { must } from '../../test/support.ts';
+import { createGroundLight } from './ground-light.ts';
+import { createParticles } from './particles.ts';
 import type { Telegraphs } from './telegraphs.ts';
 import { createTelegraphs, echoesToShow, echoProgress, fieldGlow, hazardGlow, settleLevel, telegraphEase, telegraphFlare, telegraphGlow, telegraphGrain, TELEGRAPHS } from './telegraphs.ts';
 
@@ -172,4 +174,33 @@ void test('without an echo colour no echo is drawn', (): void => {
   world.echoes = [echoOf(world, monster, 0.6)];
   telegraphs.update(STEP, world);
   assert.equal(telegraphs.active, 0);
+});
+
+function highestOrder(scene: Scene): number {
+  let highest: number = Number.NEGATIVE_INFINITY;
+  scene.traverse((object: Object3D): void => {
+    if (object !== scene) highest = Math.max(highest, object.renderOrder);
+  });
+  return highest;
+}
+
+void test('a hostile telegraph and field draw after the hero\'s own ground light and particles, so a pool or a spin cannot cover them', (): void => {
+  const world: World = arena(5);
+  const monster: MonsterState = place(world, 'timekeeper_adept', { x: 14, z: 17 });
+  const skill: SkillDef = windingUp(world, monster, 1);
+  const hazard: HazardState = must(placeHazard(world, offenceOf(monster), must(world.content.skills.get('keeper_field'), 'keeper_field'), { x: 14, z: 14 }), 'field');
+  const own: Scene = new Scene();
+  createParticles(own);
+  own.add(createGroundLight(RED, { kind: 'round', radius: 2, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 0, width: 0.4, wobble: 0.2 }).mesh);
+  own.add(createGroundLight(RED, { kind: 'round', radius: 2, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 0, width: 0.4, wobble: 0.2 }, 'shade').mesh);
+  const parent: Group = new Group();
+  const telegraphs: Telegraphs = createTelegraphs(parent);
+  telegraphs.start(monster.id, 'actor', monster.pos, { x: 0, z: 1 }, skill, 1, RED, 0);
+  telegraphs.field(hazard.id, hazard.pos, 3, RED);
+  const orders: number[] = [];
+  parent.traverse((object: Object3D): void => {
+    if (object instanceof Mesh) orders.push(object.renderOrder);
+  });
+  assert.equal(orders.length, 2);
+  for (const order of orders) assert.ok(order > highestOrder(own));
 });

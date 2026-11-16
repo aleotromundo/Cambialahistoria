@@ -15,7 +15,7 @@ export const TELEGRAPHS = {
   easeShare: 0.3,
   faint: 0.09,
   peak: 0.2,
-  hazardFloor: 0.17,
+  hazardFloor: 0.25,
   flare: 0.08,
   flareTime: 0.1,
   grainFrom: 0.45,
@@ -32,6 +32,7 @@ export const TELEGRAPHS = {
   fieldBreathe: 0.22,
   fieldBreatheRate: 1.4,
   fieldSettle: 0.5,
+  order: 11,
 } as const;
 
 export type TelegraphSource = 'actor' | 'hazard' | 'echo';
@@ -129,10 +130,15 @@ function actionProgress(monster: MonsterState, skillId: string): number | null {
   return action.windup > 0 ? 1 - action.timeLeft / action.windup : 1;
 }
 
-function place(object: Object3D, at: Vec2, direction: Vec2, parent: Object3D): void {
-  object.position.set(at.x, floorUp(at.x, TELEGRAPHS.height, at.z), at.z);
-  object.rotation.y = facingOf(direction);
-  parent.add(object);
+function place(shape: Telegraph, at: Vec2, direction: Vec2, parent: Object3D): void {
+  for (const light of shape.lights) overOwnEffects(light);
+  shape.object.position.set(at.x, floorUp(at.x, TELEGRAPHS.height, at.z), at.z);
+  shape.object.rotation.y = facingOf(direction);
+  parent.add(shape.object);
+}
+
+function overOwnEffects(light: GroundLight): void {
+  light.mesh.renderOrder = TELEGRAPHS.order;
 }
 
 function setGrain(light: GroundLight, grain: number): void {
@@ -168,12 +174,13 @@ export function createTelegraphs(parent: Object3D, echoColor: Color | null = nul
     start(owner: number, source: TelegraphSource, at: Vec2, direction: Vec2, skill: SkillDef, windup: number, color: Color, path: number): void {
       for (const entry of shown) if (entry.owner === owner && entry.source !== 'echo') settle(entry);
       const shape: Telegraph = telegraphFor(skill.delivery, color, path);
-      place(shape.object, at, direction, parent);
+      place(shape, at, direction, parent);
       shown.push({ owner, source, skillId: skill.id, echo: null, shape, windup, age: 0, progress: 0, rate: windup > 0 ? 1 / windup : 1, settling: -1 });
     },
     field(owner: number, at: Vec2, radius: number, color: Color): void {
       const light: GroundLight = createGroundLight(color, { kind: 'round', radius, inner: 0, arc: Math.PI * 2 }, { fill: 1, band: 0, width: radius * TELEGRAPHS.fieldWidth, wobble: radius * TELEGRAPHS.fieldWobble, hollow: TELEGRAPHS.fieldHollow, grain: TELEGRAPHS.fieldGrain });
       light.mesh.position.set(at.x, floorUp(at.x, GROUND_LIGHT.height + 0.02, at.z), at.z);
+      overOwnEffects(light);
       parent.add(light.mesh);
       fields.push({ owner, light, settling: -1, age: 0 });
     },
@@ -184,7 +191,7 @@ export function createTelegraphs(parent: Object3D, echoColor: Color | null = nul
       if (echoColor !== null) {
         for (const echo of echoesToShow(world, seenEchoes)) {
           const shape: Telegraph = telegraphFor(echo.skill.delivery, echoColor, 0);
-          place(shape.object, echo.origin, echo.direction, parent);
+          place(shape, echo.origin, echo.direction, parent);
           shown.push({ owner: echo.ownerId, source: 'echo', skillId: echo.skill.id, echo, shape, windup: echo.timeLeft, age: 0, progress: echoProgress(echo), rate: echo.timeLeft > 0 ? 1 / echo.timeLeft : 1, settling: -1 });
         }
       }
