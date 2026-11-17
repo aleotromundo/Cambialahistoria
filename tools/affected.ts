@@ -56,6 +56,10 @@ const CLI = {
   maxJobs: 4,
 } as const;
 
+const TEST_FILE: RegExp = /^(.+)\.test\.ts$/;
+
+const TOPIC: RegExp = /^(.*[^/.])\.[a-z0-9-]+$/;
+
 const SPECIFIERS: readonly RegExp[] = [
   /\b(?:import|export)\s[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]/g,
   /\bimport\s*['"]([^'"]+)['"]/g,
@@ -126,11 +130,19 @@ export function repositoryPathsOf(source: string, files: ReadonlySet<string>): s
   return [...source.matchAll(REPOSITORY_PATH)].map((match: RegExpExecArray): string => match[1] ?? '').filter((path: string): boolean => files.has(path));
 }
 
+export function testedSource(testPath: string, exists: (path: string) => boolean): string | null {
+  const stem: string | undefined = TEST_FILE.exec(testPath)?.[1];
+  if (stem === undefined) return null;
+  const topic: RegExpExecArray | null = TOPIC.exec(stem);
+  const candidates: readonly string[] = topic === null ? [`${stem}.ts`] : [`${stem}.ts`, `${topic[1] ?? ''}.ts`];
+  return candidates.find(exists) ?? null;
+}
+
 export function targetsOf(source: SourceText, files: ReadonlySet<string>): string[] {
   const targets: string[] = specifiersOf(source.text).map((specifier: string): string => resolveSpecifier(source.path, specifier, files));
   targets.push(...repositoryPathsOf(source.text, files));
-  const sibling: string = source.path.replace(/\.test\.ts$/, '.ts');
-  if (sibling !== source.path && files.has(sibling)) targets.push(sibling);
+  const tested: string | null = testedSource(source.path, (path: string): boolean => files.has(path));
+  if (tested !== null) targets.push(tested);
   return targets.filter((target: string): boolean => target !== source.path);
 }
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { AFFECTED, buildImportGraph, targetsOf, countOf, defaultJobs, dependents, filesToRun, globToRegExp, matchesAny, parseArgs, readRepository, resolveSpecifier, selectTests, shard, specifiersOf, testCommand } from './affected.ts';
+import { AFFECTED, buildImportGraph, targetsOf, testedSource, countOf, defaultJobs, dependents, filesToRun, globToRegExp, matchesAny, parseArgs, readRepository, resolveSpecifier, selectTests, shard, specifiersOf, testCommand } from './affected.ts';
 import type { AffectedConfig, AffectedRule, ImportGraph, Selection, SourceText } from './affected.ts';
 import { readConfig, readRule } from './affected.ts';
 
@@ -90,6 +90,17 @@ void test('a test reaches the file it is named after and any repository file it 
   const files: ReadonlySet<string> = new Set<string>(['src/input.ts', 'src/input.test.ts', 'data/zones/shallows.json', '.github/workflows/ci.yml']);
   const reader: SourceText = { path: 'src/input.test.ts', text: "readFileSync('src/input.ts');\nreadFileSync('data/zones/shallows.json');\nreadFileSync('.github/workflows/ci.yml');\nconst other = 'src/missing.ts';\n" };
   assert.deepEqual(targetsOf(reader, files).toSorted(), ['.github/workflows/ci.yml', 'data/zones/shallows.json', 'src/input.ts', 'src/input.ts']);
+});
+
+void test('a topic test file reaches the file it is named after without its topic', (): void => {
+  const files: ReadonlySet<string> = new Set<string>(['sim/bot.ts', 'sim/bot.flasks.test.ts', 'sim/bot.test.ts']);
+  const exists = (path: string): boolean => files.has(path);
+  assert.equal(testedSource('sim/bot.test.ts', exists), 'sim/bot.ts');
+  assert.equal(testedSource('sim/bot.flasks.test.ts', exists), 'sim/bot.ts');
+  assert.equal(testedSource('sim/bot.Flasks.test.ts', exists), null);
+  assert.equal(testedSource('sim/gone.test.ts', exists), null);
+  assert.equal(testedSource('sim/bot.ts', exists), null);
+  assert.deepEqual(targetsOf({ path: 'sim/bot.flasks.test.ts', text: '' }, files), ['sim/bot.ts']);
 });
 
 void test('dependents follow imports transitively and stop on cycles', (): void => {

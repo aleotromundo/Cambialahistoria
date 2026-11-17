@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import type { MarkerKind, MarkerLibrary } from '../sim/content/marker-types.ts';
 import { markerLibrary } from '../sim/content/parse-markers.ts';
+import { testedSource } from '../tools/affected.ts';
 
 interface SourceFile {
   readonly path: string;
@@ -183,7 +184,7 @@ void test('only the decal pass decides the floor a ground effect stands on', ():
 
 void test('every test file sits beside the file it tests', (): void => {
   for (const { path } of typescript.filter((source: SourceFile): boolean => source.path.endsWith('.test.ts') && !source.path.startsWith('test'))) {
-    assert.ok(statSync(path.replace('.test.ts', '.ts')).isFile(), `${path} has no source file`);
+    assert.ok(testedSource(path, (candidate: string): boolean => existsSync(candidate) && statSync(candidate).isFile()) !== null, `${path} has no source file`);
   }
 });
 

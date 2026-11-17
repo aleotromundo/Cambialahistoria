@@ -79,11 +79,20 @@ If new content cannot be expressed in the data, extend the schema in `sim/conten
 
 ## Tests
 
-Name a test file exactly after the file it tests, in the same directory: `foo.ts` is tested by `foo.test.ts`. Run `npm run test:affected` while you work and `npm test` when you want everything.
+Name a test file exactly after the file it tests, in the same directory: `foo.ts` is tested by `foo.test.ts`. A feature that adds tests for a file that already has a test file puts them in a topic file beside it, `foo.<topic>.test.ts` (lowercase letters, digits and hyphens, such as `bot.flasks.test.ts`), instead of appending to `foo.test.ts`. A topic test file counts as named after `foo.ts` for `test/rules.test.ts` and `tools/affected.ts`. Run `npm run test:affected` while you work and `npm test` when you want everything.
 
 `tools/affected.ts` picks the tests from the real import graph and the rules in `tools/affected-rules.json`. A changed file runs its own test and every test that imports it, directly or through other files; a test also reaches the file it is named after and any file in `sim/`, `src/`, `test/`, `tools/` or `data/` it names by its path from the root. `data/**` also runs the content cross-check, `src/hud/**` every HUD test, `src/backend/**` every backend test. `public/**` runs the content check, which reads the models' clips. Docs and Markdown run only `test/rules.test.ts`, which runs on every change. Configuration, the lockfile, shared test support, the tool itself and any path no rule names run everything. A test that reads files from disk instead of importing them must be named in a rule; `tools/affected.test.ts` fails until it is. Tests never start a server, a browser or another process, and never wait on real time: use the fake clock and timers in `test/`.
 
 CI (`.github/workflows/ci.yml`) runs typecheck and lint on every push, the affected tests on a pull request, and `npm run test:isolated` on every push to `main`. With `CI_GATE` on it also runs `npm test` once a pull request enters the merge queue (`mq-live`) and on the queue's `mq-batch-*` branches; while it is off the queue never waits on CI: those runs are skipped and a batch branch gets an instant passing `CI result`. `CI result` is the one check that sums them up. For now CI is informational: a failing step is reported as a warning and in the run summary of `CI result`, and every check still passes, so nothing blocks landing. Setting the repository variable `CI_GATE` to `on` makes any failure fail its check and stop the merge queue.
+
+## Working beside other sessions
+
+Many sessions land work at the same time, and two additions at the same spot in one file make the later one bounce from the merge queue. Most bounces come from two features each appending to the end of the same file. So:
+
+- New tests for an existing file go in a topic test file (see Tests), not at the end of `foo.test.ts`.
+- A new panel or feature gets its own CSS file; do not append its rules to the end of a shared stylesheet.
+- When you must add to a shared file (a list, a type, an import block, a JSON array), put the addition beside what it belongs with, never at the end by default.
+- New content goes in its own file wherever the data has a folder for it (`data/zones/`).
 
 ## Tuning values
 
