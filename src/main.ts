@@ -406,6 +406,10 @@ async function start(): Promise<void> {
     last = now;
     let events: WorldEvent[] = [];
     const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
+    if (gate.present) {
+      overlays.readHud(dt);
+      objectiveMarker.readHud(dt);
+    }
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
     if (gate.queue) queue.push(...collected);
     if (gate.step) {

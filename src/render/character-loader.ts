@@ -1,7 +1,7 @@
 import type { BufferGeometry, IUniform, Material, Object3D } from 'three';
 import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { boundSkins, disposeSkeletons, quietBones, shareSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons, poseOncePerTick, quietBones, shareSkeletons } from './skeletons.ts';
 import type { RigDef, RigSocket } from '../../sim/content/types.ts';
 import { wearKey } from '../../sim/wear.ts';
 import { CHARACTER_INSIDE } from './character-inside.ts';
@@ -191,6 +191,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   const model: Object3D = cloneSkinned(rig.template);
   shareSkeletons(model);
   quietBones(model);
+  if (shadows === 'together') poseOncePerTick(model);
   model.scale.setScalar(def.scale);
   model.rotation.y = def.yawOffsetDegrees * DEGREES;
   const root: Group = new RestingGroup();

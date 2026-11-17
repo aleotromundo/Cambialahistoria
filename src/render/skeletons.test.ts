@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { AnimationClip, AnimationMixer, Bone, BufferGeometry, Float32BufferAttribute, Group, MeshStandardMaterial, Quaternion, QuaternionKeyframeTrack, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { Object3D, Sphere } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { boundSkins, disposeSkeletons, quietBones, shareSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons, nextPoseTick, poseOncePerTick, quietBones, shareSkeletons } from './skeletons.ts';
 import { skinnedMeshes } from './wearables.ts';
 
 const SKIN_TOLERANCE = 1e-6;
@@ -130,6 +130,29 @@ void test('a cloned rig shares its skeletons again, since each clone gives every
   assert.equal(skeletons.size, 2);
   assert.equal(shareSkeletons(copy), 1);
   assert.equal(new Set<Skeleton>(skinnedMeshes(copy).map((mesh: SkinnedMesh): Skeleton => mesh.skeleton)).size, 1);
+});
+
+void test('a rig held to one pose a tick computes its bone matrices once however often a frame asks, and again on the next tick', (): void => {
+  const root: Group = skinnedTemplate();
+  const mesh: SkinnedMesh | undefined = skinnedMeshes(root)[0];
+  assert.ok(mesh !== undefined);
+  const bone: Bone | undefined = mesh.skeleton.bones[0];
+  assert.ok(bone !== undefined);
+  assert.equal(poseOncePerTick(root), 1);
+  assert.equal(poseOncePerTick(root), 0);
+  const shiftOf = (): number => mesh.skeleton.boneMatrices?.[12] ?? Number.NaN;
+  nextPoseTick();
+  bone.position.x = 3;
+  root.updateMatrixWorld(true);
+  mesh.skeleton.update();
+  assert.equal(shiftOf(), 3);
+  bone.position.x = 5;
+  root.updateMatrixWorld(true);
+  mesh.skeleton.update();
+  assert.equal(shiftOf(), 3);
+  nextPoseTick();
+  mesh.skeleton.update();
+  assert.equal(shiftOf(), 5);
 });
 
 function swungArm(quiet: boolean): { readonly shoulder: Bone; readonly hand: Bone; readonly mixer: AnimationMixer } {

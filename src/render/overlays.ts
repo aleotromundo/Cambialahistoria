@@ -132,6 +132,7 @@ export interface OverlayHooks {
 export interface Overlays {
   readonly itemNames: ItemNames;
   handle(events: readonly WorldEvent[], world: World): void;
+  readHud(dt: number): void;
   update(dt: number, world: World, hoveredId: number | null): void;
   aimExit(exit: string | null): void;
   aimItem(groundId: number | null): void;
@@ -485,12 +486,13 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       labelHovered = null;
       return null;
     },
-    update(dt: number, world: World, hoveredId: number | null): void {
+    readHud(dt: number): void {
       sinceHudRead += dt;
-      if (sinceHudRead >= OVERLAYS.hudReadSeconds) {
-        hudRects = blockersIn(root, OVERLAYS.hudBlockers);
-        sinceHudRead = 0;
-      }
+      if (sinceHudRead < OVERLAYS.hudReadSeconds) return;
+      hudRects = blockersIn(root, OVERLAYS.hudBlockers);
+      sinceHudRead = 0;
+    },
+    update(dt: number, world: World, hoveredId: number | null): void {
       if (exitsOf !== world.zone) showExits(world);
       tagRects.length = 0;
       plateRects.length = 0;
