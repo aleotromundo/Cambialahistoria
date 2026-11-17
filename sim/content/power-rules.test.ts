@@ -11,7 +11,9 @@ void test('the shipped powers check out, and each alpha family has three pieces,
   assert.deepEqual(powerRuleProblems(content), []);
   assert.deepEqual(familyPieces(content, 'forkweather').map((base: ItemBaseDef): string => base.id), ['wirethread_gloves', 'lantern_of_second_sounds', 'crown_of_the_struck_hour']);
   assert.deepEqual(familyPieces(content, 'millwheel').map((base: ItemBaseDef): string => base.id), ['the_millwheel', 'grinders_bracers', 'gyre_stitched_breeches']);
-  for (const [family, piece] of [['quietshot', 'quietshot'], ['groundbreaker', 'groundbreaker'], ['rainmaker', 'rainmaker'], ['mist_treader', 'mist_treader_boots']] as const) {
+  assert.deepEqual(familyPieces(content, 'groundbreaker').map((base: ItemBaseDef): string => base.id), ['groundbreaker', 'bellwether_helm', 'anvilback_hauberk']);
+  assert.deepEqual(familyPieces(content, 'quietshot').map((base: ItemBaseDef): string => base.id), ['quietshot', 'nightjar_gloves', 'longsight_coat']);
+  for (const [family, piece] of [['rainmaker', 'rainmaker'], ['mist_treader', 'mist_treader_boots']] as const) {
     assert.deepEqual(familyPieces(content, family).map((base: ItemBaseDef): string => base.id), [piece]);
   }
 });

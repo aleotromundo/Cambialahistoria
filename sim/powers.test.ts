@@ -117,16 +117,16 @@ void test('the Crown splits a Storm Bolt once per bolt: its cooldown holds the s
   assert.deepEqual(casts(world), ['forkline', 'forkline']);
 });
 
-void test('Grinder\'s Bracers stack attack speed per Cleave hit up to ten, then the buff runs out', (): void => {
+void test('Grinder\'s Bracers stack attack speed and damage per Cleave hit up to ten, then both run out', (): void => {
   const world: World = hero();
   wear(world, 'grinders_bracers');
   const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 1, z: ARENA_CENTRE.z });
   for (let hit: number = 0; hit < 12; hit += 1) assert.ok(firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos }));
   assert.ok(!firePowers(world, { on: 'hit', skill: skill('storm_bolt'), target, at: target.pos }));
   const mods = buffMods(world.player.powers);
-  assert.equal(mods.length, 1);
-  assert.equal(must(mods[0], 'buff').stat, 'attackSpeed');
-  assert.ok(Math.abs(must(mods[0], 'buff').value - 0.4) < 1e-9);
+  assert.deepEqual(mods.map((mod): string => mod.stat), ['attackSpeed', 'damagePercent']);
+  assert.ok(Math.abs(must(mods[0], 'speed').value - 0.3) < 1e-9);
+  assert.ok(Math.abs(must(mods[1], 'damage').value - 0.2) < 1e-9);
   assert.equal(stepPowerState(world.player.powers, 2.9), false);
   assert.equal(stepPowerState(world.player.powers, 0.2), true);
   assert.deepEqual(buffMods(world.player.powers), []);
@@ -435,4 +435,89 @@ void test('the Gyre-Stitched Breeches pull a ring of foes in toward a hero turni
   const pulled: number = spinAmong(['the_millwheel', 'gyre_stitched_breeches']);
   assert.ok(alone > 1.8, `the wheel alone moved them to ${alone.toFixed(2)}`);
   assert.ok(pulled < alone - 0.3, `pulled to ${pulled.toFixed(2)} against ${alone.toFixed(2)}`);
+});
+
+void test('the Bellwether Helm answers every fourth blow a monster lands with a Thunderclap around the hero, counts none while it rests, and ignores blows from no monster', (): void => {
+  const world: World = hero();
+  wear(world, 'bellwether_helm');
+  refreshPlayer(world);
+  const foe: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 1, z: ARENA_CENTRE.z });
+  const blow: SkillDef = skill('test_grab');
+  const land = (sourceId: number): void => {
+    world.player.life = 100000;
+    world.player.invulnerable = 0;
+    applyHit(world, { ...offenceOf(foe), sourceId }, world.player, blow, { x: -1, z: 0 });
+  };
+  for (let count: number = 0; count < 3; count += 1) land(foe.id);
+  assert.deepEqual(casts(world), []);
+  land(foe.id);
+  assert.deepEqual(casts(world), ['thunderclap']);
+  assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: world.player.pos.x, z: world.player.pos.z });
+  for (let count: number = 0; count < 4; count += 1) land(foe.id);
+  assert.equal(world.echoes.length, 1);
+  stepPowerState(world.player.powers, 1.1);
+  for (let count: number = 0; count < 8; count += 1) land(-1);
+  assert.equal(world.echoes.length, 1);
+  for (let count: number = 0; count < 4; count += 1) land(foe.id);
+  assert.deepEqual(casts(world), ['thunderclap', 'thunderclap']);
+});
+
+void test('the Anvilback Hauberk slams a Thunderclap when a Heaving Cleave is let go, not after a plain swing, and every enemy a Thunderclap strikes stacks armour up to fifteen', (): void => {
+  const world: World = hero();
+  wear(world, 'anvilback_hauberk');
+  const heave: SkillDef = resolveSkill(content, skill('cleave'), ['heaving_cleave']);
+  assert.equal(heave.form, 'cleave_heave');
+  firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos });
+  assert.deepEqual(casts(world), []);
+  firePowers(world, { on: 'use', skill: heave, target: null, at: world.player.pos });
+  firePowers(world, { on: 'use', skill: heave, target: null, at: world.player.pos });
+  assert.deepEqual(casts(world), ['thunderclap']);
+  assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: world.player.pos.x, z: world.player.pos.z });
+  const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
+  for (let hit: number = 0; hit < 20; hit += 1) firePowers(world, { on: 'hit', skill: skill('thunderclap'), target, at: target.pos });
+  firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
+  assert.ok(Math.abs(must(buffMods(world.player.powers)[0], 'armour').value - 60) < 1e-9);
+});
+
+void test('the Nightjar Gloves fan every Quarrel into three bolts for two seconds after a roll, and nothing else sets them off', (): void => {
+  const world: World = hero();
+  wear(world, 'nightjar_gloves');
+  const quarrel: SkillDef = skill('quarrel');
+  const fanned = (): SkillDef => resolveSkill(content, quarrel, [], heldPowers(content, world.player.equipped, world.player.powers));
+  assert.ok(!firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
+  assert.equal(fanned(), quarrel);
+  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  const fan: SkillDef = fanned();
+  assert.ok(fan.delivery.type === 'projectile' && quarrel.delivery.type === 'projectile');
+  assert.equal(fan.delivery.count, quarrel.delivery.count + 2);
+  assert.equal(fan.delivery.spreadDegrees, quarrel.delivery.spreadDegrees + 14);
+  assert.equal(resolveSkill(content, skill('storm_bolt'), [], heldPowers(content, world.player.equipped, world.player.powers)), skill('storm_bolt'));
+  stepPowerState(world.player.powers, 2.1);
+  assert.equal(fanned(), quarrel);
+});
+
+void test('the Longsight Coat sends Quarrels further and harder, and every shot throws back three times as far', (): void => {
+  const coat = wornPowers(content, { ...hero().player.equipped, chest: item('longsight_coat', 60) });
+  const quarrel: SkillDef = skill('quarrel');
+  const far: SkillDef = resolveSkill(content, quarrel, [], coat);
+  assert.ok(far.delivery.type === 'projectile' && quarrel.delivery.type === 'projectile');
+  assert.ok(Math.abs(far.delivery.range - quarrel.delivery.range * 1.4) < 1e-9);
+  assert.ok(Math.abs(far.damage.weaponPercent - quarrel.damage.weaponPercent * 1.25) < 1e-9);
+  assert.ok(Math.abs(far.knockback - quarrel.knockback * 3) < 1e-9);
+  const wave: SkillDef = skill('ghost_wave');
+  assert.ok(Math.abs(resolveSkill(content, wave, [], coat).knockback - wave.knockback * 3) < 1e-9);
+  assert.equal(resolveSkill(content, skill('cleave'), [], coat), skill('cleave'));
+});
+
+void test('the Mist-Treader Boots bring every roll back sooner and leave an Undertow at most once a second', (): void => {
+  const world: World = hero();
+  wear(world, 'mist_treader_boots');
+  const roll: SkillDef = skill('dodge_roll');
+  assert.ok(Math.abs(resolveSkill(content, roll, [], wornPowers(content, world.player.equipped)).cooldown - roll.cooldown * 0.85) < 1e-9);
+  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  assert.deepEqual(casts(world), ['downdraught']);
+  stepPowerState(world.player.powers, 1.05);
+  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  assert.deepEqual(casts(world), ['downdraught', 'downdraught']);
 });
