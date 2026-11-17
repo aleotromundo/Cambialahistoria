@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Bone, BoxGeometry, Group, Mesh, Object3D } from 'three';
+import { Bone, Box3, BoxGeometry, BufferAttribute, BufferGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, Object3D, Skeleton, SkinnedMesh, Vector3 } from 'three';
+import { ACTOR_BOUNDS } from './actor-bounds.ts';
 import { clampFigure, clampReach, createFigureGauge, FIGURE_GAUGE, figureJoints } from './figure-gauge.ts';
 
 const JOINTS = { head: 'Head', feet: ['foot_l', 'foot_r'] } as const;
@@ -113,4 +114,26 @@ void test('the gauge takes the head and the feet from the rig\'s body parts, and
   head.name = JOINTS.head;
   figure.add(head);
   assert.equal(createFigureGauge(figureJoints({})).measure(figure, 0).span, null);
+});
+
+void test('a skinned figure is measured from its bones where it stands now, never from a box a piece cached somewhere else', (): void => {
+  const figure: Group = new Group();
+  const hips: Bone = new Bone();
+  const head: Bone = new Bone();
+  head.position.y = 1.7;
+  hips.add(head);
+  figure.add(hips);
+  const geometry: BufferGeometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array([-0.2, 0, 0, 0.2, 0, 0, 0, 1.7, 0]), 3));
+  geometry.setAttribute('skinIndex', new BufferAttribute(new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]), 4));
+  geometry.setAttribute('skinWeight', new BufferAttribute(new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]), 4));
+  const worn: SkinnedMesh = new SkinnedMesh(geometry, new MeshStandardMaterial());
+  figure.add(worn);
+  figure.position.set(30, 0, 15);
+  figure.updateMatrixWorld(true);
+  worn.bind(new Skeleton([hips, head]), new Matrix4());
+  worn.boundingBox = new Box3(new Vector3(-31, 0, -16), new Vector3(-29, 9, -14));
+  const measured = createFigureGauge(JOINTS).measure(figure, 0);
+  near(measured.height, 1.7 + ACTOR_BOUNDS.flesh * 2);
+  assert.ok(measured.reach < 0.5, `reach ${measured.reach}`);
 });

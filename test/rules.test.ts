@@ -90,6 +90,24 @@ void test('ground effects are light from the ground-light shader, never flat rin
   assert.deepEqual(found, [], 'draw ground effects with createGroundLight in src/render/ground-light.ts');
 });
 
+const WHOLE_OBJECT_BOUNDS: RegExp = /\.(setFromObject|expandByObject)\(/;
+const WHOLE_OBJECT_BOUNDS_ALLOWED: Readonly<Record<string, string>> = {
+  'src/lobby/lobby-scenery.ts': 'a static scenery model measured once to size it, no skin',
+  'src/render/ground-models.ts': 'static world props measured to fit their footprint, no skin',
+  'src/render/item-thumbnails.ts': 'a portrait rig made at the origin and measured vertex by vertex once, never cached',
+};
+
+void test('a character is measured from its live bones with actorBounds, never from cached whole-object boxes that go stale', (): void => {
+  const found: string[] = [];
+  for (const source of typescript) {
+    if (!source.path.startsWith('src') || source.path.endsWith('.test.ts') || WHOLE_OBJECT_BOUNDS_ALLOWED[source.path] !== undefined) continue;
+    source.lines.forEach((line: string, index: number): void => {
+      if (WHOLE_OBJECT_BOUNDS.test(line)) found.push(`${source.path}:${index + 1}`);
+    });
+  }
+  assert.deepEqual(found, [], 'measure an actor or figure with actorBounds in src/render/actor-bounds.ts');
+});
+
 const LAID_FLAT: RegExp = /(\.rotation\.x = |\.rotateX\()-Math\.PI \/ 2/;
 const LAID_FLAT_ALLOWED: Readonly<Record<string, string>> = {
   'src/render/void-view.ts': 'the ground and mist sheets of the void, which has no terrain, not an effect',

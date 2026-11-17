@@ -1,6 +1,7 @@
 import type { Object3D } from 'three';
 import { Box3, PropertyBinding, Vector3 } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
+import { actorBounds } from './actor-bounds.ts';
 
 export const FIGURE_GAUGE = {
   fallback: 1.8,
@@ -109,7 +110,8 @@ export function createFigureGauge(joints: FigureJoints): FigureGauge {
       if (figure === measuredFigure && now - measuredAt < FIGURE_GAUGE.everySeconds) return withBones(measured, bones, figure, at, root);
       measuredFigure = figure;
       measuredAt = now;
-      box.setFromObject(figure);
+      figure.updateMatrixWorld(true);
+      actorBounds(figure, box);
       if (box.isEmpty()) {
         measured = FALLBACK_FIGURE;
         return measured;
