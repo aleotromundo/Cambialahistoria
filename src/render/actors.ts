@@ -25,6 +25,7 @@ import { unisonOf } from '../../sim/world/unison.ts';
 import type { ParticleSystem } from './particles.ts';
 import type { SpinPose, SpinView } from './spin-view.ts';
 import { createSpinView } from './spin-view.ts';
+import { spinStyleFrom } from './spin-style.ts';
 import type { ActorGuard } from './actor-guard.ts';
 import { createActorGuard, readyToInspect, setOffView } from './actor-guard.ts';
 import { warnInConsole } from '../backend/console-log.ts';
@@ -160,7 +161,7 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
 
 export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL, particles: ParticleSystem | null = null, pacer: FramePacer = browserPacer()): Actors {
   const content: Content = world.content;
-  const spin: SpinView = createSpinView(scene, particles);
+  const spin: SpinView = createSpinView(scene, particles, spinStyleFrom(window.location.search));
   const heroView = (loaded: LoadedRig, current: World): ActorView => {
     const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }, 'together'), HERO.size, current.player.facing);
     holdEquipped(content, view.rig, current.player.equipped);
@@ -394,7 +395,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       holdEquipped(content, playerView.rig, current.player.equipped);
       playerView.wake(current.wake === null ? null : wakePose(wakeStage(current.wake.plan, current.wake.elapsed), current.wake.elapsed));
       const spun: SpinPose = spin.step(dt, current.time, current.player);
-      playerView.spin(spun.animation, spun.turn);
+      playerView.spin(spun);
       playerView.setEdge(current.zone.heroLight.rim);
       const shadow: VfxShadow | null = shadowOf(current.player);
       const veil: EmpowerLook | null = veilOf(current.player.powers);

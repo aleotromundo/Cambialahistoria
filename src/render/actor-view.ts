@@ -22,6 +22,7 @@ import type { AnimationBank } from './animation-bank.ts';
 import { animationBank } from './animation-bank.ts';
 import type { SpinCentre } from './spin-centre.ts';
 import { centreShift, createSpinCentre, holdSpinCentre, measurePivot } from './spin-centre.ts';
+import type { SpinPose } from './spin-view.ts';
 
 export const ACTOR = {
   turnRate: 22,
@@ -137,7 +138,7 @@ export interface ActorView {
   setHover(hovered: boolean): void;
   setEdge(amount: number): void;
   face(facing: number): void;
-  spin(animation: string | null, turn: number): void;
+  spin(pose: SpinPose): void;
   bounds(out: Box3): void;
   prime(): void;
   dispose(): void;
@@ -264,6 +265,8 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   let yaw: number = facing;
   let turned: number = 0;
   let spinning: boolean = false;
+  const leanX: Spring = { value: 0, velocity: 0, target: 0 };
+  const leanZ: Spring = { value: 0, velocity: 0, target: 0 };
   let gaitIndex: number = -1;
   let lastKind: ClipKind = 'idle';
   let knockSpan: number = 0;
@@ -395,6 +398,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
     sync(dt: number, actor: ActorPose, options: SyncOptions): void {
       rig.root.position.set(actor.pos.x, options.floor, actor.pos.z);
       rig.root.rotation.x = 0;
+      rig.root.rotation.z = 0;
       centring = false;
       clock += dt;
       if (fading) {
@@ -451,7 +455,13 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         else knockSpan = 0;
         const knocked: KnockPose = knockPose(knockSpan, actor.knockTime);
         rig.root.position.y += knocked.lift;
-        rig.root.rotation.x = -knocked.lean;
+        springTo(leanX, spinning ? leanX.target : 0);
+        springTo(leanZ, spinning ? leanZ.target : 0);
+        stepSpring(leanX, dt);
+        stepSpring(leanZ, dt);
+        const body: number = rig.root.rotation.y;
+        rig.root.rotation.x = -knocked.lean + leanX.value * Math.sin(body) + leanZ.value * Math.cos(body);
+        rig.root.rotation.z = -(leanX.value * Math.cos(body) - leanZ.value * Math.sin(body));
         lastKind = kind;
         if (oneShot <= 0 && flinchLeft <= 0) locomote(actor);
       }
@@ -505,7 +515,11 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         grounded.hide();
       }
     },
-    spin(animation: string | null, turn: number): void {
+    spin(pose: SpinPose): void {
+      const animation: string | null = pose.animation;
+      const turn: number = pose.turn;
+      leanX.target = pose.lean * Math.sin(pose.leanAt);
+      leanZ.target = pose.lean * Math.cos(pose.leanAt);
       if (animation === null || dead) {
         if (!spinning) return;
         yaw += turned;
@@ -517,7 +531,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       }
       turned = turn;
       oneShot = Math.max(oneShot, ACTOR.actionTail);
-      if (spinning) return;
+      if (spinning) {
+        if (pose.cycle !== null && spinPose !== null) spinPose.time = pose.cycle * spinPose.getClip().duration;
+        return;
+      }
       spinning = true;
       const entry: ActionClip | undefined = actionClip(rig, animation);
       if (entry === undefined) return;

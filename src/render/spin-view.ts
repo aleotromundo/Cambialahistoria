@@ -6,18 +6,16 @@ import { createGroundLight, GROUND_LIGHT, held } from './ground-light.ts';
 import type { ParticleSystem } from './particles.ts';
 import type { SpinMotion, WakeDrop } from './spin-motion.ts';
 import { createSpinMotion, readSpin, SPIN_MOTION, spinShown, stepSpinMotion } from './spin-motion.ts';
+import type { SpinStyle } from './spin-style.ts';
+import { lapDelta, shownTurn, spinCycle, spinLean, turnStep } from './spin-style.ts';
 import { floorUp } from './terrain-lift.ts';
 
 export const SPIN_VIEW = {
   arc: 2.3,
   arcInner: 0.42,
-  arcFill: 0.08,
-  arcBand: 0.5,
-  arcWidth: 0.06,
   arcWobble: 0.07,
   arcRest: 0.2,
   arcGain: 0.35,
-  arcTrail: 0.9,
   footRadius: 1.25,
   footWidth: 0.16,
   footWobble: 0.12,
@@ -51,6 +49,9 @@ interface Wake {
 export interface SpinPose {
   readonly animation: string | null;
   readonly turn: number;
+  readonly lean: number;
+  readonly leanAt: number;
+  readonly cycle: number | null;
 }
 
 export interface SpinView {
@@ -59,10 +60,10 @@ export interface SpinView {
   dispose(): void;
 }
 
-export function createSpinView(scene: Scene, particles: ParticleSystem | null): SpinView {
+export function createSpinView(scene: Scene, particles: ParticleSystem | null, style: SpinStyle): SpinView {
   const motion: SpinMotion = createSpinMotion();
-  const arc: GroundLight = createGroundLight(STEEL, { kind: 'round', radius: 1, inner: SPIN_VIEW.arcInner, arc: SPIN_VIEW.arc }, { fill: SPIN_VIEW.arcFill, band: SPIN_VIEW.arcBand, width: SPIN_VIEW.arcWidth, wobble: SPIN_VIEW.arcWobble, hollow: 1 });
-  const trail: GroundLight = createGroundLight(STEEL, { kind: 'round', radius: 1, inner: SPIN_VIEW.arcInner, arc: SPIN_VIEW.arc }, { fill: 0, band: SPIN_VIEW.arcBand * 0.5, width: SPIN_VIEW.arcWidth, wobble: SPIN_VIEW.arcWobble, hollow: 1 });
+  const arc: GroundLight = createGroundLight(STEEL, { kind: 'round', radius: 1, inner: SPIN_VIEW.arcInner, arc: SPIN_VIEW.arc }, { fill: style.trail.fill, band: style.trail.arcBand, width: style.trail.width, wobble: SPIN_VIEW.arcWobble, hollow: 1 });
+  const trail: GroundLight = createGroundLight(STEEL, { kind: 'round', radius: 1, inner: SPIN_VIEW.arcInner, arc: SPIN_VIEW.arc }, { fill: 0, band: style.trail.band, width: style.trail.width, wobble: SPIN_VIEW.arcWobble, hollow: 1 });
   const foot: GroundLight = createGroundLight(GALE, { kind: 'round', radius: SPIN_VIEW.footRadius, inner: 0, arc: Math.PI * 2 }, { fill: 0.05, band: 1, width: SPIN_VIEW.footWidth, wobble: SPIN_VIEW.footWobble, hollow: 1 });
   const base: number = arc.mesh.scale.x;
   const wakes: Wake[] = Array.from({ length: SPIN_VIEW.wakeCount }, (): Wake => {
@@ -76,6 +77,10 @@ export function createSpinView(scene: Scene, particles: ParticleSystem | null): 
     scene.add(light.mesh);
   }
   let next: number = 0;
+  let spun: number = 0;
+  let lastTurned: number | null = null;
+  let leanAt: number = 0;
+  let was: { x: number; z: number } | null = null;
 
   const dropWake = (drop: WakeDrop, strength: number): void => {
     const wake: Wake | undefined = wakes[next];
@@ -101,19 +106,27 @@ export function createSpinView(scene: Scene, particles: ParticleSystem | null): 
       const share: number = Math.min(1, Math.max(0, motion.share.value));
       const steady: number = Math.min(1, Math.max(0, motion.steady.value));
       const reach: number = Math.max(0.5, motion.reach.value);
+      const spinning: boolean = motion.animation !== null;
+      spun = spinning ? spun + turnStep(style, lastTurned === null ? 0 : lapDelta(lastTurned, motion.angle), share) : 0;
+      lastTurned = spinning ? motion.angle : null;
+      const turn: number = shownTurn(style, spun);
+      const gliding: boolean = spinning && player.moving;
+      if (was !== null && gliding && Math.hypot(player.pos.x - was.x, player.pos.z - was.z) > 1e-4) leanAt = Math.atan2(player.pos.x - was.x, player.pos.z - was.z);
+      else if (!gliding) leanAt = player.facing + turn;
+      was = { x: player.pos.x, z: player.pos.z };
       arc.mesh.visible = shown > 0;
       trail.mesh.visible = shown > 0;
       if (shown > 0) {
         const strength: number = shown * (SPIN_VIEW.arcRest + SPIN_VIEW.arcGain * share);
         arc.mesh.position.set(player.pos.x, floorUp(player.pos.x, GROUND_LIGHT.height + SPIN_VIEW.liftOrder * 2, player.pos.z), player.pos.z);
         arc.mesh.scale.setScalar(base * reach);
-        const lead: number = player.facing + motion.angle + Math.PI + SPIN_VIEW.bladeOffset;
+        const lead: number = player.facing + turn + Math.PI + SPIN_VIEW.bladeOffset;
         arc.mesh.rotation.z = lead;
         arc.pose(strength, time);
         trail.mesh.position.copy(arc.mesh.position);
-        trail.mesh.scale.setScalar(base * reach * SPIN_VIEW.arcTrail);
-        trail.mesh.rotation.z = lead - SPIN_VIEW.arc * 0.6;
-        trail.pose(strength * 0.55, time);
+        trail.mesh.scale.setScalar(base * reach * style.trail.length);
+        trail.mesh.rotation.z = lead - SPIN_VIEW.arc * style.trail.lag;
+        trail.pose(strength * style.trail.strength, time);
       }
       const glow: number = share * SPIN_VIEW.footGlow + steady * SPIN_VIEW.footSteady;
       foot.mesh.visible = glow > 0.002;
@@ -132,7 +145,7 @@ export function createSpinView(scene: Scene, particles: ParticleSystem | null): 
         }
         wake.light.pose(SPIN_VIEW.wakeGlow * held(t) * (SPIN_VIEW.wakeShare + (1 - SPIN_VIEW.wakeShare) * share), time);
       }
-      return { animation: motion.animation, turn: motion.angle };
+      return { animation: motion.animation, turn, lean: spinning ? spinLean(style, share, gliding) : 0, leanAt, cycle: spinCycle(style, turn) };
     },
     clear(): void {
       for (const wake of wakes) wake.light.mesh.visible = false;
