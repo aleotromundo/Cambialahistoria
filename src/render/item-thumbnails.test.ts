@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { Box3, BufferGeometry } from 'three';
 import { BoxGeometry, BufferAttribute, Group, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import type { Timers } from '../backend/backend.ts';
-import { beyond, hanging, oneAtATime, oneGlove, THUMBNAIL, trunk } from './item-thumbnails.ts';
+import { beyond, hanging, oneAtATime, oneGlove, THUMBNAIL, trunk, turnWidth } from './item-thumbnails.ts';
 
 interface ManualTimers extends Timers {
   readonly due: (() => void)[];
@@ -146,4 +146,10 @@ void test('the hand drawn with a glove is the arm piece cut at the wrist: only w
   assert.equal(count(hand, 'uv'), positions.count);
   assert.equal(hand.index, null);
   assert.equal(count(beyond(arm, 2), 'position'), 0);
+});
+
+void test('a turning figure is framed on the widest it gets in a whole turn, so a held blade never leaves the picture', (): void => {
+  assert.equal(turnWidth(new Vector3(0.6, 1.8, 0.8)), 1);
+  assert.ok(turnWidth(new Vector3(0.4, 1.8, 1.2)) >= 1.2);
+  assert.ok(turnWidth(new Vector3(0.4, 1.8, 1.2)) >= 0.4);
 });

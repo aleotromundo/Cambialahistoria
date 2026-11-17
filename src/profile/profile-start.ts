@@ -3,6 +3,7 @@ import { createProfileApi } from '../backend/profile-api.ts';
 import type { HudApi } from '../hud/hud-api.ts';
 import type { Lobby } from '../lobby/compact.ts';
 import type { Pictures } from '../render/item-pictures-start.ts';
+import type { Turntable } from '../render/item-thumbnails.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
 import { createProfilePanel } from './profile-panel.ts';
 import type { ProfileHosts, ProfilePanel } from './profile-panel.ts';
@@ -21,7 +22,7 @@ export function startProfile(lobby: Lobby | null, start: ProfileStart): ProfileP
     content: start.content,
     profiles: createProfileApi(start.content, lobby.serverUrl, (url: string, init: RequestInit): Promise<Response> => fetch(url, init)),
     pictures: start.pictures.items,
-    portrait: (figure): Promise<string | null> => start.pictures.portrait(figure),
+    turntable: (figure): Promise<Turntable | null> => start.pictures.turntable(figure),
     hosts: start.hosts,
     playing: (): boolean => document.body.classList.contains(TITLE_SCREEN.playingClass),
   });

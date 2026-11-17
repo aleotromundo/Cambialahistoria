@@ -17,6 +17,9 @@ import { createSaleOffer } from '../hud/sale-offer.ts';
 import { attachTooltip, createTooltip } from '../hud/tooltip.ts';
 import type { Tooltip } from '../hud/tooltip.ts';
 import type { ItemPictures } from '../render/item-pictures.ts';
+import type { Turntable } from '../render/item-thumbnails.ts';
+import { createFigureView } from './figure-view.ts';
+import type { FigureView } from './figure-view.ts';
 import { buildSkills, placesText, profileFigure, profileHeadline, profileSlots } from './profile-model.ts';
 import type { ProfileFigure, ProfileSlot } from './profile-model.ts';
 import { ensureProfileStyles } from './profile-styles.ts';
@@ -26,7 +29,7 @@ export interface ProfilePanelDeps {
   readonly content: Content;
   readonly profiles: ProfileApi;
   readonly pictures: ItemPictures;
-  readonly portrait: (figure: ProfileFigure) => Promise<string | null>;
+  readonly turntable: (figure: ProfileFigure) => Promise<Turntable | null>;
   readonly hosts: ProfileHosts;
   readonly playing: () => boolean;
 }
@@ -105,9 +108,7 @@ export function createProfilePanel(deps: ProfilePanelDeps): ProfilePanel {
 
   const body: HTMLDivElement = el('div', 'profile-body', sheet);
   const figure: HTMLDivElement = el('div', 'profile-figure', body);
-  const picture: HTMLImageElement = el('img', 'profile-portrait', figure);
-  picture.alt = '';
-  picture.decoding = 'async';
+  const turning: FigureView = createFigureView(figure);
   const side: HTMLDivElement = el('div', 'profile-side', body);
   label('cs-heading', 'Worn', side);
   const worn: HTMLDivElement = el('div', 'profile-worn', side);
@@ -136,13 +137,14 @@ export function createProfilePanel(deps: ProfilePanelDeps): ProfilePanel {
   let asking: AbortController | null = null;
   let token: number = 0;
   let portraitKey: string = '';
-  let awaited: number = -1;
   let batch: number = 0;
 
   const setOpen = (next: boolean): void => {
     open = next;
     setClass(layer, 'open', open);
-    if (!open) tooltip.hide();
+    if (open) return;
+    tooltip.hide();
+    turning.stop();
   };
 
   const showSlots = (profile: CharacterProfile | null): void => {
@@ -160,27 +162,22 @@ export function createProfilePanel(deps: ProfilePanelDeps): ProfilePanel {
   };
 
   const place = async (dressed: ProfileFigure, asked: number): Promise<void> => {
-    const url: string | null = await deps.portrait(dressed);
-    if (asked !== token || url === null) return;
-    awaited = asked;
-    if (picture.src === url && picture.complete) setClass(picture, 'shown', true);
-    else picture.src = url;
+    const table: Turntable | null = await deps.turntable(dressed);
+    if (asked !== token || table === null) return;
+    turning.show(table);
   };
-
-  picture.addEventListener('load', (): void => {
-    if (awaited === token) setClass(picture, 'shown', true);
-  });
 
   const showPortrait = (profile: CharacterProfile | null, asked: number): void => {
     if (profile === null) {
       portraitKey = '';
-      setClass(picture, 'shown', false);
+      turning.clear();
       return;
     }
     const dressed: ProfileFigure = profileFigure(content, profile);
     if (dressed.key === portraitKey) return;
     portraitKey = dressed.key;
-    setClass(picture, 'shown', false);
+    turning.clear();
+    turning.reset();
     void place(dressed, asked);
   };
 
@@ -263,7 +260,10 @@ export function createProfilePanel(deps: ProfilePanelDeps): ProfilePanel {
         host.append(layer);
         layer.getBoundingClientRect();
       }
-      if (!wasOpen) paintProfile(null, asked);
+      if (!wasOpen) {
+        turning.reset();
+        paintProfile(null, asked);
+      }
       setOpen(true);
       paintState('loading', name);
       void ask(name, asked, controller.signal);

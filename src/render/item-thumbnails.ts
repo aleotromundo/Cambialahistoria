@@ -1,4 +1,4 @@
-import type { AnimationClip, Material, Matrix4, Object3D, WebGLRenderTarget } from 'three';
+import type { AnimationClip, Material, Matrix4, Object3D, Texture, WebGLRenderTarget } from 'three';
 import { ACESFilmicToneMapping, Box3, BufferAttribute, BufferGeometry, Color, InterleavedBufferAttribute, DirectionalLight, Group, Mesh, MeshStandardMaterial, OrthographicCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { Timers } from '../backend/backend.ts';
@@ -313,9 +313,15 @@ function bookPose(keepsake: Keepsake): Group {
   return rolled;
 }
 
+export interface Turntable {
+  draw(angle: number, target: HTMLCanvasElement): boolean;
+  dispose(): void;
+}
+
 export interface ThumbnailStudio {
   paint(frame: string, pictures: readonly Picture[]): Promise<ItemThumbnails>;
-  portrait(rig: LoadedRig, look: Look, colours: PortraitLook): Promise<string | null>;
+  turntable(rig: LoadedRig, look: Look, colours: PortraitLook): Promise<Turntable | null>;
+  warm(): void;
   dispose(): void;
 }
 
@@ -334,11 +340,40 @@ function fit(camera: OrthographicCamera, size: Vector3, width: number, height: n
   camera.updateProjectionMatrix();
 }
 
+export function turnWidth(size: Vector3): number {
+  return Math.hypot(size.x, size.z);
+}
+
 interface Studio {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
   readonly camera: OrthographicCamera;
+  readonly environment: Texture;
   readonly close: () => void;
+}
+
+function sized(renderer: WebGLRenderer, width: number, height: number): void {
+  const canvas: HTMLCanvasElement = renderer.domElement;
+  if (canvas.width === width && canvas.height === height) return;
+  renderer.setSize(width, height, false);
+}
+
+function litScene(environment: Texture): Scene {
+  const scene: Scene = new Scene();
+  scene.environment = environment;
+  scene.environmentIntensity = THUMBNAIL.environment;
+  const key: DirectionalLight = new DirectionalLight(THUMBNAIL.keyColor, THUMBNAIL.keyIntensity);
+  key.position.set(THUMBNAIL.keyX, THUMBNAIL.keyY, THUMBNAIL.keyZ);
+  const fill: DirectionalLight = new DirectionalLight(THUMBNAIL.fillColor, THUMBNAIL.fillIntensity);
+  fill.position.set(THUMBNAIL.fillX, THUMBNAIL.fillY, THUMBNAIL.fillZ);
+  scene.add(key, fill);
+  return scene;
+}
+
+function studioCamera(): OrthographicCamera {
+  const camera: OrthographicCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, THUMBNAIL.distance * 2);
+  camera.position.set(0, 0, THUMBNAIL.distance);
+  return camera;
 }
 
 function openStudio(): Studio {
@@ -351,24 +386,14 @@ function openStudio(): Studio {
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = THUMBNAIL.exposure;
 
-  const scene: Scene = new Scene();
   const generator: PMREMGenerator = new PMREMGenerator(renderer);
   const room: RoomEnvironment = new RoomEnvironment();
   const reflections: WebGLRenderTarget = generator.fromScene(room, THUMBNAIL.environmentBlur);
-  scene.environment = reflections.texture;
-  scene.environmentIntensity = THUMBNAIL.environment;
-  const key: DirectionalLight = new DirectionalLight(THUMBNAIL.keyColor, THUMBNAIL.keyIntensity);
-  key.position.set(THUMBNAIL.keyX, THUMBNAIL.keyY, THUMBNAIL.keyZ);
-  const fill: DirectionalLight = new DirectionalLight(THUMBNAIL.fillColor, THUMBNAIL.fillIntensity);
-  fill.position.set(THUMBNAIL.fillX, THUMBNAIL.fillY, THUMBNAIL.fillZ);
-  scene.add(key, fill);
-
-  const camera: OrthographicCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, THUMBNAIL.distance * 2);
-  camera.position.set(0, 0, THUMBNAIL.distance);
   return {
     renderer,
-    scene,
-    camera,
+    scene: litScene(reflections.texture),
+    camera: studioCamera(),
+    environment: reflections.texture,
     close: (): void => {
       reflections.dispose();
       room.dispose();
@@ -422,30 +447,50 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     }
     return shot;
   };
-  const shoot = async (rig: LoadedRig, look: Look, colours: PortraitLook): Promise<string | null> => {
+  const mount = async (rig: LoadedRig, look: Look, colours: PortraitLook): Promise<Turntable | null> => {
     if (closed) return null;
     studio ??= openStudio();
-    const { renderer, scene, camera } = studio;
+    const stage: Scene = litScene(studio.environment);
+    const camera: OrthographicCamera = studioCamera();
     const made: RigInstance = instantiateRig(rig, library, { tint: colours.tint, glow: colours.glow, ghost: null, feather: false });
-    made.root.rotation.y = PORTRAIT.facing;
     made.setWear(look.wearables, look.hidden);
     made.setGear(look.held);
     made.mixer.clipAction(standingIdle(made)).play();
     made.mixer.update(0);
-    scene.add(made.root);
-    made.root.updateMatrixWorld(true);
+    const spin: Group = new Group();
+    spin.add(made.root);
+    stage.add(spin);
+    spin.updateMatrixWorld(true);
     const bounds: Box3 = new Box3().setFromObject(made.root, true);
     made.root.position.sub(bounds.getCenter(new Vector3()));
-    fit(camera, bounds.getSize(new Vector3()), PORTRAIT.width, PORTRAIT.height, PORTRAIT.padding);
-    renderer.setSize(PORTRAIT.width, PORTRAIT.height, false);
-    await renderer.compileAsync(scene, camera).catch((): Object3D => scene);
-    renderer.render(scene, camera);
-    const encoded: Promise<string | null> = encode(renderer.domElement);
-    made.root.removeFromParent();
-    made.dispose();
-    const url: string | null = await encoded;
-    renderer.setSize(THUMBNAIL.size, THUMBNAIL.size, false);
-    return url;
+    const size: Vector3 = bounds.getSize(new Vector3());
+    fit(camera, new Vector3(turnWidth(size), size.y, size.z), PORTRAIT.width, PORTRAIT.height, PORTRAIT.padding);
+    await studio.renderer.compileAsync(stage, camera).catch((): Object3D => stage);
+    let gone: boolean = false;
+    return {
+      draw(angle: number, target: HTMLCanvasElement): boolean {
+        if (gone || studio === null) return false;
+        const { renderer } = studio;
+        spin.rotation.y = PORTRAIT.facing + angle;
+        sized(renderer, PORTRAIT.width, PORTRAIT.height);
+        renderer.render(stage, camera);
+        if (target.width !== PORTRAIT.width || target.height !== PORTRAIT.height) {
+          target.width = PORTRAIT.width;
+          target.height = PORTRAIT.height;
+        }
+        const context: CanvasRenderingContext2D | null = target.getContext('2d');
+        if (context === null) return false;
+        context.clearRect(0, 0, target.width, target.height);
+        context.drawImage(renderer.domElement, 0, 0);
+        return true;
+      },
+      dispose(): void {
+        if (gone) return;
+        gone = true;
+        spin.removeFromParent();
+        made.dispose();
+      },
+    };
   };
   const paint = async (frame: string, pictures: readonly Picture[]): Promise<ItemThumbnails> => {
     const images: Map<string, string> = new Map<string, string>();
@@ -476,6 +521,7 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
       camera.top = half;
       camera.bottom = -half;
       camera.updateProjectionMatrix();
+      sized(renderer, THUMBNAIL.size, THUMBNAIL.size);
       renderer.render(scene, camera);
       const encoded: Promise<string | null> = encode(renderer.domElement);
       posed.removeFromParent();
@@ -491,8 +537,11 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     paint(frame: string, pictures: readonly Picture[]): Promise<ItemThumbnails> {
       return inTurn((): Promise<ItemThumbnails> => paint(frame, pictures));
     },
-    portrait(rig: LoadedRig, look: Look, colours: PortraitLook): Promise<string | null> {
-      return inTurn((): Promise<string | null> => shoot(rig, look, colours));
+    turntable(rig: LoadedRig, look: Look, colours: PortraitLook): Promise<Turntable | null> {
+      return inTurn((): Promise<Turntable | null> => mount(rig, look, colours));
+    },
+    warm(): void {
+      if (!closed) studio ??= openStudio();
     },
     dispose(): void {
       closed = true;
