@@ -416,7 +416,7 @@ async function start(): Promise<void> {
     if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
-    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting, gpuQueued: stage.gpuQueued() });
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
     if (gate.queue) queue.push(...collected);
     if (gate.step) {
@@ -432,7 +432,7 @@ async function start(): Promise<void> {
       }
     }
     debug.record(events);
-    hideout?.frame(dt, playing, world, transition.presenting);
+    hideout?.frame(dt, playing, world, gate.present);
     if (minter?.pump(world) === true) urgent = true;
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
@@ -442,7 +442,7 @@ async function start(): Promise<void> {
       present(events);
     }
 
-    if (transition.presenting) {
+    if (gate.present) {
       const simDt: number = gate.step && hitStop <= 0 ? dt : 0;
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
@@ -475,7 +475,7 @@ async function start(): Promise<void> {
     ladder?.noteLevel(world.player.level);
     launch.update(world, dt, gate.queue);
     hurtVignette.show(effects.hurt);
-    if (transition.presenting) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
+    if (gate.present) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
     perf.frame(now);
     if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);

@@ -8,6 +8,7 @@ export interface FrameState {
   readonly lost: boolean;
   readonly menuOpen: boolean;
   readonly presenting: boolean;
+  readonly covered: boolean;
   readonly gpuQueued: number;
 }
 
@@ -16,10 +17,11 @@ export interface FrameGate {
   readonly queue: boolean;
   readonly step: boolean;
   readonly draw: boolean;
+  readonly present: boolean;
 }
 
 export function frameGate(state: FrameState): FrameGate {
   const step: boolean = state.playing && !state.blocking && !state.lost;
   const fed: boolean = !state.blocking || state.gpuQueued < FRAME_GATE.queuedUnderVeil;
-  return { collect: state.playing && (state.blocking || !state.lost), queue: step && !state.menuOpen, step, draw: state.playing && state.presenting && fed };
+  return { collect: state.playing && (state.blocking || !state.lost), queue: step && !state.menuOpen, step, draw: state.playing && state.presenting && fed, present: state.presenting && !state.covered };
 }
