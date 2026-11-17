@@ -2,6 +2,18 @@
   width: 560px;
 }
 
+.hud-panel.auction-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.auction-panel > .trade-head,
+.auction-panel > .auction-tabs,
+.auction-panel > .auction-line {
+  flex: none;
+}
+
 .auction-tabs {
   position: relative;
   display: flex;
@@ -54,22 +66,29 @@
 }
 
 .auction-line {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(-4px);
+  display: flex;
+  align-items: center;
+  height: 30px;
+  margin-bottom: 4px;
   font-size: 12px;
+  line-height: 15px;
   color: var(--text-dim);
+  opacity: 0;
+  transform: translateY(-3px);
   transition:
-    max-height var(--spring-smooth-ms) var(--spring-smooth),
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-smooth-ms) var(--spring-smooth),
     color var(--spring-smooth-ms) var(--spring-smooth);
 }
 
+.auction-line-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .auction-line.shown {
-  max-height: 40px;
-  margin-bottom: 6px;
   opacity: 1;
   transform: translateY(0);
 }
@@ -84,27 +103,48 @@
 
 .auction-views {
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  transition: height var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .auction-view {
+  display: flex;
+  flex-direction: column;
   grid-area: 1 / 1;
   min-width: 0;
+  min-height: 0;
+  max-height: 0;
   visibility: hidden;
   opacity: 0;
   transform: translateY(6px);
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-smooth-ms) var(--spring-smooth),
+    --fade-top var(--spring-snappy-ms) var(--spring-snappy),
+    --fade-bottom var(--spring-snappy-ms) var(--spring-snappy),
     visibility 0s var(--spring-snappy) var(--spring-snappy-ms);
 }
 
+.auction-view > * {
+  flex: none;
+}
+
 .auction-view.shown {
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   visibility: inherit;
   opacity: 1;
   transform: translateY(0);
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-smooth-ms) var(--spring-smooth),
+    --fade-top var(--spring-snappy-ms) var(--spring-snappy),
+    --fade-bottom var(--spring-snappy-ms) var(--spring-snappy),
     visibility 0s var(--spring-snappy) 0s;
 }
 
@@ -160,7 +200,22 @@
   gap: 3px;
   max-height: 320px;
   overflow-y: auto;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+  overscroll-behavior: contain;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    --fade-top var(--spring-snappy-ms) var(--spring-snappy),
+    --fade-bottom var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.auction-view.shown > .auction-rows,
+.auction-view.shown > .auction-history {
+  flex: 0 1 auto;
+  min-height: 50px;
+}
+
+.auction-history > .auction-rows {
+  min-height: 0;
+  flex: 0 1 auto;
 }
 
 .auction-rows.loading {
@@ -183,6 +238,8 @@
 }
 
 .auction-history {
+  display: flex;
+  flex-direction: column;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -193,7 +250,6 @@
 
 .auction-history.shown {
   max-height: 360px;
-  overflow-y: auto;
   opacity: 1;
 }
 
@@ -377,11 +433,32 @@
   margin-bottom: 10px;
 }
 
+.auction-picked > .cell {
+  flex: none;
+}
+
 .auction-picked-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+
+.auction-picked .auction-row-name {
+  height: 17px;
+  line-height: 17px;
+}
+
+.auction-picked .auction-row-sub {
+  height: 14px;
+  line-height: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.auction-picked .auction-row-sub.shown {
+  opacity: 1;
 }
 
 .auction-pricing {
@@ -396,24 +473,26 @@
 }
 
 .auction-source {
-  min-height: 15px;
+  height: 15px;
   margin: -2px 0 6px;
+  overflow: hidden;
   font-size: 11px;
+  line-height: 15px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-dim);
   opacity: 0;
-  transform: translateY(-3px);
-  transition:
-    opacity var(--spring-snappy-ms) var(--spring-snappy),
-    transform var(--spring-smooth-ms) var(--spring-smooth);
+  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .auction-source.shown {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .auction-terms-row {
   display: flex;
+  min-height: 15px;
+  line-height: 15px;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
@@ -442,9 +521,38 @@
   color: var(--ember);
 }
 
+.auction-stash-box {
+  position: relative;
+  height: var(--stash-h, 44px);
+  min-height: 44px;
+  overflow: hidden;
+  transition: height var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.auction-view.shown > .auction-stash-box {
+  flex: 0 1 auto;
+}
+
+.auction-stash-scroll {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--stash-fit, 100%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transition:
+    --fade-top var(--spring-snappy-ms) var(--spring-snappy),
+    --fade-bottom var(--spring-snappy-ms) var(--spring-snappy);
+}
+
 .inv-grid.auction-stash {
-  grid-template-columns: repeat(auto-fill, 44px);
+  grid-template-columns: repeat(var(--stash-cols, auto-fill), 44px);
   justify-content: space-between;
+}
+
+.auction-stash .cell.spare {
+  display: none;
 }
 
 .auction-stash .cell {

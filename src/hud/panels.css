@@ -560,3 +560,38 @@ body.touch .atlas > .panel-close {
   opacity: 1;
   transform: none;
 }
+
+@property --fade-top {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-bottom {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.hud-scroll {
+  scrollbar-width: none;
+  transition:
+    --fade-top var(--spring-snappy-ms) var(--spring-snappy),
+    --fade-bottom var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.hud-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hud-scroll.scrolls {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
+}
+
+.hud-scroll.fade-top {
+  --fade-top: 14px;
+}
+
+.hud-scroll.fade-bottom {
+  --fade-bottom: 14px;
+}

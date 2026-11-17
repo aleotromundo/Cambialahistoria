@@ -4,13 +4,15 @@ import { el, label, setText } from './dom.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
 import { promptText, use } from './prompts.ts';
+import type { ScrollFade } from './scroll-fade.ts';
+import { watchScrollFade } from './scroll-fade.ts';
 
 const STASH = {
   hint: 'take',
 } as const;
 
 export function createStashPanel(parent: HTMLElement, context: HudContext): PanelView {
-  const element: HTMLDivElement = el('div', 'hud-panel right beside trade-panel', parent);
+  const element: HTMLDivElement = el('div', 'hud-panel right beside trade-panel stash-panel', parent);
   element.dataset['tab'] = 'Stash';
   element.addEventListener('contextmenu', (event: MouseEvent): void => {
     event.preventDefault();
@@ -18,7 +20,9 @@ export function createStashPanel(parent: HTMLElement, context: HudContext): Pane
   const head: HTMLDivElement = el('div', 'trade-head', element);
   label('panel-title', 'Stash', head);
   const tally: HTMLDivElement = label('trade-role', '', head);
-  const grid: HTMLDivElement = el('div', 'inv-grid stash-grid', element);
+  const scroll: HTMLDivElement = el('div', 'stash-scroll', element);
+  const fade: ScrollFade = watchScrollFade(scroll);
+  const grid: HTMLDivElement = el('div', 'inv-grid stash-grid', scroll);
   const cells: ItemCell[] = Array.from({ length: context.api.world.content.trade.stashSize }, (_: unknown, index: number): ItemCell => {
     const view: ItemCell = createItemCell(context, grid, (): string => promptText(context.api.touch, use(STASH.hint)));
     const take = (): void => {
@@ -41,7 +45,10 @@ export function createStashPanel(parent: HTMLElement, context: HudContext): Pane
       }
       const used: number = world.stash.filter((item: ItemInstance | null): boolean => item !== null).length;
       setText(tally, `${used} / ${world.stash.length}`, changed);
-      if (changed) context.tooltip.hide();
+      if (changed) {
+        context.tooltip.hide();
+        fade.update();
+      }
     },
   };
 }
