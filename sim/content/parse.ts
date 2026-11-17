@@ -588,6 +588,11 @@ export function contentProblems(content: Content): string[] {
     const lastWord: number = def.talks.findIndex((entry: TalkDef): boolean => !entry.once && entry.when.length === 0);
     need(lastWord >= 0, `npc ${def.id} has no repeatable conversation without conditions`);
     for (const unreachable of lastWord < 0 ? [] : def.talks.slice(lastWord + 1)) need(false, `conversation ${unreachable.id} of ${def.id} can never play: it comes after the repeatable conversation ${def.talks[lastWord]?.id ?? ''}, which has no conditions`);
+    for (const [kind, lineId] of Object.entries(def.remarks)) {
+      const said: LineDef | undefined = content.lines.get(lineId);
+      need(said !== undefined, `npc ${def.id} remark ${kind} uses unknown line ${lineId}`);
+      if (said !== undefined) need(said.speaker === def.id, `npc ${def.id} remark ${kind} uses line ${lineId}, which is spoken by ${said.speaker}`);
+    }
     for (const entry of def.talks) {
       known(`conversation ${entry.id}`, entry.when);
       for (const lineId of entry.lines) {

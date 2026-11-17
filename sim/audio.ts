@@ -204,6 +204,9 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'waypoint_unlocked':
       found = worldCues(audio, 'waypoint_unlocked', null);
       break;
+    case 'item_identified':
+      found = worldCues(audio, 'item_identified', null);
+      break;
     case 'moment_strike':
       found = worldCues(audio, event.moment.combat ? 'moment_strike' : 'moment_strike_soft', { x: event.moment.pos.x, z: event.moment.pos.z });
       break;

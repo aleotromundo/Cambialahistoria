@@ -3,6 +3,7 @@ import type { ItemSlot } from '../content/types.ts';
 import type { ReplayCommand } from './dialogue-types.ts';
 import type { Vec2 } from '../math.ts';
 import type { PurseCommand } from './ledger.ts';
+import type { ItemPlace } from './service-types.ts';
 import type { BenchCommand, SpawnCommand } from './dev-commands.ts';
 import type { EnterPortalCommand, UseItemCommand } from './portal-types.ts';
 import type { SetOutCommand } from './run-types.ts';
@@ -140,6 +141,8 @@ export type TradeAction =
   | { readonly type: 'buy_good'; readonly index: number }
   | { readonly type: 'stash'; readonly inventoryIndex: number }
   | { readonly type: 'unstash'; readonly index: number }
+  | { readonly type: 'identify'; readonly place: ItemPlace; readonly index: number }
+  | { readonly type: 'identify_all' }
   | { readonly type: 'close' };
 
 export interface TradeCommand {

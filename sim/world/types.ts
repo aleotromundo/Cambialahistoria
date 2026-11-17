@@ -5,7 +5,7 @@ import type { PowerState } from './power-types.ts';
 import type { ActionState } from './action-types.ts';
 export type { ActionPhase, ActionState } from './action-types.ts';
 export type { BuffState, EmpowerState, PowerState } from './power-types.ts';
-import type { OpenService } from './service-types.ts';
+import type { ItemPlace, OpenService } from './service-types.ts';
 import type { UnisonEvent, UnisonState } from './unison-types.ts';
 import type { MomentDef } from '../content/moment-types.ts';
 import type { ZoneWake } from '../content/story-types.ts';
@@ -44,6 +44,7 @@ export interface ItemInstance {
   readonly affixes: readonly RolledAffix[];
   readonly ledger: string | null;
   readonly count?: number;
+  readonly unidentified?: true;
 }
 
 export type Equipment = Record<ItemSlot, ItemInstance | null>;
@@ -368,7 +369,7 @@ export type AreaStage = 'start' | 'pulse' | 'end';
 
 export type ArmedWhere = 'bag' | 'ground';
 
-export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss' | 'run_refused';
+export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss' | 'run_refused' | 'unidentified';
 
 export type WorldEvent =
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }
@@ -428,6 +429,7 @@ export type WorldEvent =
   | { readonly type: 'scene_lead'; readonly scene: string; readonly npcId: number }
   | { readonly type: 'scene_ward'; readonly scene: string; readonly npcId: number; readonly wardId: number }
   | { readonly type: 'notice'; readonly reason: NoticeReason }
+  | { readonly type: 'item_identified'; readonly place: ItemPlace; readonly index: number; readonly uid: number; readonly good: boolean }
   | { readonly type: 'armed'; readonly group: string; readonly base: string; readonly where: ArmedWhere | null }
   | { readonly type: 'portal'; readonly stage: PortalStage; readonly zone: string; readonly pos: Vec2 }
   | { readonly type: 'flasks_refilled' }

@@ -18,7 +18,10 @@ import { createWorld } from './world/create.ts';
 import { placeHazard } from './world/hazards.ts';
 import { placeArea } from './world/areas.ts';
 import { startSkill } from './world/skills.ts';
-import type { MonsterState, World } from './world/types.ts';
+import type { ItemInstance, MonsterState, World } from './world/types.ts';
+import { isUnidentified, veiled } from './identify.ts';
+import { generateItem } from './items.ts';
+import { createRng } from './rng.ts';
 
 const content: Content = loadContent();
 
@@ -312,4 +315,18 @@ void test('a careful bot caught in a telegraphed swing while the Millwheel turns
   const goal: Vec2 | null = goalOf(world);
   assert.ok(goal !== null);
   assert.equal(botInDanger(world, goal), false);
+});
+
+void test('the bot reads what it carries for free as soon as its bag changes', (): void => {
+  const bot: Bot = createBot(createWorld(content, { seed: 21, save: null }));
+  const hidden: ItemInstance = veiled(content, must(generateItem(content, createRng(21), 9001, 8, 'gale_charm', 'rare'), 'rare'));
+  bot.world.player.inventory.fill(null);
+  bot.world.player.inventory[0] = hidden;
+  const gold: number = bot.world.player.gold;
+  bot.bagChanged = true;
+  botStep(bot, []);
+  const held: ItemInstance = must(bot.world.player.inventory[0], 'held');
+  assert.equal(isUnidentified(held), false);
+  assert.deepEqual(held.affixes, hidden.affixes);
+  assert.equal(bot.world.player.gold, gold);
 });

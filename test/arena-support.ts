@@ -11,6 +11,7 @@ import { SCENE_BASE } from './road-support.ts';
 import { armed, must, worldIn } from './support.ts';
 
 export const ARENA_CENTRE: Vec2 = { x: 14, z: 14 };
+const ARENA_FIRST_ID: number = 18;
 
 const OPEN: readonly string[] = ['.......', '.......', '.......', '.......', '.......', '.......', '.......'];
 
@@ -62,6 +63,7 @@ export function arena(seed: number, content: Content = ARENA_CONTENT): World {
   const world: World = worldIn(content, content.world.town, seed);
   enterZone(world, sceneZone(SCENE_BASE, 'test_arena', { tiles: OPEN, props: [], start: ARENA_CENTRE }), { type: 'start' });
   world.monsters = [];
+  world.nextId = ARENA_FIRST_ID;
   return armed(world);
 }
 

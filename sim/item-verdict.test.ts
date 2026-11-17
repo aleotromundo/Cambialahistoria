@@ -179,3 +179,9 @@ void test('every stat an item can roll moves damage or toughness for some build,
 function affixSize(affix: AffixDef): number {
   return affix.op === 'add' ? affix.max : 0;
 }
+
+void test('an unidentified item cannot be judged; once identified it can', (): void => {
+  const hidden: ItemInstance = { ...groundedToken, unidentified: true };
+  assert.equal(itemVerdict(content, blade(9, null), physical, hidden), null);
+  assert.notEqual(itemVerdict(content, blade(9, null), physical, groundedToken), null);
+});

@@ -109,6 +109,7 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
       if (entry === undefined) return '';
       if (entry.block === 'story') return 'Story items cannot be traded';
       if (entry.block === 'unverified') return 'Only items in the ledger can be traded';
+      if (entry.block === 'unidentified') return 'Unidentified items cannot be traded. Have it identified first.';
       return promptText(context.api.touch, use(entry.offered ? 'take it back' : 'offer it'));
     });
     view.cell.addEventListener('click', (): void => {

@@ -268,12 +268,14 @@
     "mana_full": [{ "sound": "ui_error", "volume": 0.5, "maxVoices": 1, "cooldown": 0.2 }],
     "no_gold": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
     "stash_full": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
-    "legendary_limit": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
+    "legendary_limit": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }],
+    "unidentified": [{ "sound": "ui_error", "volume": 0.8, "maxVoices": 1, "cooldown": 0.2 }]
   },
   "world": {
     "hero_step": [{ "sound": "footstep_stone", "volume": 0.7, "maxVoices": 2 }],
     "hero_burn": [{ "sound": "burn_sizzle", "volume": 0.55, "maxVoices": 1, "cooldown": 1.5 }],
     "level_up": [{ "sound": "level_up", "volume": 1, "maxVoices": 1 }],
+    "item_identified": [{ "sound": "item_identified", "volume": 0.7, "maxVoices": 1, "cooldown": 0.15 }],
     "surge": [{ "sound": "wave_arrival", "volume": 0.9, "maxVoices": 1 }],
     "monster_spawn": [{ "sound": "monsters_rising", "volume": 0.7, "maxVoices": 1, "cooldown": 4 }],
     "flask_used": [{ "sound": "flask_drink", "volume": 0.8, "maxVoices": 2 }],

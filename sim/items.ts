@@ -2,6 +2,7 @@ import type { AffixDef, Content, DropLean, ItemBaseDef, ItemSlot, ItemStat, Rari
 import { leanOf } from './content/lean-rules.ts';
 import { ITEM_STATS } from './content/types.ts';
 import { linesFor } from './content/item-rules.ts';
+import { isUnidentified } from './identify.ts';
 import type { Rng } from './rng.ts';
 import { pickWeighted } from './rng.ts';
 import { describeMod, roundStat } from './stat-text.ts';
@@ -68,8 +69,25 @@ function rolledLines(content: Content, item: ItemInstance): { readonly affix: Af
   return lines.toSorted((a, b): number => orderOf(a.affix.stat) - orderOf(b.affix.stat));
 }
 
+export const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = {
+  weapon: 'Weapon',
+  head: 'Headgear',
+  chest: 'Body Armour',
+  hands: 'Gloves',
+  legs: 'Leggings',
+  feet: 'Boots',
+  charm: 'Charm',
+};
+
+function veiledName(content: Content, item: ItemInstance, def: ItemBaseDef | null): string {
+  if (def === null) return item.base;
+  if (def.power === null || def.slot === null) return def.name;
+  return `${rarityOf(content, item).name} ${SLOT_NAMES[def.slot]}`;
+}
+
 export function itemName(content: Content, item: ItemInstance): string {
   const def: ItemBaseDef | null = baseOf(content, item);
+  if (isUnidentified(item)) return veiledName(content, item, def);
   const base: string = def?.name ?? item.base;
   const top: AffixDef | undefined = rolledLines(content, item)[0]?.affix;
   return top === undefined || (def?.power ?? null) !== null ? base : `${top.label} ${base}`;
@@ -77,6 +95,7 @@ export function itemName(content: Content, item: ItemInstance): string {
 
 export function itemLines(content: Content, item: ItemInstance): ItemLine[] {
   const lines: ItemLine[] = [];
+  if (isUnidentified(item)) return lines;
   const implicit: StatMod[] = implicitMods(content, item);
   const min: StatMod | undefined = implicit.find((mod: StatMod): boolean => mod.stat === 'damageMin' && mod.op === 'add');
   const max: StatMod | undefined = implicit.find((mod: StatMod): boolean => mod.stat === 'damageMax' && mod.op === 'add');

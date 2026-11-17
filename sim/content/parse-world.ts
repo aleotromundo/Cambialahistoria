@@ -41,7 +41,7 @@ import type {
   ZoneSize,
   ZoneWaypoint,
 } from './types.ts';
-import { service } from './parse-trade.ts';
+import { remarks, service } from './parse-trade.ts';
 import type { GlimpsePiece, ShorePath, ShorePool, ShoreProp, ShoreRoom, VoidGlimpse, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
 import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
 import { zoneScatter } from './parse-scatter.ts';
@@ -345,6 +345,7 @@ function npc(value: unknown, where: string): NpcDef {
     wear: textList(source, 'wear', where),
     talks: each(source['talks'], `${where}.talks`, talk),
     service: service(source, where),
+    remarks: remarks(source, where),
     faction: nullableText(source, 'faction', where),
   };
 }

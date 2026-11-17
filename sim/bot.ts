@@ -1,6 +1,7 @@
 import type { BotPlan } from './bot-plan.ts';
 import { flaskCommands, junkIndex, letGoCommands, nextPlace, planAttack, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
+import { revealCarried } from './identify.ts';
 import { canAllocate } from './progression.ts';
 import type { ReadonlyVec2, Vec2 } from './math.ts';
 import { DEGREES_TO_RADIANS, distance, dot, normalize, rotate } from './math.ts';
@@ -147,6 +148,7 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
     if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
     if (event.type === 'pickup' || event.type === 'level_up') bot.bagChanged = true;
   }
+  if (bot.bagChanged) revealCarried(bot.world);
   bot.events.push(...events);
   bot.watch?.(events);
   return events;
