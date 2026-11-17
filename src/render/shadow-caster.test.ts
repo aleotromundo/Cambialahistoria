@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Bone, BufferAttribute, BufferGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Skeleton, SkinnedMesh, Vector3 } from 'three';
+import { Bone, BufferAttribute, BufferGeometry, Group, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Scene, Skeleton, SkinnedMesh, Sphere, Vector3 } from 'three';
 import { must } from '../../test/support.ts';
 import type { CasterCache, CasterPiece } from './shadow-caster.ts';
 import { casterDepth, casterGeometry, castsTogether, createCasterCache, createShadowCaster, drawNothing, drawWhole, isShadowCaster, SHADOW_CASTER } from './shadow-caster.ts';
@@ -159,4 +159,21 @@ void test('every caster draws its shadow with one depth material of its own kind
   assert.equal(first.customDepthMaterial, casterDepth());
   assert.equal(second.customDepthMaterial, casterDepth());
   assert.equal(anchor.customDepthMaterial, undefined);
+});
+
+void test('the caster starts with the anchor\'s bounding sphere, so its first frame never skins the whole body to find one', (): void => {
+  const bone: Bone = new Bone();
+  const anchor: SkinnedMesh = new SkinnedMesh(triangle(0, 0), new MeshStandardMaterial());
+  anchor.add(bone);
+  anchor.bind(new Skeleton([bone]), new Matrix4());
+  const bare: unknown = createShadowCaster(anchor).boundingSphere;
+  assert.equal(bare, null);
+  new Scene().add(anchor);
+  anchor.updateMatrixWorld(true);
+  anchor.computeBoundingSphere();
+  const caster: SkinnedMesh = createShadowCaster(anchor);
+  const sphere: unknown = caster.boundingSphere;
+  assert.ok(sphere instanceof Sphere);
+  assert.notEqual(sphere, anchor.boundingSphere);
+  assert.ok(sphere.equals(anchor.boundingSphere));
 });

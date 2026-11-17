@@ -1,5 +1,5 @@
 import type { BufferGeometry, InterleavedBufferAttribute, Matrix4 } from 'three';
-import { BufferAttribute, BufferGeometry as Geometry, DoubleSide, Matrix4 as Transform, MeshDepthMaterial, ShaderMaterial, SkinnedMesh, Vector3 } from 'three';
+import { BufferAttribute, BufferGeometry as Geometry, DoubleSide, Matrix4 as Transform, MeshDepthMaterial, ShaderMaterial, SkinnedMesh, Sphere, Vector3 } from 'three';
 
 export const SHADOW_CASTER = {
   mark: 'shadowCaster',
@@ -132,6 +132,8 @@ export function createShadowCaster(anchor: SkinnedMesh): SkinnedMesh {
   caster.quaternion.copy(anchor.quaternion);
   caster.scale.copy(anchor.scale);
   caster.bind(anchor.skeleton, anchor.bindMatrix);
+  const bounds: unknown = anchor.boundingSphere;
+  if (bounds instanceof Sphere) caster.boundingSphere = bounds.clone();
   return caster;
 }
 
