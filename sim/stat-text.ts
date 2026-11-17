@@ -1,4 +1,4 @@
-import type { ChartGroup, Content, ModOp, SkillMod, SkillModField, SkillTarget, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, EmpoweredMod, ModOp, SkillMod, SkillModField, SkillTarget, StatId, StatMod } from './content/types.ts';
 
 const RATIO_STATS: ReadonlySet<StatId> = new Set<StatId>(['damagePercent', 'attackSpeed', 'critChance', 'critMultiplier', 'goldFind', 'stormResist', 'frostResist']);
 const DECIMAL_STATS: ReadonlySet<StatId> = new Set<StatId>(['lifeRegen', 'manaRegen']);
@@ -81,11 +81,14 @@ const FIELD_WORDS: Readonly<Record<SkillModField, FieldWords>> = {
   spread: { word: 'degrees of spread', count: true },
 };
 
-export function describeSkillMod(content: Content, mod: SkillMod): string {
-  const name: string = targetName(content, mod.target);
+export function describeEmpoweredMod(mod: EmpoweredMod): string {
   const sign: string = mod.value < 0 ? '-' : '+';
   const size: number = Math.abs(mod.value);
   const words: FieldWords = FIELD_WORDS[mod.field];
   const amount: string = words.count ? String(size) : `${Math.round(size * 100)}%`;
-  return `${sign}${amount} ${words.word} (${name})`;
+  return `${sign}${amount} ${words.word}`;
+}
+
+export function describeSkillMod(content: Content, mod: SkillMod): string {
+  return `${describeEmpoweredMod(mod)} (${targetName(content, mod.target)})`;
 }

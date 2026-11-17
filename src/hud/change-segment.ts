@@ -33,7 +33,6 @@ export function createChangeSegment(parent: HTMLElement, changes: SkillChanges, 
       const button: HTMLButtonElement | undefined = buttons[index];
       if (button === undefined) return;
       setClass(button, 'lit', choice.lit);
-      setClass(button, 'off', !choice.live);
       setAttr(button, 'aria-checked', choice.lit ? 'true' : 'false');
     });
   };

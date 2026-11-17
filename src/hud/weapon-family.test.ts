@@ -17,18 +17,21 @@ function family(found: WeaponGroup | null): WeaponGroup {
   return found;
 }
 
-void test('a weapon names its family and the arm whose places work with it', (): void => {
-  assert.equal(familyLine(content, family(baseFamily(content, base('tempest_greatsword')))), 'Heavy weapon · The Banked Fire places work with it');
-  assert.equal(familyLine(content, family(baseFamily(content, base('woodsman_hatchet')))), 'Blade · The Turning Tide places work with it');
-  assert.equal(familyLine(content, family(baseFamily(content, base('keepers_rod')))), 'Staff · The Gathering Storm places work with it');
+void test('a weapon names its family and the arm whose skills are stronger with it', (): void => {
+  assert.equal(familyLine(content, family(baseFamily(content, base('tempest_greatsword')))), 'Heavy weapon · The Banked Fire skills are stronger with it');
+  assert.equal(familyLine(content, family(baseFamily(content, base('woodsman_hatchet')))), 'Blade · The Turning Tide skills are stronger with it');
+  assert.equal(familyLine(content, family(baseFamily(content, base('keepers_rod')))), 'Staff · The Gathering Storm skills are stronger with it');
   assert.equal(baseFamily(content, base('traveller_coat')), null);
   assert.equal(baseFamily(content, null), null);
 });
 
-void test('a place on a weapon arm says which weapons it needs', (): void => {
+void test('a place with a weapon damage line says which weapons it needs, and a skill change place needs none', (): void => {
+  const hands: SkillTreeNodeDef | undefined = content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === 'heavy_hands');
+  assert.ok(hands !== undefined);
+  assert.equal(needLine(family(placeFamily(content, hands))), 'Needs a blade: swords, sabres, knives, dirks and axes');
   const turn: SkillTreeNodeDef | undefined = content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === 'endless_turn');
   assert.ok(turn !== undefined);
-  assert.equal(needLine(family(placeFamily(content, turn))), 'Needs a blade: swords, sabres, knives, dirks and axes');
+  assert.equal(placeFamily(content, turn), null);
   const forked: SkillTreeNodeDef | undefined = content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === 'forked_bolt');
   assert.ok(forked !== undefined && forked.weapon !== null);
   assert.equal(placeFamily(content, forked), null);

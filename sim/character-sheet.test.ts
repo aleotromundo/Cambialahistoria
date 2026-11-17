@@ -15,7 +15,7 @@ const content: Content = loadContent();
 function subject(level: number, allocated: readonly string[], weapon: boolean): SheetSubject {
   const equipped = emptyEquipment();
   if (weapon) equipped.weapon = must(generateItem(content, createRng(1), 1, 1, 'rusted_blade', 'common'), 'blade');
-  return { level, xp: 0, equipped, allocated: [...allocated], skills: resolveSkillBar(content, CLASSIC_BAR, allocated) };
+  return { level, xp: 0, equipped, allocated: [...allocated], skills: resolveSkillBar(content, CLASSIC_BAR, allocated, [], [], weapon ? 'blade' : null) };
 }
 
 function near(actual: number, expected: number): void {

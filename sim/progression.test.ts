@@ -195,7 +195,7 @@ void test('only a held place offers its change, and choices no held place offers
   assert.deepEqual(heldChanges(content, [], { storm_bolt: 'storm_bolt_lance' }), {});
 });
 
-void test('the changes a skill holds come in the order they were taken, and the first the weapon in hand allows is active until another is chosen', (): void => {
+void test('the changes a skill holds come in the order they were taken, and the first is active until another is chosen, whatever weapon is in hand', (): void => {
   const both: readonly string[] = ['storm_lance', 'twice_told_bolt'];
   assert.deepEqual(changesHeld(content, both, 'storm_bolt').map((entry: HeldChange): string => `${entry.becomes}@${entry.place.id}`), ['storm_bolt_lance@storm_lance', 'storm_bolt_echo@twice_told_bolt']);
   assert.deepEqual(changesHeld(content, ['twice_told_bolt'], 'cleave'), []);
@@ -203,9 +203,6 @@ void test('the changes a skill holds come in the order they were taken, and the 
   assert.equal(activeChange(content, both, { storm_bolt: 'storm_bolt_echo' }, 'storm_bolt'), 'storm_bolt_echo');
   assert.equal(activeChange(content, ['twice_told_bolt'], { storm_bolt: 'storm_bolt_lance' }, 'storm_bolt'), 'storm_bolt_echo');
   assert.equal(activeChange(content, [], {}, 'storm_bolt'), null);
-  assert.equal(activeChange(content, both, { storm_bolt: 'storm_bolt_echo' }, 'storm_bolt', 'blade'), 'storm_bolt_lance');
-  assert.equal(activeChange(content, both, { storm_bolt: 'storm_bolt_echo' }, 'storm_bolt', 'staff'), 'storm_bolt_echo');
-  assert.equal(activeChange(content, ['twice_told_bolt'], {}, 'storm_bolt', 'blade'), null);
 });
 
 const GAP_CHECK = { cliff: 0.5, drastic: 0.25 } as const;

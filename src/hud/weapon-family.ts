@@ -1,4 +1,5 @@
-import type { ChartPath, Content, ItemBaseDef, SkillTreeNodeDef, WeaponGroup } from '../../sim/content/types.ts';
+import type { ChartPath, Content, ItemBaseDef, SkillDef, SkillEmpowerment, SkillTreeNodeDef, WeaponGroup } from '../../sim/content/types.ts';
+import { describeEmpoweredMod } from '../../sim/stat-text.ts';
 import { groupOfKind, placeBound, weaponGroup } from '../../sim/weapons.ts';
 import { el, label } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -8,17 +9,37 @@ export function baseFamily(content: Content, base: ItemBaseDef | null): WeaponGr
 }
 
 export function placeFamily(content: Content, node: SkillTreeNodeDef): WeaponGroup | null {
-  return node.weapon === null || !placeBound(content, node) ? null : weaponGroup(content, node.weapon);
+  return node.weapon === null || !placeBound(node) ? null : weaponGroup(content, node.weapon);
 }
 
 export const ANY_WEAPON_LINE: string = 'Works with any weapon';
+
+export function strongerLine(content: Content, empowerment: SkillEmpowerment | null): string | null {
+  if (empowerment === null) return null;
+  const group: WeaponGroup | null = weaponGroup(content, empowerment.weapon);
+  return group === null ? null : `Stronger with ${group.needs}: ${empowerment.mods.map(describeEmpoweredMod).join(', ')}`;
+}
+
+function placeSkills(content: Content, node: SkillTreeNodeDef): SkillDef[] {
+  const ids: readonly string[] = [...(node.unlock === null ? [] : [node.unlock]), ...node.variants.map((variant): string => variant.becomes)];
+  return ids.flatMap((id: string): SkillDef[] => {
+    const skill: SkillDef | undefined = content.skills.get(id);
+    return skill === undefined ? [] : [skill];
+  });
+}
+
+export function placeWeaponLine(content: Content, node: SkillTreeNodeDef): string {
+  const empowerment: SkillEmpowerment | null = placeSkills(content, node).find((skill: SkillDef): boolean => skill.empowered !== null)?.empowered ?? null;
+  const group: WeaponGroup | null = empowerment === null ? null : weaponGroup(content, empowerment.weapon);
+  return group === null ? ANY_WEAPON_LINE : `${ANY_WEAPON_LINE} · stronger with ${group.needs}`;
+}
 
 export function familyArm(content: Content, group: WeaponGroup): string {
   return content.chart.paths.find((path: ChartPath): boolean => path.id === group.path)?.name ?? group.path;
 }
 
 export function familyLine(content: Content, group: WeaponGroup): string {
-  return `${group.name} · ${familyArm(content, group)} places work with it`;
+  return `${group.name} · ${familyArm(content, group)} skills are stronger with it`;
 }
 
 export function needLine(group: WeaponGroup): string {

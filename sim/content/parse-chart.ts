@@ -176,9 +176,8 @@ function weaponProblems(content: Content): string[] {
 }
 
 function skillWeaponProblems(groupIds: ReadonlySet<string>, skill: SkillDef): string[] {
-  const problems: string[] = skill.weapons.filter((group: string): boolean => !groupIds.has(group)).map((group: string): string => `skill ${skill.id} needs unknown weapon group ${group}`);
-  if (!unique(skill.weapons)) problems.push(`skill ${skill.id} names a weapon group twice`);
-  return problems;
+  const weapon: string | undefined = skill.empowered?.weapon;
+  return weapon === undefined || groupIds.has(weapon) ? [] : [`skill ${skill.id} is empowered by unknown weapon group ${weapon}`];
 }
 
 function rivalProblems(nodes: readonly SkillTreeNodeDef[]): string[] {

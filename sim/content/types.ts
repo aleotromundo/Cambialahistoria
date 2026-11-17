@@ -69,6 +69,16 @@ export interface SkillMod {
   readonly value: number;
 }
 
+export interface EmpoweredMod {
+  readonly field: SkillModField;
+  readonly value: number;
+}
+
+export interface SkillEmpowerment {
+  readonly weapon: string;
+  readonly mods: readonly EmpoweredMod[];
+}
+
 
 export const SKILL_CATEGORIES = ['none', 'area', 'single', 'chain', 'charged', 'mark', 'movement', 'defence', 'channel', 'lasting', 'melee', 'root', 'revive'] as const;
 
@@ -142,7 +152,7 @@ export interface SkillDef extends SkillShape, SkillEchoing {
   readonly description: string;
   readonly icon: string;
   readonly animation: string;
-  readonly weapons: readonly string[];
+  readonly empowered: SkillEmpowerment | null;
   readonly manaCost: number;
   readonly cooldown: number;
   readonly windup: number;

@@ -28,10 +28,8 @@ void test('a staff place held with a blade lists its weapon damage lines as off,
   assert.equal(placeOff(content, node('thunder_in_the_bones'), holding('woodsman_hatchet')), null);
 });
 
-void test('a change and its trigger go off with the place, and nothing is off with the right weapon or no weapon place', (): void => {
-  const riptide: PlaceOff = must(placeOff(content, node('riptide'), holding('driftwood_staff')), 'riptide');
-  assert.ok(riptide.lines.includes('Dodge Roll becomes Riptide'));
-  assert.ok(riptide.lines.includes('Rip Current'));
+void test('a skill change and its trigger stay on with any weapon, and nothing is off with the right weapon or no weapon place', (): void => {
+  assert.equal(placeOff(content, node('riptide'), holding('driftwood_staff')), null);
   assert.equal(placeOff(content, node('riptide'), holding('woodsman_hatchet')), null);
   assert.equal(placeOff(content, node('storm_lance'), holding('woodsman_hatchet')), null);
 });

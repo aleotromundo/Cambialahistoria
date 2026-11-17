@@ -1,6 +1,5 @@
 import type { SkillDef } from '../../sim/content/types.ts';
 import { usable } from '../../sim/world/hud.ts';
-import { weaponNeed } from '../../sim/weapons.ts';
 import type { Command, PlayerState } from '../../sim/world/types.ts';
 import { rowPress } from './row-press.ts';
 import { slotAction } from '../settings/bindings.ts';
@@ -12,13 +11,14 @@ import { clearDetails, createSkillPicker, pointerSlotOf, skillDetails } from './
 import { promptText, use } from './prompts.ts';
 import { attachTooltip } from './tooltip.ts';
 import { appendForms, formFamilies } from './skill-forms-view.ts';
-import { familyMark } from './weapon-family.ts';
+import { familyMark, strongerLine } from './weapon-family.ts';
+import { empoweredBy } from '../../sim/weapons.ts';
 import type { MomentumMeter } from './momentum-meter.ts';
 import { createMomentumMeter } from './momentum-meter.ts';
 import { createChangeList } from './change-list.ts';
 import type { ChangeList } from './change-list.ts';
-import { skillChanges, slotNeed } from './skill-changes.ts';
-import type { SkillChanges, SlotNeed } from './skill-changes.ts';
+import { skillChanges } from './skill-changes.ts';
+import type { SkillChanges } from './skill-changes.ts';
 
 const SKILL_BAR = {
   pressMs: 110,
@@ -41,7 +41,6 @@ interface SlotView {
   readonly cost: HTMLElement;
   readonly cooldown: HTMLElement;
   readonly keyNode: HTMLElement;
-  readonly needNode: HTMLElement;
   readonly badge: HTMLElement;
   readonly families: HTMLElement;
   key: string | null;
@@ -95,10 +94,6 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
   const changesOf = (index: number): SkillChanges | null => {
     const base: string | null = baseOf(index);
     return base === null ? null : skillChanges(context.api.world.content, context.api.world.player, base);
-  };
-  const needOf = (index: number, skill: SkillDef): SlotNeed | null => {
-    const base: string | null = baseOf(index);
-    return base === null ? null : slotNeed(context.api.world.content, context.api.world.player, base, skill.weapons);
   };
   const openChanges = (index: number, root: HTMLElement): boolean => {
     const changes: SkillChanges | null = changesOf(index);
@@ -166,15 +161,14 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
     const cooldown: HTMLDivElement = el('div', 'slot-cd', root);
     const keyNode: HTMLDivElement = el('div', 'slot-key', root);
     const cost: HTMLDivElement = el('div', 'slot-cost', root);
-    const needNode: HTMLDivElement = el('div', 'slot-need', root);
     const badge: HTMLDivElement = el('div', 'slot-changes', root);
     const families: HTMLDivElement = el('div', 'slot-families', root);
-    const view: SlotView = { root, icon, cost, cooldown, keyNode, needNode, badge, families, familyKey: '', key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
+    const view: SlotView = { root, icon, cost, cooldown, keyNode, badge, families, familyKey: '', key: null, skill: null, empty: null, iconId: '', angle: -1, cooling: null, dim: null };
     paintKey(view, keyOf(index));
     attachTooltip(context.tooltip, root, (): HTMLElement | null => {
       if (picker.slot !== null) return null;
       if (view.skill === null) return emptyTooltip(context, index, keyOf(index));
-      const details: HTMLElement = skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null, needOf(index, view.skill)?.line ?? null);
+      const details: HTMLElement = skillDetails(view.skill, `Skill · ${keyOf(index)} · click to change`, null, strongerLine(context.api.world.content, empoweredBy(view.skill, context.api.world.content.skills.get(baseOf(index) ?? '') ?? view.skill)));
       appendForms(details, context.api.world.content, context.api.world.content.skills.get(baseOf(index) ?? '') ?? null, context.api.world.player.wielding);
       return details;
     });
@@ -232,9 +226,6 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
         const held: SkillDef | null = player.skills[index] ?? null;
         const skill: SkillDef | null = held !== null && usable(player, held) ? held : null;
         if (view.skill !== skill || view.empty === null) applySkill(view, skill);
-        const need: SlotNeed | null = skill === null ? null : needOf(index, skill);
-        if (need !== null) setText(view.needNode, need.tag, true);
-        setClass(view.root, 'needs', need !== null);
         paintFamilies(view, skill === null ? null : baseOf(index), player.wielding);
         const count: number = skill === null ? 0 : (changesOf(index)?.choices.length ?? 0);
         if (count > 0) setText(view.badge, String(count), true);
@@ -252,7 +243,7 @@ export function createSkillBar(parent: HTMLElement, context: HudContext, track: 
           view.cooling = cooling;
           view.root.classList.toggle('cooling', cooling);
         }
-        const dim: boolean = player.mana < skill.manaCost || weaponNeed(context.api.world.content, skill.weapons, player.wielding) !== null;
+        const dim: boolean = player.mana < skill.manaCost;
         if (dim !== view.dim) {
           view.dim = dim;
           view.root.classList.toggle('dim', dim);

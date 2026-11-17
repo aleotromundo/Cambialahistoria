@@ -22,7 +22,7 @@ import { rig } from './parse-rigs.ts';
 import { momentProblems } from './moments.ts';
 import { sceneProblems } from './parse-scene.ts';
 import { chartDef, chartProblems, treeNode } from './parse-chart.ts';
-import { statMod } from './parse-mods.ts';
+import { skillEmpowerment, statMod } from './parse-mods.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
 import { surface } from './parse-surface.ts';
@@ -158,7 +158,7 @@ function skill(value: unknown, where: string): SkillDef {
     description: text(source, 'description', where),
     icon: text(source, 'icon', where),
     animation: text(source, 'animation', where),
-    weapons: source['weapons'] === undefined ? [] : textList(source, 'weapons', where),
+    empowered: skillEmpowerment(source['empowered'], `${where}.empowered`),
     manaCost: numeric(source, 'manaCost', where),
     cooldown: numeric(source, 'cooldown', where),
     windup: numeric(source, 'windup', where),

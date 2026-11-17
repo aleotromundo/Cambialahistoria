@@ -369,8 +369,8 @@ void test('Echoes makes every main attack happen twice with a weaker echo, keeps
 void test('area skill places leave Held Breath alone, and only its own places stretch it', (): void => {
   const areaPlaces: readonly string[] = ['echo_forkline', 'first_echo', 'echo_1', 'echo_15', 'echo_3', 'echo_7', 'echo_9', 'echo_13'];
   const base: SkillDef = skillOf('held_breath');
-  assert.deepEqual(resolveSkill(content, base, areaPlaces).delivery, base.delivery);
-  const own: SkillDef = resolveSkill(content, base, [...areaPlaces, 'between_heartbeats']);
+  assert.deepEqual(resolveSkill(content, base, areaPlaces, [], [], 'blade').delivery, base.delivery);
+  const own: SkillDef = resolveSkill(content, base, [...areaPlaces, 'between_heartbeats'], [], [], 'blade');
   assert.ok(own.delivery.type === 'area' && base.delivery.type === 'area');
   assert.ok(own.delivery.duration > base.delivery.duration);
   assert.ok(own.delivery.radius > base.delivery.radius);

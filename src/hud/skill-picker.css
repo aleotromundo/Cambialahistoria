@@ -212,6 +212,6 @@
   color: var(--ember);
 }
 
-.tip-line.need {
-  color: #d98572;
+.tip-line.stronger {
+  color: #a9d6ff;
 }

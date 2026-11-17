@@ -11,18 +11,16 @@ function lines(skill: string): string[] {
   return skillForms(content, skill).map((forms: SkillForms): string => `${forms.family ?? 'any'}: ${formsText(content, forms)}`);
 }
 
-void test('Cleave turns with each weapon family: the Millwheel only with a blade, Quarrel with a crossbow, Spell Strike with a staff', (): void => {
+void test('Cleave turns into the tree\'s forms with any weapon, into Quarrel with a crossbow and Spell Strike with a staff', (): void => {
   assert.deepEqual(lines('cleave'), [
-    'any: Whirling Cleave',
-    'blade: Whirling Cleave, then Millwheel',
-    'heavy: Whirling Cleave or Heaving Cleave',
+    'any: Whirling Cleave or Heaving Cleave, then Millwheel',
     'crossbow: Quarrel, then Fanned Quarrel or Heavy Quarrel',
     'staff: Spell Strike',
   ]);
 });
 
 void test('a family is listed only where its forms differ from what any weapon gives', (): void => {
-  assert.deepEqual(lines('storm_bolt'), ['any: Storm Lance', 'staff: Storm Lance or Twice-Told Bolt']);
-  assert.deepEqual(lines('thunderhead'), ['blade: Thunder Leap']);
+  assert.deepEqual(lines('storm_bolt'), ['any: Storm Lance or Twice-Told Bolt']);
+  assert.deepEqual(lines('thunderhead'), ['any: Thunder Leap']);
   assert.deepEqual(lines('fire_burst'), []);
 });

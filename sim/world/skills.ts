@@ -14,7 +14,6 @@ import { clearSpot, passesThrough, stepDash } from './dash.ts';
 import { refreshPlayer } from './character.ts';
 import { firePowers } from '../powers.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
-import { skillAllowed } from '../weapons.ts';
 import { widenedSkill } from '../widen.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
@@ -33,7 +32,6 @@ export const SKILLS = {
 } as const;
 
 export function blockedReason(actor: Actor, skill: SkillDef): NoticeReason | null {
-  if (actor.kind === 'player' && !skillAllowed(skill, actor.wielding)) return 'wrong_weapon';
   if ((actor.cooldowns[skill.id] ?? 0) > 0) return 'on_cooldown';
   if (actor.kind === 'player' && actor.mana < skill.manaCost) return 'no_mana';
   return null;

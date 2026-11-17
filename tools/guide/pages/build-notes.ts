@@ -120,7 +120,7 @@ function whirlwind(data: GuideData): BuildNotes {
     mainSkill: wheel,
     forWho: 'For players who want to spin through a pack, drag it under and drink from the fight without stopping.',
     plays: [
-      `The Maelstrom walks ${pathName(data, 'blade')} with ${groupNeeds(data, 'blade')} in your hands: the spin and almost every place that feeds it answer only while you hold one. At level ${whirl} ${name(data, 'whirling_cleave')} turns ${skillName(data, 'cleave')} into a full turn that strikes everything around you. At level ${endless} ${name(data, 'endless_turn')} turns that into the ${wheel}: hold it and you keep turning while you run.`,
+      `The Maelstrom walks ${pathName(data, 'blade')} with ${groupNeeds(data, 'blade')} in your hands: the spin and the skills around it are stronger while you hold one. At level ${whirl} ${name(data, 'whirling_cleave')} turns ${skillName(data, 'cleave')} into a full turn that strikes everything around you. At level ${endless} ${name(data, 'endless_turn')} turns that into the ${wheel}: hold it and you keep turning while you run.`,
       `Every enemy the ${wheel} strikes builds momentum: you turn faster, reach wider and nothing knocks you off your feet. ${name(data, 'millstone')}, right after, lets the momentum climb higher and more than doubles the share of its damage that comes back as life, so spinning through a pack keeps you standing.`,
       `At level ${undertow} you learn ${skillName(data, 'downdraught')}: a whirlpool where you aim that drags the pack together, so one turn strikes all of it.`,
       `At level ${riptide} your roll becomes ${skillName(data, 'dodge_roll_riptide')}: a longer roll that leaves a rip current where you land and drags the pack in after you. At level ${race} you learn ${skillName(data, 'millrace')}: let go of the ${wheel} and throw its momentum out as one wave that crashes through the pack, harder, wider and farther the more you held, and stuns everything it strikes for longer the more you held. Throw it into the pack, then spin through it while it stands still. From then on every four enemies the ${wheel} strikes put a charge back in each flask.`,
@@ -262,7 +262,7 @@ function echoer(data: GuideData): BuildNotes {
     lean: [
       'Your main attack is the button you hold. Every echo hits again for free, and every hit can throw a Forkline, so a crowd is where the build is strongest.',
       `Brand the biggest enemy in a pack with ${skillName(data, 'static_brand')}, then strike it: the burst catches the rest.`,
-      `This route's last places come from ${pathName(data, 'storm')}, for ${fork}'s lightning, and they answer only with ${groupNeeds(data, 'staff')}. Holding another weapon, take more of the Echo's own places instead.`,
+      `This route's last places come from ${pathName(data, 'storm')}, for ${fork}'s lightning. They work with any weapon; their weapon damage lines answer only to ${groupNeeds(data, 'staff')}.`,
     ],
     lookFor: [
       'A better weapon of the kind you already hold. The echo copies its damage.',
@@ -273,7 +273,7 @@ function echoer(data: GuideData): BuildNotes {
       affixLine(data, 'vital'),
     ],
     avoid: [
-      'Changing weapons for every fight. The Echo works with any of them, but the rest of the Skill Tree does not: the places you crossed into answer only with their own weapon.',
+      'Changing weapons for every fight. Every skill works with any weapon, but each arm\'s skills are stronger with their own, and its weapon damage lines answer only to it.',
       `Throwing ${fork} at a single enemy. Wait a moment for the pack to come.`,
     ],
     legendaries: [

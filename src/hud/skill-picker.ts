@@ -2,8 +2,8 @@ import type { SkillUnlock } from '../../sim/content/shape-types.ts';
 import type { SkillDef } from '../../sim/content/types.ts';
 import type { PlayerState } from '../../sim/world/types.ts';
 import { everySkill } from '../../sim/skill-book.ts';
-import { weaponNeed } from '../../sim/weapons.ts';
 import { appendForms, pressLine } from './skill-forms-view.ts';
+import { strongerLine } from './weapon-family.ts';
 import type { HudContext } from './context.ts';
 import { el, label, setClass, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -34,7 +34,7 @@ interface Choice {
   state: string;
 }
 
-export function skillDetails(skill: SkillDef, sub: string, unlock: number | null, need: string | null): HTMLElement {
+export function skillDetails(skill: SkillDef, sub: string, unlock: number | null, stronger: string | null): HTMLElement {
   const root: HTMLDivElement = el('div', 'tip', null);
   label('tip-title', skill.name, root);
   label('tip-sub', sub, root);
@@ -45,7 +45,7 @@ export function skillDetails(skill: SkillDef, sub: string, unlock: number | null
   if (skill.manaCost > 0) label('tip-line cost', skill.press?.type === 'channel' ? `Mana cost: ${skill.manaCost} per pulse` : `Mana cost: ${skill.manaCost}`, root);
   if (skill.cooldown > 0) label('tip-line', `Cooldown: ${skill.cooldown.toFixed(1)}s`, root);
   if (unlock !== null) label('tip-line locked', `Learned at level ${unlock}`, root);
-  if (need !== null) label('tip-line need', need, root);
+  if (stronger !== null) label('tip-line stronger', stronger, root);
   return root;
 }
 
@@ -89,7 +89,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
     label('skill-choice-level', `${entry.level}`, root);
     const choice: Choice = { root, entry, skill, state: '' };
     attachTooltip(context.tooltip, root, (): HTMLElement => {
-      const details: HTMLElement = skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, weaponNeed(content, skill.weapons, context.api.world.player.wielding));
+      const details: HTMLElement = skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, strongerLine(content, skill.empowered));
       appendForms(details, content, skill, context.api.world.player.wielding);
       return details;
     });

@@ -1,8 +1,8 @@
-import type { ChartGroup, Content, DamageType, Delivery, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, DamageType, Delivery, EmpoweredMod, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
-import { ANY_WEAPON, heldGroup, heldPlace } from './weapons.ts';
+import { ANY_WEAPON, empoweredBy, empoweredMods, heldGroup, heldPlace } from './weapons.ts';
 import { widerWave } from './widen.ts';
 
 export const ARMOUR_HALF_POINT: number = 100;
@@ -24,7 +24,7 @@ export function applyMods(base: StatBlock, mods: readonly StatMod[]): StatBlock 
 export function allocatedNodes(content: Content, allocated: readonly string[], held: string | null): SkillTreeNodeDef[] {
   const taken: ReadonlySet<string> = new Set<string>(allocated);
   const placed: SkillTreeNodeDef[] = [];
-  for (const node of content.skillTree) if (taken.has(node.id)) placed.push(heldPlace(content, node, held));
+  for (const node of content.skillTree) if (taken.has(node.id)) placed.push(heldPlace(node, held));
   return placed;
 }
 
@@ -196,7 +196,9 @@ function pulled(skill: SkillDef, mods: readonly SkillMod[]): number {
 export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
   const placed: readonly SkillTreeNodeDef[] = allocatedNodes(content, allocated, held);
   const { skill, through }: ChosenSkill = chainFrom(content, base, placed, allocated, powers, worn, chosen);
+  const empowered: readonly SkillMod[] = empoweredMods(empoweredBy(skill, base), held).map((mod: EmpoweredMod): SkillMod => ({ target: { type: 'skill', skill: skill.id }, field: mod.field, value: mod.value }));
   const mods: SkillMod[] = [...placed.flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
+  mods.push(...empowered);
   if (mods.length === 0) return skill;
   const area: number = scaleOf(mods, 'areaPercent');
   const delivery: Delivery = scaledDelivery(skill.delivery, {

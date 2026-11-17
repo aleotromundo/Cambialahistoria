@@ -51,10 +51,9 @@ void test('a place and a skill name weapon groups the chart knows, and every wea
   assert.deepEqual(chartProblems(withNode({ weapon: 'staff' })), []);
   const cleave = must(content.skills.get('cleave'), 'cleave');
   const skills = new Map(content.skills);
-  skills.set('cleave', { ...cleave, weapons: ['wand', 'blade', 'blade'] });
+  skills.set('cleave', { ...cleave, empowered: { weapon: 'wand', mods: [{ field: 'damagePercent', value: 0.25 }] } });
   const lines: string[] = chartProblems({ ...content, skills });
-  assert.ok(lines.includes('skill cleave needs unknown weapon group wand'));
-  assert.ok(lines.includes('skill cleave names a weapon group twice'));
+  assert.ok(lines.includes('skill cleave is empowered by unknown weapon group wand'));
   const loose = { ...content, chart: { ...content.chart, weaponGroups: [...content.chart.weaponGroups.filter((group): boolean => group.id !== 'staff'), { id: 'rods', name: 'Rods', kinds: ['staff' as const, 'blade' as const], starter: 'driftwood_staff', needs: 'a rod', icon: 'staff', holds: 'rods', path: 'storm' }] } };
   assert.ok(chartProblems(loose).includes('weapon kind blade is in more than one weapon group'));
   const missing = { ...content, chart: { ...content.chart, weaponGroups: content.chart.weaponGroups.filter((group): boolean => group.id !== 'staff') } };

@@ -1,4 +1,4 @@
-import { el, label, setAttr, setClass } from './dom.ts';
+import { el, label, setAttr } from './dom.ts';
 import type { ChangeChoice, SkillChanges } from './skill-changes.ts';
 
 export interface ChangeList {
@@ -30,7 +30,6 @@ export function createChangeList(parent: HTMLElement, choose: (skill: string, be
       const row: HTMLDivElement | undefined = rows[index];
       if (row === undefined) return;
       setAttr(row, 'aria-selected', choice.lit ? 'true' : 'false');
-      setClass(row, 'off', !choice.live);
     });
   };
 

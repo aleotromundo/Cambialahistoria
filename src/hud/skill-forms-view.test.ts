@@ -21,15 +21,13 @@ void test('a held skill says how to hold it, in its own words when the data give
 });
 
 void test('Cleave lists what each weapon family makes of it and marks the one in hand', (): void => {
-  const rows = formRows(content, 'cleave', 'blade');
+  const rows = formRows(content, 'cleave', 'crossbow');
   assert.deepEqual(rows.map((row): string => row.text), [
-    'Any weapon: Whirling Cleave',
-    'Blade: Whirling Cleave, then Millwheel',
-    'Heavy weapon: Whirling Cleave or Heaving Cleave',
+    'Any weapon: Whirling Cleave or Heaving Cleave, then Millwheel',
     'Crossbow: Quarrel, then Fanned Quarrel or Heavy Quarrel',
     'Staff: Spell Strike',
   ]);
-  assert.deepEqual(rows.filter((row): boolean => row.held).map((row): string | undefined => row.family?.id), ['blade']);
-  assert.deepEqual(formFamilies(content, 'cleave').map((group): string => group.id), ['blade', 'heavy', 'crossbow', 'staff']);
+  assert.deepEqual(rows.filter((row): boolean => row.held).map((row): string | undefined => row.family?.id), ['crossbow']);
+  assert.deepEqual(formFamilies(content, 'cleave').map((group): string => group.id), ['crossbow', 'staff']);
   assert.deepEqual(formFamilies(content, 'fire_burst'), []);
 });

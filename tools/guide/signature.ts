@@ -96,7 +96,7 @@ export function signatureSection(data: GuideData, id: string): string {
   const weapons: string =
     facts.family === null
       ? `Every place on ${arm} works with any weapon, so wear whatever hits hardest.`
-      : `The places on ${arm} that name a weapon work only with ${esc(facts.family.needs)} in your hands: ${weaponNames(droppedWeapons(data, (base: ItemBaseDef): boolean => base.weaponKind !== null && (facts.family?.kinds.includes(base.weaponKind) ?? false)))}. With any other weapon they read as inactive on the tree and do nothing.`;
+      : `Every skill on ${arm} works with any weapon and is stronger with ${esc(facts.family.needs)} in your hands: ${weaponNames(droppedWeapons(data, (base: ItemBaseDef): boolean => base.weaponKind !== null && (facts.family?.kinds.includes(base.weaponKind) ?? false)))}. Its weapon damage lines answer only to that weapon.`;
   const names: string[] = facts.route.map((step: string): string => esc(place(data, step).name));
   const wear: string = facts.family === null ? 'any weapon' : `${esc(facts.family.needs)} worn`;
   const steps: string = `<ol class="signature-route">${names.map((name: string): string => `<li>${name}</li>`).join('')}</ol>`;

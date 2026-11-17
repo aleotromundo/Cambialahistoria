@@ -19,7 +19,7 @@ import { kindWord, line, reachable } from './chart-parts.ts';
 import { createChangeSegment } from './change-segment.ts';
 import type { ChangeSegment } from './change-segment.ts';
 import { placeOff } from './place-off.ts';
-import { ANY_WEAPON_LINE, familyMark, familyRow, needLine, pathFamily, placeFamily } from './weapon-family.ts';
+import { familyMark, familyRow, needLine, pathFamily, placeFamily, placeWeaponLine } from './weapon-family.ts';
 import type { PlaceOff } from './place-off.ts';
 import { changesShape, placeChanges } from './skill-changes.ts';
 import type { SkillChanges } from './skill-changes.ts';
@@ -203,7 +203,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     label('chart-card-path', path === undefined ? node.kind : `${path.name} · ${kindWord(node)}`, body);
     const family: WeaponGroup | null = placeFamily(content, node);
     if (family !== null) familyRow(family, off === null ? 'chart-card-family' : 'chart-card-family unheld', needLine(family), body);
-    else if (node.weapon !== null) label('chart-card-family', ANY_WEAPON_LINE, body);
+    else if (node.weapon !== null) label('chart-card-family', placeWeaponLine(content, node), body);
     label('tree-tip-name', node.name, body);
     if (ability !== null) label('chart-card-tags', ability.tags, body);
     label('tree-tip-effect', node.description, body);

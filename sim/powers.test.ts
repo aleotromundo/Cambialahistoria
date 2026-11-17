@@ -202,19 +202,17 @@ void test('Rainmaker: a Squall also breaks over the caster, and lasts longer', (
   assert.equal(world.echoes.length, 1);
 });
 
-void test('an item power does not cast a skill that needs another weapon than the one in hand', (): void => {
-  const skills: Map<string, SkillDef> = new Map<string, SkillDef>(content.skills);
-  skills.set('forkline', { ...skill('forkline'), weapons: ['staff'] });
-  const world: World = arena(1, { ...content, skills });
+void test('an item power casts its skill whatever weapon is in hand', (): void => {
+  const world: World = arena(1, content);
   wear(world, 'wirethread_gloves');
   world.player.wielding = 'blade';
   const echo: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
   firePowers(world, { on: 'kill', skill: skill('cleave'), target: echo, at: echo.pos });
-  assert.deepEqual(casts(world), []);
+  assert.deepEqual(casts(world), ['forkline']);
   world.player.wielding = 'staff';
   const again: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x - 2, z: ARENA_CENTRE.z });
   firePowers(world, { on: 'kill', skill: skill('cleave'), target: again, at: again.pos });
-  assert.deepEqual(casts(world), ['forkline']);
+  assert.deepEqual(casts(world), ['forkline', 'forkline']);
 });
 
 const VEIL: SkillTreeNodeDef = {
@@ -251,7 +249,7 @@ function pierceOf(found: SkillDef): number {
 }
 
 void test('a tree place with a trigger empowers a skill for a while after a roll, and only a motion skill sets it off', (): void => {
-  const world: World = veiled('staff');
+  const world: World = veiled('blade');
   const plain: SkillDef = veiledBolt(world);
   assert.ok(!firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
   assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
@@ -265,10 +263,12 @@ void test('a tree place with a trigger empowers a skill for a while after a roll
   assert.deepEqual(veiledBolt(world).damage, plain.damage);
 });
 
-void test('a tree place off its weapon sets off no trigger', (): void => {
-  const world: World = veiled('blade');
-  assert.ok(!firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
-  assert.deepEqual(world.player.powers.empowers, []);
+void test('a tree place sets off its trigger with any weapon in hand', (): void => {
+  for (const held of ['staff', 'crossbow', 'heavy']) {
+    const world: World = veiled(held);
+    assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }), held);
+    assert.equal(world.player.powers.empowers.length, 1, held);
+  }
 });
 
 const STILL: SkillTreeNodeDef = {
@@ -355,11 +355,11 @@ void test('with a blade in hand the Millwheel feeds the flasks through Millrace,
   assert.deepEqual(current.origin, start);
 });
 
-void test('Millrace feeds no flask with a crossbow in hand', (): void => {
+void test('Millrace feeds the flasks with a crossbow in hand too', (): void => {
   const world: World = maelstrom('crossbow');
   const wheel: SkillDef = resolvedIn(maelstrom('blade'), 'cleave');
-  for (let struck: number = 0; struck < 8; struck += 1) firePowers(world, { on: 'hit', skill: wheel, target: null, at: world.player.pos });
-  assert.ok(world.player.flasks.every((flask): boolean => flask.charges === 0));
+  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, { on: 'hit', skill: wheel, target: null, at: world.player.pos });
+  assert.ok(world.player.flasks.every((flask): boolean => flask.charges === 1));
 });
 
 const EMBERWARDEN: readonly string[] = ['stone_thunderclap', 'tempered_body', 'stone_1', 'bedrock', 'shoulder_through', 'stone_4', 'gathered_clap'];
@@ -384,12 +384,12 @@ void test('with a heavy weapon in hand Shoulder Through flares where the charge 
   assert.ok(clap.burn !== null);
 });
 
-void test('with a blade in hand the heavy places give no Shoulder Through', (): void => {
+void test('with a blade in hand the heavy places still give Shoulder Through', (): void => {
   const world: World = emberwarden('blade');
   const roll: SkillDef = resolvedIn(world, 'dodge_roll');
-  assert.equal(roll.form, 'dodge_roll');
+  assert.equal(roll.form, 'dodge_roll_shoulder');
   firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
-  assert.equal(world.echoes.length, 0);
+  assert.ok(world.echoes.some((echo: EchoState): boolean => echo.skill.id === 'shoulder_flare'));
 });
 
 const FORKED_ROUTE: readonly string[] = ['echo_forkline', 'first_echo', 'echo_1', 'echo_15', 'echo_4', 'twice_swung', 'echo_5', 'echo_6', 'forked'];
@@ -491,7 +491,7 @@ void test('the Nightjar Gloves fan every Quarrel into three bolts for two second
   assert.ok(fan.delivery.type === 'projectile' && quarrel.delivery.type === 'projectile');
   assert.equal(fan.delivery.count, quarrel.delivery.count + 2);
   assert.equal(fan.delivery.spreadDegrees, quarrel.delivery.spreadDegrees + 14);
-  assert.equal(resolveSkill(content, skill('storm_bolt'), [], heldPowers(content, world.player.equipped, world.player.powers)), skill('storm_bolt'));
+  assert.equal(resolveSkill(content, skill('storm_bolt'), [], heldPowers(content, world.player.equipped, world.player.powers), [], null), skill('storm_bolt'));
   stepPowerState(world.player.powers, 2.1);
   assert.equal(fanned(), quarrel);
 });

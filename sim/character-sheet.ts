@@ -84,7 +84,7 @@ function treeBonuses(content: Content, allocated: readonly string[], held: strin
   const bonuses: SheetBonus[] = [];
   for (const place of content.skillTree) {
     if (!allocated.includes(place.id)) continue;
-    const node: SkillTreeNodeDef = heldPlace(content, place, held);
+    const node: SkillTreeNodeDef = heldPlace(place, held);
     const parts: string[] = [...node.statMods.map(describeMod), ...node.skillMods.map((mod: SkillMod): string => describeSkillMod(content, mod))];
     bonuses.push({ source: 'tree', text: parts.length === 0 ? node.name : `${node.name}: ${parts.join(', ')}` });
   }

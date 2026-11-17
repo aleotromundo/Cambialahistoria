@@ -6,7 +6,6 @@ import type { ReadonlyVec2 } from './math.ts';
 import { directionOf } from './math.ts';
 import { allocatedNodes, inGroup, resolveSkill } from './stats.ts';
 import type { Actor, BuffState, EmpowerState, Equipment, ItemInstance, PlayerState, PowerState, World } from './world/types.ts';
-import { skillAllowed } from './weapons.ts';
 import { addFlaskCharges } from './world/flask-charges.ts';
 
 export interface WornPower {
@@ -92,7 +91,6 @@ function cast(world: World, effect: CastEffect, at: ReadonlyVec2): void {
   const def: SkillDef | undefined = world.content.skills.get(effect.skill);
   if (def === undefined) return;
   const skill: SkillDef = resolveSkill(world.content, def, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes);
-  if (!skillAllowed(skill, player.wielding)) return;
   const origin: ReadonlyVec2 = effect.at === 'caster' ? player.pos : at;
   const facing: ReadonlyVec2 = directionOf(player.facing);
   world.echoes.push({

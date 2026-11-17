@@ -13,8 +13,8 @@ function wornChanges(content: Content, group: WeaponGroup): readonly SkillVarian
   return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.weaponKind !== null && group.kinds.includes(base.weaponKind)).flatMap((base: ItemBaseDef): readonly SkillVariant[] => base.variants);
 }
 
-function treeChanges(content: Content, family: string | null): readonly SkillVariant[] {
-  return content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.weapon === null || node.weapon === family).flatMap((node: SkillTreeNodeDef): readonly SkillVariant[] => node.variants);
+function treeChanges(content: Content): readonly SkillVariant[] {
+  return content.skillTree.flatMap((node: SkillTreeNodeDef): readonly SkillVariant[] => node.variants);
 }
 
 function stepsFrom(skill: string, worn: readonly SkillVariant[], tree: readonly SkillVariant[]): string[][] {
@@ -46,11 +46,10 @@ function sameSteps(a: readonly (readonly string[])[], b: readonly (readonly stri
 }
 
 export function skillForms(content: Content, skill: string): SkillForms[] {
-  const loose: string[][] = stepsFrom(skill, [], treeChanges(content, null));
-  const weapons: readonly string[] = content.skills.get(skill)?.weapons ?? [];
+  const tree: readonly SkillVariant[] = treeChanges(content);
+  const loose: string[][] = stepsFrom(skill, [], tree);
   const families: SkillForms[] = content.chart.weaponGroups
-    .filter((group: WeaponGroup): boolean => weapons.length === 0 || weapons.includes(group.id))
-    .map((group: WeaponGroup): SkillForms => ({ family: group.id, steps: stepsFrom(skill, wornChanges(content, group), treeChanges(content, group.id)) }))
+    .map((group: WeaponGroup): SkillForms => ({ family: group.id, steps: stepsFrom(skill, wornChanges(content, group), tree) }))
     .filter((entry: SkillForms): boolean => entry.steps.length > 0 && !sameSteps(entry.steps, loose));
   return loose.length === 0 ? families : [{ family: null, steps: loose }, ...families];
 }

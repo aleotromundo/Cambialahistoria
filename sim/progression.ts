@@ -1,5 +1,4 @@
 import type { Content, SkillTreeNodeDef, SkillVariant, XpAfter, XpCurve, XpGap, XpReduction } from './content/types.ts';
-import { ANY_WEAPON, placeLive } from './weapons.ts';
 
 export interface XpResult {
   readonly level: number;
@@ -140,8 +139,8 @@ export function changesHeld(content: Content, allocated: readonly string[], skil
   return held;
 }
 
-export function activeChange(content: Content, allocated: readonly string[], changes: Readonly<Record<string, string>>, skill: string, held: string | null = ANY_WEAPON): string | null {
-  const live: readonly HeldChange[] = changesHeld(content, allocated, skill).filter((entry: HeldChange): boolean => placeLive(entry.place, held));
+export function activeChange(content: Content, allocated: readonly string[], changes: Readonly<Record<string, string>>, skill: string): string | null {
+  const live: readonly HeldChange[] = changesHeld(content, allocated, skill);
   const chosen: string | undefined = changes[skill];
   return live.find((entry: HeldChange): boolean => entry.becomes === chosen)?.becomes ?? live[0]?.becomes ?? null;
 }

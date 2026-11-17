@@ -1,37 +1,3 @@
-.slot-need {
-  position: absolute;
-  left: 3px;
-  right: 3px;
-  bottom: 3px;
-  padding: 1px 0;
-  border-radius: 2px;
-  font-size: 8.5px;
-  font-weight: 700;
-  line-height: 10px;
-  letter-spacing: 0.08em;
-  text-align: center;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  color: #a9d6ff;
-  background: rgba(6, 9, 14, 0.82);
-  opacity: 0;
-  transform: translateY(3px);
-  transition:
-    opacity var(--spring-smooth-ms) var(--spring-smooth),
-    transform var(--spring-bouncy-ms) var(--spring-bouncy);
-  pointer-events: none;
-}
-
-.slot.needs .slot-need {
-  opacity: 1;
-  transform: none;
-}
-
-.slot.needs .slot-cost {
-  opacity: 0;
-}
-
 .slot-cost {
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
 }
@@ -89,10 +55,6 @@
 .change-list .dropdown-option[aria-selected='true'] {
   background: rgba(127, 212, 255, 0.12);
   color: #a9e2ff;
-}
-
-.change-list .dropdown-option.off {
-  opacity: 0.45;
 }
 
 .change-list-dot {
@@ -201,10 +163,6 @@
   color: #a9e2ff;
 }
 
-.change-seg-option.off {
-  opacity: 0.45;
-}
-
 .family-mark {
   display: inline-flex;
   flex: none;
@@ -290,10 +248,6 @@
   gap: 1px;
   pointer-events: none;
   transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-.slot.needs .slot-families {
-  opacity: 0;
 }
 
 .slot-family {
