@@ -1,4 +1,5 @@
-import type { AffixDef, Content, ItemBaseDef, ItemSlot, ItemStat, RarityDef, StatId, StatMod } from './content/types.ts';
+import type { AffixDef, Content, DropLean, ItemBaseDef, ItemSlot, ItemStat, RarityDef, StatId, StatMod } from './content/types.ts';
+import { leanOf } from './content/lean-rules.ts';
 import { ITEM_STATS } from './content/types.ts';
 import { linesFor } from './content/item-rules.ts';
 import type { Rng } from './rng.ts';
@@ -107,8 +108,30 @@ function droppable(level: number, powered: boolean): (base: ItemBaseDef) => bool
   return (base: ItemBaseDef): boolean => base.minLevel <= level && base.dropWeight > 0 && (base.power !== null) === powered;
 }
 
-function pickBase(rng: Rng, bases: readonly ItemBaseDef[]): ItemBaseDef | null {
-  return pickWeighted(rng, bases.map((base: ItemBaseDef): { weight: number; base: ItemBaseDef } => ({ weight: base.dropWeight, base })))?.base ?? null;
+function favoured(content: Content, base: ItemBaseDef, lean: DropLean): boolean {
+  if (base.power !== null && lean.families.includes(base.power.family)) return true;
+  if (base.slot !== null && lean.slots.includes(base.slot)) return true;
+  const kind: string | null = base.weaponKind;
+  return kind !== null && content.chart.weaponGroups.some((group): boolean => lean.weapons.includes(group.id) && group.kinds.some((held: string): boolean => held === kind));
+}
+
+export function leanedWeight(content: Content, base: ItemBaseDef, lean: DropLean | null): number {
+  return lean !== null && favoured(content, base, lean) ? base.dropWeight * lean.share : base.dropWeight;
+}
+
+function pickBase(content: Content, rng: Rng, bases: readonly ItemBaseDef[], lean: DropLean | null): ItemBaseDef | null {
+  return pickWeighted(rng, bases.map((base: ItemBaseDef): { weight: number; base: ItemBaseDef } => ({ weight: leanedWeight(content, base, lean), base })))?.base ?? null;
+}
+
+export function leanedRarities(rarities: readonly RarityDef[], lean: DropLean | null): readonly RarityDef[] {
+  if (lean === null || lean.legendary === 1) return rarities;
+  const legendary: number = lean.legendary;
+  return rarities.map((rarity: RarityDef): RarityDef => (rarity.powers ? { ...rarity, weight: rarity.weight * legendary } : rarity));
+}
+
+function pickRarity(content: Content, rng: Rng, from: readonly RarityDef[], lean: DropLean | null): RarityDef | null {
+  const picked: RarityDef | null = pickWeighted(rng, leanedRarities(from, lean));
+  return picked === null ? null : (content.rarities.find((rarity: RarityDef): boolean => rarity.id === picked.id) ?? null);
 }
 
 function plainRarity(content: Content): RarityDef | null {
@@ -124,13 +147,13 @@ interface Pick {
   readonly rarity: RarityDef;
 }
 
-function settle(content: Content, rng: Rng, level: number, base: ItemBaseDef, rarity: RarityDef, forced: boolean): Pick | null {
+function settle(content: Content, rng: Rng, level: number, base: ItemBaseDef, rarity: RarityDef, forced: boolean, lean: DropLean | null): Pick | null {
   if (base.power !== null) {
     const powered: RarityDef | null = poweredRarity(content);
     return powered === null ? null : { base, rarity: powered };
   }
   if (!rarity.powers) return { base, rarity };
-  const named: ItemBaseDef | null = forced ? null : pickBase(rng, [...content.itemBases.values()].filter(droppable(level, true)));
+  const named: ItemBaseDef | null = forced ? null : pickBase(content, rng, [...content.itemBases.values()].filter(droppable(level, true)), lean);
   if (named !== null) return { base: named, rarity };
   const plain: RarityDef | null = plainRarity(content);
   return plain === null ? null : { base, rarity: plain };
@@ -141,17 +164,31 @@ export function raritiesFrom(content: Content, floor: string): readonly RarityDe
   return start < 0 ? content.rarities : content.rarities.slice(start);
 }
 
-export function generateAtLeast(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, floor: string): ItemInstance | null {
-  const rarity: RarityDef | null = pickWeighted(rng, raritiesFrom(content, floor));
-  return rarity === null ? null : generateItem(content, rng, uid, level, forcedBase, rarity.id);
+export function generateAtLeast(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, floor: string, zone: string | null = null): ItemInstance | null {
+  const lean: DropLean | null = leanOf(content, zone);
+  const rarity: RarityDef | null = pickRarity(content, rng, raritiesFrom(content, floor), lean);
+  return rarity === null ? null : generateItem(content, rng, uid, level, forcedBase, rarity.id, zone);
 }
 
-export function generateItem(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, forcedRarity: string | null): ItemInstance | null {
-  const pickedBase: ItemBaseDef | null = pickBase(rng, [...content.itemBases.values()].filter(droppable(level, false)));
+export function generateItem(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, forcedRarity: string | null, zone: string | null = null): ItemInstance | null {
+  const lean: DropLean | null = leanOf(content, zone);
+  const pickedBase: ItemBaseDef | null = pickBase(content, rng, [...content.itemBases.values()].filter(droppable(level, false)), lean);
   const base: ItemBaseDef | null = forcedBase === null ? pickedBase : (content.itemBases.get(forcedBase) ?? null);
-  const rarity: RarityDef | null = forcedRarity === null ? pickWeighted(rng, content.rarities) : (content.rarities.find((candidate: RarityDef): boolean => candidate.id === forcedRarity) ?? null);
+  const rarity: RarityDef | null = forcedRarity === null ? pickRarity(content, rng, content.rarities, lean) : (content.rarities.find((candidate: RarityDef): boolean => candidate.id === forcedRarity) ?? null);
   if (base === null || rarity === null) return null;
-  const pick: Pick | null = settle(content, rng, level, base, rarity, forcedBase !== null);
+  const pick: Pick | null = settle(content, rng, level, base, rarity, forcedBase !== null, lean);
   if (pick === null) return null;
   return { uid, base: pick.base.id, rarity: pick.rarity.id, level, affixes: rollAffixes(content, rng, pick.base, pick.rarity, level), ledger: null };
+}
+
+export interface ItemPlan {
+  readonly base: string | null;
+  readonly rarity: string | null;
+  readonly floor: string | null;
+  readonly zone: string | null;
+}
+
+export function rollItem(content: Content, rng: Rng, uid: number, level: number, plan: ItemPlan): ItemInstance | null {
+  if (plan.rarity === null && plan.floor !== null) return generateAtLeast(content, rng, uid, level, plan.base, plan.floor, plan.zone);
+  return generateItem(content, rng, uid, level, plan.base, plan.rarity, plan.zone);
 }

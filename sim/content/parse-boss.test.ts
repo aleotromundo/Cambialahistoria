@@ -7,7 +7,7 @@ import { boss, bossPresence, pieceStrikes } from './parse-boss.ts';
 const BASE = {
   title: 'Timekeeper',
   poise: { knockback: 0.1 },
-  drop: { items: 1, rarity: 'rare', goldMin: 1, goldMax: 2 },
+  drop: { items: 1, floor: 'rare', goldMin: 1, goldMax: 2 },
   barks: { aggro: [], death: [] },
 };
 
@@ -58,4 +58,12 @@ void test('a presence is a colour, a radius above zero and a glow above zero up 
   assert.throws(() => bossPresence({ color: '#e8c46a', radius: 0, glow: 0.3 }, 'p'), /p\.radius/);
   assert.throws(() => bossPresence({ color: '#e8c46a', radius: 2, glow: 1.5 }, 'p'), /at most 1/);
   assert.equal(must(boss({ ...BASE, phases: [{ below: 1, skills: [{ skill: 'a', weight: 1 }], barks: [] }] }, 'b'), 'boss').presence, null);
+});
+
+void test('a boss drop written with rarity, as the server still reads it, gives the same floor under both names', (): void => {
+  const phases = [{ below: 1, skills: [{ skill: 'a', weight: 1 }], barks: [] }];
+  const old: BossDef = must(boss({ ...BASE, drop: { items: 2, rarity: 'magic', goldMin: 1, goldMax: 2 }, phases }, 'b'), 'old');
+  const fresh: BossDef = must(boss({ ...BASE, phases }, 'b'), 'new');
+  assert.deepEqual([old.drop.floor, old.drop.rarity], ['magic', 'magic']);
+  assert.deepEqual([fresh.drop.floor, fresh.drop.rarity], ['rare', 'rare']);
 });

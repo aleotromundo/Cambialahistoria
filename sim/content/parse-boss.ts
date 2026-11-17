@@ -43,7 +43,8 @@ function bossDrop(source: Fields, where: string): BossDef['drop'] {
   if (!Number.isInteger(items) || items < 0) throw new ContentError(`${where}.items`, 'expected a whole number, zero or more');
   if (goldMin < 0) throw new ContentError(`${where}.goldMin`, 'expected zero or more');
   if (goldMax < goldMin) throw new ContentError(`${where}.goldMax`, 'expected at least goldMin');
-  return { items, rarity: text(source, 'rarity', where), goldMin, goldMax };
+  const floor: string = text(source, source['floor'] === undefined ? 'rarity' : 'floor', where);
+  return { items, floor, rarity: floor, goldMin, goldMax };
 }
 
 function firstKill(value: unknown, where: string): BossFirstKill | null {

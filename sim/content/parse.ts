@@ -1,10 +1,11 @@
 import { packRanks, rankProblems } from './parse-ranks.ts';
 import { propCache, propLid } from './parse-cache.ts';
 import { atlasProblems } from './atlas.ts';
-import { affix, family, itemBase, rarity } from './parse-items.ts';
+import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
 import { fitProblems } from './fit-rules.ts';
 import { powerRuleProblems } from './power-rules.ts';
+import { leanProblems } from './lean-rules.ts';
 import { books } from './parse-story.ts';
 import { storyFlagNames, storyProblems } from './story.ts';
 import { bossPackProblems, conditionProblems, roadProblems } from './road.ts';
@@ -393,6 +394,8 @@ export function parseContent(raw: RawContent): Content {
     rarities: each(itemFields['rarities'], 'items.rarities', rarity),
     itemBases: byId(each(itemFields['bases'], 'items.bases', itemBase), 'items.bases'),
     families: byId(each(itemFields['families'] ?? [], 'items.families', family), 'items.families'),
+    leaning: itemFields['leaning'] === undefined ? false : flag(itemFields, 'leaning', 'items'),
+    leans: [...byId(each(itemFields['leans'] ?? [], 'items.leans', dropLean), 'items.leans').values()],
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
     itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
     skillTree: each(raw.skillTree, 'skillTree', treeNode),
@@ -488,6 +491,7 @@ export function contentProblems(content: Content): string[] {
   need(content.rarities.length > 0, 'items need at least one rarity');
   problems.push(...itemProblems(content));
   problems.push(...powerRuleProblems(content));
+  problems.push(...leanProblems(content));
   problems.push(...chartProblems(content));
   const setFlags: ReadonlySet<string> = storyFlagNames(content);
   for (const name of content.world.withheld) need(!setFlags.has(name), `flag ${name} is withheld, so nothing may set it`);
@@ -604,7 +608,7 @@ export function contentProblems(content: Content): string[] {
   for (const def of content.monsters.values()) {
     if (def.boss === null) continue;
     const at: string = `boss ${def.id}`;
-    need(content.rarities.some((entry: RarityDef): boolean => entry.id === def.boss?.drop.rarity), `${at} drops unknown rarity ${def.boss.drop.rarity}`);
+    need(content.rarities.some((entry: RarityDef): boolean => entry.id === def.boss?.drop.floor), `${at} drops unknown rarity ${def.boss.drop.floor}`);
     for (const phase of def.boss.phases) {
       for (const id of [...phase.skills.map((entry: BossSkill): string => entry.skill), ...phase.measure]) need(content.skills.has(id), `${at} uses unknown skill ${id}`);
       for (const id of [...phase.holds, ...phase.unseal, ...(phase.anchor === null ? [] : [phase.anchor.monster])]) need(content.monsters.has(id) && id !== def.id, `${at} names unknown piece ${id}`);
