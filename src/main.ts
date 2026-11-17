@@ -526,7 +526,7 @@ async function start(): Promise<void> {
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, loadGate);
     actors.refreshWear(world);
-    await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
+    await warmUp(stage, stage.scene, stage.camera, [...loot.standIns(world), ...(await loot.dropStandIns(world, browserPacer()))]);
     hud.warm();
   };
   wantCarried();

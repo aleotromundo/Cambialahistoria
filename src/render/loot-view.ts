@@ -3,7 +3,7 @@ import { liftAt } from './terrain-lift.ts';
 import type { Object3D, Scene } from 'three';
 import { Group, Mesh } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { ItemBaseDef } from '../../sim/content/types.ts';
+import type { Content, ItemBaseDef } from '../../sim/content/types.ts';
 import { baseOf } from '../../sim/items.ts';
 import type { GroundItem, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary } from './character-loader.ts';
@@ -18,6 +18,9 @@ import { heroRig } from '../../sim/hero.ts';
 import { createLootLights } from './loot-lights.ts';
 import type { MarkerChoice } from './loot-marker.ts';
 import { markerFor } from './loot-marker.ts';
+import type { FramePacer } from './paced-work.ts';
+import { workPaced } from './paced-work.ts';
+import { newLooks } from './program-look.ts';
 
 export const LOOT = {
   coinModel: 'models/world/coins.glb',
@@ -64,6 +67,7 @@ type LootEntry = GoldEntry | ModelEntry | KeepsakeEntry;
 export interface LootView {
   sync(world: World): void;
   standIns(world: World): Object3D[];
+  dropStandIns(world: World, pacer: FramePacer): Promise<Object3D[]>;
 }
 
 function tossOffset(age: number): number {
@@ -82,6 +86,10 @@ function baseFor(world: World, ground: GroundItem): ItemBaseDef | null {
 
 export function keptAsKeepsake(base: ItemBaseDef | null): boolean {
   return base === null || base.ground.model === 'bundle' || base.ground.model === 'pouch';
+}
+
+export function droppable(content: Content): ItemBaseDef[] {
+  return [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.dropWeight > 0 && !keptAsKeepsake(base));
 }
 
 export function zoneFinds(world: World): ItemBaseDef[] {
@@ -181,6 +189,18 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
         return template.waiting ? [] : [template.model.clone(true)];
       });
       return [coins.clone(), contactShadow(), keepsakeStandIn.group, ...finds, ...lights.standIns()];
+    },
+    async dropStandIns(world: World, pacer: FramePacer): Promise<Object3D[]> {
+      const made: Object3D[] = [];
+      await workPaced(
+        droppable(world.content),
+        (base: ItemBaseDef): void => {
+          const template: GroundTemplate = templateFor(world, base);
+          if (!template.waiting) made.push(template.model);
+        },
+        pacer,
+      );
+      return newLooks(made).map((model: Object3D): Object3D => model.clone(true));
     },
     sync(world: World): void {
       const dt: number = lastTime === null ? 0 : Math.min(LOOT.longestFrame, Math.max(0, world.time - lastTime));
