@@ -111,6 +111,30 @@ void test('deaths play by who died', (): void => {
   assert.deepEqual(cuesForEvent(audio, world, { type: 'death', actorId: 99999, team: 'monster', pos: AWAY, direction: AWAY }), []);
 });
 
+void test('a kill while the streak holds a tier adds that tier\'s layer, pitched higher at every tier', (): void => {
+  const world: World = fresh();
+  const thrall: MonsterState = monster(world, 'mended');
+  const death: WorldEvent = { type: 'death', actorId: thrall.id, team: 'monster', pos: thrall.pos, direction: AWAY };
+  const pitches: number[] = content.tailwind.tiers.map((_tier: unknown, index: number): number => {
+    world.tailwind.tier = index + 1;
+    const layer: SoundCue = must(cuesForEvent(audio, world, death)[1], `tier ${index + 1} layer`);
+    return must(layer.pitch, 'pitch').min;
+  });
+  assert.ok(pitches.every((pitch: number, index: number): boolean => index === 0 || pitch > (pitches[index - 1] ?? 0)), pitches.join(' '));
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'death', actorId: world.player.id, team: 'player', pos: world.player.pos, direction: AWAY })), ['hero_death']);
+  world.tailwind.tier = 0;
+  assert.deepEqual(sounds(cuesForEvent(audio, world, death)), ['bones_collapse']);
+});
+
+void test('every tier rises with its own sound, a streak that fades falls softly and one ended by death is silent', (): void => {
+  const world: World = fresh();
+  for (let tier: number = 1; tier <= content.tailwind.tiers.length; tier += 1) assert.ok(cuesForEvent(audio, world, { type: 'tailwind_rise', tier, points: 0 }).length > 0, `tier ${tier}`);
+  const end = (reason: 'faded' | 'left' | 'fell'): string[] => sounds(cuesForEvent(audio, world, { type: 'tailwind_end', reason, best: 3, points: 20, kills: 12, xp: 0, gold: 0 }));
+  assert.ok(end('faded').length > 0);
+  assert.deepEqual(end('fell'), []);
+  assert.deepEqual(end('left'), []);
+});
+
 void test('projectiles sound when they spawn and when they run out, not when they hit', (): void => {
   const world: World = fresh();
   const bolt: SkillDef = skill('storm_bolt');

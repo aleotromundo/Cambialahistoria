@@ -49,6 +49,7 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitch
 
   const toggle: HTMLButtonElement = switchRow(page, 'Show frame rate', (): void => settings.setShowFps(!settings.get().graphics.showFps));
   const lens: HTMLButtonElement = switchRow(page, 'Lens water', (): void => settings.setLensWater(!settings.get().graphics.lensWater));
+  const streak: HTMLButtonElement = switchRow(page, 'Streak effects', (): void => settings.setStreakEffects(!settings.get().graphics.streakEffects));
   mountGlitchSwitches(page, glitches);
 
   const render = (): void => {
@@ -59,6 +60,7 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitch
     setText(detail, describePreset(preset), true);
     toggle.setAttribute('aria-checked', String(settings.get().graphics.showFps));
     lens.setAttribute('aria-checked', String(settings.get().graphics.lensWater));
+    streak.setAttribute('aria-checked', String(settings.get().graphics.streakEffects));
   };
   settings.subscribe(render);
   render();

@@ -35,11 +35,13 @@ void test('changes persist and read back in a new store', (): void => {
   store.setQuality('low');
   store.setShowFps(true);
   store.setLensWater(false);
+  store.setStreakEffects(false);
   assert.equal(store.rebind('inventory', 'KeyB').kind, 'ok');
   const again: SettingsStore = createSettingsStore(storage, SLOTS, { flasks: 2, ladder: true });
   assert.equal(again.get().graphics.quality, 'low');
   assert.equal(again.get().graphics.showFps, true);
   assert.equal(again.get().graphics.lensWater, false);
+  assert.equal(again.get().graphics.streakEffects, false);
   assert.equal(again.keys().actionOf('KeyB'), 'inventory');
 });
 

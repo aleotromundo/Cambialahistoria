@@ -26,6 +26,7 @@ export interface GraphicsSettings {
   readonly quality: Quality;
   readonly showFps: boolean;
   readonly lensWater: boolean;
+  readonly streakEffects: boolean;
 }
 
 export const HELD_SKILLS = ['hold', 'toggle'] as const;
@@ -41,7 +42,7 @@ export interface Settings {
 
 export const SETTINGS_KEY: string = 'the-lost-storm.settings.v1';
 
-export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false, lensWater: true };
+export const DEFAULT_GRAPHICS: GraphicsSettings = { quality: 'high', showFps: false, lensWater: true, streakEffects: true };
 export const DEFAULT_HELD_SKILLS: HeldSkills = 'hold';
 export const DEFAULT_SETTINGS: Settings = { graphics: DEFAULT_GRAPHICS, controls: {}, movement: DEFAULT_MOVEMENT, heldSkills: DEFAULT_HELD_SKILLS };
 
@@ -93,11 +94,13 @@ export function readSettings(text: string | null, table: readonly ActionDef[]): 
   const graphics: unknown = fieldOf(parsed, 'graphics');
   const showFps: unknown = fieldOf(graphics, 'showFps');
   const lensWater: unknown = fieldOf(graphics, 'lensWater');
+  const streakEffects: unknown = fieldOf(graphics, 'streakEffects');
   return {
     graphics: {
       quality: qualityOf(fieldOf(graphics, 'quality')),
       showFps: typeof showFps === 'boolean' ? showFps : DEFAULT_GRAPHICS.showFps,
       lensWater: typeof lensWater === 'boolean' ? lensWater : DEFAULT_GRAPHICS.lensWater,
+      streakEffects: typeof streakEffects === 'boolean' ? streakEffects : DEFAULT_GRAPHICS.streakEffects,
     },
     controls: sanitizeOverrides(table, overridesOf(fieldOf(parsed, 'controls'))),
     movement: movementOf(fieldOf(parsed, 'movement')),

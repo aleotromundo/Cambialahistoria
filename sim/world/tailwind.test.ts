@@ -18,9 +18,9 @@ const RULES: TailwindDef = {
   idle: { drain: 2, reach: 10 },
   fight: { drain: 0.5, reach: 6 },
   tiers: [
-    { id: 'one', name: 'One', at: 3, fuse: 4, xp: 0.1, loot: 0.2, speed: 0, windfallXp: 0, windfallGold: 0 },
-    { id: 'two', name: 'Two', at: 6, fuse: 5, xp: 0.2, loot: 0.3, speed: 0.02, windfallXp: 0.1, windfallGold: 0.15 },
-    { id: 'three', name: 'Three', at: 12, fuse: 6, xp: 0.3, loot: 0.4, speed: 0.05, windfallXp: 0.2, windfallGold: 0.25 },
+    { id: 'one', name: 'One', color: '#ffffff', at: 3, fuse: 4, xp: 0.1, loot: 0.2, speed: 0, windfallXp: 0, windfallGold: 0 },
+    { id: 'two', name: 'Two', color: '#ffffff', at: 6, fuse: 5, xp: 0.2, loot: 0.3, speed: 0.02, windfallXp: 0.1, windfallGold: 0.15 },
+    { id: 'three', name: 'Three', color: '#ffffff', at: 12, fuse: 6, xp: 0.3, loot: 0.4, speed: 0.05, windfallXp: 0.2, windfallGold: 0.25 },
   ],
 };
 

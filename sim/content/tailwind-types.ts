@@ -1,6 +1,7 @@
 export interface TailwindTier {
   readonly id: string;
   readonly name: string;
+  readonly color: string;
   readonly at: number;
   readonly fuse: number;
   readonly xp: number;

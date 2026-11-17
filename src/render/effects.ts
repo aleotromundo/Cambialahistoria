@@ -44,6 +44,8 @@ import { createProjectileViews, PROJECTILE_VIEWS } from './projectile-views.ts';
 import type { TorchFlames } from './torch-flames.ts';
 import { createTorchFlames } from './torch-flames.ts';
 import { breaker } from './water-look.ts';
+import type { TailwindGlow } from './tailwind-glow.ts';
+import { createTailwindGlow } from './tailwind-glow.ts';
 
 export const EFFECTS = {
   levelLight: 45,
@@ -155,7 +157,7 @@ function easeOut(t: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
 }
 
-export function createEffects(scene: Scene, particles: ParticleSystem, camera: IsoCamera, onFlash: (power: number) => void): Effects {
+export function createEffects(scene: Scene, particles: ParticleSystem, camera: IsoCamera, onFlash: (power: number) => void, streakSoft: () => boolean): Effects {
   const transients: Transient[] = [];
   const colors: Map<string, Color> = new Map<string, Color>();
   let hitStop: number = 0;
@@ -291,6 +293,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     spray(x, 0.3, z, GOLD, 60, { speed: { min: 0.5, max: 3.5 }, lift: { min: 3, max: 8 }, life: { min: 0.6, max: 1.3 }, size: { min: 0.25, max: 0.6 }, gravity: 3, drag: 1.2, jitter: 1.4 });
     flashLight(x, EFFECTS.levelLightHeight, z, GOLD, EFFECTS.levelLight);
   };
+
+  const streakGlow: TailwindGlow = createTailwindGlow({ scene, ring, mark, spray, flashLight, colorOf, trauma: (amount: number): void => camera.addTrauma(amount), soft: streakSoft });
 
   const onSkillStart = (event: Extract<WorldEvent, { type: 'skill_start' }>, world: World): void => {
     const gathered: VfxGather | null = event.skill.vfx.gather;
@@ -472,6 +476,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             break;
           case 'death':
             onDeath(event, world);
+            streakGlow.handle(event, world);
+            break;
+          case 'tailwind_rise':
+          case 'tailwind_end':
+            streakGlow.handle(event, world);
             break;
           case 'projectile_spawn':
             shots.spawn(event.projectile);
@@ -548,8 +557,6 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'beam':
           case 'blink':
           case 'brand':
-          case 'tailwind_rise':
-          case 'tailwind_end':
           case 'skill_unlocked':
           case 'chart_point':
           case 'xp':
@@ -597,6 +604,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       torches.place(points);
     },
     clear(): void {
+      streakGlow.clear();
       for (const transient of transients) disposeObject(transient.object);
       transients.length = 0;
       shots.clear();
@@ -636,6 +644,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         warming = warming.filter((keeper: Mesh): boolean => awaitsDecalDraw(keeper));
       }
       flashes.update(dt);
+      streakGlow.update(dt, world);
       wash = stepWash(wash, world.player.maxLife > 0 ? world.player.life / world.player.maxLife : 1, dt);
       torches.update(dt, world.time);
     },

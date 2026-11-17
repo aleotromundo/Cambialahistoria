@@ -1,4 +1,5 @@
 import audio from '../../data/audio.json' with { type: 'json' };
+import type { TailwindTier } from './tailwind-types.ts';
 import type { NoticeReason } from '../world/types.ts';
 import type { Fields } from './read.ts';
 import { choiceList, ContentError, each, fields, isFields, numeric, text } from './read.ts';
@@ -9,7 +10,7 @@ import { BODY_MATERIALS, WEAPON_KINDS } from './types.ts';
 export const UI_ACTIONS = ['click', 'panel_open', 'panel_close', 'error', 'skill_point', 'equip', 'title_gone'] as const;
 export type UiAction = (typeof UI_ACTIONS)[number];
 
-export const WORLD_SOUND_EVENTS = ['hero_step', 'hero_burn', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked', 'moment_calm', 'moment_hostile', 'moment_strike', 'moment_strike_soft', 'monster_stunned', 'wake_stir', 'wake_front', 'wake_standing', 'portal_opened', 'portal_entered', 'portal_arrived', 'portal_closed', 'portal_hum', 'item_identified'] as const;
+export const WORLD_SOUND_EVENTS = ['hero_step', 'hero_burn', 'level_up', 'surge', 'surge_cleared', 'monster_spawn', 'player_respawn', 'flask_used', 'quest_started', 'quest_advanced', 'quest_completed', 'waypoint_unlocked', 'moment_calm', 'moment_hostile', 'moment_strike', 'moment_strike_soft', 'monster_stunned', 'wake_stir', 'wake_front', 'wake_standing', 'portal_opened', 'portal_entered', 'portal_arrived', 'portal_closed', 'portal_hum', 'item_identified', 'tailwind_faded'] as const;
 export type WorldSoundEvent = (typeof WORLD_SOUND_EVENTS)[number];
 
 export const LIFE_SOUND_EVENTS = ['bats_disturbed', 'bat_flyby', 'lid_opened', 'lid_closed'] as const;
@@ -139,6 +140,8 @@ export interface AudioDef {
   readonly life: CueTable;
   readonly ui: CueTable;
   readonly steps: CueTable;
+  readonly tailwindKill: CueTable;
+  readonly tailwindRise: CueTable;
   readonly ambience: ReadonlyMap<string, ZoneAmbience>;
   readonly lobby: ZoneAmbience;
 }
@@ -152,6 +155,7 @@ export interface KnownIds {
   readonly zones: ReadonlySet<string>;
   readonly encounters: ReadonlySet<string>;
   readonly surfaces: ReadonlySet<string>;
+  readonly tailwindTiers: ReadonlySet<string>;
 }
 
 function soundId(source: Fields, key: string, where: string): string {
@@ -335,6 +339,8 @@ export function parseAudio(value: unknown, known: KnownIds): AudioDef {
     life: read('life', new Set<string>(LIFE_SOUND_EVENTS)),
     ui: read('ui', new Set<string>(UI_ACTIONS)),
     steps: read('steps', known.surfaces),
+    tailwindKill: read('tailwindKill', known.tailwindTiers),
+    tailwindRise: read('tailwindRise', known.tailwindTiers),
     ambience,
     lobby: zone(source['lobby'], known.surfaces, `${where}.lobby`),
   };
@@ -351,6 +357,7 @@ export function knownIdsOf(content: Content): KnownIds {
     zones: new Set<string>(content.zones.keys()),
     encounters: new Set<string>([...content.zones.values()].flatMap((zoneDef: ZoneDef): string[] => (zoneDef.void?.encounters ?? []).map((met: ZoneEncounter): string => met.id))),
     surfaces: new Set<string>(content.surfaces.keys()),
+    tailwindTiers: new Set<string>(content.tailwind.tiers.map((tier: TailwindTier): string => tier.id)),
   };
 }
 

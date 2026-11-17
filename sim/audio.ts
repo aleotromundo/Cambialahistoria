@@ -18,7 +18,7 @@ type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'lobby' | 
 
 const NO_KEYS: readonly string[] = [];
 
-const WARM_TABLES: readonly CueTableName[] = ['world', 'encounterNearing', 'encounterShown', 'life', 'skillStart', 'hit', 'critHit', 'guarded', 'skillHit', 'areaStart', 'areaPulse', 'areaStrike', 'areaEnd', 'brand', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui', 'steps'];
+const WARM_TABLES: readonly CueTableName[] = ['world', 'encounterNearing', 'encounterShown', 'life', 'skillStart', 'hit', 'critHit', 'guarded', 'skillHit', 'areaStart', 'areaPulse', 'areaStrike', 'areaEnd', 'brand', 'skillImpact', 'projectileSpawn', 'projectileExpire', 'death', 'aggro', 'pickup', 'drop', 'notice', 'ui', 'steps', 'tailwindKill', 'tailwindRise'];
 
 function heldBy(entry: WeaponCue, weapon: WeaponKind | null): boolean {
   return entry.weapons.length === 0 || (weapon !== null && entry.weapons.includes(weapon));
@@ -40,6 +40,10 @@ function cues(table: CueTable, key: string, position: Vec2 | null, weapon: Weapo
 
 function bySkill(table: CueTable, skill: SkillDef, position: Vec2 | null, weapon: WeaponKind | null = null, heat: number = 0): readonly SoundCue[] {
   return table.has(skill.form) ? cues(table, skill.form, position, weapon, heat) : cues(table, skill.id, position, weapon, heat);
+}
+
+function tierId(world: World, tier: number): string {
+  return world.content.tailwind.tiers[tier - 1]?.id ?? '';
 }
 
 function firstOf(table: CueTable, keys: readonly string[], position: Vec2 | null, weapon: WeaponKind | null): readonly SoundCue[] {
@@ -151,6 +155,13 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       break;
     case 'death':
       found = firstOf(audio.death, targetKeys(world, event.team, event.actorId), event.pos, null);
+      if (event.team === 'monster' && world.tailwind.tier > 0) found = found.concat(cues(audio.tailwindKill, tierId(world, world.tailwind.tier), event.pos));
+      break;
+    case 'tailwind_rise':
+      found = cues(audio.tailwindRise, tierId(world, event.tier), null);
+      break;
+    case 'tailwind_end':
+      if (event.reason === 'faded') found = worldCues(audio, 'tailwind_faded', null);
       break;
     case 'aggro': {
       const monster: MonsterState | undefined = monsterOf(world, event.monsterId);
@@ -242,8 +253,6 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'beam':
     case 'blink':
     case 'soak':
-    case 'tailwind_rise':
-    case 'tailwind_end':
     case 'mend':
     case 'skill_unlocked':
     case 'chart_point':

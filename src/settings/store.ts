@@ -11,6 +11,7 @@ export interface SettingsStore {
   setQuality(quality: Quality): void;
   setShowFps(show: boolean): void;
   setLensWater(on: boolean): void;
+  setStreakEffects(on: boolean): void;
   setMovement(movement: Movement): void;
   setHeldSkills(mode: HeldSkills): void;
   rebind(action: ActionId, code: string): RebindResult;
@@ -36,7 +37,7 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     commit(mergeSettings(settings, { controls }));
   };
   const setGraphics = (graphics: GraphicsSettings): void => {
-    if (graphics.quality === settings.graphics.quality && graphics.showFps === settings.graphics.showFps && graphics.lensWater === settings.graphics.lensWater) return;
+    if (graphics.quality === settings.graphics.quality && graphics.showFps === settings.graphics.showFps && graphics.lensWater === settings.graphics.lensWater && graphics.streakEffects === settings.graphics.streakEffects) return;
     commit(mergeSettings(settings, { graphics }));
   };
   return {
@@ -57,6 +58,9 @@ export function createSettingsStore(storage: KeyValueStore, slots: readonly Slot
     },
     setLensWater(lensWater: boolean): void {
       setGraphics({ ...settings.graphics, lensWater });
+    },
+    setStreakEffects(streakEffects: boolean): void {
+      setGraphics({ ...settings.graphics, streakEffects });
     },
     setMovement(movement: Movement): void {
       if (movement === settings.movement) return;

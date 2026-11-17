@@ -17,24 +17,26 @@ void test('missing or broken text reads as the defaults', (): void => {
 });
 
 void test('a good record reads back', (): void => {
-  const text: string = JSON.stringify({ graphics: { quality: 'low', showFps: true, lensWater: false }, controls: { inventory: ['KeyB'] } });
+  const text: string = JSON.stringify({ graphics: { quality: 'low', showFps: true, lensWater: false, streakEffects: false }, controls: { inventory: ['KeyB'] } });
   const read = readSettings(text, TABLE);
   assert.equal(read.graphics.quality, 'low');
   assert.equal(read.graphics.showFps, true);
   assert.equal(read.graphics.lensWater, false);
+  assert.equal(read.graphics.streakEffects, false);
   assert.deepEqual(read.controls, { inventory: ['KeyB'] });
 });
 
 void test('each bad field falls back on its own', (): void => {
-  const read = readSettings(JSON.stringify({ graphics: { quality: 'ultra', showFps: 'yes', lensWater: 0 }, controls: { inventory: 'KeyB', tree: [1] } }), TABLE);
+  const read = readSettings(JSON.stringify({ graphics: { quality: 'ultra', showFps: 'yes', lensWater: 0, streakEffects: 'off' }, controls: { inventory: 'KeyB', tree: [1] } }), TABLE);
   assert.equal(read.graphics.quality, 'high');
   assert.equal(read.graphics.showFps, false);
   assert.equal(read.graphics.lensWater, true);
+  assert.equal(read.graphics.streakEffects, true);
   assert.deepEqual(read.controls, {});
 });
 
 void test('merging replaces only what changed', (): void => {
-  const next = mergeSettings(DEFAULT_SETTINGS, { graphics: { quality: 'medium', showFps: false, lensWater: true } });
+  const next = mergeSettings(DEFAULT_SETTINGS, { graphics: { quality: 'medium', showFps: false, lensWater: true, streakEffects: true } });
   assert.equal(next.graphics.quality, 'medium');
   assert.equal(next.controls, DEFAULT_SETTINGS.controls);
 });
@@ -66,6 +68,6 @@ void test('held skills read back as hold or toggle, default hold, and survive a 
   assert.equal(readSettings(JSON.stringify({ heldSkills: 'spin' }), TABLE).heldSkills, 'hold');
   assert.equal(readSettings(JSON.stringify({ graphics: { quality: 'low' } }), TABLE).heldSkills, 'hold');
   const toggled = mergeSettings(DEFAULT_SETTINGS, { heldSkills: 'toggle' });
-  assert.equal(mergeSettings(toggled, { graphics: { quality: 'low', showFps: true, lensWater: true } }).heldSkills, 'toggle');
+  assert.equal(mergeSettings(toggled, { graphics: { quality: 'low', showFps: true, lensWater: true, streakEffects: true } }).heldSkills, 'toggle');
 });
 

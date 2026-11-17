@@ -1,5 +1,5 @@
 import type { Fields } from './read.ts';
-import { ContentError, each, fields, nonNegative, positive, share, text } from './read.ts';
+import { colour, ContentError, each, fields, nonNegative, positive, share, text } from './read.ts';
 import type { TailwindBurst, TailwindDef, TailwindDrain, TailwindTier, TailwindWeights } from './tailwind-types.ts';
 import type { Content } from './types.ts';
 
@@ -8,6 +8,7 @@ function tier(value: unknown, where: string): TailwindTier {
   return {
     id: text(source, 'id', where),
     name: text(source, 'name', where),
+    color: colour(source, 'color', where),
     at: positive(source, 'at', where),
     fuse: positive(source, 'fuse', where),
     xp: nonNegative(source, 'xp', where),
