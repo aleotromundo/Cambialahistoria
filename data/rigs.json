@@ -331,6 +331,14 @@
             "shoot": {
               "clip": "Pistol_Shoot",
               "impactFraction": 0.1
+            },
+            "shoot_fan": {
+              "clip": "Quarrel_Fan",
+              "impactFraction": 0.46
+            },
+            "shoot_heave": {
+              "clip": "Quarrel_Heave",
+              "impactFraction": 0.21
             }
           }
         },
@@ -647,6 +655,14 @@
             "shoot": {
               "clip": "Pistol_Shoot",
               "impactFraction": 0.1
+            },
+            "shoot_fan": {
+              "clip": "Quarrel_Fan",
+              "impactFraction": 0.46
+            },
+            "shoot_heave": {
+              "clip": "Quarrel_Heave",
+              "impactFraction": 0.21
             }
           }
         },
