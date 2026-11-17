@@ -50,7 +50,7 @@ void test('a rig has no stances unless told, and each stance reads an idle and i
   assert.deepEqual(rig(base, 'rig').clips.stances, {});
   const aim = { idle: 'Aim', actions: { shoot: { clip: 'Shoot', impactFraction: 0.1 } } };
   const stanced: Record<string, unknown> = { ...base, clips: { idle: 'Idle', run: 'Run', hit: ['Hit'], death: ['Death'], actions: {}, stances: { crossbow: aim } } };
-  assert.deepEqual(rig(stanced, 'rig').clips.stances, { crossbow: aim });
+  assert.deepEqual(rig(stanced, 'rig').clips.stances, { crossbow: { idle: 'Aim', actions: { shoot: { clip: 'Shoot', impactFraction: 0.1, private: null } } } });
   const idleless: Record<string, unknown> = { ...base, clips: { idle: 'Idle', run: 'Run', hit: ['Hit'], death: ['Death'], actions: {}, stances: { crossbow: { actions: {} } } } };
   assert.throws((): unknown => rig(idleless, 'rig'), ContentError);
 });

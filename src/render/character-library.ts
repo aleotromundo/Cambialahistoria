@@ -18,7 +18,7 @@ import { fitClip } from './clip-fit.ts';
 import { dressPiece } from './dress-piece.ts';
 import { mergeRigidAlike, mergeSkinnedAlike } from './merge-alike.ts';
 import type { PrivateClips, PrivateClipSource } from './private-clips.ts';
-import { addPrivateActions } from './private-clips.ts';
+import { usePrivateActions } from './private-clips.ts';
 import type { KeepLoadingDeps, NamedLoad } from './keep-loading.ts';
 import { loadAllKeepTrying } from './keep-loading.ts';
 import type { TurnGate } from './paced-work.ts';
@@ -36,7 +36,7 @@ export interface GaitClip {
 
 export interface StanceClipSet {
   readonly idle: AnimationClip;
-  readonly actions: ReadonlyMap<string, ActionClip>;
+  readonly actions: Map<string, ActionClip>;
 }
 
 export interface RigClipSet {
@@ -91,7 +91,12 @@ let privateUse: PrivateClipUse | null = null;
 
 function withPrivateClips(rig: LoadedRig): LoadedRig {
   if (privateUse === null || !privateUse.rigs.has(rig.def.id)) return rig;
-  addPrivateActions(rig.clips.actions, privateUse.clips, (source: PrivateClipSource): AnimationClip => fitClip(source.clip, source.scene, rig.template));
+  const fit = (source: PrivateClipSource): AnimationClip => fitClip(source.clip, source.scene, rig.template);
+  usePrivateActions(rig.clips.actions, rig.def.clips.actions, privateUse.clips, fit);
+  for (const [name, stance] of Object.entries(rig.def.clips.stances)) {
+    const loaded: StanceClipSet | undefined = rig.clips.stances.get(name);
+    if (loaded !== undefined) usePrivateActions(loaded.actions, stance.actions, privateUse.clips, fit);
+  }
   return rig;
 }
 

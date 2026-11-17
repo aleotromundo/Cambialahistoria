@@ -3,6 +3,7 @@ import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { AssetManifest } from '../audio/manifest.ts';
 import { assetUrl, parseManifest } from '../audio/manifest.ts';
 import { within } from '../audio/timeout.ts';
+import type { RigActionClip, RigPrivateClip } from '../../sim/content/types.ts';
 import type { ActionClip } from './character-library.ts';
 
 export const PRIVATE_CLIPS = {
@@ -64,10 +65,13 @@ export async function loadPrivateClips(deps: PrivateClipDeps): Promise<PrivateCl
   return clips;
 }
 
-export function addPrivateActions(actions: Map<string, ActionClip>, clips: PrivateClips, fit: (source: PrivateClipSource) => AnimationClip): void {
-  for (const [key, source] of clips) {
-    if (actions.has(key)) continue;
-    actions.set(key, { clip: fit(source), impactTime: 0 });
+export function usePrivateActions(actions: Map<string, ActionClip>, entries: Readonly<Record<string, RigActionClip>>, clips: PrivateClips, fit: (source: PrivateClipSource) => AnimationClip): void {
+  for (const [key, entry] of Object.entries(entries)) {
+    const wanted: RigPrivateClip | null = entry.private;
+    const source: PrivateClipSource | undefined = wanted === null ? undefined : clips.get(wanted.clip);
+    if (wanted === null || source === undefined) continue;
+    const clip: AnimationClip = fit(source);
+    actions.set(key, { clip, impactTime: clip.duration * wanted.impactFraction });
   }
 }
 

@@ -284,7 +284,7 @@ export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTar
 
 export type { PropCache, PropDef, PropLid, PropLight, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
 
-export type { AttachmentDef, RigActionClip, RigClips, RigContact, RigDef, RigGait, RigSocket, RigStanceClips, Triple } from './rig-types.ts';
+export type { AttachmentDef, RigActionClip, RigClips, RigPrivateClip, RigContact, RigDef, RigGait, RigSocket, RigStanceClips, Triple } from './rig-types.ts';
 
 export type { AroundScatter, CliffScatter, OpenScatter, ScatterSize, ZoneScatter } from './scatter-types.ts';
 export { SCATTER_TYPES } from './scatter-types.ts';

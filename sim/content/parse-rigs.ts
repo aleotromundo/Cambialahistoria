@@ -1,16 +1,26 @@
-import type { RigActionClip, RigClips, RigContact, RigDef, RigSocket, RigStanceClips, Triple } from './types.ts';
+import type { RigActionClip, RigClips, RigPrivateClip, RigContact, RigDef, RigSocket, RigStanceClips, Triple } from './types.ts';
 import type { Fields } from './read.ts';
 import { ContentError, each, fields, nullableText, numeric, positive, text, textList } from './read.ts';
 import { rigGaits } from './parse-gaits.ts';
+
+function impactOf(entry: Fields, where: string): number {
+  const impactFraction: number = numeric(entry, 'impactFraction', where);
+  if (impactFraction < 0 || impactFraction >= 1) throw new ContentError(`${where}.impactFraction`, 'expected a number from 0 up to, but not including, 1');
+  return impactFraction;
+}
+
+function privateClip(value: unknown, where: string): RigPrivateClip | null {
+  if (value === undefined) return null;
+  const entry: Fields = fields(value, where);
+  return { clip: text(entry, 'clip', where), impactFraction: impactOf(entry, where) };
+}
 
 function actionClips(value: unknown, where: string): Record<string, RigActionClip> {
   const actionFields: Fields = fields(value, where);
   const actions: Record<string, RigActionClip> = {};
   for (const key of Object.keys(actionFields)) {
     const entry: Fields = fields(actionFields[key], `${where}.${key}`);
-    const impactFraction: number = numeric(entry, 'impactFraction', `${where}.${key}`);
-    if (impactFraction < 0 || impactFraction >= 1) throw new ContentError(`${where}.${key}.impactFraction`, 'expected a number from 0 up to, but not including, 1');
-    actions[key] = { clip: text(entry, 'clip', `${where}.${key}`), impactFraction };
+    actions[key] = { clip: text(entry, 'clip', `${where}.${key}`), impactFraction: impactOf(entry, `${where}.${key}`), private: privateClip(entry['private'], `${where}.${key}.private`) };
   }
   return actions;
 }

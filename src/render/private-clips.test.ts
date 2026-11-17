@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import { AnimationClip, Group } from 'three';
 import type { ActionClip } from './character-library.ts';
 import type { LoadedClipFile, PrivateClipDeps, PrivateClips, PrivateClipSource } from './private-clips.ts';
-import { addPrivateActions, loadPrivateClips } from './private-clips.ts';
+import type { RigActionClip } from '../../sim/content/types.ts';
+import { loadPrivateClips, usePrivateActions } from './private-clips.ts';
 
 const BASE: string = 'https://assets.example/storm/';
 
@@ -55,11 +56,18 @@ void test('each clip the manifest names is loaded from under the base, and one t
   assert.ok(asked.every((url: string): boolean => url.startsWith(BASE)));
 });
 
-void test('private clips join a rig as actions and never replace one its data names', (): void => {
-  const authored: ActionClip = { clip: new AnimationClip('Sword_Attack', 1, []), impactTime: 0.4 };
-  const actions: Map<string, ActionClip> = new Map([['attack', authored]]);
-  addPrivateActions(actions, new Map([['attack', sourceNamed('Other')], ['spin_whirlwind_loop', sourceNamed('Loop')]]), (from: PrivateClipSource): AnimationClip => from.clip);
-  assert.equal(actions.get('attack'), authored);
-  assert.equal(actions.get('spin_whirlwind_loop')?.clip.name, 'Loop');
-  assert.equal(actions.get('spin_whirlwind_loop')?.impactTime, 0);
+void test('a rig action that names a private clip plays it once the manifest brings it, and keeps its own clip until then', (): void => {
+  const authored: ActionClip = { clip: new AnimationClip('Spell_Simple_Shoot', 1, []), impactTime: 0.35 };
+  const kept: ActionClip = { clip: new AnimationClip('Sword_Attack', 1, []), impactTime: 0.4 };
+  const actions: Map<string, ActionClip> = new Map([['cast_bolt', authored], ['attack', kept], ['cast_area', authored]]);
+  const entries: Record<string, RigActionClip> = {
+    cast_bolt: { clip: 'Spell_Simple_Shoot', impactFraction: 0.35, private: { clip: 'mixamo_bolt', impactFraction: 0.25 } },
+    attack: { clip: 'Sword_Attack', impactFraction: 0.4, private: null },
+    cast_area: { clip: 'Spell_Simple_Shoot', impactFraction: 0.35, private: { clip: 'mixamo_missing', impactFraction: 0.5 } },
+  };
+  usePrivateActions(actions, entries, new Map([['mixamo_bolt', sourceNamed('Bolt')], ['attack', sourceNamed('Other')]]), (from: PrivateClipSource): AnimationClip => from.clip);
+  assert.equal(actions.get('cast_bolt')?.clip.name, 'Bolt');
+  assert.equal(actions.get('cast_bolt')?.impactTime, 0.5);
+  assert.equal(actions.get('attack'), kept);
+  assert.equal(actions.get('cast_area'), authored);
 });

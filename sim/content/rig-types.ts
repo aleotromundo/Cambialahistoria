@@ -1,6 +1,12 @@
+export interface RigPrivateClip {
+  readonly clip: string;
+  readonly impactFraction: number;
+}
+
 export interface RigActionClip {
   readonly clip: string;
   readonly impactFraction: number;
+  readonly private: RigPrivateClip | null;
 }
 
 export interface RigStanceClips {
