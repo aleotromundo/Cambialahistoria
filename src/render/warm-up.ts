@@ -21,6 +21,20 @@ export interface ShaderCompiler {
   initTexture(texture: Texture): void;
 }
 
+export interface Sortable {
+  sortObjects: boolean;
+}
+
+export function unsorted(target: Sortable, draw: () => void): void {
+  const sorted: boolean = target.sortObjects;
+  target.sortObjects = false;
+  try {
+    draw();
+  } finally {
+    target.sortObjects = sorted;
+  }
+}
+
 export interface WarmSurvey {
   readonly textures: readonly Texture[];
   readonly drawables: readonly Object3D[];

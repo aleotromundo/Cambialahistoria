@@ -7,7 +7,7 @@ import type { QualityName } from '../mobile/quality.ts';
 import { ditheredOutputPass } from '../render/output-dither.ts';
 import { shadowLights, withShadowStandIns } from '../render/shadow-warm.ts';
 import type { ShadowLights } from '../render/shadow-warm.ts';
-import { warmUp } from '../render/warm-up.ts';
+import { unsorted, warmUp } from '../render/warm-up.ts';
 import type { ShaderCompiler } from '../render/warm-up.ts';
 
 export interface LobbyBloom {
@@ -292,7 +292,7 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
       const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
       renderer.setRenderTarget(active.target);
       try {
-        renderer.render(target, viewer);
+        unsorted(renderer, (): void => renderer.render(target, viewer));
       } finally {
         renderer.setRenderTarget(previous);
       }

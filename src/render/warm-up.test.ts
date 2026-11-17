@@ -4,8 +4,8 @@ import type { Camera, Object3D } from 'three';
 import { BufferAttribute, BufferGeometry, Color, Fog, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, ShaderMaterial, Texture, WebGLRenderTarget } from 'three';
 import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
-import type { ShaderCompiler } from './warm-up.ts';
-import { drawCost, revealHidden, texturesOf, uploadPaced, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
+import type { ShaderCompiler, Sortable } from './warm-up.ts';
+import { drawCost, revealHidden, texturesOf, unsorted, uploadPaced, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
 
 interface Recorder extends ShaderCompiler {
   readonly seen: boolean[];
@@ -541,4 +541,21 @@ void test('paced uploads keep each frame under the byte budget and upload a text
   changed.needsUpdate = true;
   await uploadPaced(uploader, textures, uploaded, pacer);
   assert.deepEqual(uploads.slice(3).map(([, texture]: [number, Texture]): Texture => texture), [changed]);
+});
+
+void test('a warm-up draw runs with sorting off and leaves sorting as it found it, even when the draw throws', (): void => {
+  const target: Sortable = { sortObjects: true };
+  const seen: boolean[] = [];
+  unsorted(target, (): void => void seen.push(target.sortObjects));
+  assert.deepEqual(seen, [false]);
+  assert.equal(target.sortObjects, true);
+  assert.throws((): void =>
+    unsorted(target, (): void => {
+      throw new Error('lost context');
+    }),
+  );
+  assert.equal(target.sortObjects, true);
+  const off: Sortable = { sortObjects: false };
+  unsorted(off, (): void => void seen.push(off.sortObjects));
+  assert.equal(off.sortObjects, false);
 });

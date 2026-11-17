@@ -17,6 +17,7 @@ import { RIM_LIGHT } from './character-loader.ts';
 import { aimCutaway } from './prop-cutaway.ts';
 import { ditheredOutputPass } from './output-dither.ts';
 import { GPU } from '../gpu-release.ts';
+import { unsorted } from './warm-up.ts';
 import { installDarkLightSkip } from './dark-lights.ts';
 import type { GpuQueue } from './gpu-fence.ts';
 import { createGpuQueue } from './gpu-fence.ts';
@@ -362,7 +363,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       }
       renderer.setRenderTarget(primer);
       try {
-        renderer.render(target, viewer);
+        unsorted(renderer, (): void => renderer.render(target, viewer));
       } finally {
         renderer.setRenderTarget(previous);
       }
