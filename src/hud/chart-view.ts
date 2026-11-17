@@ -60,12 +60,11 @@ export function frameChart(frame: AtlasFrame, points: readonly ScreenPoint[]): A
 
 export interface ChartOpening {
   readonly last: AtlasView | null;
-  readonly choosing: boolean;
   readonly points: readonly ScreenPoint[];
 }
 
 export function reopenChart(frame: AtlasFrame, opening: ChartOpening): AtlasView {
-  if (opening.last === null || opening.choosing) return frameChart(frame, opening.points);
+  if (opening.last === null) return frameChart(frame, opening.points);
   return clampChart(opening.last, frame);
 }
 

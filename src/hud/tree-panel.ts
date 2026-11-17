@@ -273,7 +273,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let drag: Drag | null = null;
   let pinch: number = 0;
   let suppressClick: boolean = false;
-  let moved: boolean = false;
   let lastView: AtlasView | null = null;
   let raster: RasterState = FRESH_RASTER;
   let warmed: boolean = false;
@@ -351,7 +350,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       const [first, second] = [...pointers.values()];
       if (first === undefined || second === undefined || now <= 0) return;
       const middle: ScreenPoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
-      moved = true;
       target = zoomChart(target, frame, middle, -Math.log(now / pinch) / ATLAS_VIEW.wheelRate);
       motion = still(target);
       pinch = now;
@@ -375,7 +373,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       viewport.setPointerCapture(event.pointerId);
       sendCard({ type: 'clear' });
     }
-    moved = true;
     target = panChart(target, frame, dx, dy);
     motion = { ...motion, view: panChart(motion.view, frame, dx, dy) };
     apply();
@@ -408,19 +405,16 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     (event: WheelEvent): void => {
       event.preventDefault();
       event.stopPropagation();
-      moved = true;
       target = zoomChart(target, frame, local(event), event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * CHART.wheelLine : event.deltaY);
     },
     { passive: false },
   );
   const zoomBy = (delta: number): void => {
-    moved = true;
     target = zoomChart(target, frame, { x: frame.width / 2, y: frame.height / 2 }, delta);
   };
   zoomIn.addEventListener('click', (): void => zoomBy(-CHART.zoomStep));
   zoomOut.addEventListener('click', (): void => zoomBy(CHART.zoomStep));
   recentre.addEventListener('click', (): void => {
-    moved = false;
     target = frameChart(frame, openingView());
   });
 
@@ -498,7 +492,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (next === undefined) return;
     findIndex += 1;
     const at: ChartPoint = centreOf(next.def);
-    moved = true;
     target = clampChart({ x: at.x, y: at.y, scale: Math.max(target.scale, CHART.findZoom) }, frame);
     sendCard({ type: 'pin', node: next.def.id });
   });
@@ -510,6 +503,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     parent.classList.toggle('chart-open', open);
     if (open) {
       if (!cardState.open) sendCard({ type: 'open' });
+      if (!wasOpen) opened();
       return;
     }
     if (wasOpen) lastView = target;
@@ -522,6 +516,22 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const open: ChartPoint[] = nodes.filter((node: SkillTreeNodeDef): boolean => reachable(statusOf(node))).map(centreOf);
     if (hereNode === undefined) return open.length > 0 ? [eye, ...open] : [eye];
     return [centreOf(hereNode), ...open];
+  };
+
+  const opened = (): void => {
+    wasOpen = true;
+    frame = measured();
+    frameDirty = false;
+    remeasure = true;
+    if (raster.phase !== 'held') {
+      raster = FRESH_RASTER;
+      holding = false;
+      board.classList.add('releasing');
+    }
+    target = reopenChart(frame, { last: lastView, points: openingView() });
+    motion = still(target);
+    measureNames();
+    apply();
   };
 
   const sync = (): void => {
@@ -557,24 +567,6 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   return {
     element,
     refresh(): void {
-      const open: boolean = element.classList.contains('open');
-      if (open && !wasOpen) {
-        if (!cardState.open) sendCard({ type: 'open' });
-        moved = false;
-        frame = measured();
-        frameDirty = false;
-        remeasure = true;
-        if (raster.phase !== 'held') {
-          raster = FRESH_RASTER;
-          holding = false;
-          board.classList.add('releasing');
-        }
-        target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
-        motion = still(target);
-        measureNames();
-        apply();
-      }
-      wasOpen = open;
       sync();
     },
     warm(): boolean {
@@ -583,7 +575,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       warmed = true;
       frame = measured();
       frameDirty = false;
-      target = reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
+      target = reopenChart(frame, { last: lastView, points: openingView() });
       motion = still(target);
       sync();
       measureNames();
@@ -619,8 +611,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
         const now: AtlasFrame = measured();
         if (!sameFrame(now, frame)) {
           frame = now;
-          target = moved ? clampChart(target, frame) : reopenChart(frame, { last: lastView, choosing: player().skillPoints > 0, points: openingView() });
-          motion = still(moved ? clampChart(motion.view, frame) : target);
+          target = clampChart(target, frame);
+          motion = still(clampChart(motion.view, frame));
           measureNames();
           measureCard();
           measureFoot();

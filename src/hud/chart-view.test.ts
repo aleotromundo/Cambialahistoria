@@ -124,12 +124,31 @@ void test('fully zoomed out the whole chart sits centred on the screen at every 
   }
 });
 
-void test('a later opening keeps the last view, unless a point waits to be spent', (): void => {
+void test('the first opening frames the opening view and a later one keeps the view the player left', (): void => {
   const frame: AtlasFrame = SIZES[1] ?? FRAME;
   const last: AtlasView = { x: 400, y: 500, scale: 1.4 };
-  assert.deepEqual(reopenChart(frame, { last, choosing: false, points: NEAR }), clampChart(last, frame));
-  assert.deepEqual(reopenChart(frame, { last, choosing: true, points: NEAR }), frameChart(frame, NEAR));
-  assert.deepEqual(reopenChart(frame, { last: null, choosing: false, points: NEAR }), frameChart(frame, NEAR));
+  assert.deepEqual(reopenChart(frame, { last: null, points: NEAR }), frameChart(frame, NEAR));
+  assert.deepEqual(reopenChart(frame, { last, points: NEAR }), clampChart(last, frame));
+  assert.deepEqual(reopenChart(frame, { last, points: [{ x: 100, y: 100 }] }), clampChart(last, frame));
+});
+
+void test('a frame that changes by a few pixels after a point is taken keeps the zoomed view centre and scale', (): void => {
+  const opened: AtlasView = frameChart(FRAME, NEAR);
+  const zoomed: AtlasView = zoomChart(opened, FRAME, { x: 640, y: 300 }, -600);
+  assert.ok(zoomed.scale > opened.scale);
+  for (const change of [{ width: -6, height: 0 }, { width: 0, height: -22 }, { width: 4, height: 22 }]) {
+    const moved: AtlasFrame = { ...FRAME, width: FRAME.width + change.width, height: FRAME.height + change.height };
+    assert.deepEqual(clampChart(zoomed, moved), zoomed);
+  }
+});
+
+void test('a resized frame only pulls the view back far enough to keep the chart reachable', (): void => {
+  const edge: AtlasView = clampChart({ x: 0, y: 0, scale: 2 }, FRAME);
+  const wider: AtlasFrame = { ...FRAME, width: FRAME.width + 200 };
+  const kept: AtlasView = clampChart(edge, wider);
+  assert.equal(kept.scale, edge.scale);
+  assert.equal(kept.x, wider.width / (2 * edge.scale));
+  assert.equal(kept.y, edge.y);
 });
 
 void test('a frame is the same only when every side matches', (): void => {

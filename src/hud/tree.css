@@ -87,9 +87,23 @@
 }
 
 .tree-points-count {
+  min-width: 2ch;
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.tree-points-word {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.tree-points-word::after {
+  content: 'points';
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
 }
 
 .tree-points.spendable {
@@ -463,6 +477,7 @@ body:has(.hud.chart-open) #overlays {
 
 .chart-restart {
   margin-left: auto;
+  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
 }
