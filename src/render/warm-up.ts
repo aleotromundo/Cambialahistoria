@@ -46,6 +46,13 @@ const warmedGeometries: WeakSet<BufferGeometry> = new WeakSet<BufferGeometry>();
 const warmedDrawables: WeakSet<Object3D> = new WeakSet<Object3D>();
 const compiledDrawables: WeakMap<Object3D, Promise<Object3D>> = new WeakMap<Object3D, Promise<Object3D>>();
 
+export function unwarm(root: Object3D): void {
+  root.traverse((object: Object3D): void => {
+    compiledDrawables.delete(object);
+    warmedDrawables.delete(object);
+  });
+}
+
 function isMaterial(value: unknown): value is Material {
   return value instanceof Material;
 }

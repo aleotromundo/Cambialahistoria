@@ -123,6 +123,8 @@ Places are not effects. A waypoint, a way between levels and a checkpoint are so
 
 Every user-visible change in the HUD animates with spring motion: panels opening, text that changes, bars, buttons. Nothing may jump from one frame to the next. Use the `--spring-*` easings and durations in `src/hud/hud.css`; do not write ad-hoc timings or cubic-bezier curves. The one exception is a continuous ambient loop that is not a state change, such as the liquid drifting in the globes: it uses the `--drift-ease` and `--drift-ms` tokens defined beside the springs, never a bare timing.
 
+A style value that changes while the game runs (a custom property an effect drives every frame) is written on the element that reads it, or on the smallest element that holds every reader, never on `body` or the root element. A custom property is inherited, so a change on the page re-styles every element under it: with the HUD's four thousand elements that is a full style pass of about 20 ms in that frame, on every frame the value moves. `test/rules.test.ts` fails on a property written on `document.body` or `document.documentElement`.
+
 No thick or bright borders, outlines or focus rings, no pill-shaped radii, and small corner radii. Panels are clean, dark and translucent.
 
 ## No browser-native controls or pop-ups

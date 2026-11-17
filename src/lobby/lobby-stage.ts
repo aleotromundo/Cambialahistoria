@@ -1,5 +1,5 @@
 import type { AnimationClip, Group, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
-import { AdditiveBlending, Box3, Color, DataTexture, Fog, LinearFilter, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, SkinnedMesh, Vector2, Vector3 } from 'three';
+import { AdditiveBlending, Color, DataTexture, Fog, LinearFilter, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, RGBAFormat, Scene, Vector2, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Content, SurfaceDef } from '../../sim/content/types.ts';
@@ -32,6 +32,13 @@ import type { BodyRoles, LobbyLife } from './lobby-life.ts';
 import type { LobbyMist } from './lobby-mist.ts';
 import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, stepSpring, zoomBy } from './lobby-orbit.ts';
 import type { LobbyOrbit, OrbitView, Spring } from './lobby-orbit.ts';
+import { createHeroGate, holdFor } from './hero-hold.ts';
+import type { HeroGate } from './hero-hold.ts';
+import { BOUNDED_WAIT, within } from '../bounded-wait.ts';
+import { createBrowserTimers } from '../browser-timers.ts';
+import { unwarm } from '../render/warm-up.ts';
+import { footing, lowestOf } from './foot-plant.ts';
+import type { Footing } from './foot-plant.ts';
 
 export const LOBBY_STAGE = {
   background: 0x05070b,
@@ -68,6 +75,7 @@ export const LOBBY_STAGE = {
   swapSpring: { freq: 1.8, damping: 1 },
   presenceSpring: { freq: 1.6, damping: 1 },
   presenceGone: 0.01,
+  warmFade: 0.5,
   swapAt: 0.985,
   swapClear: 0.004,
   coverColor: 0x070a10,
@@ -209,19 +217,6 @@ export function floorLift(lows: readonly number[], clearance: number): number {
   return clearance - Math.min(...lows);
 }
 
-function lowestPoint(root: Object3D): number {
-  root.updateMatrixWorld(true);
-  const box: Box3 = new Box3();
-  let lowest: number = Number.POSITIVE_INFINITY;
-  root.traverseVisible((node: Object3D): void => {
-    if (!(node instanceof SkinnedMesh)) return;
-    node.computeBoundingBox();
-    box.copy(node.boundingBox).applyMatrix4(node.matrixWorld);
-    lowest = Math.min(lowest, box.min.y);
-  });
-  return lowest;
-}
-
 export type IdleSource = Pick<RigInstance, 'clips' | 'armed' | 'stance'>;
 
 export function lobbyIdle(rig: IdleSource, weaponEquipped: boolean): AnimationClip {
@@ -338,10 +333,12 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     const action = rig.mixer.clipAction(clip);
     rig.root.position.y = 0;
     const lows: number[] = [];
+    let found: Footing | null = null;
     for (let sample: number = 0; sample < LOBBY_STAGE.footSamples; sample += 1) {
       action.time = (clip.duration * sample) / LOBBY_STAGE.footSamples;
       rig.mixer.update(0);
-      const low: number = lowestPoint(rig.root);
+      found ??= footing(rig.root);
+      const low: number = sample === 0 ? found.lowest : lowestOf(rig.root, found.low);
       if (Number.isFinite(low)) lows.push(low);
     }
     action.time = 0;
@@ -355,6 +352,35 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let shadowMesh: Object3D | null = null;
   let veiling: boolean = false;
   let wanted: LobbyLook | null = null;
+  const gate: HeroGate = createHeroGate();
+
+  let preparing: Promise<void> | null = null;
+
+  const warmBothLooks = async (made: LobbyPipeline, rig: RigInstance, tier: QualityName): Promise<void> => {
+    rig.setFade(LOBBY_STAGE.warmFade);
+    await made.warm(tier, window.devicePixelRatio, []);
+    unwarm(rig.root);
+    rig.setFade(1);
+    await made.warm(tier, window.devicePixelRatio, []);
+  };
+
+  const readyHero = (made: LobbyPipeline, tier: QualityName): Promise<void> => {
+    if (preparing !== null) return preparing;
+    const turn: number | null = gate.take();
+    if (turn === null) return Promise.resolve();
+    const rig: RigInstance | null = hero;
+    if (rig === null) {
+      gate.settle(turn);
+      return Promise.resolve();
+    }
+    const run = async (): Promise<void> => {
+      await within(warmBothLooks(made, rig, tier), createBrowserTimers(), BOUNDED_WAIT.readyMs);
+      preparing = null;
+      gate.settle(turn);
+    };
+    preparing = run();
+    return preparing;
+  };
 
   const stand = (rigId: string): RigInstance | null => {
     const loaded: LoadedRig | undefined = library.rigs.get(rigId);
@@ -378,11 +404,12 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     return made;
   };
 
-  const wear = (rig: RigInstance, look: LobbyLook): void => {
+  const wear = (rig: RigInstance, look: LobbyLook, underCover: boolean = false): void => {
     const worn: Look = lookOf(content, look.rig, heroBase(content, look.rig), look.equipped);
     const lookKey: string = `${look.rig}#${worn.wearables.join('|')}#${worn.held.join('|')}#${library.wearables.size}`;
     if (lookKey === heroKey) return;
     heroKey = lookKey;
+    gate.change(holdFor(presence.x, LOBBY_STAGE.presenceGone, underCover));
     rig.setWear(worn.wearables, worn.hidden);
     rig.setGear(worn.held);
     castShadows(rig.root);
@@ -395,9 +422,9 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   const dress = (look: LobbyLook): void => {
     wanted = look;
     if (hero === null) {
+      if (look.veiled) presence.x = 0;
       const made: RigInstance | null = stand(look.rig);
       if (made !== null) wear(made, look);
-      if (look.veiled) presence.x = 0;
       return;
     }
     if (hero.def.id !== look.rig && presence.x <= LOBBY_STAGE.presenceGone && library.rigs.has(look.rig)) {
@@ -415,19 +442,19 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   };
 
   const stepPresence = (dt: number): void => {
-    const shown: number = Math.min(1, Math.max(0, stepSpring(presence, wanted?.veiled === true ? 0 : 1, LOBBY_STAGE.presenceSpring.freq, LOBBY_STAGE.presenceSpring.damping, dt)));
+    const shown: number = Math.min(1, Math.max(0, stepSpring(presence, wanted?.veiled === true || gate.hold === 'presence' ? 0 : 1, LOBBY_STAGE.presenceSpring.freq, LOBBY_STAGE.presenceSpring.damping, dt)));
     lights.shadows(shown);
     shadowMesh?.scale.setScalar(Math.max(LOBBY_STAGE.presenceGone, shown));
     if (hero === null) return;
-    hero.setFade(shown);
-    hero.root.visible = shown > LOBBY_STAGE.presenceGone;
+    if (preparing === null) hero.setFade(shown);
+    hero.root.visible = shown > LOBBY_STAGE.presenceGone && gate.hold !== 'cover';
   };
 
   const stepVeil = (dt: number): void => {
-    const covered: number = Math.min(1, Math.max(0, stepSpring(veil, veiling ? 1 : 0, LOBBY_STAGE.swapSpring.freq, LOBBY_STAGE.swapSpring.damping, dt)));
+    const covered: number = Math.min(1, Math.max(0, stepSpring(veil, veiling || gate.hold === 'cover' ? 1 : 0, LOBBY_STAGE.swapSpring.freq, LOBBY_STAGE.swapSpring.damping, dt)));
     if (veiling && covered >= LOBBY_STAGE.swapAt && wanted !== null) {
       const made: RigInstance | null = stand(wanted.rig);
-      if (made !== null) wear(made, wanted);
+      if (made !== null) wear(made, wanted, true);
       veiling = false;
     }
     cover.visible = covered > LOBBY_STAGE.swapClear;
@@ -456,6 +483,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       drawnAt = performance.now();
       const view: OrbitView = stepOrbit(orbit, dt);
       camera.position.set(view.x, view.y, view.z);
+      if (gate.hold !== 'none') void readyHero(pipelineFor(renderer), tier);
       stepVeil(dt);
       stepPresence(dt);
       document.getElementById(LOBBY_STAGE.rootId)?.style.setProperty(LOBBY_STAGE.zoomProperty, view.zoom.toFixed(3));
@@ -484,6 +512,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       if (hero === null && wanted !== null) dress(wanted);
       const made: LobbyPipeline = pipelineFor(renderer);
       await Promise.all([sky.compile(renderer), made.warm(tier, window.devicePixelRatio, []), place(made, tier)]);
+      await readyHero(made, tier);
     },
   };
 }

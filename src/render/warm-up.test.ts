@@ -5,7 +5,7 @@ import { BufferAttribute, BufferGeometry, Color, Fog, Group, Mesh, MeshStandardM
 import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
 import type { ShaderCompiler, Sortable } from './warm-up.ts';
-import { drawCost, texturesOf, unsorted, uploadPaced, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
+import { drawCost, texturesOf, unsorted, uploadPaced, unwarm, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
 
 interface Recorder extends ShaderCompiler {
   readonly seen: boolean[];
@@ -686,4 +686,14 @@ void test('a warm-up draw runs with sorting off and leaves sorting as it found i
   const off: Sortable = { sortObjects: false };
   unsorted(off, (): void => void seen.push(off.sortObjects));
   assert.equal(off.sortObjects, false);
+});
+
+void test('a figure whose look changed is forgotten on request, so the next warm-up compiles and draws it in its new look', async (): Promise<void> => {
+  const scene: Scene = new Scene().add(sizedMesh(12));
+  const log: string[] = [];
+  const compiler: ShaderCompiler = { compileAsync: (target: Object3D): Promise<Object3D> => (log.push('compile'), Promise.resolve(target)), drawOnce: (): void => void log.push('draw'), initTexture(): void {} };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  unwarm(scene);
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  assert.deepEqual(log, ['compile', 'draw', 'compile', 'draw']);
 });

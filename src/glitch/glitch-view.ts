@@ -21,6 +21,7 @@ export const GLITCH_VIEW = {
   historySeconds: 1.2,
   portalFade: 0.9,
   whiteVar: '--tear-white',
+  whiteHostId: 'vignette',
 } as const;
 
 export interface GlitchViewDeps {
@@ -63,6 +64,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = glitchCss;
   app.append(style);
+  const whiteHost: HTMLElement | null = document.getElementById(GLITCH_VIEW.whiteHostId);
   const own: Group = new Group();
   scene.add(own);
   const history: Sample[] = [];
@@ -87,7 +89,7 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     const look: TearLook = { ...fade.look, split: fade.look.split * share, slip: fade.look.slip * share, density: fade.look.density, blocks: fade.look.blocks * share, tear: fade.look.tear * share, white: fade.look.white * share };
     deps.tearPass.show(look, now);
     tear.show(hudTear(look), now);
-    document.body.style.setProperty(GLITCH_VIEW.whiteVar, look.white.toFixed(3));
+    whiteHost?.style.setProperty(GLITCH_VIEW.whiteVar, look.white.toFixed(3));
     if (fade.left <= 0) {
       fade = null;
       deps.tearPass.show(CALM_LOOK, now);

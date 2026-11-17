@@ -102,6 +102,21 @@ void test('a :has() selector never ends on a bare element type, which restyles e
   assert.deepEqual(found, [], 'set a class from code for the state the :has() reads, or end the selector on a class');
 });
 
+const PAGE_WIDE_STYLE: RegExp = new RegExp(joined('document\\.(body|documentElement)\\.style\\.set', 'Property\\('));
+const PAGE_WIDE_STYLE_ALLOWED: Readonly<Record<string, string>> = {
+  'src/mobile/touch-ui.ts': 'the stick radius, written once when the touch controls are built',
+};
+
+void test('no style value is written on the page itself, where a change re-styles every element under it', (): void => {
+  const found: string[] = typescript
+    .filter((source: SourceFile): boolean => source.path.startsWith('src') && !source.path.endsWith('.test.ts') && PAGE_WIDE_STYLE_ALLOWED[source.path] === undefined)
+    .flatMap((source: SourceFile): string[] => source.lines.flatMap((line: string, index: number): string[] => (PAGE_WIDE_STYLE.test(line) ? [`${source.path}:${index + 1}`] : [])));
+  assert.deepEqual(found, [], 'write the value on the element that reads it');
+  assert.ok(PAGE_WIDE_STYLE.test(joined("document.body.style.set", "Property('--wake-soft', value);")));
+  assert.ok(PAGE_WIDE_STYLE.test(joined("document.documentElement.style.set", "Property('--x', value);")));
+  assert.ok(!PAGE_WIDE_STYLE.test("veil.style.setProperty('--wake-soft', value);"));
+});
+
 const FLAT_SHAPE: RegExp = new RegExp(joined('new (Ring|Circle|Torus)Geo', 'metry\\b|new LineLo', 'op\\b|sectorGeometry\\(Math\\.PI \\* 2'));
 const FLAT_SHAPE_ALLOWED: Readonly<Record<string, string>> = {
   'src/render/contact-shadow.ts': 'the soft shadow under an actor, a texture that fades to nothing before the disc ends',

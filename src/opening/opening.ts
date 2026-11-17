@@ -15,6 +15,8 @@ import type { IsoCamera } from '../render/iso-camera.ts';
 import openingCss from './opening.css?inline';
 import type { WakeFrame } from './wake-shot.ts';
 import { wakeFrame } from './wake-shot.ts';
+import type { WakeStyle } from './wake-style.ts';
+import { createWakeStyle, WAKE_CLEAR, WAKE_STYLE } from './wake-style.ts';
 import type { SpokenName } from '../backend/name-voice.ts';
 import type { NameEcho } from './name-echo.ts';
 import { createNameEcho } from './name-echo.ts';
@@ -24,7 +26,7 @@ import type { OverlayManager } from '../hud/overlays.ts';
 import type { PageVoice, PageVoiceDeps } from './page-voice.ts';
 import { createPageVoice, pageLine } from './page-voice.ts';
 
-const LIDS = { className: 'wake-lids', hostId: 'vignette' } as const;
+const LIDS = { className: 'wake-lids', hostId: WAKE_STYLE.veilId } as const;
 
 function mountLids(): HTMLElement | null {
   const host: HTMLElement | null = document.getElementById(LIDS.hostId);
@@ -84,6 +86,7 @@ export function createOpening(deps: OpeningDeps): Opening {
   let shiftZone: string = world.zone.id;
   let framed: boolean = false;
   let lids: HTMLElement | null = null;
+  const wakeStyle: WakeStyle = createWakeStyle(document.getElementById(WAKE_STYLE.veilId), document.getElementById(WAKE_STYLE.sceneId));
   let held: WakeState | null = null;
   const reader: Reader = createReader(hud, deps.touch, deps.overlays);
   const pageVoice: PageVoice = createPageVoice(deps.pageVoice);
@@ -141,17 +144,14 @@ export function createOpening(deps: OpeningDeps): Opening {
       if (wake !== null) {
         const frame: WakeFrame = wakeFrame(wake.plan, wake.elapsed);
         camera.frame(frame.shot);
-        document.body.style.setProperty('--wake-soft', frame.soft.toFixed(3));
         lids ??= mountLids();
-        document.body.style.setProperty('--wake-lids', frame.lids.toFixed(3));
+        wakeStyle.show(frame);
         if (lids !== null) showLids(lids, frame.lids > 0);
-        document.body.style.setProperty('--wake-blur', `${frame.blur.toFixed(2)}px`);
         document.body.dataset['wakeBlur'] = frame.blur > 0 ? 'on' : 'off';
         framed = true;
       } else if (framed) {
         camera.frame(null);
-        document.body.style.setProperty('--wake-soft', '0');
-        document.body.style.setProperty('--wake-lids', '0');
+        wakeStyle.show(WAKE_CLEAR);
         if (lids !== null) showLids(lids, false);
         document.body.dataset['wakeBlur'] = 'off';
         framed = false;
