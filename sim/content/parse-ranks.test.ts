@@ -4,7 +4,7 @@ import { ARENA_CONTENT } from '../../test/arena-support.ts';
 import { must } from '../../test/support.ts';
 import packRanksData from '../../data/pack-ranks.json' with { type: 'json' };
 import { packRanks, rankProblems } from './parse-ranks.ts';
-import type { PackRankDef, PackRanks } from './rank-types.ts';
+import type { PackRankDef, PackRanks, RankModChoice } from './rank-types.ts';
 import type { Content, PackMember, ZoneDef } from './types.ts';
 
 const RANKS: PackRanks = packRanks(packRanksData, 'packRanks');
@@ -24,17 +24,26 @@ void test('a rank reader refuses a plain rank with a chance, a later rank withou
   assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, members: { ...magic.members, mods: 1.5 } }] }, 'r'), /whole number/);
 });
 
-void test('rank problems name an unknown floor, an unknown or summoning pool modifier and a pool too small for the rolls', (): void => {
+void test('rank problems name an unknown floor, an unknown or summoning pool modifier, a pool too small for the rolls and an unknown pair kept apart', (): void => {
   const broken: PackRanks = {
     ...RANKS,
     ranks: RANKS.ranks.map((rank: PackRankDef): PackRankDef => (rank.leader === null ? rank : { ...rank, leader: { ...rank.leader, floor: 'mythic', mods: 9 } })),
-    pool: [...RANKS.pool, { mod: 'nothing', weight: 1 }, { mod: 'gravecalling', weight: 1 }],
+    pool: [...RANKS.pool, { mod: 'nothing', weight: 1, leader: false, from: 1 }, { mod: 'gravecalling', weight: 1, leader: true, from: 1 }],
+    apart: [...RANKS.apart, ['swift', 'nowhere']],
   };
   const problems: string[] = rankProblems({ ...ARENA_CONTENT, packRanks: broken });
   assert.ok(problems.some((problem: string): boolean => problem.includes('unknown rarity mythic')));
   assert.ok(problems.some((problem: string): boolean => problem.includes('unknown modifier nothing')));
   assert.ok(problems.some((problem: string): boolean => problem.includes('gravecalling summons')));
-  assert.ok(problems.some((problem: string): boolean => problem.includes('rolls 9 modifiers')));
+  assert.ok(problems.some((problem: string): boolean => problem.includes('modifiers of its own')));
+  assert.ok(problems.some((problem: string): boolean => problem.includes('name nowhere')));
+  const calling: PackRanks = { ...RANKS, pool: RANKS.pool.map((entry: RankModChoice): RankModChoice => (entry.mod === 'kincalling' ? { ...entry, leader: false } : entry)) };
+  assert.ok(rankProblems({ ...ARENA_CONTENT, packRanks: calling }).some((problem: string): boolean => problem.includes('kincalling summons')));
+});
+
+void test('a pair kept apart is two different modifier ids', (): void => {
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, apart: [['swift', 'swift']] }, 'r'), /two different/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, apart: [['swift']] }, 'r'), /pair/);
 });
 
 function namedRank(ranks: boolean, rank: string, members: readonly PackMember[]): Content {
@@ -64,4 +73,13 @@ void test('a ranked look reads its rim as a share and a leader boost, and needs 
   const unlit: PackRanks = { ...RANKS, ranks: RANKS.ranks.map((rank: PackRankDef): PackRankDef => (rank.look === null ? rank : { ...rank, aura: null })) };
   assert.ok(rankProblems({ ...ARENA_CONTENT, packRanks: unlit }).some((problem: string): boolean => problem.includes('no aura colour for its rim')));
   for (const rank of RANKS.ranks.slice(1)) assert.notEqual(rank.look, null, `${rank.id} is lit`);
+});
+
+void test('a rank chance may start at a level, and the stretch is a whole number of packs', (): void => {
+  const [plain, magic] = packRanksData.ranks;
+  if (plain === undefined || magic === undefined) throw new Error('the shipped ranks start with plain and magic');
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, chance: { base: 0.1, perLevel: 0, max: 0.1, from: 2.5 } }] }, 'r'), /whole number/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, stretch: 1.5 }, 'r'), /whole number/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, stretch: 0 }, 'r'), /at least 1/);
+  assert.ok(RANKS.stretch >= 1);
 });

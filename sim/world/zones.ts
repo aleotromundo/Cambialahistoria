@@ -17,6 +17,7 @@ import { beginVoid } from './wake.ts';
 import { clearMoments, startMoments } from './moments.ts';
 import { arriveWith } from './npc-walk.ts';
 import { leavingWith } from './scene.ts';
+import { freshRun } from './packs.ts';
 import { parkZone, restoreKept } from './portal-keep.ts';
 import { settleRunZone } from './run-state.ts';
 
@@ -91,6 +92,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   for (const monster of world.monsters) world.events.push({ type: 'monster_remove', monsterId: monster.id });
   world.monsters = [];
   world.spawnedPacks = [];
+  world.rankRun = freshRun();
   world.roused = [];
   world.packReturns = [];
   world.cachesOpened = [];

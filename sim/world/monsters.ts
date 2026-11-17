@@ -15,7 +15,8 @@ import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimer
 import { stepRecovery } from './poise.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
 import { monsterLevel, SPAWN, spawnMonster } from './spawn.ts';
-import { alarmTarget, spawnPack, surgeExtra, wakePack } from './packs.ts';
+import { stepTrail } from './trail.ts';
+import { alarmTarget, freshRun, spawnPack, surgeExtra, wakePack } from './packs.ts';
 import { mayStrike } from './factions.ts';
 import type { Side } from './factions.ts';
 import { homeReached, LEASH, shellPoint, shutOut } from './leash.ts';
@@ -458,6 +459,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   const local: number = dt * monster.tempo;
   stepAction(world, monster, local);
   trackProgress(monster, dt);
+  stepTrail(world, monster);
   if (local <= 0) return;
   const foe: Actor | null = monster.aggro ? foeOf(world, monster) : null;
   if (foe !== null && monster.summonerId === null && monster.def.summon !== null) summonOf(world, monster, monster.def.summon, local);
@@ -563,6 +565,7 @@ export function stepSurge(world: World, dt: number): void {
   world.surgeTimer = null;
   world.surge += 1;
   world.spawnedPacks = [];
+  world.rankRun = freshRun();
   world.roused = [];
   world.packReturns = [];
   spawnPacks(world);
