@@ -12,7 +12,12 @@
     "fade": 0.2,
     "interruptRest": 6,
     "elite": 0.7,
-    "boss": 0.8
+    "boss": 0.8,
+    "stunRest": 4,
+    "stunElite": 0.6,
+    "stunBoss": 0.35,
+    "leechElite": 0.5,
+    "leechBoss": 0.25
   },
   "scaling": {
     "lifePerLevel": 0.3,

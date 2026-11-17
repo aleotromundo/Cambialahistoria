@@ -75,6 +75,7 @@ const FIELD_WORDS: Readonly<Record<SkillModField, FieldWords>> = {
   momentumGracePercent: { word: 'momentum grace', count: false },
   lifePerHit: { word: 'life per hit', count: true },
   lifeOnHit: { word: 'life on hit', count: true },
+  leech: { word: 'life leech', count: false },
   echo: { word: 'echo', count: false },
 };
 

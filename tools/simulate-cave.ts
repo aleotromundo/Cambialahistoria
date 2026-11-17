@@ -1,6 +1,6 @@
 import type { Bot } from '../sim/bot.ts';
 import { botFight, botPlay, botStep, botWalkTo, createBot } from '../sim/bot.ts';
-import type { ZoneDef, ZonePack } from '../sim/content/types.ts';
+import type { PointGrant, ZoneDef, ZonePack } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { distance } from '../sim/math.ts';
 import type { NavGrid } from '../sim/nav/grid.ts';
@@ -13,8 +13,8 @@ import { enterZone } from '../sim/world/zones.ts';
 import { addToInventory, equipFromInventory, grantXp, refreshPlayer } from '../sim/world/character.ts';
 import { createRng } from '../sim/rng.ts';
 import { WEAPON_KINDS } from '../sim/content/item-types.ts';
-import type { ArmPlan } from './act-scaling.ts';
-import { typicalGear } from './act-scaling.ts';
+import type { ArmPlan, GearModel } from './act-scaling.ts';
+import { ACT_SCALING, typicalGear } from './act-scaling.ts';
 import { makeItem } from '../sim/world/ledger.ts';
 import { xpToNextLevel } from '../sim/progression.ts';
 import type { ItemInstance } from '../sim/world/types.ts';
@@ -38,6 +38,7 @@ export const CAVE = {
   shunReach: 24,
   throughMinutes: 30,
   gearRarity: 'stormtouched',
+  lowLife: 0.35,
 } as const;
 
 export const REFILL_AT: Readonly<Record<string, number>> = { careful: 0.9, average: 0.6, poor: 0.25 };
@@ -49,6 +50,9 @@ export interface CaveJob {
   readonly gear: readonly string[];
   readonly dress?: boolean;
   readonly arm?: readonly string[];
+  readonly gearModel?: GearModel;
+  readonly untilClear?: boolean;
+  readonly fresh?: boolean;
   readonly enterLevel: number;
   readonly minutes: number;
   readonly skill: string;
@@ -60,6 +64,7 @@ export interface CaveFight {
   readonly rank: string;
   readonly level: number;
   readonly lost: boolean;
+  readonly seconds: number;
 }
 
 export interface CaveDeath {
@@ -82,6 +87,8 @@ export interface CaveRun {
   readonly kills: number;
   readonly minutes: number;
   readonly farEndMinutes: number | null;
+  readonly clearMinutes: number | null;
+  readonly lowMinutes: number;
   readonly fights: readonly CaveFight[];
   readonly deathsAt: readonly CaveDeath[];
 }
@@ -90,6 +97,7 @@ interface OpenFight {
   readonly rank: string;
   readonly level: number;
   readonly members: readonly number[];
+  readonly at: number;
 }
 
 interface Hurt {
@@ -101,6 +109,8 @@ interface Tally {
   start: number;
   deaths: number;
   kills: number;
+  seen: number;
+  low: number;
   readonly levelMinutes: Record<string, number>;
   readonly open: Map<number, OpenFight>;
   readonly fights: CaveFight[];
@@ -174,6 +184,9 @@ function rankOf(monsters: readonly MonsterState[]): string {
 }
 
 function watch(world: World, tally: Tally, events: readonly WorldEvent[], ignored: Map<number, number>): void {
+  const player: PlayerState = world.player;
+  if (player.alive && player.life < player.maxLife * CAVE.lowLife) tally.low += Math.max(0, world.time - tally.seen);
+  tally.seen = world.time;
   for (const event of events) {
     if (event.type === 'level_up' && tally.levelMinutes[String(event.level)] === undefined) tally.levelMinutes[String(event.level)] = (world.time - tally.start) / 60;
     if (event.type === 'death' && event.team === 'player') {
@@ -182,7 +195,7 @@ function watch(world: World, tally: Tally, events: readonly WorldEvent[], ignore
       const near: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => recent.has(monster.id) || (monster.alive && distance(monster.pos, world.player.pos) <= CAVE.deathReach));
       tally.deathsAt.push({ heroLevel: world.player.level, foeLevel: Math.max(0, ...near.map((monster: MonsterState): number => monster.level)), foes: near.length, packs: new Set<number>(near.map((monster: MonsterState): number => monster.packId)).size, killer: `${world.death?.killer ?? 'unknown'} / ${world.death?.skill ?? 'unknown'}`, at: { x: Math.round(world.player.pos.x), z: Math.round(world.player.pos.z) }, minute: (world.time - tally.start) / 60, flasks: world.player.flasks.filter((flask: FlaskState): boolean => flask.def.resource === 'life').reduce((sum: number, flask: FlaskState): number => sum + Math.floor(flask.charges / Math.max(1, flask.def.chargesPerUse)), 0) });
       tally.hurt.length = 0;
-      for (const fight of tally.open.values()) tally.fights.push({ rank: fight.rank, level: fight.level, lost: true });
+      for (const fight of tally.open.values()) tally.fights.push({ rank: fight.rank, level: fight.level, lost: true, seconds: world.time - fight.at });
       tally.open.clear();
     }
     if (event.type === 'death' && event.team !== 'player') tally.kills += 1;
@@ -195,12 +208,12 @@ function watch(world: World, tally: Tally, events: readonly WorldEvent[], ignore
       const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.monsterId);
       if (monster === undefined || tally.open.has(monster.packId)) continue;
       const pack: MonsterState[] = world.monsters.filter((candidate: MonsterState): boolean => candidate.packId === monster.packId);
-      tally.open.set(monster.packId, { rank: rankOf(pack), level: monster.level, members: pack.map((member: MonsterState): number => member.id) });
+      tally.open.set(monster.packId, { rank: rankOf(pack), level: monster.level, members: pack.map((member: MonsterState): number => member.id), at: world.time });
     }
   }
   for (const [packId, fight] of tally.open) {
     if (world.monsters.some((monster: MonsterState): boolean => monster.alive && fight.members.includes(monster.id))) continue;
-    tally.fights.push({ rank: fight.rank, level: fight.level, lost: false });
+    tally.fights.push({ rank: fight.rank, level: fight.level, lost: false, seconds: world.time - fight.at });
     tally.open.delete(packId);
   }
 }
@@ -274,11 +287,17 @@ interface Sweep {
   readonly stopWhenClear: boolean;
 }
 
-function sweepZone(bot: Bot, sweep: Sweep, until: number): number | null {
+interface Swept {
+  readonly farEndMinutes: number | null;
+  readonly clearMinutes: number | null;
+}
+
+function sweepZone(bot: Bot, sweep: Sweep, until: number): Swept {
   const world: World = bot.world;
   const { zone, tally } = sweep;
   enterZone(world, zone, { type: 'start' });
   tally.start = world.time;
+  tally.seen = world.time;
   const end: Vec2 = farthestPoint(world.grid, walkDistances(world.grid, zone.playerStart));
   const cleared: Set<ZonePack> = new Set<ZonePack>();
   let farEndMinutes: number | null = null;
@@ -302,7 +321,7 @@ function sweepZone(bot: Bot, sweep: Sweep, until: number): number | null {
     const first: boolean = farEndMinutes === null;
     const target: Vec2 | null = pick(world, first ? cleared : null, skipped, tally) ?? (first ? end : null);
     if (target === null) {
-      if (!first && sweep.stopWhenClear) return farEndMinutes;
+      if (!first && sweep.stopWhenClear) return { farEndMinutes, clearMinutes: (world.time - tally.start) / 60 };
       botStep(bot, []);
       continue;
     }
@@ -312,11 +331,11 @@ function sweepZone(bot: Bot, sweep: Sweep, until: number): number | null {
     }
     botFight(bot, (): boolean => false, null);
   }
-  return farEndMinutes;
+  return { farEndMinutes, clearMinutes: null };
 }
 
 function emptyTally(): Tally {
-  return { start: 0, deaths: 0, kills: 0, levelMinutes: {}, open: new Map<number, OpenFight>(), fights: [], deathsAt: [], hurt: [] };
+  return { start: 0, deaths: 0, kills: 0, seen: 0, low: 0, levelMinutes: {}, open: new Map<number, OpenFight>(), fights: [], deathsAt: [], hurt: [] };
 }
 
 function raiseTo(world: World, level: number): void {
@@ -332,13 +351,13 @@ function wear(world: World, bases: readonly string[]): void {
   }
 }
 
-export function dressHero(world: World, build: BuildPolicy, seed: number, arm: readonly string[] = []): void {
+export function dressHero(world: World, build: BuildPolicy, seed: number, arm: readonly string[] = [], model: GearModel = ACT_SCALING.gear): void {
   const strange: string | undefined = arm.find((kind: string): boolean => !WEAPON_KINDS.some((known: string): boolean => known === kind));
   if (strange !== undefined) throw new Error(`no weapon kind ${strange}; the kinds are ${WEAPON_KINDS.join(', ')}`);
   const held: string | null = world.player.equipped.weapon === null ? null : (world.content.itemBases.get(world.player.equipped.weapon.base)?.weaponKind ?? null);
   const kinds: string[] = arm.length > 0 ? [...arm] : held === null ? [...WEAPON_KINDS] : [held];
   const plan: ArmPlan = { arm: { name: build.name, build: build.name, kinds }, weights: build.weights, focus: build.focus, route: world.player.allocated };
-  world.player.equipped = typicalGear(world.content, plan, world.player.level, createRng(seed));
+  world.player.equipped = typicalGear(world.content, plan, world.player.level, createRng(seed), model);
   refreshPlayer(world);
   world.player.life = world.player.maxLife;
 }
@@ -358,16 +377,20 @@ export function runCave(job: CaveJob, policies: Policies): CaveRun {
     if (inside && map !== undefined) watch(world, tally, events, map);
   }, planFor(skill, build));
   ignored.push(bot.ignored);
-  const empty = (entered: boolean): CaveRun => ({ job, entered, enteredAtLevel: world.player.level, levelMinutes: {}, deaths: 0, kills: 0, minutes: 0, farEndMinutes: null, fights: [], deathsAt: [] });
-  if (!playOpening(bot, skill)) return empty(false);
-  botPlay(bot);
-  farm(bot, world.time + CAVE.climbMinutes * 60, skill.loot, (): boolean => world.player.level >= job.enterLevel);
-  for (const before of through) if (before !== undefined) sweepZone(bot, { zone: before, tally: emptyTally(), skill: job.skill, stopWhenClear: true }, world.time + CAVE.throughMinutes * 60);
+  const empty = (entered: boolean): CaveRun => ({ job, entered, enteredAtLevel: world.player.level, levelMinutes: {}, deaths: 0, kills: 0, minutes: 0, farEndMinutes: null, clearMinutes: null, lowMinutes: 0, fights: [], deathsAt: [] });
+  if (job.fresh === true) {
+    world.player.skillPoints += world.content.chart.grants.reduce((sum: number, grant: PointGrant): number => sum + grant.points, 0);
+  } else {
+    if (!playOpening(bot, skill)) return empty(false);
+    botPlay(bot);
+    farm(bot, world.time + CAVE.climbMinutes * 60, skill.loot, (): boolean => world.player.level >= job.enterLevel);
+    for (const before of through) if (before !== undefined) sweepZone(bot, { zone: before, tally: emptyTally(), skill: job.skill, stopWhenClear: true }, world.time + CAVE.throughMinutes * 60);
+  }
   raiseTo(world, job.raise);
-  if (job.dress === true) dressHero(world, build, job.seed, job.arm ?? []);
+  if (job.dress === true) dressHero(world, build, job.seed, job.arm ?? [], job.gearModel ?? ACT_SCALING.gear);
   wear(world, job.gear);
   const enteredAtLevel: number = world.player.level;
   inside = true;
-  const farEndMinutes: number | null = sweepZone(bot, { zone, tally, skill: job.skill, stopWhenClear: false }, world.time + job.minutes * 60);
-  return { job, entered: true, enteredAtLevel, levelMinutes: tally.levelMinutes, deaths: tally.deaths, kills: tally.kills, minutes: (world.time - tally.start) / 60, farEndMinutes, fights: tally.fights, deathsAt: tally.deathsAt };
+  const swept: Swept = sweepZone(bot, { zone, tally, skill: job.skill, stopWhenClear: job.untilClear === true }, world.time + job.minutes * 60);
+  return { job, entered: true, enteredAtLevel, levelMinutes: tally.levelMinutes, deaths: tally.deaths, kills: tally.kills, minutes: (world.time - tally.start) / 60, farEndMinutes: swept.farEndMinutes, clearMinutes: swept.clearMinutes, lowMinutes: tally.low / 60, fights: tally.fights, deathsAt: tally.deathsAt };
 }

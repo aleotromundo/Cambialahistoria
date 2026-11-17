@@ -51,5 +51,6 @@ export function afterInterrupt(recovery: RecoveryDef, monster: MonsterState): vo
 export function stepRecovery(world: World, monster: MonsterState, dt: number): void {
   monster.recovery.guard = Math.max(0, monster.recovery.guard - dt);
   monster.recovery.unbroken = Math.max(0, monster.recovery.unbroken - dt);
+  monster.recovery.stunned = Math.max(0, monster.recovery.stunned - dt);
   monster.recovery.strain = Math.max(0, monster.recovery.strain - world.content.world.recovery.fade * dt);
 }

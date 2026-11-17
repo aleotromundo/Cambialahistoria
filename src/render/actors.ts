@@ -513,6 +513,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'soak':
             soakedFor(soaks, event.targetId, event.duration);
             break;
+          case 'stun':
+          case 'mend':
+            break;
           case 'damage': {
             const isPlayer: boolean = event.targetTeam === 'player';
             const stagger: boolean = isPlayer ? current.player.action === null && !current.player.moving : event.skill.stagger > 0;

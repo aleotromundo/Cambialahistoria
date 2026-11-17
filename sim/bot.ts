@@ -13,10 +13,11 @@ import { choicesOpen } from './world/death.ts';
 import { stepWorld } from './world/step.ts';
 import { fightZones, nearestFight } from './world/moments.ts';
 import { heldIn } from './world/bubble.ts';
+import { glidesWith } from './world/momentum.ts';
 import { heldAtLine, holdersOf, strikeWaiting } from './world/count.ts';
 import { markRow } from './world/hazards.ts';
 import { playerMayStrike } from './world/factions.ts';
-import type { Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import type { ActionState, Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -89,7 +90,8 @@ function planned(bot: Bot, commands: readonly Command[]): Command[] {
     const first: SkillTreeNodeDef | null = firstPlace(world);
     return first === null ? [...commands] : [...commands, { type: 'allocate', node: first.id }];
   }
-  const extra: Command[] = [...flaskCommands(world, plan), ...releaseCommands(world)];
+  const steered: boolean = commands.some((command: Command): boolean => command.type === 'steer');
+  const extra: Command[] = [...flaskCommands(world, plan), ...(steered ? [] : releaseCommands(world))];
   const place: string | null = nextPlace(world.content, plan, world.player.allocated, world.player.skillPoints);
   if (place !== null) extra.push({ type: 'allocate', node: place });
   if (plan.loot && bot.bagChanged && world.player.action === null) {
@@ -143,6 +145,11 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
   bot.events.push(...events);
   bot.watch?.(events);
   return events;
+}
+
+function gliding(world: World): boolean {
+  const action: ActionState | null = world.player.action;
+  return world.player.alive && action !== null && action.phase !== 'recovery' && glidesWith(action.skill.press);
 }
 
 function free(world: World): boolean {
@@ -318,7 +325,7 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
   if (bot.habits.dodges && world.player.alive && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const spot: Vec2 | null = world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest) ? null : refuge(world);
     const roll: Command | null = spot === null || bot.plan?.rolls !== true ? null : rollCommand(world, spot);
-    tick(bot, free(world) && spot !== null ? [roll ?? { type: 'move', held: false, dest: spot }] : []);
+    tick(bot, spot === null ? [] : free(world) ? [roll ?? { type: 'move', held: false, dest: spot }] : gliding(world) ? [{ type: 'steer', aim: spot }] : []);
     return true;
   }
   if (retreating(bot, hostile)) return true;

@@ -9,6 +9,9 @@ import { loadContent } from './content/content.ts';
 import { exitWithheld } from './content/withheld.ts';
 import type { Condition, Content, QuestDef, SkillDef, ZoneDef } from './content/types.ts';
 import { offenceOf } from './world/combat.ts';
+import { resolveSkill } from './stats.ts';
+import type { Vec2 } from './math.ts';
+import { stepWorld } from './world/step.ts';
 import { createWorld } from './world/create.ts';
 import { placeHazard } from './world/hazards.ts';
 import { startSkill } from './world/skills.ts';
@@ -144,4 +147,29 @@ void test('a foe that was dropped is not picked again as the preferred one, and 
   bot.ignored.clear();
   botFight(bot, (): boolean => world.player.intent.type === 'attack', foe.def.id);
   assert.notEqual(bot.focus, -1);
+});
+
+function goalOf(world: World): Vec2 | null {
+  return world.player.action?.goal ?? null;
+}
+
+void test('a careful bot caught in a telegraphed swing while the Millwheel turns steers the wheel out of it', (): void => {
+  const world: World = arena(22);
+  const spin: SkillDef = resolveSkill(world.content, must(world.content.skills.get('cleave'), 'cleave'), ['whirling_cleave', 'endless_turn']);
+  assert.ok(spin.press?.type === 'channel');
+  world.player.skills = [spin, null, null, null, null, null];
+  world.player.mana = 200;
+  const brute: MonsterState = place(world, 'test_brute', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
+  brute.aggro = true;
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: brute.pos, targetId: brute.id }], 1 / 60);
+  world.player.skills = [spin, null, null, null, null, null];
+  assert.ok(world.player.action !== null);
+  brute.cooldowns = {};
+  startSkill(world, brute, must(world.content.skills.get('test_slam'), 'slam'), { x: world.player.pos.x - brute.pos.x, z: world.player.pos.z - brute.pos.z });
+  assert.equal(botInDanger(world, world.player.pos), true);
+  let steps: number = 0;
+  botFight(createBot(world), (): boolean => (steps += 1) > 1, null);
+  const goal: Vec2 | null = goalOf(world);
+  assert.ok(goal !== null);
+  assert.equal(botInDanger(world, goal), false);
 });

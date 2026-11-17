@@ -131,7 +131,7 @@ function soak(value: unknown, where: string): SoakDef | null {
 function spend(value: unknown, where: string): MomentumSpend | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
-  return { damage: nonNegative(source, 'damage', where), area: nonNegative(source, 'area', where), range: nonNegative(source, 'range', where) };
+  return { damage: nonNegative(source, 'damage', where), area: nonNegative(source, 'area', where), range: nonNegative(source, 'range', where), stun: source['stun'] === undefined ? 0 : nonNegative(source, 'stun', where) };
 }
 
 export interface SkillPress {

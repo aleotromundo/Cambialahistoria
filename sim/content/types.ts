@@ -57,7 +57,7 @@ export interface StatMod {
   readonly value: number;
 }
 
-export const SKILL_MOD_FIELDS = ['damagePercent', 'areaPercent', 'rangePercent', 'durationPercent', 'cooldownPercent', 'manaCostPercent', 'knockbackPercent', 'staggerPercent', 'projectiles', 'pierce', 'chains', 'chainFalloff', 'momentumCapPercent', 'momentumGracePercent', 'lifePerHit', 'lifeOnHit', 'echo'] as const;
+export const SKILL_MOD_FIELDS = ['damagePercent', 'areaPercent', 'rangePercent', 'durationPercent', 'cooldownPercent', 'manaCostPercent', 'knockbackPercent', 'staggerPercent', 'projectiles', 'pierce', 'chains', 'chainFalloff', 'momentumCapPercent', 'momentumGracePercent', 'lifePerHit', 'lifeOnHit', 'leech', 'echo'] as const;
 export type SkillModField = (typeof SKILL_MOD_FIELDS)[number];
 
 export interface SkillMod {
@@ -156,7 +156,9 @@ export interface SkillDef extends SkillShape, SkillEchoing {
   readonly category: SkillCategory;
   readonly combo: SkillCombo | null;
   readonly hold: number;
+  readonly stun: number;
   readonly lifeOnHit: number;
+  readonly leech: number;
   readonly leaves: string | null;
 }
 

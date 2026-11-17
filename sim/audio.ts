@@ -231,11 +231,15 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'brand':
       found = bySkill(audio.brand, event.skill, event.pos);
       break;
+    case 'stun':
+      found = worldCues(audio, 'monster_stunned', event.pos);
+      break;
     case 'skill_interrupt':
     case 'chain':
     case 'beam':
     case 'blink':
     case 'soak':
+    case 'mend':
     case 'skill_unlocked':
     case 'chart_point':
     case 'monster_remove':

@@ -213,6 +213,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
     knockback: skill.knockback * (1 + sumSkillMod(mods, 'knockbackPercent')),
     stagger: skill.stagger * scaleOf(mods, 'staggerPercent'),
     lifeOnHit: skill.lifeOnHit + sumSkillMod(mods, 'lifeOnHit'),
+    leech: skill.leech + sumSkillMod(mods, 'leech'),
     ...echoOf(skill, sumSkillMod(mods, 'echo')),
     momentum: skill.momentum === null ? null : { ...skill.momentum, cap: Math.max(skill.momentum.perHit, skill.momentum.cap * scaleOf(mods, 'momentumCapPercent')), grace: skill.momentum.grace * scaleOf(mods, 'momentumGracePercent'), lifePerHit: skill.momentum.lifePerHit + sumSkillMod(mods, 'lifePerHit') },
   };

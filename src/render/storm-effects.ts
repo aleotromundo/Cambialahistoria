@@ -9,6 +9,8 @@ import { areaOf } from '../../sim/world/areas.ts';
 import { chargeOf, SKILLS } from '../../sim/world/skills.ts';
 import type { Actor, AreaState, EmpowerState, MonsterState, ProjectileState, World, WorldEvent } from '../../sim/world/types.ts';
 import { heldLook } from '../../sim/world/character.ts';
+import type { StunMarks } from './stun-marks.ts';
+import { createStunMarks } from './stun-marks.ts';
 import { glow, groundArcs, lightningLine, skyBolt } from './effect-shapes.ts';
 import type { GroundLight, GroundLightForm } from './ground-light.ts';
 import type { ShotTint } from './projectile-views.ts';
@@ -173,6 +175,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
   const areas: Map<number, AreaView> = new Map<number, AreaView>();
   const fading: GroundLight[] = [];
   const brands: Map<number, BrandView> = new Map<number, BrandView>();
+  const stuns: StunMarks = createStunMarks(kit);
   const veiledShots: Map<number, ShotTint> = new Map<number, ShotTint>();
   const veil: { color: Color | null; spark: Color; core: Color; wake: Color; skills: Set<string>; heroId: number } = { color: null, spark: new Color(), core: new Color(), wake: new Color(), skills: new Set<string>(), heroId: -1 };
   const white: Color = new Color(1, 1, 1);
@@ -645,11 +648,13 @@ export function createStormEffects(kit: StormKit): StormEffects {
       else if (event.type === 'damage') onLash(event);
       else if (event.type === 'projectile_spawn') onShot(event.projectile);
       else if (event.type === 'projectile_end') onShotEnd(event);
+      else if (event.type === 'stun') stuns.landed(event);
       else if (event.type === 'soak') wet.set(event.targetId, Math.max(wet.get(event.targetId) ?? 0, event.duration));
     },
     update(dt: number, world: World): void {
       updateAreas(dt, world);
       updateBrands(dt, world);
+      stuns.update(dt, world);
       drip(dt, world);
       burning(dt, world);
       updateVeil(dt, world);
@@ -667,6 +672,7 @@ export function createStormEffects(kit: StormKit): StormEffects {
       for (const light of fading.splice(0, fading.length)) light.dispose();
       for (const view of brands.values()) view.mark.dispose();
       brands.clear();
+      stuns.clear();
       wet.clear();
       veiledShots.clear();
       chargeGlow.intensity = 0;

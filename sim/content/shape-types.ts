@@ -88,6 +88,7 @@ export interface MomentumSpend {
   readonly damage: number;
   readonly area: number;
   readonly range: number;
+  readonly stun: number;
 }
 
 export interface SoakDef {

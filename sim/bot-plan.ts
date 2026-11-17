@@ -11,7 +11,7 @@ import { heldAtLine, strikeWaiting } from './world/count.ts';
 import { canDash } from './world/dash.ts';
 import { playerMayStrike } from './world/factions.ts';
 import { blockedFlask } from './world/flasks.ts';
-import { glidesWith } from './world/momentum.ts';
+import { glidesWith, momentumShare } from './world/momentum.ts';
 import { chargeOf, spunSkill } from './world/skills.ts';
 import type { Command, Equipment, FlaskState, ItemInstance, MonsterState, PlayerState, World } from './world/types.ts';
 
@@ -24,6 +24,7 @@ export const BOT_PLAN = {
   upgradeMargin: 1.02,
   spinSight: 14,
   spinGapCost: 0.15,
+  spendShare: 0.6,
 } as const;
 
 export type PlayStyle = 'stand' | 'range' | 'kite';
@@ -278,10 +279,19 @@ export function releaseCommands(world: World): Command[] {
     case 'channel': {
       if (!glidesWith(press)) return action.elapsed >= BOT_PLAN.channelSeconds ? [up] : [];
       const aim: ReadonlyVec2 | null = spinAim(world, action.skill);
-      return aim === null ? [up] : [{ type: 'steer', aim }];
+      return aim === null || spendReady(player, aim) ? [up] : [{ type: 'steer', aim }];
     }
   }
   return [];
+}
+
+function spends(skill: SkillDef | null): skill is SkillDef {
+  return skill !== null && skill.spend !== null;
+}
+
+function spendReady(player: PlayerState, aim: ReadonlyVec2): boolean {
+  if (momentumShare(player) < BOT_PLAN.spendShare) return false;
+  return player.skills.some((skill: SkillDef | null): boolean => spends(skill) && ready(player, skill) && distance(aim, player.pos) <= skill.engageRange);
 }
 
 function deals(skill: SkillDef): boolean {
@@ -297,6 +307,7 @@ function crowdNear(foes: readonly MonsterState[], at: ReadonlyVec2, reach: numbe
 }
 
 function worthCasting(plan: BotPlan, player: PlayerState, skill: SkillDef, target: MonsterState, foes: readonly MonsterState[]): boolean {
+  if (spends(skill) && momentumShare(player) < BOT_PLAN.spendShare) return false;
   const gap: number = distance(target.pos, player.pos) - target.radius;
   const delivery = skill.delivery;
   switch (delivery.type) {

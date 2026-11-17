@@ -213,3 +213,36 @@ void test('a spinning hero keeps holding and steers into the thickest crowd, and
   assert.equal(spinAim(world, spin), null);
   assert.deepEqual(releaseCommands(world), [{ type: 'hold', slot: 0, down: false }]);
 });
+
+void test('a spinning hero lets go to throw Millrace once the momentum is high and the wave is ready, and never throws it empty', (): void => {
+  const world: World = createWorld(content, { seed: 9, save: null });
+  const cleave: SkillDef | undefined = content.skills.get('cleave');
+  const race: SkillDef | undefined = content.skills.get('millrace');
+  assert.ok(cleave !== undefined && race !== undefined);
+  const spin: SkillDef = resolveSkill(content, cleave, ['whirling_cleave', 'endless_turn']);
+  const cap: number = spin.momentum?.cap ?? 0;
+  world.player.skills = [spin, race, null, null, null, null];
+  world.player.mana = 200;
+  world.monsters = [];
+  const at = world.player.pos;
+  const crowd: MonsterState[] = spawnPackNear(world, 'unfinished_taker', 4, { x: at.x + 3, z: at.z });
+  const target = crowd[0];
+  assert.ok(target !== undefined);
+  const opening: Command[] = planAttack(world, PLAN, target, crowd);
+  assert.deepEqual(opening[0], { type: 'hold', slot: 0, down: true });
+  stepWorld(world, opening, 1 / 60);
+  world.player.skills = [spin, race, null, null, null, null];
+  world.player.momentum = { skill: spin.id, value: cap * 0.3, quiet: 0 };
+  assert.equal(releaseCommands(world)[0]?.type, 'steer');
+  world.player.momentum = { skill: spin.id, value: cap * 0.8, quiet: 0 };
+  assert.deepEqual(releaseCommands(world), [{ type: 'hold', slot: 0, down: false }]);
+  world.player.cooldowns[race.id] = 2;
+  assert.equal(releaseCommands(world)[0]?.type, 'steer');
+  world.player.action = null;
+  world.player.cooldowns[race.id] = 0;
+  const thrown: Command[] = planAttack(world, PLAN, target, crowd);
+  assert.equal(thrown.some((command: Command): boolean => command.type === 'skill' && command.slot === 1), true);
+  world.player.momentum = { skill: spin.id, value: 0, quiet: 0 };
+  const empty: Command[] = planAttack(world, PLAN, target, crowd);
+  assert.equal(empty.some((command: Command): boolean => command.type === 'skill' && command.slot === 1), false);
+});

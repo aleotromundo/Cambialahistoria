@@ -522,6 +522,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'revive':
           case 'burn':
           case 'soak':
+          case 'stun':
+          case 'mend':
           case 'chain':
           case 'beam':
           case 'blink':

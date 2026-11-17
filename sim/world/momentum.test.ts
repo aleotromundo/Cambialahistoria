@@ -225,7 +225,7 @@ void test('a turn struck through a crowd numbers every enemy it hits', (): void 
   assert.ok(must(world.player.action, 'spin').skill.momentum !== null);
 });
 
-const SPEND: MomentumSpend = { damage: 0.1, area: 0.05, range: 0.05 };
+const SPEND: MomentumSpend = { damage: 0.1, area: 0.05, range: 0.05, stun: 0 };
 const WAVE: SkillDef = { ...shapeSkill('test_wire'), id: 'test_wave', manaCost: 1, cooldown: 0, windup: 0.05, recovery: 0.05, delivery: { type: 'projectile', speed: 20, radius: 1, range: 6, pierce: 99, count: 1, spreadDegrees: 0, interval: 0 }, damage: { type: 'physical', weaponPercent: 0, flatMin: 10, flatMax: 10 }, shake: 0.2, hitStop: 0.04, spend: SPEND };
 
 function launched(events: readonly WorldEvent[]): ProjectileState {
@@ -272,4 +272,13 @@ void test('a wave thrown with full momentum reaches an enemy the plain wave stop
   const hits: number[] = damageTo(run(charged, 1, [{ type: 'skill', slot: 1, aim: offset(0, 10), targetId: null }]), reached.id);
   assert.equal(hits.length, 1);
   assert.ok((hits[0] ?? 0) > 10);
+});
+
+void test('a skill that spends momentum and stuns stuns longer the more momentum it spends, and a skill with no stun gains none', (): void => {
+  const race: SkillDef = { ...shapeSkill('test_fork'), stun: 0.6, spend: { ...SPEND, stun: 0.9 } };
+  const cap: number = 24;
+  assert.equal(spentSkill(race, 0, 0).stun, 0.6);
+  assert.ok(Math.abs(spentSkill(race, cap / 2, 0.5).stun - 1.05) < 1e-9);
+  assert.ok(Math.abs(spentSkill(race, cap, 1).stun - 1.5) < 1e-9);
+  assert.equal(spentSkill({ ...race, stun: 0 }, cap, 1).stun, 0);
 });

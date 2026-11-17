@@ -43,6 +43,11 @@ export interface RecoveryDef {
   readonly interruptRest: number;
   readonly elite: number;
   readonly boss: number;
+  readonly stunRest: number;
+  readonly stunElite: number;
+  readonly stunBoss: number;
+  readonly leechElite: number;
+  readonly leechBoss: number;
 }
 
 export interface SkillEchoing {

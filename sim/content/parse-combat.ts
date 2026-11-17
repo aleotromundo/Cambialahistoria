@@ -58,7 +58,9 @@ export interface SkillMotion extends SkillEchoing {
   readonly leap: SkillLeap | null;
   readonly root: number;
   readonly hold: number;
+  readonly stun: number;
   readonly lifeOnHit: number;
+  readonly leech: number;
   readonly commit: SkillCommit | null;
   readonly leaves: string | null;
 }
@@ -68,10 +70,12 @@ export function skillMotion(source: Fields, where: string): SkillMotion {
     leap: optional(source['leap'], `${where}.leap`, leap),
     root: zeroOrMore(source, 'root', where),
     hold: zeroOrMore(source, 'hold', where),
+    stun: zeroOrMore(source, 'stun', where),
     echo: zeroOrMore(source, 'echo', where),
     echoTurn: source['echoTurn'] === undefined ? 0 : numeric(source, 'echoTurn', where),
     echoShare: source['echoShare'] === undefined ? 1 : share(source, 'echoShare', where),
     lifeOnHit: zeroOrMore(source, 'lifeOnHit', where),
+    leech: source['leech'] === undefined ? 0 : share(source, 'leech', where),
     commit: optional(source['commit'], `${where}.commit`, commit),
     leaves: source['leaves'] === undefined ? null : text(source, 'leaves', where),
   };

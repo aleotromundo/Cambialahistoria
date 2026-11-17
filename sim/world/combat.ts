@@ -22,6 +22,8 @@ import { afterHold, afterInterrupt, holdScale, recovering, steadiness, unbroken 
 import { settleTurn, steadied } from './momentum.ts';
 import { flinchTogether } from './unison.ts';
 import { dealtScale } from './weaken.ts';
+import { mendActor } from './mend.ts';
+import { leechScale, stunMonster, stunned } from './stun.ts';
 import { holdLine, openScale, strike } from './count.ts';
 import type { ActionState, Actor, BrandState, BurnState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
 import { sameFloor } from './floors.ts';
@@ -151,7 +153,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
 }
 
 export function guardOutcome(target: Actor, skill: SkillDef, direction: ReadonlyVec2): GuardOutcome {
-  if (target.kind !== 'monster' || target.def.guard === null || target.stagger > 0 || target.action?.phase === 'recovery') return 'open';
+  if (target.kind !== 'monster' || target.def.guard === null || target.stagger > 0 || stunned(target) || target.action?.phase === 'recovery') return 'open';
   const front: number = dot(directionOf(target.facing), { x: -direction.x, z: -direction.z });
   if (front < Math.cos((target.def.guard.arcDegrees / 2) * DEGREES_TO_RADIANS)) return 'open';
   return skill.stagger >= target.def.guard.breakStagger ? 'broken' : 'blocked';
@@ -207,11 +209,12 @@ function holdMonster(world: World, target: MonsterState, skill: SkillDef, guard:
   afterHold(recovery, target, Math.max(staggered ? target.stagger : 0, pushed ? knockTime(target) : 0));
 }
 
-function mendSource(world: World, offence: Offence, target: Actor, skill: SkillDef): void {
-  if (skill.lifeOnHit <= 0) return;
+function mendSource(world: World, offence: Offence, target: Actor, skill: SkillDef, dealt: number): void {
+  if (skill.lifeOnHit <= 0 && skill.leech <= 0) return;
   const source: Actor | null = findActor(world, offence.sourceId);
   if (source === null || source === target || !source.alive) return;
-  source.life = Math.min(source.maxLife, source.life + skill.lifeOnHit);
+  const leech: number = target.kind === 'monster' ? leechScale(world.content.world.recovery, target) : 1;
+  mendActor(world, source, skill.lifeOnHit + dealt * skill.leech * leech);
 }
 
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
@@ -227,6 +230,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const exposed: number = target.kind === 'monster' ? openScale(world, target) * collateralScale(offence, target) : 1;
   const rolled: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded * weakened * exposed));
   const amount: number = target.kind === 'monster' ? holdLine(world, target, strike(world, target, rolled)) : rolled;
+  const dealt: number = Math.max(0, Math.min(amount, target.life));
   target.life -= amount;
   const poise: number = steadiness(target) * (guard === 'blocked' ? COMBAT.guardedKnockback : 1);
   const push: ReadonlyVec2 = { x: direction.x * skill.knockback * poise, z: direction.z * skill.knockback * poise };
@@ -240,6 +244,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     target.calm = 0;
     provoke(world, target, offence.sourceId, offence.faction ?? PLAYER_SIDE);
     holdMonster(world, target, skill, guard, push, steady);
+    if (skill.stun > 0 && target.life > 0) stunMonster(world, target, skill.stun);
     if (guard !== 'open') world.events.push({ type: 'guarded', monsterId: target.id, broken: guard === 'broken', pos: { x: target.pos.x, z: target.pos.z }, direction: { x: direction.x, z: direction.z } });
     if (!target.aggro) {
       target.aggro = true;
@@ -248,7 +253,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     aggroPack(world, target);
   }
   if (target.kind === 'player' && !steady) knockBack(target, push);
-  mendSource(world, offence, target, skill);
+  mendSource(world, offence, target, skill, dealt);
   const killed: boolean = target.life <= 0;
   world.events.push({
     type: 'damage',

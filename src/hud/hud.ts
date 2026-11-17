@@ -350,6 +350,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'damage':
             if (event.targetTeam === 'player') globes.flashLife();
             break;
+          case 'mend':
+            if (event.actorId === api.world.player.id) globes.mendLife();
+            break;
           case 'skill_start':
             if (event.actorId === api.world.player.id) skillBar.press(event.skill.id);
             break;
@@ -476,6 +479,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'blink':
           case 'burn':
           case 'soak':
+          case 'stun':
           case 'brand':
           case 'surge_cleared':
           case 'portal':

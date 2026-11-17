@@ -241,6 +241,7 @@ export interface RecoveryState {
   guard: number;
   strain: number;
   unbroken: number;
+  stunned: number;
 }
 
 export type Actor = PlayerState | MonsterState;
@@ -372,6 +373,8 @@ export type WorldEvent =
   | { readonly type: 'damage'; readonly targetId: number; readonly sourceId: number; readonly targetTeam: Team; readonly amount: number; readonly crit: boolean; readonly killed: boolean; readonly pos: Vec2; readonly direction: Vec2; readonly skill: SkillDef; readonly burn: boolean }
   | { readonly type: 'burn'; readonly targetId: number; readonly skill: SkillDef; readonly pos: Vec2; readonly duration: number }
   | { readonly type: 'soak'; readonly targetId: number; readonly skill: SkillDef; readonly pos: Vec2; readonly duration: number }
+  | { readonly type: 'stun'; readonly monsterId: number; readonly pos: Vec2; readonly duration: number }
+  | { readonly type: 'mend'; readonly actorId: number; readonly amount: number }
   | { readonly type: 'guarded'; readonly monsterId: number; readonly broken: boolean; readonly pos: Vec2; readonly direction: Vec2 }
   | { readonly type: 'area'; readonly area: AreaState; readonly stage: AreaStage; readonly hits: number }
   | { readonly type: 'chain'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly points: readonly Vec2[] }

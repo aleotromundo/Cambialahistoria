@@ -11,6 +11,7 @@ import { svg } from './svg.ts';
 const GLOBES = {
   fillStep: 0.005,
   hitMs: 140,
+  mendMs: 260,
   goldRate: 7,
   low: 0.25,
   box: 132,
@@ -47,6 +48,7 @@ interface GlobeView {
 export interface Globes {
   update(player: PlayerState, dt: number): void;
   flashLife(): void;
+  mendLife(): void;
   setRestoring(resource: FlaskResource, on: boolean): void;
   flask(resource: FlaskResource): HTMLElement;
   setWaiting(text: string): void;
@@ -75,6 +77,7 @@ function buildGlobe(parent: HTMLElement, kind: FlaskResource): GlobeView {
   front.innerHTML = WAVE;
   el('div', 'globe-frost', glass);
   el('div', 'globe-flash', glass);
+  el('div', 'globe-mend', glass);
   el('div', 'globe-restore', glass);
   const gloss: HTMLDivElement = el('div', 'globe-gloss', glass);
   gloss.innerHTML = GLASS;
@@ -145,6 +148,9 @@ export function createGlobes(root: HTMLElement): Globes {
     },
     flashLife(): void {
       pulseClass(life.globe, 'hit', GLOBES.hitMs);
+    },
+    mendLife(): void {
+      pulseClass(life.globe, 'mending', GLOBES.mendMs);
     },
     setRestoring(resource: FlaskResource, on: boolean): void {
       viewOf(resource).globe.classList.toggle('restoring', on);

@@ -317,7 +317,7 @@ export function turnRate(actor: Actor, action: ActionState): number {
 
 function resolveImpact(world: World, actor: Actor, action: ActionState, skill: SkillDef): void {
   const hits: number = resolve(world, { actor, offence: offenceOf(actor), skill: spendMomentum(actor, spunSkill(actor, skill)), origin: actor.pos, direction: action.direction, target: action.target, echo: false }, teamOf(actor));
-  feedMomentum(actor, skill, hits);
+  feedMomentum(world, actor, skill, hits);
 }
 
 export function stepEchoes(world: World, dt: number): void {

@@ -284,6 +284,7 @@
     "moment_calm": [{ "sound": "bubble_calm", "volume": 0.45, "maxVoices": 1 }],
     "moment_hostile": [{ "sound": "bubble_hostile", "volume": 0.85, "maxVoices": 1 }],
     "moment_strike": [{ "sound": "thunder_crack", "volume": 0.55, "maxVoices": 2, "cooldown": 0.6, "reach": 90 }, { "sound": "ground_boom", "volume": 0.4, "maxVoices": 2, "cooldown": 0.6, "reach": 70 }, { "sound": "bubble_calm", "volume": 0.6, "maxVoices": 2, "cooldown": 0.6, "reach": 70 }],
+    "monster_stunned": [{"sound": "shimmer_faint", "volume": 0.55, "maxVoices": 2, "cooldown": 0.25, "reach": 40}],
     "moment_strike_soft": [{ "sound": "thunder_crack", "volume": 0.25, "maxVoices": 2, "cooldown": 0.6, "reach": 60 }, { "sound": "ground_boom", "volume": 0.18, "maxVoices": 2, "cooldown": 0.6, "reach": 50 }, { "sound": "bubble_calm", "volume": 0.35, "maxVoices": 2, "cooldown": 0.6, "reach": 50 }]
   },
   "encounterNearing": {

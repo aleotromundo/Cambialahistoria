@@ -6,7 +6,8 @@ import type { NavGrid } from '../nav/grid.ts';
 import { moveWithCollision } from '../nav/grid.ts';
 import { lengthened, widenedSkill } from '../widen.ts';
 import type { MomentumState } from './momentum-types.ts';
-import type { ActionState, Actor, PlayerState } from './types.ts';
+import { mendActor } from './mend.ts';
+import type { ActionState, Actor, PlayerState, World } from './types.ts';
 
 export const MOMENTUM = {
   arrive: 0.5,
@@ -43,7 +44,7 @@ export function momentumShare(player: PlayerState): number {
   return def === null ? 0 : Math.min(1, player.momentum.value / def.cap);
 }
 
-export function feedMomentum(actor: Actor, skill: SkillDef, hits: number): void {
+export function feedMomentum(world: World, actor: Actor, skill: SkillDef, hits: number): void {
   const def: MomentumDef | null = skill.momentum;
   if (actor.kind !== 'player' || def === null || hits <= 0) return;
   const state: MomentumState = actor.momentum;
@@ -54,7 +55,7 @@ export function feedMomentum(actor: Actor, skill: SkillDef, hits: number): void 
   state.value = Math.min(def.cap, state.value + def.perHit * hits);
   state.quiet = 0;
   actor.mana = Math.min(actor.stats.maxMana, actor.mana + def.manaPerHit * hits);
-  actor.life = Math.min(actor.maxLife, actor.life + def.lifePerHit * hits);
+  mendActor(world, actor, def.lifePerHit * hits);
 }
 
 export function spentSkill(skill: SkillDef, held: number, share: number): SkillDef {
@@ -69,6 +70,7 @@ export function spentSkill(skill: SkillDef, held: number, share: number): SkillD
     damage: { ...skill.damage, weaponPercent: skill.damage.weaponPercent * power, flatMin: skill.damage.flatMin * power, flatMax: skill.damage.flatMax * power },
     shake: skill.shake * weight,
     hitStop: skill.hitStop * weight,
+    stun: skill.stun > 0 ? skill.stun + spend.stun * share : 0,
     spent: share,
   };
 }

@@ -291,11 +291,13 @@ void test('variants that lead back to a skill already passed stop instead of tur
   assert.deepEqual(variantChain(content, skillOf('cleave'), [], [power]).through, ['cleave', 'cleave_whirl']);
 });
 
-void test('the Millstone widens the momentum cap and heals for every enemy struck, and the Long Wake stretches the grace', (): void => {
+void test('the Millstone widens the momentum cap and more than doubles the Millwheel leech, and the Long Wake stretches the grace', (): void => {
   const base = must(skillOf('cleave_millwheel').momentum, 'momentum');
   const stone = must(resolveSkill(content, skillOf('cleave'), [...MILLRACE, 'millstone']).momentum, 'momentum');
   assert.equal(stone.cap, base.cap * 1.5);
-  assert.equal(stone.lifePerHit, base.lifePerHit + 2);
+  const leech: number = skillOf('cleave_millwheel').leech;
+  assert.ok(leech > 0);
+  assert.ok(resolveSkill(content, skillOf('cleave'), [...MILLRACE, 'millstone']).leech > leech * 2);
   assert.equal(stone.grace, base.grace);
   const wake = must(resolveSkill(content, skillOf('cleave'), [...MILLRACE, 'long_wake']).momentum, 'momentum');
   assert.ok(Math.abs(wake.grace - base.grace * 1.6) < 1e-9);

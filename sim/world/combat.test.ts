@@ -54,6 +54,11 @@ void test('the guard opens from behind, while the brute is staggered, and in the
   target.stagger = 0.5;
   assert.equal(guardOutcome(target, light, front), 'open');
   target.stagger = 0;
+  target.tempo = 0;
+  target.tempoTime = 1;
+  assert.equal(guardOutcome(target, light, front), 'open');
+  target.tempo = 1;
+  target.tempoTime = 0;
   target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null, turned: 0 };
   assert.equal(guardOutcome(target, light, front), 'open');
   target.action = { ...target.action, phase: 'windup' };
@@ -236,7 +241,7 @@ void test('a light hit early in a Haymaker interrupts it, but past its commit po
 
 function rested(monster: MonsterState): void {
   monster.stagger = 0;
-  monster.recovery = { guard: 0, strain: 0, unbroken: 0 };
+  monster.recovery = { guard: 0, strain: 0, unbroken: 0, stunned: 0 };
 }
 
 void test('a brute interrupted as often in a row as its resolve holds its next Haymaker against light hits, and a finished swing starts the count again', (): void => {
@@ -321,4 +326,27 @@ void test('a soaking hit slows the enemy for its time and says so, and a hit tha
   target.alive = false;
   drench(world, target, soaking);
   assert.equal(world.events.filter((event: WorldEvent): boolean => event.type === 'soak').length, 1);
+});
+
+void test('a leeching hit gives back its share of the life it took, half from a magic monster, and only what the target had left', (): void => {
+  const world: World = arena(5);
+  const skill: SkillDef = { ...light, leech: 0.1, lifeOnHit: 0 };
+  const plain: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 3 });
+  world.player.life = 1;
+  const before: number = plain.life;
+  applyHit(world, { ...offenceOf(world.player), critChance: 0 }, plain, skill, { x: 0, z: 1 });
+  const taken: number = before - plain.life;
+  assert.ok(Math.abs(world.player.life - 1 - taken * 0.1) < 1e-9);
+  assert.ok(world.events.some((event: WorldEvent): boolean => event.type === 'mend' && event.actorId === world.player.id));
+  const swift: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z + 3 }, ['test_swift']);
+  world.player.life = 1;
+  const swiftBefore: number = swift.life;
+  applyHit(world, { ...offenceOf(world.player), critChance: 0 }, swift, skill, { x: 0, z: 1 });
+  const swiftTaken: number = swiftBefore - swift.life;
+  assert.ok(Math.abs(world.player.life - 1 - swiftTaken * 0.1 * ARENA_CONTENT.world.recovery.leechElite) < 1e-9);
+  const last: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x - 3, z: ARENA_CENTRE.z + 3 });
+  last.life = 2;
+  world.player.life = 1;
+  applyHit(world, { ...offenceOf(world.player), critChance: 0, damageMin: 500, damageMax: 500 }, last, skill, { x: 0, z: 1 });
+  assert.ok(Math.abs(world.player.life - 1.2) < 1e-9);
 });
