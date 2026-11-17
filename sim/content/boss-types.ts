@@ -37,7 +37,6 @@ export interface BossPoise {
 export interface BossDrop {
   readonly items: number;
   readonly floor: string;
-  readonly rarity: string;
   readonly goldMin: number;
   readonly goldMax: number;
 }

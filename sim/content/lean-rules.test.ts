@@ -15,7 +15,7 @@ void test('the shipped leans check out, and each Act I area and the boss court h
   for (const zone of ['under_hall', 'lava_depths_2', 'ledger_hall_3', 'ledger_court']) assert.notEqual(leanOf(leaning, zone), null, zone);
   assert.equal(leanOf(leaning, 'hideout'), null);
   assert.equal(leanOf(leaning, null), null);
-  assert.equal(leanOf(content, 'under_hall'), null);
+  assert.equal(leanOf({ ...content, leaning: false }, 'under_hall'), null);
 });
 
 void test('a lean naming things that do not exist, sharing a zone, or favouring nothing is reported', (): void => {

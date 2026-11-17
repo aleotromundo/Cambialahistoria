@@ -313,14 +313,15 @@ void test('the roll the server calls, six arguments and no zone, still rolls the
   }
 });
 
-void test('with the leaning switch off, as shipped, every leaned zone rolls exactly what the server rolls with no zone', (): void => {
-  assert.equal(content.leaning, false);
-  for (const lean of content.leans) {
+void test('with the leaning switch off every leaned zone rolls exactly what an unleaned roll gives, and the shipped data has it on', (): void => {
+  assert.equal(content.leaning, true);
+  const still: Content = { ...content, leaning: false };
+  for (const lean of still.leans) {
     for (const zone of lean.zones) {
       for (let seed: number = 1; seed <= 12; seed += 1) {
-        const server: ItemInstance | null = generateItem(content, createRng(seed), 0, 20, null, null);
-        assert.deepEqual(rollItem(content, createRng(seed), 0, 20, { base: null, rarity: null, floor: null, zone }), server, zone);
-        assert.deepEqual(rollItem(content, createRng(seed), 0, 20, { base: null, rarity: 'rare', floor: null, zone }), generateItem(content, createRng(seed), 0, 20, null, 'rare'), zone);
+        const server: ItemInstance | null = generateItem(still, createRng(seed), 0, 20, null, null);
+        assert.deepEqual(rollItem(still, createRng(seed), 0, 20, { base: null, rarity: null, floor: null, zone }), server, zone);
+        assert.deepEqual(rollItem(still, createRng(seed), 0, 20, { base: null, rarity: 'rare', floor: null, zone }), generateItem(still, createRng(seed), 0, 20, null, 'rare'), zone);
       }
     }
   }

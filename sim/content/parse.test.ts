@@ -255,7 +255,7 @@ void test('a boss block parses with its phases, poise, drop and barks, and a pac
   ]);
   assert.deepEqual(must(boss.phases[1], 'phase').barks, []);
   assert.deepEqual(boss.poise, { knockback: 0.2 });
-  assert.deepEqual(boss.drop, { items: 1, floor: 'rare', rarity: 'rare', goldMin: 30, goldMax: 50 });
+  assert.deepEqual(boss.drop, { items: 1, floor: 'rare', goldMin: 30, goldMax: 50 });
   assert.equal(boss.firstKill, null);
   assert.deepEqual(must(must(content.monsters.get('timekeeper_gatekeeper'), 'gatekeeper').boss, 'gatekeeper block').firstKill, { flag: 'keeper_defeated', xpShare: 0.5, goldMin: 200, goldMax: 260 });
   assert.deepEqual(boss.barks, { aggro: [], death: [] });
