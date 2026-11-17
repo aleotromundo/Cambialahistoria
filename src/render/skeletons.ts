@@ -1,5 +1,19 @@
-import type { Bone, Matrix4, Object3D, Skeleton } from 'three';
-import { SkinnedMesh } from 'three';
+import type { Euler, Matrix4, Object3D, Skeleton } from 'three';
+import { Bone, SkinnedMesh } from 'three';
+
+function keepAngles(angles: Euler): void {
+  angles.setFromQuaternion = (): Euler => angles;
+}
+
+export function quietBones(root: Object3D): number {
+  let quieted: number = 0;
+  root.traverse((object: Object3D): void => {
+    if (!(object instanceof Bone)) return;
+    keepAngles(object.rotation);
+    quieted += 1;
+  });
+  return quieted;
+}
 
 export function disposeSkeletons(root: Object3D): number {
   const skeletons: Set<Skeleton> = new Set<Skeleton>();
