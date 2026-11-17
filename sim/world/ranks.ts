@@ -80,11 +80,11 @@ function scaled(def: MonsterDef, rank: PackRankDef, scale: RankScale, leader: bo
   };
 }
 
-export function rankPack(content: Content, rng: Rng, rank: PackRankDef | null, bases: readonly MonsterDef[], level: number): MonsterDef[] {
+export function rankPack(content: Content, rng: Rng, rank: PackRankDef | null, bases: readonly MonsterDef[], level: number, pinned: readonly MonsterModDef[] = []): MonsterDef[] {
   if (rank === null || rank.chance === null || bases.length === 0) return [...bases];
   const lead: RankScale | null = rank.leader;
-  const shared: MonsterModDef[] = rollMods(content, rng, rank.members.mods, false, [], level);
-  const mods: MonsterModDef[] = lead === null ? shared : [...shared, ...rollMods(content, rng, Math.max(0, lead.mods - rank.members.mods), true, shared, level)];
+  const shared: MonsterModDef[] = rollMods(content, rng, rank.members.mods, false, pinned, level);
+  const mods: MonsterModDef[] = lead === null ? shared : [...shared, ...rollMods(content, rng, Math.max(0, lead.mods - rank.members.mods), true, [...pinned, ...shared], level)];
   const leader: number = lead === null ? -1 : leaderIndex(bases);
   const title: string | null = lead === null ? null : `${pickName(rng, content.packRanks.names.first)} ${pickName(rng, content.packRanks.names.second)}`;
   return bases.map((base: MonsterDef, index: number): MonsterDef => {

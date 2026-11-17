@@ -3,7 +3,7 @@ import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import { pinPrices, reachedLevels, runPrice } from '../../sim/world/run-table.ts';
 import { levelKinds, pickChoices, pickName } from '../../sim/world/run-picks.ts';
 import type { PickChoice } from '../../sim/world/run-picks.ts';
-import { clashIn, dangerOf, pinned, rewardOf } from '../../sim/world/run-state.ts';
+import { clashIn, conditionFrom, dangerOf, pinned, rewardOf, tooEarly } from '../../sim/world/run-state.ts';
 import type { PinnedCondition } from '../../sim/world/run-state.ts';
 import type { RunPin, RunSetup } from '../../sim/world/run-types.ts';
 import type { Command, World } from '../../sim/world/types.ts';
@@ -61,6 +61,7 @@ const TABLE_WORDS = {
   noLevels: 'No level to set out to yet',
   pickFor: 'Pick one for',
   nothingHere: 'Nothing to pick on this level',
+  from: 'From level',
   short: 'Not enough gold',
   plain: 'No conditions: an ordinary descent',
   noLast: 'Nothing set out from here yet',
@@ -122,7 +123,8 @@ export function chooseLevel(world: World, pick: TablePick, zoneId: string): Tabl
     const condition: RunCondition | null = conditionOf(world.content, pin.condition);
     return pin.pick === null || (condition !== null && pickChoices(world.content, condition.pick, zone).some((choice: PickChoice): boolean => choice.id === pin.pick));
   };
-  return { zone: zone.id, pins: pick.pins.map((pin: RunPin): RunPin => (kept(pin) ? pin : { condition: pin.condition, pick: null })) };
+  const allowed: RunPin[] = pick.pins.filter((pin: RunPin): boolean => !tooEarly(world.content, zone, pin.condition));
+  return { zone: zone.id, pins: allowed.map((pin: RunPin): RunPin => (kept(pin) ? pin : { condition: pin.condition, pick: null })) };
 }
 
 export function togglePin(world: World, pick: TablePick, conditionId: string): TablePick {
@@ -130,6 +132,7 @@ export function togglePin(world: World, pick: TablePick, conditionId: string): T
   const condition: RunCondition | null = conditionOf(world.content, conditionId);
   if (condition === null || pick.pins.length >= world.content.runTable.pins || clashIn(world.content, pick.pins, conditionId) !== null) return pick;
   const zone: ZoneDef | undefined = pick.zone === null ? undefined : world.content.zones.get(pick.zone);
+  if (zone !== undefined && tooEarly(world.content, zone, conditionId)) return pick;
   const first: string | null = zone === undefined ? null : (pickChoices(world.content, condition.pick, zone)[0]?.id ?? null);
   return { zone: pick.zone, pins: [...pick.pins, { condition: conditionId, pick: first }] };
 }
@@ -180,15 +183,17 @@ export function tableView(world: World, pick: TablePick): TableView {
     const clashName: string = clash === null ? '' : (conditionOf(content, clash)?.name ?? clash);
     const choices: PickChoice[] = zone === null ? [] : pickChoices(content, condition.pick, zone);
     const empty: boolean = condition.pick !== 'none' && zone !== null && choices.length === 0;
+    const from: number = conditionFrom(content, condition);
+    const early: boolean = zone !== null && from > zone.level;
     return {
       id: condition.id,
       name: condition.name,
       text: condition.text,
       price,
       reward: rewardText(condition.reward),
-      danger: clash !== null ? `${TABLE_WORDS.clash} ${clashName}` : empty ? TABLE_WORDS.nothingHere : dangerText(condition.danger),
+      danger: clash !== null ? `${TABLE_WORDS.clash} ${clashName}` : early ? `${TABLE_WORDS.from} ${from}` : empty ? TABLE_WORDS.nothingHere : dangerText(condition.danger),
       pinned: at >= 0,
-      open: at >= 0 || (!full && zone !== null && clash === null && !empty),
+      open: at >= 0 || (!full && zone !== null && clash === null && !empty && !early),
       kinds: at >= 0 ? choices.map((choice: PickChoice): KindChip => ({ id: choice.id, name: choice.name, chosen: choice.id === chosen })) : [],
     };
   });

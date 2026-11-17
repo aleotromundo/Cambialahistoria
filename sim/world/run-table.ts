@@ -3,7 +3,7 @@ import type { Content, MonsterDef, PackMember, RarityDef, ZoneDef, ZonePack } fr
 import type { PackRankDef } from '../content/rank-types.ts';
 import { rankChance } from './ranks.ts';
 import { closePortal } from './portal.ts';
-import { clashIn, pinned } from './run-state.ts';
+import { clashIn, pinned, tooEarly } from './run-state.ts';
 import type { PinnedCondition } from './run-state.ts';
 import { copySetup } from './run-state.ts';
 import type { RunPin, RunSetup } from './run-types.ts';
@@ -101,7 +101,7 @@ export function setupProblem(world: World, setup: RunSetup): RunRefusal | null {
   if (zone === undefined || !reachedLevels(world).includes(zone)) return 'level';
   const ids: string[] = setup.pins.map((pin: RunPin): string => pin.condition);
   if (setup.pins.length > table.pins || new Set<string>(ids).size !== ids.length) return 'pins';
-  if (setup.pins.some((pin: RunPin): boolean => clashIn(world.content, setup.pins, pin.condition) !== null)) return 'pins';
+  if (setup.pins.some((pin: RunPin): boolean => clashIn(world.content, setup.pins, pin.condition) !== null || tooEarly(world.content, zone, pin.condition))) return 'pins';
   for (const pin of setup.pins) {
     const problem: RunRefusal | null = pinProblem(world.content, zone, pin);
     if (problem !== null) return problem;

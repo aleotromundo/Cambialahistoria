@@ -103,6 +103,18 @@ void test('one family offers the families the level holds, and none where the le
   assert.equal(shapedLine(world, 'under_hall'), 'Shaped · One family: Many legs');
 });
 
+void test('a pin that only rolls deeper is closed on a shallower level and dropped on moving there', (): void => {
+  const world: World = table(100000);
+  const shallow: TableView = tableView(world, { zone: 'under_hall', pins: [] });
+  assert.equal(row(shallow, 'stormlit').open, false);
+  assert.equal(row(shallow, 'stormlit').danger, 'From level 14');
+  assert.deepEqual(togglePin(world, { zone: 'under_hall', pins: [] }, 'stormlit'), { zone: 'under_hall', pins: [] });
+  const deep: TablePick = togglePin(world, { zone: 'under_hall_2', pins: [] }, 'stormlit');
+  assert.equal(deep.pins.length, 1);
+  assert.equal(row(tableView(world, deep), 'rimebound').danger, 'Cannot be pinned with Stormlit packs');
+  assert.deepEqual(chooseLevel(world, deep, 'under_hall').pins, []);
+});
+
 void test('a condition that clashes with a pinned one is closed, says why, and cannot be pinned', (): void => {
   const world: World = table(100000);
   const pick: TablePick = togglePin(world, firstPick(world), 'crowded');

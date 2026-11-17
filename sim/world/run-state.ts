@@ -2,6 +2,7 @@ import type { RunCondition, RunReward } from '../content/run-table-types.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
 import { pickChoices } from './run-picks.ts';
 import type { PickChoice } from './run-picks.ts';
+import type { ModPair, RankModChoice } from '../content/rank-types.ts';
 import { allHold } from './conditions.ts';
 import type { RunEnd, RunPin, RunSetup, RunState } from './run-types.ts';
 import type { MonsterState, World } from './types.ts';
@@ -111,8 +112,32 @@ export function settleCleared(world: World): void {
   endRun(world, 'cleared');
 }
 
+function conditionNamed(content: Content, id: string): RunCondition | undefined {
+  return content.runTable.conditions.find((entry: RunCondition): boolean => entry.id === id);
+}
+
+function carries(one: RunCondition, other: RunCondition, a: string, b: string): boolean {
+  return one.shape.mods.includes(a) && other.shape.mods.includes(b);
+}
+
+function modsApart(content: Content, first: RunCondition, second: RunCondition): boolean {
+  return content.packRanks.apart.some(([a, b]: ModPair): boolean => carries(first, second, a, b) || carries(first, second, b, a));
+}
+
 export function clashes(content: Content, first: string, second: string): boolean {
-  return content.runTable.conditions.some((entry: RunCondition): boolean => (entry.id === first && entry.excludes.includes(second)) || (entry.id === second && entry.excludes.includes(first)));
+  const one: RunCondition | undefined = conditionNamed(content, first);
+  const two: RunCondition | undefined = conditionNamed(content, second);
+  if (one === undefined || two === undefined) return false;
+  return one.excludes.includes(second) || two.excludes.includes(first) || modsApart(content, one, two);
+}
+
+export function conditionFrom(content: Content, condition: RunCondition): number {
+  return condition.shape.mods.reduce((least: number, mod: string): number => Math.max(least, content.packRanks.pool.find((choice: RankModChoice): boolean => choice.mod === mod)?.from ?? 0), 0);
+}
+
+export function tooEarly(content: Content, zone: ZoneDef, id: string): boolean {
+  const condition: RunCondition | undefined = conditionNamed(content, id);
+  return condition !== undefined && conditionFrom(content, condition) > zone.level;
 }
 
 export function clashIn(content: Content, pins: readonly RunPin[], id: string): string | null {

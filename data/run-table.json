@@ -99,6 +99,51 @@
       "reward": { "xp": 0.08, "gold": 0.08, "items": 0.08, "rarity": 0.03 }
     },
     {
+      "id": "brutal",
+      "name": "Brutal packs",
+      "text": "Every monster is Brutal: it hits 40% harder.",
+      "price": 1,
+      "danger": 0.35,
+      "shape": { "mods": ["brutal"] },
+      "reward": { "xp": 0.18, "gold": 0.18, "items": 0.18, "rarity": 0.06 }
+    },
+    {
+      "id": "smouldering",
+      "name": "Smouldering packs",
+      "text": "Every monster is Smouldering: it leaves burning ground where it walks.",
+      "price": 1,
+      "danger": 0.3,
+      "shape": { "mods": ["smouldering"] },
+      "reward": { "xp": 0.15, "gold": 0.15, "items": 0.15, "rarity": 0.05 }
+    },
+    {
+      "id": "stormlit",
+      "name": "Stormlit packs",
+      "text": "Every monster is Stormlit: it strikes with storm and resists it.",
+      "price": 1,
+      "danger": 0.2,
+      "shape": { "mods": ["stormlit"] },
+      "reward": { "xp": 0.12, "gold": 0.12, "items": 0.12, "rarity": 0.04 }
+    },
+    {
+      "id": "rimebound",
+      "name": "Rimebound packs",
+      "text": "Every monster is Rimebound: it strikes with frost and resists it.",
+      "price": 1,
+      "danger": 0.2,
+      "shape": { "mods": ["rimebound"] },
+      "reward": { "xp": 0.12, "gold": 0.12, "items": 0.12, "rarity": 0.04 }
+    },
+    {
+      "id": "warded",
+      "name": "Warded packs",
+      "text": "Every monster is Warded: it guards its front. Strike from behind, or break the guard with a heavy blow.",
+      "price": 1,
+      "danger": 0.3,
+      "shape": { "mods": ["warded"] },
+      "reward": { "xp": 0.15, "gold": 0.15, "items": 0.15, "rarity": 0.05 }
+    },
+    {
       "id": "hardened",
       "name": "Hardened",
       "text": "Monsters have 30% more life and deal 15% more damage.",

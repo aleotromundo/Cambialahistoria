@@ -145,6 +145,30 @@ void test('a family pin needs a family that lives on the level and does not stac
   assert.equal(setupProblem(world, { zone: CAVE, pins: [pin('one_family', 'many_legs'), pin('one_kind', kindOf(CAVE))] }), 'pins');
 });
 
+void test('a pin whose modifier rolls only deeper is refused on a shallower level', (): void => {
+  const world: World = atTable(100000);
+  for (const id of ['brutal', 'smouldering', 'stormlit', 'rimebound', 'warded']) {
+    assert.equal(setupProblem(world, { zone: CAVE, pins: [pin(id)] }), 'pins', id);
+    assert.equal(setupProblem(world, { zone: DEEPER, pins: [pin(id)] }), null, id);
+  }
+});
+
+void test('pins whose modifiers the pack ranks keep apart cannot be pinned together', (): void => {
+  const world: World = atTable(100000);
+  assert.equal(setupProblem(world, { zone: DEEPER, pins: [pin('stormlit'), pin('rimebound')] }), 'pins');
+  assert.equal(setupProblem(world, { zone: DEEPER, pins: [pin('swift'), pin('brutal')] }), 'pins');
+  assert.equal(setupProblem(world, { zone: DEEPER, pins: [pin('warded'), pin('mending')] }), 'pins');
+  assert.equal(setupProblem(world, { zone: DEEPER, pins: [pin('stormlit'), pin('brutal')] }), null);
+});
+
+void test('a modifier pin puts its modifier on every plain monster of the level', (): void => {
+  const world: World = atTable(100000, 5);
+  setOut(world, { zone: DEEPER, pins: [pin('stormlit')] });
+  const plain: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.def.boss === null);
+  assert.ok(plain.length > 0);
+  for (const monster of plain) assert.ok(monster.def.mods.includes('stormlit'), monster.def.id);
+});
+
 void test('each condition changes what the packs are, not where they stand', (): void => {
   const seed: number = 11;
   const plain: World = atTable(100000, seed);
