@@ -7,14 +7,15 @@ const LAP: number = Math.PI * 2;
 
 void test('the page option picks a spin style by number or name, and anything else gives the shipped one', (): void => {
   assert.equal(spinStyleFrom('').id, SPIN_STYLE.shipped);
-  assert.equal(SPIN_STYLE.shipped, 'whirlwind');
+  assert.equal(SPIN_STYLE.shipped, 'whirlwind_upright');
   assert.equal(spinStyleFrom('?spin=8').id, 'whirlwind');
+  assert.equal(spinStyleFrom('?spin=9').id, 'whirlwind_upright');
   assert.equal(spinStyleFrom('?spin=0').id, 'now');
   assert.equal(spinStyleFrom('?spin=1').id, 'upright');
   assert.equal(spinStyleFrom('?spin=2').id, 'heavy');
   assert.equal(spinStyleFrom('?spin=3').id, 'stepping');
   assert.equal(spinStyleFrom('?spin=heavy').id, 'heavy');
-  assert.equal(spinStyleFrom('?spin=9').id, SPIN_STYLE.shipped);
+  assert.equal(spinStyleFrom('?spin=10').id, SPIN_STYLE.shipped);
   assert.equal(spinStyleFrom('?spin=wobbly').id, SPIN_STYLE.shipped);
   assert.equal(spinStyleFrom('?spin=').id, SPIN_STYLE.shipped);
   assert.equal(spinStyleFrom('?spin').id, SPIN_STYLE.shipped);
