@@ -163,7 +163,7 @@ void test('a wide reach at full momentum strikes an enemy the plain turn would m
   assert.ok(damageTo(later, far.id).length >= 1);
 });
 
-void test('above the steady mark the hero is not knocked back, rooted or held, but still takes the damage', (): void => {
+void test('above the steady mark the hero is not rooted or held, but still takes the damage, and no hit knocks the hero either way', (): void => {
   const world: World = spinner();
   const foe: MonsterState = dummy(world, offset(6, 0));
   world.player.momentum = { skill: 'test_spin', value: 5, quiet: 0 };
@@ -175,7 +175,7 @@ void test('above the steady mark the hero is not knocked back, rooted or held, b
   world.player.momentum.value = 2;
   assert.ok(!steadied(world.player));
   applyHit(world, offenceOf(foe), world.player, BLOW, { x: -1, z: 0 });
-  assert.deepEqual(shaken(world), { rooted: true, held: true, knocked: true });
+  assert.deepEqual(shaken(world), { rooted: true, held: true, knocked: false });
 });
 
 void test('momentum holds for the grace after the last hit, then drains steadily, so running through empty ground loses it', (): void => {

@@ -17,6 +17,7 @@ import { grantXp, killReduction, killXp, refreshPlayer } from './character.ts';
 import { firePowers } from '../powers.ts';
 import { isDashing, isInvulnerable, rollsSteady } from './dash.ts';
 import { knockTime, readablePush } from './movement.ts';
+import { heroPush } from './hero-push.ts';
 import { closeDialogue } from './dialogue.ts';
 import type { Side } from './factions.ts';
 import { mayStrike, provoke, regardOf } from './factions.ts';
@@ -271,7 +272,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     }
     aggroPack(world, target);
   }
-  if (target.kind === 'player' && !steady) knockBack(target, push);
+  if (target.kind === 'player' && !steady && heroPush(push, target.facing).travel > 0) knockBack(target, push);
   mendSource(world, offence, target, skill, dealt);
   const killed: boolean = target.life <= 0;
   world.events.push({

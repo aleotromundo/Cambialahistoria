@@ -277,6 +277,10 @@
         "roll": {
           "clip": "Roll",
           "impactFraction": 0.6
+        },
+        "hit_reel": {
+          "clip": "Shield_Break",
+          "impactFraction": 0.25
         }
       },
       "unarmed": {
@@ -565,6 +569,10 @@
         "roll": {
           "clip": "Roll",
           "impactFraction": 0.6
+        },
+        "hit_reel": {
+          "clip": "Shield_Break",
+          "impactFraction": 0.25
         }
       },
       "unarmed": {

@@ -22,6 +22,8 @@ import type { GhostUniforms } from './ghost-material.ts';
 import { createGhostUniforms } from './ghost-material.ts';
 import { echoFade, momentOfEcho } from '../../sim/world/moments.ts';
 import { unisonOf } from '../../sim/world/unison.ts';
+import type { HeroPush } from '../../sim/world/hero-push.ts';
+import { HERO_PUSH, pushOnHero, reelAnimation } from '../../sim/world/hero-push.ts';
 import type { ParticleSystem } from './particles.ts';
 import type { SpinPose, SpinView } from './spin-view.ts';
 import { createSpinView } from './spin-view.ts';
@@ -57,6 +59,7 @@ export const ACTORS = {
   npcAppearRate: 3.4,
   npcSettledWithin: 0.01,
   blockTime: 0.35,
+  reelTime: 0.85,
   echoMix: 0.85,
   echoOpacity: 0.78,
   turnRim: 4,
@@ -523,8 +526,10 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'damage': {
             const isPlayer: boolean = event.targetTeam === 'player';
             const stagger: boolean = isPlayer ? current.player.action === null && !current.player.moving : event.skill.stagger > 0;
+            const struck: HeroPush | null = event.targetId === current.player.id && !event.burn && !event.killed && stagger ? pushOnHero(current.player, event.skill.knockback, event.direction) : null;
+            const reeled: boolean = struck?.reaction === 'reel' && struck.side !== null && (playerView.startAction(reelAnimation(struck.side), 0, ACTORS.reelTime) || playerView.startAction(HERO_PUSH.reelAnimation, 0, ACTORS.reelTime));
             if (event.burn) viewOf(event.targetId)?.hit(HIT_BURN, ACTORS.burnFlash, false);
-            else viewOf(event.targetId)?.hit(isPlayer ? HIT_RED : HIT_WHITE, isPlayer ? ACTORS.playerFlash : ACTORS.monsterFlash, stagger && !event.killed && !guarded.has(event.targetId));
+            else viewOf(event.targetId)?.hit(isPlayer ? HIT_RED : HIT_WHITE, isPlayer ? ACTORS.playerFlash : ACTORS.monsterFlash, stagger && !reeled && !event.killed && !guarded.has(event.targetId));
             break;
           }
           case 'guarded': {

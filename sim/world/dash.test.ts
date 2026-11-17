@@ -243,7 +243,7 @@ void test('the nearest clear spot lies ahead of the roll first, and nowhere when
   assert.equal(clearSpot(walled.grid, { x: 40, z: 40 }, { x: 1, z: 0 }, 0.4, []), null);
 });
 
-void test('a hit after the immune start of the roll hurts but neither knocks, roots nor holds the hero, and does once the roll is over', (): void => {
+void test('a hit after the immune start of the roll hurts but neither roots nor holds the hero, and does once the roll is over, without ever knocking the hero', (): void => {
   const world: World = scene('steady', { tiles: OPEN, props: [], start: { x: 8, z: 14 } });
   const blow: SkillDef = { ...must(content.skills.get('taker_snatch'), 'taker_snatch'), knockback: 6, root: 0.9, hold: 0.5 };
   const foe: MonsterState = spawnAt(world, 'mended', { x: 4, z: 14 });
@@ -260,7 +260,7 @@ void test('a hit after the immune start of the roll hurts but neither knocks, ro
   finish(world);
   world.player.rootGrace = 0;
   applyHit(world, offenceOf(foe), world.player, blow, { x: 1, z: 0 });
-  assert.ok(Math.hypot(world.player.knock.x, world.player.knock.z) > 0);
+  assert.deepEqual(world.player.knock, { x: 0, z: 0 });
   assert.ok(rootOf(world) > 0);
 });
 
