@@ -17,7 +17,6 @@ function withMod(def: MonsterDef, mod: MonsterModDef): MonsterDef {
       goldMax: def.loot.goldMax * mod.lootScale,
       itemChance: Math.min(1, def.loot.itemChance * mod.lootScale),
     },
-    color: mod.color,
     deathSkill: mod.deathSkill ?? def.deathSkill,
     summon: mod.summon ?? def.summon,
     poise: { ...def.poise, stagger: def.poise.stagger * mod.staggerScale },

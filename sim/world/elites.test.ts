@@ -20,7 +20,7 @@ void test('a modifier scales the monster it is given and names it', (): void => 
   assert.equal(elite.life, thrall.life * swift.lifeScale);
   assert.equal(elite.scale, thrall.scale * swift.sizeScale);
   assert.equal(elite.xp, thrall.xp * swift.xpScale);
-  assert.equal(elite.color, swift.color);
+  assert.equal(elite.color, thrall.color, 'a modifier never repaints the monster');
   assert.deepEqual(elite.mods, [swift.id]);
   assert.equal(elite.id, thrall.id);
 });

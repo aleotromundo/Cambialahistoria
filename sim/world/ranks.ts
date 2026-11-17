@@ -60,7 +60,6 @@ function scaled(def: MonsterDef, rank: PackRankDef, scale: RankScale, leader: bo
       goldMax: def.loot.goldMax * scale.gold,
       itemChance: Math.min(1, def.loot.itemChance * scale.itemChance),
     },
-    color: rank.aura ?? def.color,
     rank: ranked,
   };
 }

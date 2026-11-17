@@ -36,7 +36,7 @@ function scale(value: unknown, where: string): RankScale {
 function look(value: unknown, where: string): RankLook | null {
   if (value === null || value === undefined) return null;
   const source: Fields = fields(value, where);
-  return { body: share(source, 'body', where), ground: share(source, 'ground', where), reach: positive(source, 'reach', where) };
+  return { rim: share(source, 'rim', where), leader: positive(source, 'leader', where) };
 }
 
 function rank(value: unknown, where: string): PackRankDef {
@@ -112,7 +112,7 @@ export function rankProblems(content: Content): string[] {
     need(!seen.has(def.id), `pack rank ${def.id} is listed twice`);
     seen.add(def.id);
     floorKnown(content, `pack rank ${def.id} members`, def.members, need);
-    need(def.look === null || def.aura !== null, `pack rank ${def.id} has a look but no aura colour to light it with`);
+    need(def.look === null || def.aura !== null, `pack rank ${def.id} has a look but no aura colour for its rim`);
     if (def.leader !== null) floorKnown(content, `pack rank ${def.id} leader`, def.leader, need);
     const most: number = Math.max(def.members.mods, def.leader?.mods ?? 0);
     need(most <= ranks.pool.length, `pack rank ${def.id} rolls ${most} modifiers, but the pool holds ${ranks.pool.length}`);

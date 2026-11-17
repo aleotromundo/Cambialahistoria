@@ -66,7 +66,7 @@ void test('a magic pack shares one modifier and is tougher, deadlier and worth m
   const rank: MonsterRank = must(left.rank, 'magic rank');
   assert.equal(rank.id, 'magic');
   assert.equal(rank.leader, false);
-  assert.equal(left.color, magic.aura);
+  assert.equal(left.color, taker.color, 'a rank never repaints the monster');
   assert.ok(left.name.endsWith(taker.name) && left.name !== taker.name);
 });
 

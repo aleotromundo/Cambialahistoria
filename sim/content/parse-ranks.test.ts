@@ -55,12 +55,13 @@ void test('a pack names a known rank only in a ranked zone and never on a boss, 
   assert.ok(named(namedRank(true, 'magic', [{ monster: 'mended', count: 2, mods: ['swift'] }]), 'never takes a rank'));
 });
 
-void test('a ranked look reads its body and ground light as shares and needs an aura colour to light it', (): void => {
+void test('a ranked look reads its rim as a share and a leader boost, and needs an aura colour for its rim', (): void => {
   const [plain, magic] = packRanksData.ranks;
   if (plain === undefined || magic === undefined) throw new Error('the shipped ranks start with plain and magic');
-  assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, look: { body: 1.5, ground: 0.5, reach: 2 } }] }, 'r'), /0 to 1/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, look: { rim: 1.5, leader: 1 } }] }, 'r'), /0 to 1/);
+  assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, look: { rim: 0.5, leader: 0 } }] }, 'r'), /leader/);
   assert.throws((): PackRanks => packRanks({ ...packRanksData, ranks: [plain, { ...magic, members: { ...magic.members, size: 0 } }] }, 'r'), /size/);
   const unlit: PackRanks = { ...RANKS, ranks: RANKS.ranks.map((rank: PackRankDef): PackRankDef => (rank.look === null ? rank : { ...rank, aura: null })) };
-  assert.ok(rankProblems({ ...ARENA_CONTENT, packRanks: unlit }).some((problem: string): boolean => problem.includes('no aura colour')));
+  assert.ok(rankProblems({ ...ARENA_CONTENT, packRanks: unlit }).some((problem: string): boolean => problem.includes('no aura colour for its rim')));
   for (const rank of RANKS.ranks.slice(1)) assert.notEqual(rank.look, null, `${rank.id} is lit`);
 });

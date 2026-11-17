@@ -17,9 +17,8 @@ export interface RankScale {
 }
 
 export interface RankLook {
-  readonly body: number;
-  readonly ground: number;
-  readonly reach: number;
+  readonly rim: number;
+  readonly leader: number;
 }
 
 export interface PackRankDef {
