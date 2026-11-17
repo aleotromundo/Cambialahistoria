@@ -1,9 +1,12 @@
 import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, ItemUse, RarityDef, WeaponGroup } from '../../sim/content/types.ts';
-import { itemVerdict, readItem, readingLines, verdictParts } from '../../sim/item-reading.ts';
-import type { Headline, ItemReading, ReadingRow, Verdict, VerdictKind } from '../../sim/item-reading.ts';
+import { readItem, readingLines } from '../../sim/item-reading.ts';
+import type { Headline, ItemReading, ReadingRow } from '../../sim/item-reading.ts';
+import { itemVerdict, verdictNote, verdictParts } from '../../sim/item-verdict.ts';
+import type { Verdict, VerdictKind } from '../../sim/item-verdict.ts';
 import { baseOf, itemName, rarityOf, slotOf } from '../../sim/items.ts';
 import { familyReading } from '../../sim/powers.ts';
 import type { FamilyPiece, FamilyReading } from '../../sim/powers.ts';
+import { threatNear } from '../../sim/threat.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
@@ -69,6 +72,8 @@ function appendVerdict(parent: HTMLElement, verdict: Verdict): void {
   label('tip-verdict-word', VERDICT_WORDS[verdict.kind], line);
   const parts: readonly string[] = verdictParts(verdict);
   if (parts.length > 0) label('tip-verdict-detail', parts.join(' · '), line);
+  const note: string | null = verdictNote(verdict);
+  if (note !== null) label('tip-verdict-note', note, line);
 }
 
 function appendReading(parent: HTMLElement, reading: ItemReading): void {
@@ -115,7 +120,7 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   const family: FamilyReading | null = familyReading(content, item, api.world.player.equipped);
   if (family !== null) appendPower(root, family);
   if (compare) {
-    const verdict: Verdict | null = itemVerdict(content, api.world.player, api.world.zone, item);
+    const verdict: Verdict | null = itemVerdict(content, api.world.player, threatNear(content, api.world.visited, api.world.zone), item);
     if (verdict !== null) appendVerdict(root, verdict);
   }
   if (hint !== null) label('tip-hint', hint, root);

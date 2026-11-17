@@ -388,6 +388,7 @@
 
 .tip-verdict {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
   margin-top: 8px;
@@ -408,6 +409,13 @@
   font-size: 12px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+.tip-verdict-note {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.8;
 }
 
 .tip-verdict.better .tip-verdict-word {

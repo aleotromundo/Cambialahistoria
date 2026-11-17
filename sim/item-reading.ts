@@ -1,14 +1,8 @@
-import type { Content, DamageType, ItemSlot, ModOp, SkillDef, StatBlock, StatId, ZoneDef } from './content/types.ts';
-import { DAMAGE_TYPES, ITEM_STATS } from './content/types.ts';
-import { baseOf, itemMods, slotOf } from './items.ts';
+import type { Content, ItemSlot, ModOp, StatId } from './content/types.ts';
+import { ITEM_STATS } from './content/types.ts';
+import { itemMods, slotOf } from './items.ts';
 import { describeMod, isRatio, roundStat, statLabel } from './stat-text.ts';
-import { computeStats, damagePerSecond, damageTakenScale, effectiveAttackSpeed } from './stats.ts';
-import type { Equipment, ItemInstance, PlayerState } from './world/types.ts';
-
-export const READING = {
-  even: 0.005,
-  sharpSpeed: 0.1,
-} as const;
+import type { ItemInstance } from './world/types.ts';
 
 export interface ReadingRow {
   readonly stat: StatId;
@@ -23,15 +17,6 @@ export type Headline =
   | { readonly kind: 'stat'; readonly row: ReadingRow }
   | { readonly kind: 'none' };
 
-export type VerdictKind = 'better' | 'worse' | 'trade' | 'same';
-
-export interface Verdict {
-  readonly kind: VerdictKind;
-  readonly damage: number;
-  readonly toughness: number;
-  readonly speed: number;
-}
-
 export interface ReadingLine {
   readonly row: ReadingRow;
   readonly lost: boolean;
@@ -42,10 +27,6 @@ export interface ItemReading {
   readonly rows: readonly ReadingRow[];
   readonly lost: readonly ReadingRow[];
 }
-
-export type DamageMix = Readonly<Record<DamageType, number>>;
-
-export type ReadingSubject = Pick<PlayerState, 'level' | 'equipped' | 'allocated' | 'skills'>;
 
 interface Total {
   readonly stat: StatId;
@@ -133,59 +114,4 @@ export function readingLines(reading: ItemReading): readonly ReadingLine[] {
   const own: ReadingLine[] = reading.rows.map((entry: ReadingRow): ReadingLine => ({ row: entry, lost: false }));
   const lost: ReadingLine[] = reading.lost.map((entry: ReadingRow): ReadingLine => ({ row: entry, lost: true }));
   return [...own, ...lost].toSorted((a: ReadingLine, b: ReadingLine): number => byOrder(a.row, b.row));
-}
-
-export function verdictParts(verdict: Verdict): readonly string[] {
-  const parts: string[] = [];
-  const say = (value: number, name: string): void => {
-    const rounded: number = Math.round(value * 100);
-    if (rounded !== 0) parts.push(`${rounded < 0 ? '−' : '+'}${Math.abs(rounded)}% ${name}`);
-  };
-  say(verdict.damage, 'damage');
-  say(verdict.toughness, 'toughness');
-  if (Math.abs(verdict.speed) >= READING.sharpSpeed) say(verdict.speed, 'attack speed');
-  return parts;
-}
-
-export function zoneDamageMix(content: Content, zone: ZoneDef): DamageMix {
-  const counts: Record<DamageType, number> = { physical: 0, storm: 0, frost: 0 };
-  for (const pack of zone.packs) {
-    for (const member of pack.members) {
-      const skill: string | undefined = content.monsters.get(member.monster)?.skill;
-      const type: DamageType = (skill === undefined ? undefined : content.skills.get(skill)?.damage.type) ?? 'physical';
-      counts[type] += member.count;
-    }
-  }
-  const total: number = DAMAGE_TYPES.reduce((sum: number, type: DamageType): number => sum + counts[type], 0);
-  if (total === 0) return { physical: 1, storm: 0, frost: 0 };
-  return { physical: counts.physical / total, storm: counts.storm / total, frost: counts.frost / total };
-}
-
-function bestDamage(stats: StatBlock, skills: readonly (SkillDef | null)[]): number {
-  return skills.reduce((best: number, skill: SkillDef | null): number => (skill === null || skill.delivery.type === 'dash' ? best : Math.max(best, damagePerSecond(stats, skill))), 0);
-}
-
-export function toughness(content: Content, stats: StatBlock, zone: ZoneDef): number {
-  const mix: DamageMix = zoneDamageMix(content, zone);
-  const taken: number = DAMAGE_TYPES.reduce((sum: number, type: DamageType): number => sum + mix[type] * damageTakenScale(stats, type, content.player.resistance, zone.stormTier), 0);
-  return stats.maxLife / Math.max(READING.even, taken);
-}
-
-function change(after: number, before: number): number {
-  return before <= 0 ? 0 : after / before - 1;
-}
-
-export function itemVerdict(content: Content, subject: ReadingSubject, zone: ZoneDef, item: ItemInstance): Verdict | null {
-  const slot: ItemSlot | null = slotOf(content, item);
-  if (slot === null || baseOf(content, item) === null) return null;
-  const swapped: Equipment = { ...subject.equipped, [slot]: item };
-  const before: StatBlock = computeStats(content, subject.level, subject.equipped, subject.allocated);
-  const after: StatBlock = computeStats(content, subject.level, swapped, subject.allocated);
-  const damage: number = change(bestDamage(after, subject.skills), bestDamage(before, subject.skills));
-  const tough: number = change(toughness(content, after, zone), toughness(content, before, zone));
-  const speed: number = change(effectiveAttackSpeed(after), effectiveAttackSpeed(before));
-  const up: boolean = damage > READING.even || tough > READING.even || speed >= READING.sharpSpeed;
-  const down: boolean = damage < -READING.even || tough < -READING.even || speed <= -READING.sharpSpeed;
-  const kind: VerdictKind = up && down ? 'trade' : up ? 'better' : down ? 'worse' : 'same';
-  return { kind, damage, toughness: tough, speed };
 }
