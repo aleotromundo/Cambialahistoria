@@ -20,7 +20,7 @@ import { createRestShadows } from './rest-shadows.ts';
 import type { Spring } from '../hud/character-spring.ts';
 import { springTo, stepSpring } from '../hud/character-spring.ts';
 import type { AnimationBank } from './animation-bank.ts';
-import { animationBank } from './animation-bank.ts';
+import { animationBank, closeRate } from './animation-bank.ts';
 import type { SpinCentre } from './spin-centre.ts';
 import { centreShift, createSpinCentre, holdSpinCentre, measurePivot } from './spin-centre.ts';
 import type { SpinPose } from './spin-view.ts';
@@ -313,9 +313,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   };
 
   const play = (clip: AnimationClip, fade: number, speed: number, once: boolean, restart: boolean): void => {
-    payOwed();
     const next: AnimationAction = rig.mixer.clipAction(clip);
     const previous: AnimationAction = current;
+    if (next === previous && !restart && (next.timeScale === speed || (bank.owing() && closeRate(next.timeScale, speed)))) return;
+    payOwed();
     if (next === previous && !restart) {
       next.timeScale = speed;
       return;
