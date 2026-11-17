@@ -8,7 +8,7 @@ import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
 import type { Content, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import type { World } from '../../sim/world/types.ts';
 import { CAMERA } from './iso-camera.ts';
-import { facingYaw, levelTarget, placeState } from './place-markers.ts';
+import { facingYaw, levelTarget, placeState, settledMarkers } from './place-markers.ts';
 
 const content: Content = loadContent();
 const waypointKind: MarkerKind = must(content.markers.kinds.get(content.markers.roles.waypoint), 'waypoint kind');
@@ -58,4 +58,13 @@ void test('a way out turns to face its arrival spot and a waypoint turns to the 
   assert.ok(Math.abs(Math.sin(yaw) - facing.x) < 1e-9 && Math.abs(Math.cos(yaw) - facing.z) < 1e-9);
   const stone: Place = must(places.find((place: Place): boolean => place.ref.type === 'waypoint'), 'waypoint');
   assert.equal(facingYaw(stone), (CAMERA.yawDegrees * Math.PI) / 180);
+});
+
+void test('a marker model that fails to load is reported and never holds the zone back', async (): Promise<void> => {
+  const warnings: string[] = [];
+  await settledMarkers({ ready: Promise.reject(new Error('stalled: models/world/way_up.glb')) }, (message: string): void => void warnings.push(message));
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0] ?? '', /way_up\.glb/);
+  await settledMarkers({ ready: Promise.resolve() }, (message: string): void => void warnings.push(message));
+  assert.equal(warnings.length, 1);
 });

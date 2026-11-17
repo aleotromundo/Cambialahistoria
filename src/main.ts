@@ -119,7 +119,7 @@ import { createSky } from './render/sky-weather.ts';
 import type { Rainfall } from './render/rainfall.ts';
 import { createRainfall } from './render/rainfall.ts';
 import type { PlaceMarkers } from './render/place-markers.ts';
-import { createPlaceMarkers } from './render/place-markers.ts';
+import { createPlaceMarkers, settledMarkers } from './render/place-markers.ts';
 import type { PlaceRef } from '../sim/content/markers.ts';
 import { dressed, dressedProp, propDressing } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
@@ -371,14 +371,14 @@ async function start(): Promise<void> {
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     preloadNearZones();
     markers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
-    await markers.ready;
+    const markersReady: Promise<void> = settledMarkers(markers, warnInConsole);
     stage.setAmbience(world.zone.ambience);
     stage.setHeroLight(world.zone.heroLight);
     applyWeather(world.zone);
     zoneView.setGraphics(gameSettings.preset());
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
-    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs, zoneView.ready);
+    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
     startZoneAmbience();
     glitches.refresh();
     camera.snap(world.player.pos.x, world.player.pos.z, liftAt(world.zone, world.player.pos.x, world.player.pos.z));
@@ -510,7 +510,7 @@ async function start(): Promise<void> {
       if (effect !== 'clear') perf.note(effect);
     },
   });
-  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, markers.ready]).then((): void => undefined)).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
+  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined)).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const loadTheRest = async (): Promise<void> => {
     await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, loadGate);
     actors.refreshWear(world);

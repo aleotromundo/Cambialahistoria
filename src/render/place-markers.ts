@@ -104,6 +104,10 @@ export function levelTarget(kind: MarkerKind, state: PlaceState, aimed: boolean,
   return aimed ? rest + kind.levels.aimed - kind.levels.awake : rest;
 }
 
+export function settledMarkers(markers: Pick<PlaceMarkers, 'ready'>, warn: (message: string) => void): Promise<void> {
+  return markers.ready.catch((error: unknown): void => warn(`Loading the place markers failed: ${String(error)}`));
+}
+
 export function facingYaw(place: Place): number {
   const towardCamera: number = (CAMERA.yawDegrees * Math.PI) / 180;
   return place.kind.facing === 'arrival' && place.facing !== null ? Math.atan2(place.facing.x, place.facing.z) : towardCamera;
