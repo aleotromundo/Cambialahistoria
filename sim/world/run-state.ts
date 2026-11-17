@@ -1,5 +1,7 @@
 import type { RunCondition, RunReward } from '../content/run-table-types.ts';
-import type { Content } from '../content/types.ts';
+import type { Content, ZoneDef } from '../content/types.ts';
+import { pickChoices } from './run-picks.ts';
+import type { PickChoice } from './run-picks.ts';
 import { allHold } from './conditions.ts';
 import type { RunEnd, RunPin, RunSetup, RunState } from './run-types.ts';
 import type { MonsterState, World } from './types.ts';
@@ -15,7 +17,7 @@ export interface RunShaping {
   readonly mods: readonly string[];
   readonly life: number;
   readonly damage: number;
-  readonly fill: string | null;
+  readonly fill: readonly string[];
 }
 
 export const NO_REWARD: RunReward = { xp: 0, gold: 0, items: 0, rarity: 0 };
@@ -44,8 +46,13 @@ export function shapedHere(world: World): RunSetup | null {
   return active !== null && active.zone === world.zone.id ? active : null;
 }
 
-export function shapingOf(content: Content, pins: readonly RunPin[]): RunShaping {
-  const list: PinnedCondition[] = pinned(content, pins);
+function fillOf(content: Content, zone: ZoneDef | undefined, entry: PinnedCondition | undefined): readonly string[] {
+  if (entry === undefined || zone === undefined) return [];
+  return pickChoices(content, entry.condition.pick, zone).find((choice: PickChoice): boolean => choice.id === entry.pick)?.monsters ?? [];
+}
+
+export function shapingOf(content: Content, setup: RunSetup): RunShaping {
+  const list: PinnedCondition[] = pinned(content, setup.pins);
   const sum = (read: (entry: PinnedCondition) => number): number => list.reduce((total: number, entry: PinnedCondition): number => total + read(entry), 0);
   const fill: PinnedCondition | undefined = list.find((entry: PinnedCondition): boolean => entry.condition.shape.fill && entry.pick !== null);
   return {
@@ -54,13 +61,13 @@ export function shapingOf(content: Content, pins: readonly RunPin[]): RunShaping
     mods: [...new Set<string>(list.flatMap((entry: PinnedCondition): readonly string[] => entry.condition.shape.mods))],
     life: sum((entry: PinnedCondition): number => entry.condition.shape.life),
     damage: sum((entry: PinnedCondition): number => entry.condition.shape.damage),
-    fill: fill?.pick ?? null,
+    fill: fillOf(content, content.zones.get(setup.zone), fill),
   };
 }
 
 export function runShaping(world: World): RunShaping | null {
   const setup: RunSetup | null = shapedHere(world);
-  return setup === null ? null : shapingOf(world.content, setup.pins);
+  return setup === null ? null : shapingOf(world.content, setup);
 }
 
 export function rewardOf(content: Content, pins: readonly RunPin[]): RunReward {

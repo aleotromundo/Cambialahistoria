@@ -4,9 +4,10 @@ import type { Rng } from '../rng.ts';
 import { modsNamed, withMods } from './elites.ts';
 import type { RunShaping } from './run-state.ts';
 
-export function filledBy(content: Content, shaping: RunShaping | null, base: MonsterDef): MonsterDef {
-  if (shaping === null || shaping.fill === null || base.boss !== null || base.rank !== null) return base;
-  const fill: MonsterDef | undefined = content.monsters.get(shaping.fill);
+export function filledBy(content: Content, rng: Rng, shaping: RunShaping | null, base: MonsterDef): MonsterDef {
+  if (shaping === null || shaping.fill.length === 0 || base.boss !== null || base.rank !== null || shaping.fill.includes(base.id)) return base;
+  const id: string | undefined = shaping.fill.length === 1 ? shaping.fill[0] : shaping.fill[rng.int(0, shaping.fill.length - 1)];
+  const fill: MonsterDef | undefined = id === undefined ? undefined : content.monsters.get(id);
   return fill === undefined || fill.boss !== null ? base : fill;
 }
 

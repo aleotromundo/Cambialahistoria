@@ -1,4 +1,4 @@
-import type { AlarmDef } from '../content/combat-types.ts';
+import type { AlarmDef, MonsterModDef } from '../content/combat-types.ts';
 import type { PackRankDef, PackRanks, RankRun } from '../content/rank-types.ts';
 import type { MonsterDef, SurgeRules, ZonePack } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -57,9 +57,15 @@ export function spawnPack(world: World, pack: ZonePack, extra: number, awake: bo
   pack.members.forEach((member, index: number): void => {
     const base: MonsterDef | undefined = world.content.monsters.get(member.monster);
     if (base === undefined) return;
-    const def: MonsterDef = withMods(filledBy(world.content, shaping, base), modsNamed(world.content.monsterMods, member.mods));
+    const mods: MonsterModDef[] = modsNamed(world.content.monsterMods, member.mods);
+    const made: Map<MonsterDef, MonsterDef> = new Map<MonsterDef, MonsterDef>();
     const count: number = grownCount(world.rng, shaping, member.count + (index === 0 ? extra : 0));
-    for (let spawned: number = 0; spawned < count; spawned += 1) defs.push(def);
+    for (let spawned: number = 0; spawned < count; spawned += 1) {
+      const filled: MonsterDef = filledBy(world.content, world.rng, shaping, base);
+      const def: MonsterDef = made.get(filled) ?? withMods(filled, mods);
+      made.set(filled, def);
+      defs.push(def);
+    }
   });
   const ranked: MonsterDef[] = shapeDefs(world.content, shaping, world.zone.ranks && ranksHere(defs) ? rankPack(world.content, world.rng, packRank(world, pack, level, shaping), defs, level) : defs);
   const row: Vec2 = pack.row ?? { x: 0, z: 0 };

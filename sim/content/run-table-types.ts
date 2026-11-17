@@ -1,4 +1,4 @@
-export const RUN_PICKS = ['none', 'monster'] as const;
+export const RUN_PICKS = ['none', 'monster', 'family'] as const;
 export type RunPick = (typeof RUN_PICKS)[number];
 
 export interface RunShape {
@@ -29,6 +29,12 @@ export interface RunCondition {
   readonly excludes: readonly string[];
 }
 
+export interface RunFamily {
+  readonly id: string;
+  readonly name: string;
+  readonly monsters: readonly string[];
+}
+
 export interface RunPricing {
   readonly share: number;
   readonly steps: readonly number[];
@@ -41,4 +47,6 @@ export interface RunTableDef {
   readonly pins: number;
   readonly pricing: RunPricing;
   readonly conditions: readonly RunCondition[];
+  readonly families: readonly RunFamily[];
+  readonly familyLeast: number;
 }

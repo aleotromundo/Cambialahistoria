@@ -1,9 +1,9 @@
 import type { MonsterModDef } from './combat-types.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, nonNegative, positive, share, text, textList } from './read.ts';
-import type { RunCondition, RunPricing, RunReward, RunShape, RunTableDef } from './run-table-types.ts';
+import type { RunCondition, RunFamily, RunPricing, RunReward, RunShape, RunTableDef } from './run-table-types.ts';
 import { RUN_PICKS } from './run-table-types.ts';
-import type { Content, ZoneDef } from './types.ts';
+import type { Content, MonsterDef, ZoneDef } from './types.ts';
 
 function optional(source: Fields, key: string, where: string): number {
   return source[key] === undefined ? 0 : nonNegative(source, key, where);
@@ -52,6 +52,11 @@ function pricing(value: unknown, where: string): RunPricing {
   return { share: positive(source, 'share', where), steps, round: positive(source, 'round', where), least: positive(source, 'least', where) };
 }
 
+function family(value: unknown, where: string): RunFamily {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), name: text(source, 'name', where), monsters: textList(source, 'monsters', where) };
+}
+
 export function runTable(value: unknown, where: string): RunTableDef {
   const source: Fields = fields(value, where);
   const pins: number = positive(source, 'pins', where);
@@ -61,6 +66,8 @@ export function runTable(value: unknown, where: string): RunTableDef {
     pins,
     pricing: pricing(source['pricing'], `${where}.pricing`),
     conditions: each(source['conditions'], `${where}.conditions`, condition),
+    families: source['families'] === undefined ? [] : each(source['families'], `${where}.families`, family),
+    familyLeast: positive(source, 'familyLeast', where),
   };
 }
 
@@ -93,10 +100,22 @@ export function runTableProblems(content: Content): string[] {
     need(!seen.has(entry.id), `${owner} is listed twice`);
     seen.add(entry.id);
     for (const mod of entry.shape.mods) modProblems(content, owner, mod, need);
-    need(entry.shape.fill === (entry.pick === 'monster'), `${owner} fills the level with one kind exactly when the player picks a monster`);
+    need(entry.shape.fill === (entry.pick !== 'none'), `${owner} fills the level exactly when the player picks a monster or a family`);
+    if (entry.pick === 'family') need(table.families.length > 0, `${owner} picks a family, but the run table lists none`);
     const total: number = entry.reward.xp + entry.reward.gold + entry.reward.items + entry.reward.rarity;
     need(total > 0, `${owner} raises danger but adds no reward`);
     for (const other of entry.excludes) need(other !== entry.id && table.conditions.some((known: RunCondition): boolean => known.id === other), `${owner} excludes ${other}, which is not another run condition`);
+  }
+  const families: Set<string> = new Set<string>();
+  for (const entry of table.families) {
+    const owner: string = `run family ${entry.id}`;
+    need(!families.has(entry.id), `${owner} is listed twice`);
+    families.add(entry.id);
+    need(entry.monsters.length >= table.familyLeast, `${owner} has fewer than ${table.familyLeast} monsters`);
+    for (const id of entry.monsters) {
+      const monster: MonsterDef | undefined = content.monsters.get(id);
+      need(monster !== undefined && monster.boss === null && monster.rank === null && monster.summon === null, `${owner} names ${id}, which is not a plain monster`);
+    }
   }
   return problems;
 }

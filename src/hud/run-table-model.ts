@@ -1,6 +1,8 @@
 import type { RunCondition, RunReward } from '../../sim/content/run-table-types.ts';
 import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
-import { levelKinds, pinPrices, reachedLevels, runPrice } from '../../sim/world/run-table.ts';
+import { pinPrices, reachedLevels, runPrice } from '../../sim/world/run-table.ts';
+import { levelKinds, pickChoices, pickName } from '../../sim/world/run-picks.ts';
+import type { PickChoice } from '../../sim/world/run-picks.ts';
 import { clashIn, dangerOf, pinned, rewardOf } from '../../sim/world/run-state.ts';
 import type { PinnedCondition } from '../../sim/world/run-state.ts';
 import type { RunPin, RunSetup } from '../../sim/world/run-types.ts';
@@ -57,7 +59,8 @@ export interface TableView {
 
 const TABLE_WORDS = {
   noLevels: 'No level to set out to yet',
-  pickKind: 'Pick a kind for One kind',
+  pickFor: 'Pick one for',
+  nothingHere: 'Nothing to pick on this level',
   short: 'Not enough gold',
   plain: 'No conditions: an ordinary descent',
   noLast: 'Nothing set out from here yet',
@@ -99,8 +102,8 @@ export function shapedLine(world: World, zoneId: string): string | null {
   const active: RunSetup | null = world.run.active;
   if (active === null || active.zone !== zoneId || active.pins.length === 0) return null;
   const names: string[] = pinned(world.content, active.pins).map((entry: PinnedCondition): string => {
-    const kind: string | null = entry.pick === null ? null : (world.content.monsters.get(entry.pick)?.name ?? null);
-    return kind === null ? entry.condition.name : `${entry.condition.name}: ${kind}`;
+    const choice: string | null = pickName(world.content, entry.condition.pick, entry.pick);
+    return choice === null ? entry.condition.name : `${entry.condition.name}: ${choice}`;
   });
   return `Shaped · ${names.join(' · ')}`;
 }
@@ -115,8 +118,11 @@ export function firstPick(world: World): TablePick {
 export function chooseLevel(world: World, pick: TablePick, zoneId: string): TablePick {
   const zone: ZoneDef | undefined = reachedLevels(world).find((entry: ZoneDef): boolean => entry.id === zoneId);
   if (zone === undefined) return pick;
-  const kinds: ReadonlySet<string> = new Set<string>(levelKinds(world.content, zone).map((kind: MonsterDef): string => kind.id));
-  return { zone: zone.id, pins: pick.pins.map((pin: RunPin): RunPin => (pin.pick === null || kinds.has(pin.pick) ? pin : { condition: pin.condition, pick: null })) };
+  const kept = (pin: RunPin): boolean => {
+    const condition: RunCondition | null = conditionOf(world.content, pin.condition);
+    return pin.pick === null || (condition !== null && pickChoices(world.content, condition.pick, zone).some((choice: PickChoice): boolean => choice.id === pin.pick));
+  };
+  return { zone: zone.id, pins: pick.pins.map((pin: RunPin): RunPin => (kept(pin) ? pin : { condition: pin.condition, pick: null })) };
 }
 
 export function togglePin(world: World, pick: TablePick, conditionId: string): TablePick {
@@ -124,7 +130,7 @@ export function togglePin(world: World, pick: TablePick, conditionId: string): T
   const condition: RunCondition | null = conditionOf(world.content, conditionId);
   if (condition === null || pick.pins.length >= world.content.runTable.pins || clashIn(world.content, pick.pins, conditionId) !== null) return pick;
   const zone: ZoneDef | undefined = pick.zone === null ? undefined : world.content.zones.get(pick.zone);
-  const first: string | null = condition.pick === 'monster' && zone !== undefined ? (levelKinds(world.content, zone)[0]?.id ?? null) : null;
+  const first: string | null = zone === undefined ? null : (pickChoices(world.content, condition.pick, zone)[0]?.id ?? null);
   return { zone: pick.zone, pins: [...pick.pins, { condition: conditionId, pick: first }] };
 }
 
@@ -132,8 +138,8 @@ export function choosePick(pick: TablePick, conditionId: string, value: string):
   return { zone: pick.zone, pins: pick.pins.map((pin: RunPin): RunPin => (pin.condition === conditionId ? { condition: pin.condition, pick: value } : pin)) };
 }
 
-function ready(content: Content, pins: readonly RunPin[]): boolean {
-  return pinned(content, pins).every((entry: PinnedCondition): boolean => entry.condition.pick === 'none' || entry.pick !== null);
+function unready(content: Content, pins: readonly RunPin[]): PinnedCondition | undefined {
+  return pinned(content, pins).find((entry: PinnedCondition): boolean => entry.condition.pick !== 'none' && entry.pick === null);
 }
 
 function setOutAction(world: World, zone: ZoneDef | null, pins: readonly RunPin[]): TableAction {
@@ -141,7 +147,8 @@ function setOutAction(world: World, zone: ZoneDef | null, pins: readonly RunPin[
   const price: number = runPrice(world.content, zone, pins);
   const short: boolean = price > world.player.gold;
   const label: string = price > 0 ? `Set out · ${price} gold` : 'Set out';
-  if (!ready(world.content, pins)) return { command: null, label, note: TABLE_WORDS.pickKind, short: false };
+  const waiting: PinnedCondition | undefined = unready(world.content, pins);
+  if (waiting !== undefined) return { command: null, label, note: `${TABLE_WORDS.pickFor} ${waiting.condition.name}`, short: false };
   const note: string = short ? TABLE_WORDS.short : pins.length === 0 ? TABLE_WORDS.plain : '';
   return { command: short ? null : { type: 'set_out', setup: { zone: zone.id, pins } }, label, note, short };
 }
@@ -162,7 +169,6 @@ export function tableView(world: World, pick: TablePick): TableView {
   const content: Content = world.content;
   const reached: ZoneDef[] = reachedLevels(world);
   const zone: ZoneDef | null = reached.find((entry: ZoneDef): boolean => entry.id === pick.zone) ?? null;
-  const kinds: MonsterDef[] = zone === null ? [] : levelKinds(content, zone);
   const full: boolean = pick.pins.length >= content.runTable.pins;
   const conditions: ConditionRow[] = content.runTable.conditions.map((condition: RunCondition): ConditionRow => {
     const at: number = pick.pins.findIndex((pin: RunPin): boolean => pin.condition === condition.id);
@@ -172,16 +178,18 @@ export function tableView(world: World, pick: TablePick): TableView {
     const chosen: string | null = at >= 0 ? (pick.pins[at]?.pick ?? null) : null;
     const clash: string | null = at >= 0 ? null : clashIn(content, pick.pins, condition.id);
     const clashName: string = clash === null ? '' : (conditionOf(content, clash)?.name ?? clash);
+    const choices: PickChoice[] = zone === null ? [] : pickChoices(content, condition.pick, zone);
+    const empty: boolean = condition.pick !== 'none' && zone !== null && choices.length === 0;
     return {
       id: condition.id,
       name: condition.name,
       text: condition.text,
       price,
       reward: rewardText(condition.reward),
-      danger: clash === null ? dangerText(condition.danger) : `${TABLE_WORDS.clash} ${clashName}`,
+      danger: clash !== null ? `${TABLE_WORDS.clash} ${clashName}` : empty ? TABLE_WORDS.nothingHere : dangerText(condition.danger),
       pinned: at >= 0,
-      open: at >= 0 || (!full && zone !== null && clash === null),
-      kinds: at >= 0 && condition.pick === 'monster' ? kinds.map((kind: MonsterDef): KindChip => ({ id: kind.id, name: kind.name, chosen: kind.id === chosen })) : [],
+      open: at >= 0 || (!full && zone !== null && clash === null && !empty),
+      kinds: at >= 0 ? choices.map((choice: PickChoice): KindChip => ({ id: choice.id, name: choice.name, chosen: choice.id === chosen })) : [],
     };
   });
   return {

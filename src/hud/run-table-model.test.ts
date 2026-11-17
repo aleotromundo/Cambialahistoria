@@ -86,6 +86,23 @@ void test('one kind asks for a kind the level holds, and a level change drops a 
   assert.equal(chooseLevel(world, pick, 'lava_depths'), pick);
 });
 
+void test('one family offers the families the level holds, and none where the level holds none', (): void => {
+  const world: World = table(100000, ['under_hall', 'lava_depths']);
+  const pick: TablePick = togglePin(world, { zone: 'under_hall', pins: [] }, 'one_family');
+  const chips = row(tableView(world, pick), 'one_family').kinds;
+  assert.deepEqual(chips.map((chip): string => chip.name), ['Many legs', 'Fur and fang', 'Rot and ooze', 'Echoes']);
+  assert.equal(chips.find((chip): boolean => chip.chosen)?.id, 'many_legs');
+  assert.equal(row(tableView(world, pick), 'one_kind').open, false);
+  const lava: TableView = tableView(world, { zone: 'lava_depths', pins: [] });
+  assert.equal(row(lava, 'one_family').open, false);
+  assert.equal(row(lava, 'one_family').danger, 'Nothing to pick on this level');
+  const unpicked: TableView = tableView(world, { zone: 'under_hall', pins: [{ condition: 'one_family', pick: null }] });
+  assert.equal(unpicked.setOut.command, null);
+  assert.equal(unpicked.setOut.note, 'Pick one for One family');
+  world.run.active = { zone: 'under_hall', pins: [{ condition: 'one_family', pick: 'many_legs' }] };
+  assert.equal(shapedLine(world, 'under_hall'), 'Shaped · One family: Many legs');
+});
+
 void test('a condition that clashes with a pinned one is closed, says why, and cannot be pinned', (): void => {
   const world: World = table(100000);
   const pick: TablePick = togglePin(world, firstPick(world), 'crowded');

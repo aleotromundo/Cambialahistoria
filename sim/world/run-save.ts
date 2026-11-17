@@ -1,4 +1,4 @@
-import type { RunCondition } from '../content/run-table-types.ts';
+import type { RunCondition, RunFamily } from '../content/run-table-types.ts';
 import type { Content } from '../content/types.ts';
 import { isFields } from '../content/read.ts';
 import { clashIn } from './run-state.ts';
@@ -10,8 +10,19 @@ function readPin(content: Content, value: unknown): RunPin | null {
   const pick: unknown = value['pick'];
   const known: RunCondition | undefined = content.runTable.conditions.find((entry: RunCondition): boolean => entry.id === id);
   if (known === undefined) return null;
-  if (known.pick === 'monster') return typeof pick === 'string' && content.monsters.has(pick) ? { condition: known.id, pick } : null;
-  return { condition: known.id, pick: null };
+  let read: RunPin | null = null;
+  switch (known.pick) {
+    case 'none':
+      read = { condition: known.id, pick: null };
+      break;
+    case 'monster':
+      read = typeof pick === 'string' && content.monsters.has(pick) ? { condition: known.id, pick } : null;
+      break;
+    case 'family':
+      read = typeof pick === 'string' && content.runTable.families.some((family: RunFamily): boolean => family.id === pick) ? { condition: known.id, pick } : null;
+      break;
+  }
+  return read;
 }
 
 function readSetup(content: Content, value: unknown): RunSetup | null {

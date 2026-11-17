@@ -10,6 +10,8 @@ import type { RunPin, RunSetup } from './run-types.ts';
 import { chargeGold } from './trade.ts';
 import type { World } from './types.ts';
 import { enterZone } from './zones.ts';
+import { pickChoices } from './run-picks.ts';
+import type { PickChoice } from './run-picks.ts';
 
 export type RunRefusal = 'away' | 'level' | 'pins' | 'pick' | 'gold';
 
@@ -76,17 +78,6 @@ export function reachedLevels(world: World): ZoneDef[] {
   });
 }
 
-export function levelKinds(content: Content, zone: ZoneDef): MonsterDef[] {
-  const seen: Map<string, MonsterDef> = new Map<string, MonsterDef>();
-  for (const pack of zone.packs) {
-    for (const member of pack.members) {
-      const monster: MonsterDef | undefined = content.monsters.get(member.monster);
-      if (monster !== undefined && monster.boss === null && monster.rank === null && monster.summon === null && !seen.has(monster.name)) seen.set(monster.name, monster);
-    }
-  }
-  return [...seen.values()];
-}
-
 function pinProblem(content: Content, zone: ZoneDef, pin: RunPin): RunRefusal | null {
   const condition: RunCondition | undefined = content.runTable.conditions.find((entry: RunCondition): boolean => entry.id === pin.condition);
   if (condition === undefined) return 'pins';
@@ -96,7 +87,8 @@ function pinProblem(content: Content, zone: ZoneDef, pin: RunPin): RunRefusal | 
       problem = pin.pick === null ? null : 'pick';
       break;
     case 'monster':
-      problem = pin.pick !== null && levelKinds(content, zone).some((monster: MonsterDef): boolean => monster.id === pin.pick) ? null : 'pick';
+    case 'family':
+      problem = pin.pick !== null && pickChoices(content, condition.pick, zone).some((choice: PickChoice): boolean => choice.id === pin.pick) ? null : 'pick';
       break;
   }
   return problem;

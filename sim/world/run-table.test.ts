@@ -11,7 +11,8 @@ import type { SaveData } from '../save.ts';
 import { kill } from './combat.ts';
 import { createWorld } from './create.ts';
 import { respawnPlayer } from './death.ts';
-import { clearValue, levelKinds, pinPrices, reachedLevels, runPrice, setOut, setupProblem } from './run-table.ts';
+import { clearValue, pinPrices, reachedLevels, runPrice, setOut, setupProblem } from './run-table.ts';
+import { levelKinds } from './run-picks.ts';
 import type { RunPin, RunSetup } from './run-types.ts';
 import { dangerOf, rewardOf, runReward } from './run-state.ts';
 import type { MonsterState, World, WorldEvent } from './types.ts';
@@ -126,6 +127,24 @@ void test('a setup it cannot pay for, or that breaks the rules, changes nothing'
   assert.equal(setupProblem(rich, { zone: CAVE, pins: [] }), 'away');
 });
 
+void test('a family pin fills every pack with a mix of that family', (): void => {
+  const family: ReadonlySet<string> = new Set<string>(['spider', 'weaver', 'crawler']);
+  const world: World = atTable(100000, 6);
+  setOut(world, { zone: CAVE, pins: [pin('one_family', 'many_legs')] });
+  const plain: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.def.boss === null && monster.def.rank === null);
+  assert.ok(plain.length > 0);
+  for (const monster of plain) assert.ok(family.has(monster.def.id), monster.def.id);
+  assert.ok(new Set<string>(plain.map((monster: MonsterState): string => monster.def.id)).size >= 2);
+});
+
+void test('a family pin needs a family that lives on the level and does not stack with one kind', (): void => {
+  const world: World = atTable(100000);
+  assert.equal(setupProblem(world, { zone: CAVE, pins: [pin('one_family', 'dark_wings')] }), 'pick');
+  assert.equal(setupProblem(world, { zone: DEEPER, pins: [pin('one_family', 'dark_wings')] }), null);
+  assert.equal(setupProblem(world, { zone: CAVE, pins: [pin('one_family', null)] }), 'pick');
+  assert.equal(setupProblem(world, { zone: CAVE, pins: [pin('one_family', 'many_legs'), pin('one_kind', kindOf(CAVE))] }), 'pins');
+});
+
 void test('each condition changes what the packs are, not where they stand', (): void => {
   const seed: number = 11;
   const plain: World = atTable(100000, seed);
@@ -236,6 +255,14 @@ void test('a run lasts through death and the thread home, and ends on walking ou
   assert.ok(cleared.events.some((event: WorldEvent): boolean => event.type === 'run_ended' && event.end === 'cleared'));
 });
 
+void test('a family pick is saved and loads back', (): void => {
+  const world: World = atTable(100000, 8);
+  const setup: RunSetup = { zone: CAVE, pins: [pin('one_family', 'echoes')] };
+  setOut(world, setup);
+  const save: SaveData = must(readSave(content, JSON.parse(JSON.stringify(toSave(world)))), 'save');
+  assert.deepEqual(save.run, { active: setup, last: setup });
+});
+
 void test('the run is saved, survives a reload, and an old save without one loads with none', (): void => {
   const world: World = atTable(100000, 8);
   const setup: RunSetup = { zone: CAVE, pins: [pin('one_kind', kindOf(CAVE)), pin('hardened')] };
@@ -249,6 +276,6 @@ void test('the run is saved, survives a reload, and an old save without one load
   assert.ok(isFields(raw));
   const { run: _gone, ...older } = raw;
   assert.deepEqual(must(readSave(content, older), 'old save').run, { active: null, last: null });
-  const odd: Fields = { ...older, run: { active: { zone: CAVE, pins: [{ condition: 'gone' }, { condition: 'marked', pick: 'x' }, { condition: 'swift' }, { condition: 'swift' }] }, last: 'nonsense' } };
+  const odd: Fields = { ...older, run: { active: { zone: CAVE, pins: [{ condition: 'gone' }, { condition: 'marked', pick: 'x' }, { condition: 'swift' }, { condition: 'swift' }, { condition: 'one_family', pick: 'nope' }] }, last: 'nonsense' } };
   assert.deepEqual(must(readSave(content, odd), 'odd save').run, { active: { zone: CAVE, pins: [pin('marked'), pin('swift')] }, last: null });
 });
