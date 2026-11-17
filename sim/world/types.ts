@@ -26,6 +26,7 @@ import type { MomentumState } from './momentum-types.ts';
 import type { Tally } from '../tally.ts';
 import type { PortalChannelIntent, PortalIntent, PortalStage, PortalState } from './portal-types.ts';
 import type { Command, OpenChest } from './command-types.ts';
+import type { RunEnd, RunState } from './run-types.ts';
 
 export type { AdvanceCommand, AllocateCommand, ChooseChangeCommand, Command, DropCommand, EquipCommand, FlaskCommand, GlitchCommand, GlitchSettingCommand, HeroCommand, HoldCommand, MoveCommand, OpenChest, PickupCommand, ReadCommand, RefundCommand, RespawnChoice, RespawnCommand, RespecCommand, SkillCommand, SlotCommand, SteerCommand, StopCommand, StrikeCommand, TalkCommand, TeleportCommand, TradeAction, TradeCommand, TravelCommand, UnequipCommand, UseCommand, WalkCommand } from './command-types.ts';
 export type { HazardState, MomentFigure, NpcState, ProjectileState, QueuedShot };
@@ -367,7 +368,7 @@ export type AreaStage = 'start' | 'pulse' | 'end';
 
 export type ArmedWhere = 'bag' | 'ground';
 
-export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss';
+export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss' | 'run_refused';
 
 export type WorldEvent =
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }
@@ -442,7 +443,9 @@ export type WorldEvent =
   | { readonly type: 'moment_chest'; readonly moment: MomentState }
   | UnisonEvent
   | { readonly type: 'chest_opened'; readonly moment: MomentState; readonly pos: Vec2; readonly gold: number }
-  | { readonly type: 'cache_opened'; readonly prop: number; readonly pos: Vec2; readonly gold: number };
+  | { readonly type: 'cache_opened'; readonly prop: number; readonly pos: Vec2; readonly gold: number }
+  | { readonly type: 'run_set'; readonly zone: string; readonly price: number }
+  | { readonly type: 'run_ended'; readonly zone: string; readonly end: RunEnd };
 
 export interface VendorStock {
   stock: (ItemInstance | null)[];
@@ -525,6 +528,7 @@ export interface World {
   escort: Escort | null;
   wards: WardState[];
   portal: PortalState | null;
+  run: RunState;
 }
 
 export type { ShoreState };

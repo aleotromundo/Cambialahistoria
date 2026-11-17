@@ -566,6 +566,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'item_found':
           case 'moment_gone':
           case 'moment_chest':
+          case 'run_set':
+          case 'run_ended':
           case 'path_marked':
           case 'character_changed':
           case 'zone_changed':

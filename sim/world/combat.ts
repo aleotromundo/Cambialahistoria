@@ -3,6 +3,8 @@ import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
 import type { RecoveryDef } from '../content/combat-types.ts';
 import { rollDrop } from './loot.ts';
+import type { RunReward } from '../content/run-table-types.ts';
+import { runReward, settleCleared } from './run-state.ts';
 import { makeItem } from './ledger.ts';
 import type { ItemSource } from './ledger.ts';
 import type { MonsterRank } from '../content/rank-types.ts';
@@ -106,16 +108,21 @@ export function aggroPack(world: World, monster: MonsterState): void {
   }
 }
 
-function rollLoot(world: World, monster: MonsterState): void {
+function liftedFloor(world: World, reward: RunReward): string | null {
+  if (reward.rarity <= 0 || !world.rng.chance(reward.rarity)) return null;
+  return world.content.rarities[1]?.id ?? null;
+}
+
+function rollLoot(world: World, monster: MonsterState, reward: RunReward): void {
   if (monster.revived) return;
   const loot = monster.def.loot;
   if (world.rng.chance(loot.goldChance)) {
-    const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind);
+    const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind) * (1 + reward.gold);
     dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
   }
   const level: number = Math.max(monster.level, world.player.level);
-  if (world.rng.chance(loot.itemChance)) {
-    const item: ItemInstance | null = rollDrop(world, level, null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id });
+  if (world.rng.chance(Math.min(1, loot.itemChance * (1 + reward.items)))) {
+    const item: ItemInstance | null = rollDrop(world, level, null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id }, liftedFloor(world, reward));
     if (item !== null) dropOnGround(world, monster.pos, { kind: 'item', item });
   }
   const rank: MonsterRank | null = monster.def.rank;
@@ -148,8 +155,10 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   if (regardOf(world.content, PLAYER_SIDE, target.def.faction) !== 'hostile') return;
   world.player.kills += 1;
   gainFlaskCharges(world.player);
-  rollLoot(world, target);
-  grantXp(world, killXp(world, target.def.xp, target.level), killReduction(world, target.level));
+  const reward: RunReward = runReward(world);
+  rollLoot(world, target, reward);
+  grantXp(world, Math.round(killXp(world, target.def.xp, target.level) * (1 + reward.xp)), killReduction(world, target.level));
+  settleCleared(world);
 }
 
 export function guardOutcome(target: Actor, skill: SkillDef, direction: ReadonlyVec2): GuardOutcome {

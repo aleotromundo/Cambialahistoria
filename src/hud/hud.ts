@@ -86,6 +86,7 @@ import type { OverlayId } from './overlay-table.ts';
 import type { OverlayManager } from './overlays.ts';
 import { openWith, promptText, use } from './prompts.ts';
 import tradeCss from './trade.css?inline';
+import runTableCss from './run-table.css?inline';
 import auctionCss from './auction.css?inline';
 import playerTradeCss from './player-trade.css?inline';
 import type { PlayerTradeMount } from './player-trade-panel.ts';
@@ -125,7 +126,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -454,6 +455,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'moment_chest':
           case 'chest_opened':
           case 'cache_opened':
+          case 'run_set':
+          case 'run_ended':
           case 'path_marked':
           case 'skill_impact':
           case 'hazard':

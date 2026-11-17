@@ -88,6 +88,7 @@ const SERVICE_HINTS: Readonly<Record<ServiceKind, (world: World, item: ItemInsta
   vendor: vendorPrompts,
   stash: (): readonly Prompt[] => INVENTORY_HINTS.stash,
   auction: (world: World, item: ItemInstance): readonly Prompt[] => (item.ledger === null || isStoryItem(world.content, item) ? [] : [use(AUCTION_PICK)]),
+  descent: (world: World, item: ItemInstance): readonly Prompt[] => (usable(world, item) ? INVENTORY_HINTS.use : INVENTORY_HINTS.equip),
 };
 
 function inventoryPrompts(world: World, item: ItemInstance): readonly Prompt[] {

@@ -3,6 +3,7 @@ import type { HudContext, PanelView } from './context.ts';
 import type { OverlayManager } from './overlays.ts';
 import { createAuctionPanel } from './auction-panel.ts';
 import { createStashPanel } from './stash-panel.ts';
+import { createRunTablePanel } from './run-table-panel.ts';
 import { createVendorPanel } from './vendor-panel.ts';
 
 const TRADE_HUD = {
@@ -20,6 +21,7 @@ export function createTradeHud(root: HTMLElement, context: HudContext, track: (e
     vendor: createVendorPanel(root, context),
     stash: createStashPanel(root, context),
     auction: createAuctionPanel(root, context),
+    descent: createRunTablePanel(root, context),
   };
   for (const panel of Object.values(panels)) track(panel.element);
   let kind: ServiceKind = 'vendor';

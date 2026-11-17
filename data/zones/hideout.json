@@ -47,6 +47,8 @@
     {"prop": "cask", "x": 15.0, "z": 18.0, "y": 0, "rotationDegrees": 80},
     {"prop": "bucket", "x": 17.9, "z": 18.0, "y": 0, "rotationDegrees": 0},
     {"prop": "table_long", "x": 33.4, "z": 26.6, "y": 0, "rotationDegrees": 90},
+    {"prop": "descent_table", "x": 33.5, "z": 26.2, "y": 0.88, "rotationDegrees": 30, "when": [{"type": "visited", "zone": "under_hall"}]},
+    {"prop": "lantern", "x": 33.3, "z": 27.7, "y": 0.88, "rotationDegrees": 0, "when": [{"type": "visited", "zone": "under_hall"}]},
     {"prop": "pail", "x": 29.4, "z": 27.6, "y": 0, "rotationDegrees": 0},
     {"prop": "basket", "x": 32.6, "z": 30.2, "y": 0, "rotationDegrees": 200},
     {"prop": "campfire_wide", "x": 24.0, "z": 20.0, "y": 0, "rotationDegrees": 0},

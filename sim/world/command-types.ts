@@ -5,6 +5,7 @@ import type { Vec2 } from '../math.ts';
 import type { PurseCommand } from './ledger.ts';
 import type { BenchCommand, SpawnCommand } from './dev-commands.ts';
 import type { EnterPortalCommand, UseItemCommand } from './portal-types.ts';
+import type { SetOutCommand } from './run-types.ts';
 
 export interface MoveCommand {
   readonly type: 'move';
@@ -162,4 +163,4 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand;
+export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand | SetOutCommand;

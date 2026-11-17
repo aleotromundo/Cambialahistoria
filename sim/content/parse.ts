@@ -1,4 +1,5 @@
 import { packRanks, rankProblems } from './parse-ranks.ts';
+import { runTable, runTableProblems } from './parse-run-table.ts';
 import { propCache, propLid } from './parse-cache.ts';
 import { atlasProblems } from './atlas.ts';
 import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
@@ -89,6 +90,7 @@ export interface RawContent {
   readonly books: unknown;
   readonly moments: unknown;
   readonly packRanks: unknown;
+  readonly runTable: unknown;
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -287,6 +289,7 @@ function prop(value: unknown, where: string): PropDef {
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
     tint: source['tint'] === undefined ? null : colour(source, 'tint', where),
     service: service(source, where),
+    label: nullableText(source, 'label', where),
     cache: propCache(source['cache'], `${where}.cache`),
     lid: propLid(source['lid'], `${where}.lid`),
   };
@@ -417,6 +420,7 @@ export function parseContent(raw: RawContent): Content {
     books: books(raw.books, 'books'),
     moments: momentLibrary(raw.moments, 'moments'),
     packRanks: packRanks(raw.packRanks, 'packRanks'),
+    runTable: runTable(raw.runTable, 'runTable'),
   };
 }
 
@@ -625,6 +629,7 @@ export function contentProblems(content: Content): string[] {
     for (const required of questDef.requires) need(content.quests.has(required) && required !== questDef.id, `quest ${questDef.id} requires unknown quest ${required}`);
   }
   problems.push(...tradeProblems(content));
+  problems.push(...runTableProblems(content));
   problems.push(...momentProblems(content));
   problems.push(...sceneProblems(content, flagNames));
   return problems;

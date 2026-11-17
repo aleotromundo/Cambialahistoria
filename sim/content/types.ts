@@ -6,6 +6,7 @@ import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterModDef, MonsterPoise, RecoveryDef, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { TradeDef } from './trade-types.ts';
+import type { RunTableDef } from './run-table-types.ts';
 import type { PropDef, SurfaceDef } from './prop-types.ts';
 import type { BookDef, StoryFlags } from './story-types.ts';
 export type { ZoneAmbience } from './ambience-types.ts';
@@ -430,4 +431,5 @@ export interface Content {
   readonly trade: TradeDef;
   readonly moments: MomentLibrary;
   readonly packRanks: PackRanks;
+  readonly runTable: RunTableDef;
 }

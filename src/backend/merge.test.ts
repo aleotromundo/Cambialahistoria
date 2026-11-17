@@ -96,3 +96,13 @@ void test('a thread stack goes with the copy that is kept, whole, and is never a
   assert.equal(onConflict.side, 'local');
   assert.equal(heldThreads(must(readSave(backendContent, JSON.parse(JSON.stringify(local))), 'read')), 7);
 });
+
+void test('a shaped descent travels with whichever copy wins, through the cloud reader', (): void => {
+  const setup = { zone: 'under_hall', pins: [{ condition: 'marked', pick: null }, { condition: 'swift', pick: null }] };
+  const ahead: SaveData = { ...makeSave(9, 40), run: { active: setup, last: setup } };
+  const behind: SaveData = makeSave(8, 0);
+  const fromCloud: SaveData = must(readSave(backendContent, JSON.parse(JSON.stringify(ahead))), 'cloud copy');
+  assert.deepEqual(fromCloud.run, { active: setup, last: setup });
+  assert.equal(chooseOnLoad({ local: behind, record: record({ pending: true }), cloud: { save: fromCloud, revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 } }).side, 'cloud');
+  assert.equal(chooseOnConflict({ local: ahead, current: { save: behind, revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 }, overwriteCloud: false }).side, 'local');
+});

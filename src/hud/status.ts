@@ -25,6 +25,7 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   legendary_limit: 'Three Legendary items are already worn',
   portal_town: 'No way opens from here',
   portal_boss: 'The fight holds the way shut',
+  run_refused: 'That descent cannot be set',
 };
 
 export interface Notices {

@@ -29,6 +29,7 @@ import { beginVoid } from './wake.ts';
 import { placePlayer, respawnExists, startZone } from './zones.ts';
 import { restoreKept } from './portal-keep.ts';
 import { portalFromSave } from './portal-save.ts';
+import { copyRun, emptyRun } from './run-state.ts';
 
 export interface WorldOptions {
   readonly seed: number;
@@ -207,6 +208,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     wards: [],
     escort: null,
     portal: portalFromSave(save?.portal ?? null),
+    run: save === null ? emptyRun() : copyRun(save.run),
   };
   placePlayer(world);
   beginVoid(world, 'first');

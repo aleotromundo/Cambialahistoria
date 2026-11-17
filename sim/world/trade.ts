@@ -141,6 +141,13 @@ function pay(world: World, price: number): boolean {
   return true;
 }
 
+export function chargeGold(world: World, price: number): boolean {
+  if (!pay(world, price)) return false;
+  world.player.gold -= price;
+  changed(world);
+  return true;
+}
+
 function buy(world: World, vendor: VendorStock, index: number): void {
   const item: ItemInstance | null = vendor.stock[index] ?? null;
   if (item === null) return;

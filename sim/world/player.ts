@@ -25,6 +25,7 @@ import { aimGlide, glide, glidesWith, stepMomentum } from './momentum.ts';
 import type { Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handlePurse } from './purse.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
+import { setOut } from './run-table.ts';
 import type { Station } from './trade.ts';
 import { requestGlitch, setGlitchesEnabled } from './glitch.ts';
 import { readPage } from './story.ts';
@@ -285,6 +286,7 @@ function act(world: World, command: Command): void {
     case 'choose_change':
     case 'respawn':
     case 'use_item':
+    case 'set_out':
       return;
   }
 }
@@ -333,6 +335,9 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'use_item':
       useItem(world, command.inventoryIndex);
+      return;
+    case 'set_out':
+      setOut(world, command.setup);
       return;
     case 'flask':
       useFlask(world, command.slot);

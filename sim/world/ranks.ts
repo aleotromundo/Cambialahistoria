@@ -5,16 +5,16 @@ import type { Rng } from '../rng.ts';
 import { pickWeighted } from '../rng.ts';
 import { withMods } from './elites.ts';
 
-export function rankChance(chance: RankChance, level: number): number {
-  return Math.min(chance.max, chance.base + chance.perLevel * Math.max(0, level - 1));
+export function rankChance(chance: RankChance, level: number, boost: number = 0): number {
+  return Math.min(1, Math.min(chance.max, chance.base + chance.perLevel * Math.max(0, level - 1)) * (1 + boost));
 }
 
-export function rollRank(ranks: PackRanks, rng: Rng, level: number): PackRankDef | null {
+export function rollRank(ranks: PackRanks, rng: Rng, level: number, boost: number = 0): PackRankDef | null {
   const plain: PackRankDef | null = ranks.ranks[0] ?? null;
   for (let index: number = ranks.ranks.length - 1; index > 0; index -= 1) {
     const rank: PackRankDef | undefined = ranks.ranks[index];
     if (rank === undefined || rank.chance === null) continue;
-    if (rng.chance(rankChance(rank.chance, level))) return rank;
+    if (rng.chance(rankChance(rank.chance, level, boost))) return rank;
   }
   return plain;
 }

@@ -16,6 +16,7 @@ import { clearMoments, startMoments } from './moments.ts';
 import { arriveWith } from './npc-walk.ts';
 import { leavingWith } from './scene.ts';
 import { parkZone, restoreKept } from './portal-keep.ts';
+import { settleRunZone } from './run-state.ts';
 
 export function startZone(content: Content): ZoneDef {
   const zone: ZoneDef | undefined = content.zones.get(content.world.start);
@@ -75,7 +76,7 @@ export function placePlayer(world: World): void {
   player.moving = false;
 }
 
-export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): void {
+export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {
   parkZone(world);
   closeDialogue(world, false);
   world.scene = null;
@@ -96,6 +97,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint): v
   world.zone = zone;
   world.grid = buildNavGrid(zone, world.content.props, world.content.surfaces, world.content.player.radius);
   world.respawn = respawn;
+  settleRunZone(world, keepRun);
   world.shift = { x: 0, z: 0 };
   const arrival: VoidArrival = world.visited.includes(zone.id) ? 'return' : 'first';
   if (arrival === 'first') world.visited.push(zone.id);

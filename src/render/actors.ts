@@ -635,6 +635,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'moment_chest':
           case 'chest_opened':
           case 'cache_opened':
+          case 'run_set':
+          case 'run_ended':
           case 'path_marked':
             break;
         }

@@ -29,6 +29,9 @@ import { decodeExplored, encodeExplored, exploredSize, grownExplored, savedExplo
 import type { Equipment, GroundItem, ItemInstance, RespawnPoint, RolledAffix, VendorStock, World } from './world/types.ts';
 import type { PortalSave } from './world/portal-types.ts';
 import { portalToSave, readPortal } from './world/portal-save.ts';
+import type { RunState } from './world/run-types.ts';
+import { copyRun } from './world/run-state.ts';
+import { readRun } from './world/run-save.ts';
 
 export const SAVE_VERSION: number = 6;
 const FLAGGED_VERSION: number = 5;
@@ -70,6 +73,7 @@ export interface SaveData {
   readonly purse: number;
   readonly tally: TallySave;
   readonly portal: PortalSave | null;
+  readonly run: RunState;
 }
 
 interface Worn {
@@ -124,6 +128,7 @@ export function toSave(world: World): SaveData {
     purse: world.purse,
     tally: tallyToSave(player.tally),
     portal: portalToSave(world),
+    run: copyRun(world.run),
   };
 }
 
@@ -417,6 +422,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     purse: readPurse(value['purse']),
     tally: readTally(content, value['tally']),
     portal: readPortal(content, value['portal'], { item: (entry: unknown): ItemInstance | null => readItem(content, entry), respawn: readRespawn }),
+    run: readRun(content, value['run']),
   });
 }
 
