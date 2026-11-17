@@ -1,5 +1,5 @@
-import type { Camera, Object3D, Scene } from 'three';
-import { BufferGeometry, Group, Light, Line, Material, Mesh, Points, Sprite, Texture } from 'three';
+import type { Camera, Object3D } from 'three';
+import { BufferGeometry, Group, Light, Line, Material, Mesh, Points, Scene, Sprite, Texture } from 'three';
 import { warnInConsole } from '../backend/console-log.ts';
 import type { Timers } from '../backend/backend.ts';
 import type { CostLimit, FramePacer } from './paced-work.ts';
@@ -28,6 +28,7 @@ export interface WarmSurvey {
 
 const warmedTextures: WeakMap<Texture, number> = new WeakMap<Texture, number>();
 const warmedGeometries: WeakSet<BufferGeometry> = new WeakSet<BufferGeometry>();
+const warmedDrawables: WeakSet<Object3D> = new WeakSet<Object3D>();
 
 export function revealHidden(root: Object3D): () => void {
   const lit: Set<Object3D> = new Set<Object3D>();
@@ -146,7 +147,7 @@ export function textureBytes(texture: Texture): number {
   return texels * WARM_UP.bytesPerTexel * (texture.generateMipmaps ? WARM_UP.mipmapShare : 1);
 }
 
-function ownCost(object: Object3D): number {
+export function drawCost(object: Object3D): number {
   const geometry: BufferGeometry | null = geometryOf(object);
   if (geometry === null || warmedGeometries.has(geometry)) return WARM_UP.drawFixedCost;
   let bytes: number = geometry.index === null ? 0 : geometry.index.array.byteLength;
@@ -154,53 +155,91 @@ function ownCost(object: Object3D): number {
   return WARM_UP.drawFixedCost + bytes;
 }
 
-export function drawCost(object: Object3D): number {
-  let cost: number = ownCost(object);
-  for (let holder: Object3D | null = object.parent; holder !== null; holder = holder.parent) if (materialsOf(holder).length > 0) cost += ownCost(holder);
-  return cost;
-}
-
 const TEXTURE_LIMIT: CostLimit<Texture> = { perFrame: WARM_UP.textureBytesPerFrame, cost: textureBytes };
 const DRAW_LIMIT: CostLimit<Object3D> = { perFrame: WARM_UP.drawCostPerFrame, cost: drawCost };
 
-function withAncestors(slice: readonly Object3D[]): Set<Object3D> {
-  const kept: Set<Object3D> = new Set<Object3D>();
-  for (const object of slice) {
-    let current: Object3D | null = object;
-    while (current !== null && !kept.has(current)) {
-      kept.add(current);
-      current = current.parent;
+interface SliceStage {
+  readonly scene: Scene;
+  readonly standIns: readonly Object3D[];
+  readonly lights: readonly Light[];
+  readonly proxy: Scene;
+}
+
+interface Borrowed {
+  readonly object: Object3D;
+  readonly visible: boolean;
+  readonly frustumCulled: boolean;
+}
+
+function sliceStage(scene: Scene, standIns: readonly Object3D[]): SliceStage {
+  const lights: Light[] = [];
+  scene.traverseVisible((object: Object3D): void => {
+    if (object instanceof Light) lights.push(object);
+  });
+  for (const light of lights) light.updateWorldMatrix(true, false);
+  const proxy: Scene = new Scene();
+  proxy.matrixWorldAutoUpdate = false;
+  proxy.fog = scene.fog;
+  proxy.background = scene.background;
+  proxy.environment = scene.environment;
+  proxy.environmentIntensity = scene.environmentIntensity;
+  proxy.environmentRotation.copy(scene.environmentRotation);
+  return { scene, standIns, lights, proxy };
+}
+
+function rootOf(object: Object3D): Object3D {
+  let current: Object3D = object;
+  while (current.parent !== null) current = current.parent;
+  return current;
+}
+
+function attached(stage: SliceStage, object: Object3D): boolean {
+  const root: Object3D = rootOf(object);
+  return root === stage.scene || stage.standIns.includes(root);
+}
+
+function heldByAnother(object: Object3D, own: ReadonlySet<Object3D>): boolean {
+  for (let holder: Object3D | null = object.parent; holder !== null; holder = holder.parent) {
+    if (own.has(holder)) return true;
+    if (!holder.visible) return false;
+  }
+  return false;
+}
+
+function borrow(object: Object3D, visible: boolean, frustumCulled: boolean, into: Borrowed[]): void {
+  into.push({ object, visible: object.visible, frustumCulled: object.frustumCulled });
+  object.visible = visible;
+  object.frustumCulled = frustumCulled;
+}
+
+function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, slice: readonly Object3D[]): void {
+  const drawn: Object3D[] = slice.filter((object: Object3D): boolean => attached(stage, object));
+  if (drawn.length === 0) return;
+  const own: Set<Object3D> = new Set<Object3D>(drawn);
+  const borrowed: Borrowed[] = [];
+  for (const object of drawn) {
+    borrow(object, true, false, borrowed);
+    object.traverse((inner: Object3D): void => {
+      if (inner === object || own.has(inner) || !inner.visible || materialsOf(inner).length === 0) return;
+      borrow(inner, false, inner.frustumCulled, borrowed);
+    });
+    object.updateWorldMatrix(true, false);
+  }
+  stage.proxy.children = [...stage.lights.filter((light: Light): boolean => attached(stage, light)), ...drawn.filter((object: Object3D): boolean => !heldByAnother(object, own))];
+  try {
+    compiler.drawOnce(stage.proxy, camera);
+  } finally {
+    stage.proxy.children = [];
+    for (const { object, visible, frustumCulled } of borrowed.toReversed()) {
+      object.visible = visible;
+      object.frustumCulled = frustumCulled;
     }
   }
-  return kept;
-}
-
-function inScene(scene: Scene, object: Object3D): boolean {
-  let current: Object3D | null = object;
-  while (current !== null && current !== scene) current = current.parent;
-  return current === scene;
-}
-
-function drawSlice(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], slice: readonly Object3D[]): void {
-  staged(scene, standIns, false, (): void => {
-    if (!slice.some((object: Object3D): boolean => inScene(scene, object))) return;
-    const kept: Set<Object3D> = withAncestors(slice);
-    const hidden: Object3D[] = [];
-    scene.traverse((object: Object3D): void => {
-      if (kept.has(object) || !object.visible || materialsOf(object).length === 0) return;
-      hidden.push(object);
-      object.visible = false;
-    });
-    try {
-      compiler.drawOnce(scene, camera);
-    } finally {
-      for (const object of hidden) object.visible = true;
-    }
-    for (const object of kept) {
-      const geometry: BufferGeometry | null = geometryOf(object);
-      if (geometry !== null) warmedGeometries.add(geometry);
-    }
-  });
+  for (const object of drawn) {
+    warmedDrawables.add(object);
+    const geometry: BufferGeometry | null = geometryOf(object);
+    if (geometry !== null) warmedGeometries.add(geometry);
+  }
 }
 
 async function drawPaced(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], pacer: FramePacer): Promise<void> {
@@ -216,7 +255,9 @@ async function drawPaced(compiler: ShaderCompiler, scene: Scene, camera: Camera,
     TEXTURE_LIMIT,
   );
   await pacer.next();
-  await workPaced(framesOf(found.drawables, DRAW_LIMIT), (slice: readonly Object3D[]): void => drawSlice(compiler, scene, camera, standIns, slice), pacer, 0);
+  const stage: SliceStage = sliceStage(scene, standIns);
+  const fresh: readonly Object3D[] = found.drawables.filter((object: Object3D): boolean => !warmedDrawables.has(object));
+  await workPaced(framesOf(fresh, DRAW_LIMIT), (slice: readonly Object3D[]): void => drawSlice(compiler, stage, camera, slice), pacer, 0);
 }
 
 export function warmUp(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {

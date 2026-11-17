@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Camera, Object3D } from 'three';
-import { BufferAttribute, BufferGeometry, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, Texture } from 'three';
+import { BufferAttribute, BufferGeometry, Color, Fog, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, Texture } from 'three';
 import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
 import type { ShaderCompiler } from './warm-up.ts';
@@ -280,16 +280,15 @@ void test('textures are uploaded over several frames, no frame past its byte bud
   assert.deepEqual(uploads, [0, 1, 2]);
 });
 
-function drawnNow(object: Object3D): boolean {
-  let current: Object3D | null = object;
-  while (current !== null) {
-    if (!current.visible) return false;
-    current = current.parent;
-  }
-  return true;
+function drawnIn(target: Object3D, object: Object3D): boolean {
+  let found: boolean = false;
+  target.traverseVisible((seen: Object3D): void => {
+    if (seen === object) found = true;
+  });
+  return found;
 }
 
-void test('the scene is drawn in slices with the real camera, each draw showing only its slice and every light, and nothing is left hidden', async (): Promise<void> => {
+void test('the scene is drawn in slices with the real camera, each draw holding only its slice and every light, and nothing is left hidden', async (): Promise<void> => {
   const scene: Scene = new Scene();
   const light: PointLight = new PointLight();
   scene.add(light);
@@ -302,9 +301,9 @@ void test('the scene is drawn in slices with the real camera, each draw showing 
   const masks: number[] = [];
   const compiler: ShaderCompiler = {
     compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
-    drawOnce(_target: Object3D, viewer: Camera): void {
-      slices.push(meshes.flatMap((mesh: Mesh, index: number): number[] => (drawnNow(mesh) ? [index] : [])));
-      lit.push(drawnNow(light));
+    drawOnce(target: Object3D, viewer: Camera): void {
+      slices.push(meshes.flatMap((mesh: Mesh, index: number): number[] => (drawnIn(target, mesh) ? [index] : [])));
+      lit.push(drawnIn(target, light));
       masks.push(viewer.layers.mask);
     },
     initTexture(): void {},
@@ -316,7 +315,7 @@ void test('the scene is drawn in slices with the real camera, each draw showing 
   for (const mesh of meshes) assert.equal(mesh.visible, true);
 });
 
-void test('a slice keeps the meshes that hold its own visible, and what the scene draws on its own still sees the real camera', async (): Promise<void> => {
+void test('a slice draws its own meshes without the meshes that hold them or that they hold, and shows a hidden one only for its own draw', async (): Promise<void> => {
   const scene: Scene = new Scene();
   const share: number = Math.floor((WARM_UP.drawCostPerFrame - WARM_UP.drawFixedCost) / 12) * 12;
   const holder: Mesh = sizedMesh(share);
@@ -326,28 +325,74 @@ void test('a slice keeps the meshes that hold its own visible, and what the scen
   const hidden: Mesh = sizedMesh(12);
   hidden.visible = false;
   scene.add(hidden);
-  const hooked: number[] = [];
+  const masks: number[] = [];
   const shown: boolean[][] = [];
   const camera: PerspectiveCamera = new PerspectiveCamera();
   const compiler: ShaderCompiler = {
     compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
     drawOnce(target: Object3D, viewer: Camera): void {
-      hooked.push(viewer.layers.mask);
-      shown.push([drawnNow(holder), drawnNow(held), drawnNow(hidden)]);
-      assert.equal(target, scene);
+      masks.push(viewer.layers.mask);
+      shown.push([drawnIn(target, holder), drawnIn(target, held), drawnIn(target, hidden)]);
     },
     initTexture(): void {},
   };
   await warmUp(compiler, scene, camera, [], null, countingPacer());
   assert.deepEqual(shown, [
     [true, false, false],
-    [true, true, false],
+    [false, true, false],
     [false, false, true],
   ]);
-  assert.deepEqual(hooked, [1, 1, 1]);
+  assert.deepEqual(masks, [1, 1, 1]);
   assert.equal(holder.visible, true);
   assert.equal(held.visible, true);
   assert.equal(hidden.visible, false);
+  assert.equal(held.parent, holder);
+  assert.equal(holder.parent, scene);
+});
+
+void test('a slice is drawn in a small scene of its own that shares the real scene\'s fog, environment and background, and the real scene is not drawn whole', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  scene.fog = new Fog(0x223344, 1, 50);
+  scene.environment = new Texture();
+  scene.background = new Color(0x112233);
+  const meshes: Mesh[] = threeHalfSlices(scene);
+  const targets: Object3D[] = [];
+  const compiler: ShaderCompiler = {
+    compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
+    drawOnce(target: Object3D): void {
+      targets.push(target);
+      assert.ok(target instanceof Scene);
+      assert.notEqual(target, scene);
+      assert.equal(target.fog, scene.fog);
+      assert.equal(target.environment, scene.environment);
+      assert.equal(target.background, scene.background);
+    },
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  assert.equal(targets.length, 2);
+  for (const mesh of meshes) assert.equal(mesh.parent, scene);
+  for (const target of targets) assert.equal(target.children.length, 0);
+});
+
+void test('a mesh drawn by one warm-up is not drawn again by the next, and one added since is', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const first: Mesh = sizedMesh(12);
+  scene.add(first);
+  const drawn: Object3D[][] = [];
+  const compiler: ShaderCompiler = {
+    compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
+    drawOnce(target: Object3D): void {
+      drawn.push([...target.children]);
+    },
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  const second: Mesh = sizedMesh(12);
+  scene.add(second);
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  await warmUp(compiler, scene, new PerspectiveCamera(), [], null, countingPacer());
+  assert.deepEqual(drawn, [[first], [second]]);
 });
 
 void test('a texture warmed once is not uploaded again by a later warm-up', async (): Promise<void> => {
@@ -405,11 +450,11 @@ function threeHalfSlices(scene: Scene): Mesh[] {
   return meshes;
 }
 
-void test('a child mesh is charged for the holder drawn with it until the holder has been drawn once', (): void => {
+void test('a mesh is charged only for its own geometry, since its slice draws it without the mesh that holds it', (): void => {
   const holder: Mesh = sizedMesh(1200);
   const held: Mesh = sizedMesh(120);
   holder.add(held);
-  assert.equal(drawCost(held), WARM_UP.drawFixedCost * 2 + 1320);
+  assert.equal(drawCost(held), WARM_UP.drawFixedCost + 120);
   assert.equal(drawCost(holder), WARM_UP.drawFixedCost + 1200);
 });
 
@@ -420,8 +465,8 @@ void test('something added to the scene while the slices are paced is hidden fro
   const shown: boolean[] = [];
   const compiler: ShaderCompiler = {
     compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
-    drawOnce(): void {
-      shown.push(late.parent !== null && drawnNow(late));
+    drawOnce(target: Object3D): void {
+      shown.push(drawnIn(target, late));
     },
     initTexture(): void {},
   };
@@ -447,4 +492,21 @@ void test('a slice whose meshes have all left the scene is not drawn', async ():
     for (const mesh of meshes) mesh.removeFromParent();
   }));
   assert.equal(draws, 1);
+});
+
+void test('a loose stand-in is drawn in its own slice and is loose again afterwards', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const standIn: Mesh = sizedMesh(12);
+  const drawn: boolean[] = [];
+  const compiler: ShaderCompiler = {
+    compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
+    drawOnce(target: Object3D): void {
+      drawn.push(drawnIn(target, standIn));
+    },
+    initTexture(): void {},
+  };
+  await warmUp(compiler, scene, new PerspectiveCamera(), [standIn], null, countingPacer());
+  assert.deepEqual(drawn, [true]);
+  assert.equal(standIn.parent, null);
+  assert.equal(scene.children.length, 0);
 });
