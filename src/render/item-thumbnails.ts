@@ -11,6 +11,9 @@ import { instantiateRig } from './character-loader.ts';
 import type { Keepsake } from './keepsake.ts';
 import { createKeepsake } from './keepsake.ts';
 import { KEEPSAKE_MODELS } from './keepsake-models.ts';
+import type { FramePacer } from './paced-work.ts';
+import { browserPacer } from './paced-work.ts';
+import { texturesOf, uploadPaced } from './warm-up.ts';
 
 export const THUMBNAIL = {
   size: 128,
@@ -349,6 +352,7 @@ interface Studio {
   readonly scene: Scene;
   readonly camera: OrthographicCamera;
   readonly environment: Texture;
+  readonly uploaded: WeakMap<Texture, number>;
   readonly close: () => void;
 }
 
@@ -394,6 +398,7 @@ function openStudio(): Studio {
     scene: litScene(reflections.texture),
     camera: studioCamera(),
     environment: reflections.texture,
+    uploaded: new WeakMap<Texture, number>(),
     close: (): void => {
       reflections.dispose();
       room.dispose();
@@ -405,7 +410,7 @@ function openStudio(): Studio {
   };
 }
 
-export function createThumbnailStudio(library: CharacterLibrary, skinTint: string, timers: Timers): ThumbnailStudio {
+export function createThumbnailStudio(library: CharacterLibrary, skinTint: string, timers: Timers, pacer: FramePacer = browserPacer()): ThumbnailStudio {
   let studio: Studio | null = null;
   let closed: boolean = false;
   let line: Promise<unknown> = Promise.resolve();
@@ -465,7 +470,9 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     made.root.position.sub(bounds.getCenter(new Vector3()));
     const size: Vector3 = bounds.getSize(new Vector3());
     fit(camera, new Vector3(turnWidth(size), size.y, size.z), PORTRAIT.width, PORTRAIT.height, PORTRAIT.padding);
-    await studio.renderer.compileAsync(stage, camera).catch((): Object3D => stage);
+    const open: Studio = studio;
+    await open.renderer.compileAsync(stage, camera).catch((): Object3D => stage);
+    await uploadPaced(open.renderer, texturesOf(stage), open.uploaded, pacer);
     let gone: boolean = false;
     return {
       draw(angle: number, target: HTMLCanvasElement): boolean {
@@ -496,7 +503,7 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     const images: Map<string, string> = new Map<string, string>();
     if (closed || pictures.length === 0) return images;
     studio ??= openStudio();
-    const { renderer, scene, camera } = studio;
+    const { renderer, scene, camera, uploaded } = studio;
     const made: Made = { materials: [], geometries: [] };
     const keepsakes: Keepsake[] = [];
     const shots: Shot[] = [];
@@ -507,7 +514,9 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
 
     for (const shot of shots) scene.add(shot.posed);
     await renderer.compileAsync(scene, camera).catch((): Object3D => scene);
+    const textures: Texture[] = texturesOf(scene);
     for (const shot of shots) shot.posed.removeFromParent();
+    await uploadPaced(renderer, textures, uploaded, pacer);
 
     await oneAtATime(shots, timers, THUMBNAIL.gapMs, async (shot: Shot): Promise<void> => {
       const { posed } = shot;

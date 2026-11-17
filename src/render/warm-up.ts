@@ -114,10 +114,22 @@ function materialTextures(material: Material, into: Set<Texture>): void {
   if (uniforms !== null && typeof uniforms === 'object') for (const uniform of Object.values(uniforms)) texturesIn(uniform, into);
 }
 
-function uploadable(texture: Texture): boolean {
-  if (warmedTextures.get(texture) === texture.version || texture.isRenderTargetTexture) return false;
+function hasImage(texture: Texture): boolean {
+  if (texture.isRenderTargetTexture) return false;
   const image: unknown = texture.image;
   return image !== null && image !== undefined;
+}
+
+function uploadable(texture: Texture): boolean {
+  return warmedTextures.get(texture) !== texture.version && hasImage(texture);
+}
+
+export function texturesOf(root: Object3D): Texture[] {
+  const textures: Set<Texture> = new Set<Texture>();
+  root.traverseVisible((object: Object3D): void => {
+    for (const material of materialsOf(object)) materialTextures(material, textures);
+  });
+  return [...textures].filter(hasImage);
 }
 
 export function survey(scene: Scene, camera: Camera): WarmSurvey {
@@ -156,6 +168,24 @@ export function drawCost(object: Object3D): number {
 }
 
 const TEXTURE_LIMIT: CostLimit<Texture> = { perFrame: WARM_UP.textureBytesPerFrame, cost: textureBytes };
+export interface TextureUploader {
+  initTexture(texture: Texture): void;
+}
+
+export function uploadPaced(uploader: TextureUploader, textures: readonly Texture[], uploaded: WeakMap<Texture, number>, pacer: FramePacer): Promise<void> {
+  const fresh: Texture[] = textures.filter((texture: Texture): boolean => uploaded.get(texture) !== texture.version);
+  return workPaced(
+    fresh,
+    (texture: Texture): void => {
+      uploader.initTexture(texture);
+      uploaded.set(texture, texture.version);
+    },
+    pacer,
+    PACED_WORK.frameBudgetMs,
+    TEXTURE_LIMIT,
+  );
+}
+
 const DRAW_LIMIT: CostLimit<Object3D> = { perFrame: WARM_UP.drawCostPerFrame, cost: drawCost };
 
 interface SliceStage {

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Camera, Object3D } from 'three';
-import { BufferAttribute, BufferGeometry, Color, Fog, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, Texture } from 'three';
+import { BufferAttribute, BufferGeometry, Color, Fog, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, ShaderMaterial, Texture, WebGLRenderTarget } from 'three';
 import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
 import type { ShaderCompiler } from './warm-up.ts';
-import { drawCost, revealHidden, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
+import { drawCost, revealHidden, texturesOf, uploadPaced, WARM_UP, warmUp, warmUpWithin } from './warm-up.ts';
 
 interface Recorder extends ShaderCompiler {
   readonly seen: boolean[];
@@ -509,4 +509,36 @@ void test('a loose stand-in is drawn in its own slice and is loose again afterwa
   assert.deepEqual(drawn, [true]);
   assert.equal(standIn.parent, null);
   assert.equal(scene.children.length, 0);
+});
+
+void test('the textures of a root are its materials\' maps and uniform textures that have an image, never a render target', (): void => {
+  const root: Group = new Group();
+  const map: Texture = sizedTexture(4, 4);
+  const uniform: Texture = sizedTexture(8, 8);
+  const empty: Texture = new Texture();
+  const target: WebGLRenderTarget = new WebGLRenderTarget(4, 4);
+  root.add(new Mesh(undefined, new MeshStandardMaterial({ map, roughnessMap: empty })));
+  root.add(new Mesh(undefined, new ShaderMaterial({ uniforms: { picture: { value: uniform }, drawn: { value: target.texture } } })));
+  const hidden: Mesh = new Mesh(undefined, new MeshStandardMaterial({ map: sizedTexture(2, 2) }));
+  hidden.visible = false;
+  root.add(hidden);
+  assert.deepEqual(texturesOf(root), [map, uniform]);
+});
+
+void test('paced uploads keep each frame under the byte budget and upload a texture again only when its version changes', async (): Promise<void> => {
+  const side: number = Math.floor(Math.sqrt(WARM_UP.textureBytesPerFrame / WARM_UP.bytesPerTexel / WARM_UP.mipmapShare / 2) * Math.SQRT2);
+  const textures: Texture[] = [sizedTexture(side, side), sizedTexture(side, side), sizedTexture(side, side)];
+  const pacer: CountingPacer = countingPacer();
+  const uploads: [number, Texture][] = [];
+  const uploader = { initTexture: (texture: Texture): void => void uploads.push([pacer.frame(), texture]) };
+  const uploaded: WeakMap<Texture, number> = new WeakMap<Texture, number>();
+  await uploadPaced(uploader, textures, uploaded, pacer);
+  assert.deepEqual(uploads.map(([frame]: [number, Texture]): number => frame), [0, 1, 2]);
+  await uploadPaced(uploader, textures, uploaded, pacer);
+  assert.equal(uploads.length, 3);
+  const changed: Texture | undefined = textures[1];
+  if (changed === undefined) throw new Error('no texture');
+  changed.needsUpdate = true;
+  await uploadPaced(uploader, textures, uploaded, pacer);
+  assert.deepEqual(uploads.slice(3).map(([, texture]: [number, Texture]): Texture => texture), [changed]);
 });
