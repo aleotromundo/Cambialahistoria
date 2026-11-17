@@ -187,6 +187,11 @@ function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
   return Math.max(0, 1 + sumSkillMod(mods, field));
 }
 
+function pulled(skill: SkillDef, mods: readonly SkillMod[]): number {
+  const pull: number = sumSkillMod(mods, 'pull');
+  return pull > 0 ? -pull : skill.knockback * (1 + sumSkillMod(mods, 'knockbackPercent'));
+}
+
 export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
   const placed: readonly SkillTreeNodeDef[] = allocatedNodes(content, allocated, held);
   const { skill, through }: ChosenSkill = chainFrom(content, base, placed, allocated, powers, worn, chosen);
@@ -210,7 +215,7 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
     damage: { type: skill.damage.type, weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
     cooldown: skill.cooldown * scaleOf(mods, 'cooldownPercent'),
     manaCost: Math.round(skill.manaCost * scaleOf(mods, 'manaCostPercent')),
-    knockback: skill.knockback * (1 + sumSkillMod(mods, 'knockbackPercent')),
+    knockback: pulled(skill, mods),
     stagger: skill.stagger * scaleOf(mods, 'staggerPercent'),
     lifeOnHit: skill.lifeOnHit + sumSkillMod(mods, 'lifeOnHit'),
     leech: skill.leech + sumSkillMod(mods, 'leech'),

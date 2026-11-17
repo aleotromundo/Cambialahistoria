@@ -77,6 +77,7 @@ const FIELD_WORDS: Readonly<Record<SkillModField, FieldWords>> = {
   lifeOnHit: { word: 'life on hit', count: true },
   leech: { word: 'life leech', count: false },
   echo: { word: 'echo', count: false },
+  pull: { word: 'pull', count: true },
 };
 
 export function describeSkillMod(content: Content, mod: SkillMod): string {

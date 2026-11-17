@@ -211,11 +211,16 @@ function wornPowerDefs(...bases: string[]): readonly PowerDef[] {
   return bases.map((base: string): PowerDef => must(content.itemBases.get(base)?.power, base));
 }
 
-void test('a power can pull: knockbackPercent below −1 turns the push around, and other percents keep their floor', (): void => {
+void test('a pull turns every spin form into a pull of its own strength, even the Millwheel that pushes nothing, and leaves a plain Cleave alone', (): void => {
   const cleave: SkillDef = skillOf('cleave');
-  const pulled: SkillDef = resolveSkill(content, cleave, [], wornPowerDefs('gyre_stitched_breeches'));
-  assert.ok(pulled.knockback < 0);
-  assert.ok(Math.abs(pulled.knockback - cleave.knockback * -0.6) < 1e-9);
+  const breeches: readonly PowerDef[] = wornPowerDefs('gyre_stitched_breeches');
+  const wheel: SkillDef = resolveSkill(content, cleave, [], [...breeches, ...wornPowerDefs('the_millwheel')]);
+  assert.equal(skillOf('cleave_millwheel').knockback, 0);
+  assert.equal(wheel.knockback, -5);
+  assert.equal(resolveSkill(content, cleave, ['whirling_cleave'], breeches).knockback, -5);
+  assert.equal(resolveSkill(content, cleave, [], breeches).knockback, cleave.knockback);
+  const turned: SkillMod = { target: { type: 'skill', skill: 'cleave' }, field: 'knockbackPercent', value: -1.5 };
+  assert.ok(Math.abs(resolveSkill(content, cleave, [], [{ family: 'millwheel', text: '', skillMods: [turned], variants: [], triggers: [] }]).knockback - cleave.knockback * -0.5) < 1e-9);
   const pull: SkillMod = { target: { type: 'skill', skill: 'cleave' }, field: 'damagePercent', value: -3 };
   const floored: SkillDef = resolveSkill(content, cleave, [], [{ family: 'millwheel', text: '', skillMods: [pull], variants: [], triggers: [] }]);
   assert.equal(floored.damage.weaponPercent, 0);

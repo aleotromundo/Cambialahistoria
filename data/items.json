@@ -3539,9 +3539,9 @@
         "text": "While spinning you pull enemies in, and every third turn lets out a Thunderclap.",
         "skillMods": [
           {
-            "skill": "cleave",
-            "field": "knockbackPercent",
-            "value": -1.6
+            "group": "spin",
+            "field": "pull",
+            "value": 5
           }
         ],
         "triggers": [

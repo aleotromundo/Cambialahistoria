@@ -9,12 +9,15 @@ import { buffMods, emptyPowerState, familyReading, firePowers, heldPowers, stepP
 import { resolveSkill } from './stats.ts';
 import { createRng } from './rng.ts';
 import { applyHit, offenceOf } from './world/combat.ts';
+import { refreshPlayer } from './world/character.ts';
+import { stepWorld } from './world/step.ts';
+import { distance } from './math.ts';
 import type { EchoState, ItemInstance, MonsterState, PowerState, World } from './world/types.ts';
 
 const shambler: MonsterDef = must(ARENA_CONTENT.monsters.get('test_shambler'), 'shambler');
 const content: Content = {
   ...ARENA_CONTENT,
-  monsters: new Map<string, MonsterDef>([...ARENA_CONTENT.monsters, ['test_echo', { ...shambler, id: 'test_echo', faction: ARENA_CONTENT.moments.faction }]]),
+  monsters: new Map<string, MonsterDef>([...ARENA_CONTENT.monsters, ['test_echo', { ...shambler, id: 'test_echo', faction: ARENA_CONTENT.moments.faction }], ['test_post', { ...shambler, id: 'test_post', moveSpeed: 0 }]]),
 };
 const skill = (id: string): SkillDef => must(content.skills.get(id), id);
 
@@ -406,4 +409,30 @@ void test('Forked: a hit of any main attack releases a Forkline, at most once pe
   world.player.wielding = 'blade';
   firePowers(world, { on: 'hit', skill: skill('cleave_millwheel'), target, at: target.pos });
   assert.deepEqual(casts(world), ['forkline', 'forkline']);
+});
+
+function spinAmong(gear: readonly string[]): number {
+  const world: World = hero();
+  for (const base of gear) wear(world, base);
+  refreshPlayer(world);
+  world.player.mana = world.player.stats.maxMana;
+  const posts: MonsterState[] = [0, 1, 2, 3, 4, 5].map((index: number): MonsterState => {
+    const angle: number = (index / 6) * Math.PI * 2;
+    const post: MonsterState = place(world, 'test_post', { x: ARENA_CENTRE.x + Math.cos(angle) * 1.9, z: ARENA_CENTRE.z + Math.sin(angle) * 1.9 });
+    post.life = 100000;
+    post.maxLife = 100000;
+    post.cooldowns['test_grab'] = 1000;
+    return post;
+  });
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: { x: ARENA_CENTRE.x + 0.01, z: ARENA_CENTRE.z }, targetId: null }], 1 / 60);
+  for (let frame: number = 0; frame < 90; frame += 1) stepWorld(world, [], 1 / 60);
+  assert.equal(world.player.action?.phase, 'channel');
+  return posts.reduce((sum: number, post: MonsterState): number => sum + distance(post.pos, world.player.pos), 0) / posts.length;
+}
+
+void test('the Gyre-Stitched Breeches pull a ring of foes in toward a hero turning the Millwheel, where the wheel alone leaves them standing', (): void => {
+  const alone: number = spinAmong(['the_millwheel']);
+  const pulled: number = spinAmong(['the_millwheel', 'gyre_stitched_breeches']);
+  assert.ok(alone > 1.8, `the wheel alone moved them to ${alone.toFixed(2)}`);
+  assert.ok(pulled < alone - 0.3, `pulled to ${pulled.toFixed(2)} against ${alone.toFixed(2)}`);
 });
