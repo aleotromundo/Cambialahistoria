@@ -19,6 +19,8 @@ import { dressPiece } from './dress-piece.ts';
 import { mergeRigidAlike, mergeSkinnedAlike } from './merge-alike.ts';
 import type { KeepLoadingDeps, NamedLoad } from './keep-loading.ts';
 import { loadAllKeepTrying } from './keep-loading.ts';
+import type { TurnGate } from './paced-work.ts';
+import { eachInTurn, OPEN_GATE } from './paced-work.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -78,10 +80,13 @@ export interface CharacterLibrary {
 
 const pending: Map<string, Promise<GLTF>> = new Map<string, Promise<GLTF>>();
 
-export function loadModel(loader: GLTFLoader, path: string): Promise<GLTF> {
+export function loadModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);
   if (cached !== undefined) return cached;
-  const started: Promise<GLTF> = withStallLimit((progress: () => void): Promise<GLTF> => loader.loadAsync(assetUrl(path), progress), createBrowserTimers(), STALL.limitMs, path).then(shrinkModel);
+  const started: Promise<GLTF> = withStallLimit((progress: () => void): Promise<GLTF> => loader.loadAsync(assetUrl(path), progress), createBrowserTimers(), STALL.limitMs, path).then(async (gltf: GLTF): Promise<GLTF> => {
+    await gate.turn();
+    return shrinkModel(gltf);
+  });
   pending.set(path, started);
   started.catch((): void => {
     pending.delete(path);
@@ -97,9 +102,9 @@ function shrinkModel(gltf: GLTF): GLTF {
 
 const kept: Set<string> = new Set<string>();
 
-export function loadKeptModel(loader: GLTFLoader, path: string): Promise<GLTF> {
+export function loadKeptModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE): Promise<GLTF> {
   kept.add(path);
-  return loadModel(loader, path);
+  return loadModel(loader, path, gate);
 }
 
 export function forgetModel(path: string): void {
@@ -154,10 +159,17 @@ function pickClip(def: RigDef, key: string, wanted: string, available: readonly 
   return def.rootMotionBone === null ? found : stripRootMotion(found, def.rootMotionBone);
 }
 
-async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
-  const main: GLTF = await loadKeptModel(loader, def.url);
-  const extras: GLTF[] = await Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip))));
-  const available: AnimationClip[] = [...main.animations, ...extras.flatMap((extra: GLTF): AnimationClip[] => extra.animations.map((found: AnimationClip): AnimationClip => fitClip(found, extra.scene, main.scene)))];
+interface ClipSource {
+  readonly clip: AnimationClip;
+  readonly scene: Object3D;
+}
+
+async function loadRig(loader: GLTFLoader, def: RigDef, gate: TurnGate = OPEN_GATE): Promise<LoadedRig> {
+  const main: GLTF = await loadKeptModel(loader, def.url, gate);
+  const extras: GLTF[] = await Promise.all(rigClipNames(def).map((clip: string): Promise<GLTF> => loadKeptModel(loader, clipUrl(def, clip), gate)));
+  const sources: ClipSource[] = extras.flatMap((extra: GLTF): ClipSource[] => extra.animations.map((clip: AnimationClip): ClipSource => ({ clip, scene: extra.scene })));
+  const fitted: AnimationClip[] = await eachInTurn(sources, gate, (source: ClipSource): AnimationClip => fitClip(source.clip, source.scene, main.scene));
+  const available: AnimationClip[] = [...main.animations, ...fitted];
   const clip = (key: string, wanted: string): AnimationClip => pickClip(def, key, wanted, available);
   const actionSet = (entries: Readonly<Record<string, RigActionClip>>): Map<string, ActionClip> => {
     const actions: Map<string, ActionClip> = new Map<string, ActionClip>();
@@ -169,7 +181,9 @@ async function loadRig(loader: GLTFLoader, def: RigDef): Promise<LoadedRig> {
   };
   const actions: Map<string, ActionClip> = actionSet(def.clips.actions);
   const bare: RigStanceClips | null = def.clips.unarmed;
+  await gate.turn();
   const template: Object3D = cloneSkinned(main.scene);
+  await gate.turn();
   const grouping: BodyGroupings = groupBodies(skinnedMeshes(template), def.bodyParts);
   return {
     def,
@@ -195,14 +209,16 @@ function isPiece(mesh: SkinnedMesh, names: ReadonlySet<string>): boolean {
   return names.size === 0 || names.has(mesh.name) || names.has(mesh.parent?.name ?? '');
 }
 
-async function loadWearable(loader: GLTFLoader, dresser: Dresser, def: WearableDef, frame: string): Promise<LoadedWearable> {
+async function loadWearable(loader: GLTFLoader, dresser: Dresser, def: WearableDef, frame: string, gate: TurnGate = OPEN_GATE): Promise<LoadedWearable> {
   const path: string = wearModel(def, frame);
-  const model: GLTF = await loadKeptModel(loader, path);
+  const model: GLTF = await loadKeptModel(loader, path, gate);
   const names: Set<string> = new Set<string>(def.pieces.map((name: string): string => PropertyBinding.sanitizeNodeName(name)));
+  await gate.turn();
   const pieces: SkinnedMesh[] = skinnedMeshes(model.scene).filter((mesh: SkinnedMesh): boolean => isPiece(mesh, names)).map((mesh: SkinnedMesh): SkinnedMesh => dressPiece(mesh, dresser, def.surfaces));
   if (pieces.length === 0) throw new Error(`Wearable "${def.id}" has no skinned mesh in ${path}`);
   const beside: Set<string> = new Set<string>(def.iconWith.map((name: string): string => PropertyBinding.sanitizeNodeName(name)));
   const iconWith: SkinnedMesh[] = beside.size === 0 ? [] : skinnedMeshes(model.scene).filter((mesh: SkinnedMesh): boolean => isPiece(mesh, beside));
+  await gate.turn();
   return { def, frame, model: path, pieces, drawn: mergeSkinnedAlike(pieces), iconWith };
 }
 
@@ -213,8 +229,9 @@ interface FramedWearable {
 
 export type Dresser = (dress: Readonly<Record<string, string>>, material: Material) => Material;
 
-async function loadAttachment(loader: GLTFLoader, dresser: Dresser, def: AttachmentDef): Promise<LoadedAttachment> {
-  const model: GLTF = await loadKeptModel(loader, def.model);
+async function loadAttachment(loader: GLTFLoader, dresser: Dresser, def: AttachmentDef, gate: TurnGate = OPEN_GATE): Promise<LoadedAttachment> {
+  const model: GLTF = await loadKeptModel(loader, def.model, gate);
+  await gate.turn();
   model.scene.traverse((object: Object3D): void => {
     if (!(object instanceof Mesh)) return;
     object.castShadow = true;
@@ -292,19 +309,23 @@ export async function loadNeeds(loader: GLTFLoader, content: Content, dresser: D
   ]);
 }
 
-export function remainingLoads(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary): NamedLoad[] {
+export function remainingLoads(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary, gate: TurnGate = OPEN_GATE): NamedLoad[] {
   const heldIds: string[] = [...content.attachments.keys()].filter((id: string): boolean => !library.attachments.has(id));
   const rigIds: string[] = [...usedRigs(content)].filter((id: string): boolean => !library.rigs.has(id));
   const unworn: FramedWearable[] = everyWearable(content).filter((worn: FramedWearable): boolean => !library.wearables.has(wearKey(worn.frame, worn.def.id)));
   return [
-    ...rigDefs(content, rigIds).map((def: RigDef): NamedLoad => ({ what: `Rig ${def.id}`, load: async (): Promise<void> => void library.rigs.set(def.id, await loadRig(loader, def)) })),
-    ...unworn.map((worn: FramedWearable): NamedLoad => ({ what: `Wearable ${worn.def.id} on ${worn.frame}`, load: async (): Promise<void> => void library.wearables.set(wearKey(worn.frame, worn.def.id), await loadWearable(loader, dresser, worn.def, worn.frame)) })),
-    ...attachmentDefs(content, heldIds).map((def: AttachmentDef): NamedLoad => ({ what: `Attachment ${def.id}`, load: async (): Promise<void> => void library.attachments.set(def.id, await loadAttachment(loader, dresser, def)) })),
+    ...rigDefs(content, rigIds).map((def: RigDef): NamedLoad => ({ what: `Rig ${def.id}`, load: async (): Promise<void> => void library.rigs.set(def.id, await loadRig(loader, def, gate)) })),
+    ...unworn.map((worn: FramedWearable): NamedLoad => ({ what: `Wearable ${worn.def.id} on ${worn.frame}`, load: async (): Promise<void> => void library.wearables.set(wearKey(worn.frame, worn.def.id), await loadWearable(loader, dresser, worn.def, worn.frame, gate)) })),
+    ...attachmentDefs(content, heldIds).map((def: AttachmentDef): NamedLoad => ({ what: `Attachment ${def.id}`, load: async (): Promise<void> => void library.attachments.set(def.id, await loadAttachment(loader, dresser, def, gate)) })),
   ];
 }
 
-export function loadRemainingCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary, deps: KeepLoadingDeps): Promise<void> {
-  return loadAllKeepTrying(remainingLoads(loader, content, dresser, library), deps);
+export const REMAINING_LOADS = {
+  inFlight: 2,
+} as const;
+
+export function loadRemainingCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, library: CharacterLibrary, deps: KeepLoadingDeps, gate: TurnGate = OPEN_GATE): Promise<void> {
+  return loadAllKeepTrying(remainingLoads(loader, content, dresser, library, gate), deps, REMAINING_LOADS.inFlight);
 }
 
 export function hasWear(library: CharacterLibrary, frame: string, wearableIds: readonly string[], gear: readonly string[]): boolean {
