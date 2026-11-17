@@ -490,11 +490,11 @@ body {
   opacity: 0;
 }
 
-body:has(.banner.zone) .exit-label {
+body.zone-banner .exit-label {
   pointer-events: none;
 }
 
-body:has(.banner.zone) .exit-label span {
+body.zone-banner .exit-label span {
   opacity: 0;
   animation: none;
 }

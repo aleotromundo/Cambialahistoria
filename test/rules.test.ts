@@ -74,6 +74,33 @@ void test('no source file grows past the size limit', (): void => {
   for (const { path, lines } of sources) assert.ok(lines.length <= MAX_LINES, `${path} has ${lines.length} lines`);
 });
 
+const BARE_TYPE: RegExp = /^[a-z][a-z0-9-]*$/;
+
+function hasOnBareType(css: string): readonly string[] {
+  const preludes: readonly string[] = [...css.matchAll(/([^{};]+)\{/g)].map((found: RegExpMatchArray): string => (found[1] ?? '').trim());
+  return preludes.flatMap((prelude: string): string[] => {
+    if (!prelude.includes(':has(')) return [];
+    let flat: string = prelude;
+    while (/\([^()]*\)/.test(flat)) flat = flat.replace(/\([^()]*\)/g, '');
+    return flat.split(',').flatMap((selector: string): string[] => {
+      const subject: string = (selector.trim().split(/[\s>+~]+/).at(-1) ?? '').replace(/::?[a-z-]+/g, '');
+      return BARE_TYPE.test(subject) ? [prelude] : [];
+    });
+  });
+}
+
+void test('the :has() guard catches a selector that ends on a bare element type and passes one that ends on a class', (): void => {
+  const caught: readonly string[] = ['body:has(.banner.zone) .exit-label span {', '.hud:has(.open) > div {', 'body:has(.a) i::before {', '.a, body.touch:has(.b:not(.c)) .d span {'];
+  const allowed: readonly string[] = ['body.zone-banner .exit-label span {', '.hud.fit-sheets:has(.hud-panel.open) > .hud-quests {', 'body:has(.hud.chart-open) #overlays {', '.a:has(.b) .c span.d {', '@media (max-width: 600px) {'];
+  for (const text of caught) assert.ok(hasOnBareType(text).length > 0, text);
+  for (const text of allowed) assert.deepEqual(hasOnBareType(text), [], text);
+});
+
+void test('a :has() selector never ends on a bare element type, which restyles every such element on any change in the page', (): void => {
+  const found: string[] = sources.filter((source: SourceFile): boolean => source.path.endsWith('.css')).flatMap((source: SourceFile): string[] => hasOnBareType(source.lines.join('\n')).map((prelude: string): string => `${source.path}: ${prelude}`));
+  assert.deepEqual(found, [], 'set a class from code for the state the :has() reads, or end the selector on a class');
+});
+
 const FLAT_SHAPE: RegExp = new RegExp(joined('new (Ring|Circle|Torus)Geo', 'metry\\b|new LineLo', 'op\\b|sectorGeometry\\(Math\\.PI \\* 2'));
 const FLAT_SHAPE_ALLOWED: Readonly<Record<string, string>> = {
   'src/render/contact-shadow.ts': 'the soft shadow under an actor, a texture that fades to nothing before the disc ends',
