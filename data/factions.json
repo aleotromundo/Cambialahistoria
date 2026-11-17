@@ -194,7 +194,9 @@
     "palette": {
       "tints": [
         "#a39a8c",
-        "#b0a59a"
+        "#b0a59a",
+        "#d4ccb8",
+        "#8a7d6c"
       ],
       "glow": "#c9b48a"
     },

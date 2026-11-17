@@ -2423,6 +2423,10 @@
         "pounce": {
           "clip": "Spider_Jump",
           "impactFraction": 0.9
+        },
+        "spit": {
+          "clip": "Spider_Jump",
+          "impactFraction": 0.45
         }
       }
     },
