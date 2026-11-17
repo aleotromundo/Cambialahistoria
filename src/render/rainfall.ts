@@ -148,7 +148,7 @@ export function createRainfall(stage: Stage, quality: Quality, settings: LensSet
           shared.fogFar.value = fog.far;
           shared.fogColor.value.copy(fog.color);
         }
-        stage.renderer.getDrawingBufferSize(shared.uResolution.value);
+        stage.sceneSize(shared.uResolution.value);
         stage.camera.getWorldPosition(view.eye);
         stage.camera.getWorldDirection(view.forward);
         view.focusX = focusX;

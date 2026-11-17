@@ -117,6 +117,8 @@ import type { TurnGate } from './render/paced-work.ts';
 import { browserPacer, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
+import type { RenderScale } from './render/render-scale.ts';
+import { createRenderScale } from './render/render-scale.ts';
 import type { Rainfall } from './render/rainfall.ts';
 import { createRainfall } from './render/rainfall.ts';
 import type { PlaceMarkers } from './render/place-markers.ts';
@@ -217,6 +219,7 @@ async function start(): Promise<void> {
     rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
+  const renderScale: RenderScale = createRenderScale(stage.renderer.getPixelRatio());
   const effects: MomentEffects = momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power), (): boolean => !gameSettings.get().graphics.streakEffects), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, particles, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
@@ -415,6 +418,7 @@ async function start(): Promise<void> {
   });
 
   const frame = (now: number): void => {
+    const interval: number = last > 0 ? now - last : 0;
     const dt: number = Math.min(GAME.maxFrame, Math.max(0, (now - last) / 1000));
     if (last > 0) transition.frame(now - last);
     last = now;
@@ -489,6 +493,8 @@ async function start(): Promise<void> {
       perf.beforeRender(now);
       stage.render();
       perf.afterRender();
+      const moved: boolean = renderScale.fit(stage.renderer.getPixelRatio());
+      if ((!transition.blocking && renderScale.observe({ intervalMs: interval, workMs: performance.now() - now })) || moved) stage.setRenderScale(renderScale.scale);
     }
     sinceSave += dt;
     if (urgent || sinceSave > GAME.saveEvery) persist();

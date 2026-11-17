@@ -12,6 +12,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import type { Pass } from 'three/addons/postprocessing/Pass.js';
 import type { QualityTier } from '../mobile/quality.ts';
 import { pixelRatioFor } from '../mobile/quality.ts';
+import type { ScenePass } from './scene-pass.ts';
 import { postBufferTarget, scenePass } from './scene-pass.ts';
 import { RIM_LIGHT } from './character-loader.ts';
 import { aimCutaway } from './prop-cutaway.ts';
@@ -115,6 +116,8 @@ export interface Stage {
   render(): void;
   gpuQueued(): number;
   applyQuality(tier: QualityTier): void;
+  setRenderScale(scale: number): void;
+  sceneSize(out: Vector2): Vector2;
   compileAsync(target: Object3D, viewer: Camera): Promise<Object3D>;
   drawOnce(target: Object3D, viewer: Camera): void;
   initTexture(texture: Texture): void;
@@ -195,6 +198,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   const msaaSamples = (): number => Math.min(STAGE.samples, tier.msaaSamples);
   const primer: WebGLRenderTarget = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: msaaSamples() });
   let composer: EffectComposer | null = null;
+  let sceneTarget: WebGLRenderTarget | null = null;
+  let renderScale: number = 1;
   let finish: Pass | null = null;
   let builtBloom: boolean = false;
   let builtFinish: Pass | null = null;
@@ -204,7 +209,9 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   const buildComposer = (): EffectComposer => {
     const samples: number = msaaSamples();
     const made: EffectComposer = new EffectComposer(renderer, postBufferTarget(false));
-    made.addPass(scenePass(scene, camera, samples, builtBloom).pass);
+    const drawn: ScenePass = scenePass(scene, camera, samples, builtBloom);
+    sceneTarget = drawn.target;
+    made.addPass(drawn.pass);
     if (builtBloom) made.addPass(new UnrealBloomPass(new Vector2(1, 1), STAGE.bloomStrength, STAGE.bloomRadius, STAGE.bloomThreshold));
     if (builtFinish !== null) made.addPass(builtFinish);
     made.addPass(ditheredOutputPass());
@@ -218,7 +225,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     if (width === 0 || height === 0) return;
     renderer.setPixelRatio(Math.min(pixelRatioCap, pixelRatioFor(tier, window.devicePixelRatio, width, height)));
     renderer.setSize(width, height, false);
-    composer?.setPixelRatio(renderer.getPixelRatio());
+    composer?.setPixelRatio(renderer.getPixelRatio() * renderScale);
     composer?.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -325,6 +332,15 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       tier = next;
       apply();
     },
+    setRenderScale(scale: number): void {
+      if (scale === renderScale) return;
+      renderScale = scale;
+      composer?.setPixelRatio(renderer.getPixelRatio() * renderScale);
+    },
+    sceneSize(out: Vector2): Vector2 {
+      if (composer === null || sceneTarget === null) return renderer.getDrawingBufferSize(out);
+      return out.set(sceneTarget.width, sceneTarget.height);
+    },
     setFinish(pass: Pass | null): void {
       if (pass === finish) return;
       finish = pass;
@@ -337,7 +353,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     },
     render(): void {
       nextPoseTick();
-      renderer.getDrawingBufferSize(drawing);
+      if (composer === null || sceneTarget === null) renderer.getDrawingBufferSize(drawing);
+      else drawing.set(sceneTarget.width, sceneTarget.height);
       const now: number = performance.now();
       aimCutaway(camera, { x: heroAt.x, z: heroAt.y, floor: heroFloor }, drawing.x, drawing.y, drawnAt === null ? 0 : (now - drawnAt) / 1000);
       drawnAt = now;
