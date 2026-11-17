@@ -74,11 +74,11 @@ void test('a stack past twenty spills into a new stack', (): void => {
 
 void test('taking one lowers the count, and the last one empties the slot', (): void => {
   const list: ItemList = [thread(1, 2)];
-  assert.equal(countOf(must(takeOne(list, 0), 'one')), 1);
+  assert.equal(countOf(must(takeOne(content, list, 0), 'one')), 1);
   assert.deepEqual(counts(list), [1]);
-  takeOne(list, 0);
+  takeOne(content, list, 0);
   assert.deepEqual(list, [null]);
-  assert.equal(takeOne(list, 0), null);
+  assert.equal(takeOne(content, list, 0), null);
 });
 
 void test('a whole stack moves to another list, merging up to twenty and leaving the rest behind', (): void => {
@@ -120,4 +120,30 @@ void test('a stacking item that could be worn, rolled or read is a content probl
   const stacked: Content = { ...content, itemBases: new Map([...content.itemBases, ['rusted_blade', { ...sword, stack: 5 }]]) };
   assert.ok(itemProblems(stacked).some((problem: string): boolean => problem.includes('rusted_blade stacks')));
   assert.equal(itemProblems(content).some((problem: string): boolean => problem.includes('stacks')), false);
+});
+
+void test('a single take comes from the smallest stack of that item, whichever stack was clicked', (): void => {
+  const list: ItemList = [thread(1, SIZE), blade(2), thread(3, 5)];
+  assert.equal(must(takeOne(content, list, 0), 'one').uid, 3);
+  assert.deepEqual(counts(list), [SIZE, 1, 4]);
+  const single: ItemList = [thread(1, SIZE), thread(2, 1)];
+  takeOne(content, single, 0);
+  assert.deepEqual(counts(single), [SIZE, null]);
+});
+
+void test('a take that leaves two stacks that fit in one merges them at once', (): void => {
+  const list: ItemList = [thread(1, 12), null, thread(2, 9)];
+  takeOne(content, list, 2);
+  assert.deepEqual(counts(list), [SIZE, null, null]);
+  const split: ItemList = [thread(1, SIZE), thread(2, SIZE), thread(3, 1)];
+  takeOne(content, split, 0);
+  assert.deepEqual(counts(split), [SIZE, SIZE, null]);
+});
+
+void test('a move that leaves two part stacks behind merges them at once', (): void => {
+  const bag: ItemList = [thread(1, 8), thread(2, 6)];
+  const stash: ItemList = [thread(3, 15), blade(4)];
+  assert.equal(moveStack(content, bag, 0, stash), true);
+  assert.deepEqual(counts(stash), [SIZE, 1]);
+  assert.deepEqual(counts(bag), [9, null]);
 });

@@ -95,7 +95,7 @@ export function stepChannel(world: World, intent: PortalChannelIntent, dt: numbe
   player.intent = { type: 'idle' };
   const index: number = player.inventory.findIndex((item: ItemInstance | null): boolean => item !== null && item.uid === intent.uid);
   if (index < 0) return;
-  takeOne(player.inventory, index);
+  takeOne(world.content, player.inventory, index);
   world.events.push({ type: 'character_changed' });
   openPortal(world, intent.reach);
 }

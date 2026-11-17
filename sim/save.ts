@@ -9,7 +9,7 @@ import type { Content, ItemSlot, PointGrant } from './content/types.ts';
 import { heroOf } from './hero.ts';
 import { emptyEquipment, generateItem, slotOf } from './items.ts';
 import { createRng } from './rng.ts';
-import { readCount, restack } from './stacks.ts';
+import { placeIn, readCount, restack } from './stacks.ts';
 import { retireUnworn } from './save-retire.ts';
 import { armOnce } from './save-arm.ts';
 import type { Armed } from './save-arm.ts';
@@ -178,10 +178,12 @@ function readEquipped(content: Content, value: unknown, inventory: (ItemInstance
   }
   for (const item of strays) {
     const slot: ItemSlot | null = slotOf(content, item);
-    const free: number = inventory.indexOf(null);
-    if (slot !== null && equipped[slot] === null) equipped[slot] = item;
-    else if (free >= 0) inventory[free] = item;
-    else spilled.push(item);
+    if (slot !== null && equipped[slot] === null) {
+      equipped[slot] = item;
+      continue;
+    }
+    const rest: ItemInstance | null = placeIn(content, inventory, item);
+    if (rest !== null) spilled.push(rest);
   }
   return { equipped, spilled };
 }
@@ -351,8 +353,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
   const retired: RetiredZones | null = typeof savedZone === 'string' && !known && content.world.retired?.zones.includes(savedZone) === true ? content.world.retired : null;
   const zone: string = typeof savedZone === 'string' && known ? savedZone : retired !== null ? retired.to : legacy || (typeof savedZone === 'string' && held.has(savedZone)) ? content.world.town : content.world.start;
   const slots: (ItemInstance | null)[] = Array.from({ length: size }, (_: unknown, index: number): ItemInstance | null => readItem(content, inventoryList[index]));
-  restack(content, slots);
   const worn: Worn = readEquipped(content, value['equipped'], slots);
+  restack(content, slots);
   const spilled: unknown = value['spilled'];
   const spilledList: readonly unknown[] = Array.isArray(spilled) ? spilled : [];
   const stashed: Stashed = readStash(content, value['stash']);

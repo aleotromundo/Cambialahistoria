@@ -536,3 +536,22 @@ void test('a stack count survives the save, and a broken count is read whole and
   assert.equal(countOf(must(odd.inventory[5], 'blade')), 1);
   assert.equal('count' in must(odd.inventory[5], 'blade'), false);
 });
+
+void test('a thread misfiled among the worn items joins the bag stack on load', (): void => {
+  const world: World = played();
+  world.player.inventory[1] = threadAt(51, 5);
+  const base: SaveData = toSave(world);
+  const raw: unknown = JSON.parse(JSON.stringify({ ...base, equipped: { ...base.equipped, charm: made('folded_hour', 'common', 70) } }));
+  assert.deepEqual(threadCounts(must(readSave(content, raw), 'save')), [6]);
+});
+
+void test('a misfiled thread tops up a bag stack with room even when every bag slot is taken', (): void => {
+  const world: World = played();
+  world.player.inventory = world.player.inventory.map((_: ItemInstance | null, index: number): ItemInstance => made('rusted_blade', 'common', 300 + index));
+  world.player.inventory[1] = threadAt(51, 19);
+  const base: SaveData = toSave(world);
+  const raw: unknown = JSON.parse(JSON.stringify({ ...base, equipped: { ...base.equipped, charm: made('folded_hour', 'common', 70) } }));
+  const save: SaveData = must(readSave(content, raw), 'save');
+  assert.deepEqual(threadCounts(save), [20]);
+  assert.equal(save.spilled.some((item: ItemInstance): boolean => item.base === 'folded_hour'), false);
+});

@@ -71,15 +71,31 @@ export function moveStack(content: Content, from: ItemList, index: number, to: I
   const rest: ItemInstance | null = placeIn(content, to, item);
   if (rest !== null && countOf(rest) === countOf(item)) return false;
   from[index] = rest;
+  restack(content, from);
+  restack(content, to);
   return true;
 }
 
-export function takeOne(list: ItemList, index: number): ItemInstance | null {
+function smallestLike(content: Content, list: ItemList, index: number, item: ItemInstance): number {
+  let best: number = index;
+  let fewest: number = countOf(item);
+  list.forEach((held: ItemInstance | null, at: number): void => {
+    if (held === null || at === index || !stacksWith(content, held, item) || countOf(held) >= fewest) return;
+    best = at;
+    fewest = countOf(held);
+  });
+  return best;
+}
+
+export function takeOne(content: Content, list: ItemList, index: number): ItemInstance | null {
   const item: ItemInstance | null = list[index] ?? null;
   if (item === null) return null;
-  const count: number = countOf(item);
-  list[index] = count > 1 ? withCount(item, count - 1) : null;
-  return withCount(item, 1);
+  const from: number = smallestLike(content, list, index, item);
+  const taken: ItemInstance = list[from] ?? item;
+  const count: number = countOf(taken);
+  list[from] = count > 1 ? withCount(taken, count - 1) : null;
+  restack(content, list);
+  return withCount(taken, 1);
 }
 
 export function restack(content: Content, list: ItemList): void {
