@@ -1,12 +1,15 @@
 import { emptyEquipment } from '../../../sim/items.ts';
 import { computeStats } from '../../../sim/stats.ts';
 import { ANY_WEAPON } from '../../../sim/weapons.ts';
-import type { SkillTreeNodeDef, StatBlock } from '../../../sim/content/types.ts';
+import type { DropLean, ItemBaseDef, RarityDef, SkillTreeNodeDef, StatBlock } from '../../../sim/content/types.ts';
 import type { SkillPolicy } from '../../simulate-policies.ts';
 import { namedSkill } from '../builds.ts';
 import type { GuideData } from '../data.ts';
 import { buildMeasure, focusSkill, levelForPlace, measuredNow, path, place, route, topLevel } from '../data.ts';
-import { bullets, decimal, esc, list, minutes, note, para, percent, section, signedPercent } from '../html.ts';
+import { SLOT_NAMES } from '../facts.ts';
+import { bullets, decimal, esc, list, minutes, note, para, percent, section, signedPercent, table } from '../html.ts';
+import type { LegendaryPlaces } from '../legendaries.ts';
+import { legendary, legendaryShare, placesFor } from '../legendaries.ts';
 import { signatureSection } from '../signature.ts';
 import { treePicture } from '../tree-picture.ts';
 import type { NamedMeasure } from './measured-view.ts';
@@ -31,6 +34,11 @@ export function buildName(id: string): BuildName {
   return found;
 }
 
+export interface LegendaryNote {
+  readonly item: string;
+  readonly changes: string;
+}
+
 export interface BuildNotes {
   readonly id: string;
   readonly name: string;
@@ -40,6 +48,8 @@ export interface BuildNotes {
   readonly lean: readonly string[];
   readonly lookFor: readonly string[];
   readonly avoid: readonly string[];
+  readonly legendaries: readonly LegendaryNote[];
+  readonly chase: string;
   readonly strengths: readonly string[];
   readonly weakSpots: readonly string[];
   readonly thin: readonly string[];
@@ -112,6 +122,45 @@ function glance(data: GuideData, notes: BuildNotes, order: readonly string[]): s
   ];
   return `<dl class="glance">${rows.map(([term, value]: readonly [string, string]): string => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join('')}</dl>
 <p class="small">Life, armour and the rest are what the places on the route give a level ${level} character with nothing equipped. Gear adds to all of them.</p>`;
+}
+
+function capitalised(text: string): string {
+  return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+function withArticle(name: string): string {
+  return name.startsWith('The ') ? name : `the ${name}`;
+}
+
+export function whereLikely(places: LegendaryPlaces): string {
+  const leaning: DropLean[] = [...places.family, ...places.weapon];
+  const boss: string[] = places.boss.filter((lean: DropLean): boolean => !leaning.includes(lean)).map((lean: DropLean): string => lean.name);
+  if (leaning.length === 0) return capitalised(boss.length === 0 ? 'anywhere alike' : `anywhere alike, and more often in ${list(boss)}`);
+  return capitalised(list([...leaning.map((lean: DropLean): string => lean.name), ...boss]));
+}
+
+function legendaryRow(data: GuideData, entry: LegendaryNote): string[] {
+  const base: ItemBaseDef = legendary(data.content, entry.item);
+  return [`<b>${esc(base.name)}</b>`, base.slot === null ? '' : esc(capitalised(SLOT_NAMES[base.slot])), esc(base.power?.text ?? ''), esc(entry.changes), esc(whereLikely(placesFor(data.content, base)))];
+}
+
+function legendariesSection(data: GuideData, notes: BuildNotes): string {
+  const rarity: RarityDef | undefined = data.content.rarities.find((entry: RarityDef): boolean => entry.powers);
+  const share: number = legendaryShare(data.content, null, null);
+  const first: LegendaryNote | undefined = notes.legendaries[0];
+  const firstName: string = first === undefined ? '' : esc(legendary(data.content, first.item).name);
+  return section(
+    'legendaries',
+    'Legendaries',
+    [
+      para(
+        `About one drop in ${Math.round(1 / share)} is a legendary, and you can wear ${rarity?.wornLimit ?? 0} at once. These are the ones made for this build. Each is good worn alone, and together they change how the build plays.`,
+        'Every area drops every legendary. The last column says where each is most likely: those areas drop its kind more often.',
+      ),
+      table({ head: ['Item', 'Slot', 'Power', 'What it changes', 'Most likely in'], rows: notes.legendaries.map((entry: LegendaryNote): string[] => legendaryRow(data, entry)), className: 'wide' }),
+      first === undefined ? '' : para(`Chase ${withArticle(firstName)} first. ${notes.chase}`),
+    ].join('\n'),
+  );
 }
 
 export function namedMeasures(data: GuideData): NamedMeasure[] {
@@ -189,6 +238,7 @@ export function buildPage(data: GuideData, notes: BuildNotes): string {
       ].join('\n'),
     ),
     section('lean', `Lean on ${esc(mainSkillName(data, notes))}`, para(...notes.lean)),
+    legendariesSection(data, notes),
     section('gear', 'Gear', `<div class="two"><div><h3>Look for</h3>${bullets(notes.lookFor)}</div><div><h3>Avoid</h3>${bullets(notes.avoid)}</div></div>`),
     section('strengths', 'Strengths and weak spots', `<div class="two"><div><h3>Strong at</h3>${bullets(notes.strengths)}</div><div><h3>Weak at</h3>${bullets(notes.weakSpots)}</div></div>`),
     notes.thin.length === 0 ? '' : section('thin', 'Thin today', para(...notes.thin)),

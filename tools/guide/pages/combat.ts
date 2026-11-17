@@ -1,4 +1,4 @@
-import type { BossDef, BossPhase, MonsterDef, SkillDef } from '../../../sim/content/types.ts';
+import type { BossDef, BossPhase, MonsterDef, RarityDef, SkillDef } from '../../../sim/content/types.ts';
 import type { MonsterModDef } from '../../../sim/content/combat-types.ts';
 import type { PackRankDef, RankModChoice, RankScale } from '../../../sim/content/rank-types.ts';
 import { gapBand, gapScale } from '../../../sim/progression.ts';
@@ -53,6 +53,12 @@ function poolMods(data: GuideData): MonsterModDef[] {
     if (found === undefined) throw new Error(`no monster mod ${choice.mod}`);
     return found;
   });
+}
+
+function rarityName(data: GuideData, id: string): string {
+  const found: RarityDef | undefined = data.content.rarities.find((rarity: RarityDef): boolean => rarity.id === id);
+  if (found === undefined) throw new Error(`the guide names the unknown rarity ${id}`);
+  return found.name.toLowerCase();
 }
 
 function bossOf(data: GuideData): { readonly monster: MonsterDef; readonly boss: BossDef } {
@@ -190,7 +196,7 @@ export function combatPage(data: GuideData): PageBody {
           ),
           bullets(bossDef.phases.map((phase: BossPhase, index: number): string => phaseText(data, phase, index, bossDef.phases))),
           para(
-            `Every time it falls it drops ${bossDef.drop.items} items of ${bossDef.drop.floor} rarity or better and some gold. The first time, it also gives you ${percent(bossDef.firstKill?.xpShare ?? 0)} of a level.`,
+            `Every time it falls it drops ${bossDef.drop.items} items, each ${esc(rarityName(data, bossDef.drop.floor))} or better, and some gold. The first time, it also gives you ${percent(bossDef.firstKill?.xpShare ?? 0)} of a level.`,
             `What helps: keep moving out of the sweep, never stand still inside the slowed ground, and roll through the lines that hold you. Each ${link('/guide/builds/', 'build page')} shows how often that build won against it.`,
           ),
         ].join('\n'),

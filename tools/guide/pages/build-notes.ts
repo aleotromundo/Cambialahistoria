@@ -8,10 +8,8 @@ import {
   carelessBossShare,
   carelessDeaths,
   deathWords,
-  familyNames,
   groupNeeds,
   groupWeapons,
-  legendaryLine,
   manaWeapons,
   modShare,
   placeLevel,
@@ -62,7 +60,6 @@ function tank(data: GuideData): BuildNotes {
     ],
     lookFor: [
       `A heavy weapon: ${weaponNames(groupWeapons(data, 'heavy'))}. They swing slower and hit much harder, which suits a held sweep.`,
-      legendaryLine(data, 'groundbreaker'),
       affixLine(data, 'hale'),
       affixLine(data, 'vital'),
       affixLine(data, 'plated'),
@@ -74,6 +71,12 @@ function tank(data: GuideData): BuildNotes {
       'Trading life or armour for damage on gear. The tree gives you damage later; your gear keeps you standing.',
       'Chasing fast enemies across the map. Let them come.',
     ],
+    legendaries: [
+      { item: 'groundbreaker', changes: `Every swing into a pack sets off ${skillName(data, 'thunderclap')}s, and the longer you stand in it the harder you are to hurt.` },
+      { item: 'anvilback_hauberk', changes: `A held heave hits both ways: the sweep in front and a ${skillName(data, 'thunderclap')} all around, with armour for every enemy it catches.` },
+      { item: 'bellwether_helm', changes: 'Being hit becomes a weapon. Stand in the crowd and the helm answers it for you.' },
+    ],
+    chase: `It is a weapon, so it takes no slot you need for armour, and its ${skillName(data, 'thunderclap')}s come from the ${skillName(data, 'cleave')} you press all the time.`,
     strengths: [
       `Surviving. In the measurements it ${deathWords(steadyDeaths(data, id))} played steadily and ${deathWords(carelessDeaths(data, id))} played carelessly.`,
       `The boss, even with mistakes. Played carelessly it won ${percent(carelessBossShare(data, id, first))} of its fights with the boss at level ${first}.`,
@@ -141,6 +144,12 @@ function whirlwind(data: GuideData): BuildNotes {
       `Any weapon that is not a blade. With a heavy weapon, a staff or a crossbow, ${skillName(data, 'cleave')} stops turning, the ${wheel} is gone, and ${pathName(data, 'blade')} keeps ${skillName(data, 'downdraught')}, ${skillName(data, 'millrace')}, its life and its speed but none of its weapon damage.`,
       'Stopping. Momentum fades a moment after the last hit, and a turn that starts cold is a slow one.',
     ],
+    legendaries: [
+      { item: 'the_millwheel', changes: `${skillName(data, 'cleave')} becomes a spin you hold while you run, so you never stop to swing.` },
+      { item: 'gyre_stitched_breeches', changes: `The spin drags the pack into it, and every third turn throws a ${skillName(data, 'thunderclap')} from the middle.` },
+      { item: 'grinders_bracers', changes: 'The more enemies you are cutting, the faster and harder you hit.' },
+    ],
+    chase: `The other two work with ${skillName(data, 'cleave_whirl')} too, but the Millwheel is the spin they were made for: it never ends while you hold it.`,
     strengths: [
       'Crowds. Every turn hits everything around you, and the more it hits the faster it turns.',
       `Levelling. It was ${speedRank(data, id, second)} build to reach level ${second}.`,
@@ -192,8 +201,6 @@ function caster(data: GuideData): BuildNotes {
     ],
     lookFor: [
       `A staff: ${weaponNames(groupWeapons(data, 'staff'))}. The ones that add mana help most: ${weaponNames(manaWeapons(data))}.`,
-      legendaryLine(data, 'rainmaker'),
-      `The Forkweather legendaries: ${familyNames(data, 'forkweather')}.`,
       affixLine(data, 'brimming'),
       affixLine(data, 'clear'),
       affixLine(data, 'honed'),
@@ -205,6 +212,12 @@ function caster(data: GuideData): BuildNotes {
       'Attack speed on gear. Your spells do not cast faster for it.',
       `Standing in the pack. ${name(data, 'storm_lance')} is a line: step back so the enemies come at you along it.`,
     ],
+    legendaries: [
+      { item: 'crown_of_the_struck_hour', changes: `Every ${skillName(data, 'storm_bolt')} becomes two: the bolt, and a ${skillName(data, 'forkline')} from the first enemy it hits.` },
+      { item: 'lantern_of_second_sounds', changes: 'Lightning reaches deeper into a pack and lands its hardest blow on the last enemy, not the first.' },
+      { item: 'rainmaker', changes: `Every ${skillName(data, 'squall')} you drop breaks over you as well, so the storm comes with you, and every area you leave lasts longer.` },
+    ],
+    chase: `${skillName(data, 'storm_bolt')} is the button you press most, and the Crown turns every one of them into a ${skillName(data, 'forkline')} as well.`,
     strengths: [
       `Packs that come at you from one side. ${name(data, 'storm_lance')} hits the whole line.`,
       `The boss once the build comes together. At level ${second} it was ${bossSpeedRank(data, id, second)} build to win.`,
@@ -253,7 +266,6 @@ function echoer(data: GuideData): BuildNotes {
     ],
     lookFor: [
       'A better weapon of the kind you already hold. The echo copies its damage.',
-      `The Forkweather legendaries: ${familyNames(data, 'forkweather')}.`,
       affixLine(data, 'honed'),
       affixLine(data, 'keen'),
       affixLine(data, 'brimming'),
@@ -264,6 +276,12 @@ function echoer(data: GuideData): BuildNotes {
       'Changing weapons for every fight. The Echo works with any of them, but the rest of the Skill Tree does not: the places you crossed into answer only with their own weapon.',
       `Throwing ${fork} at a single enemy. Wait a moment for the pack to come.`,
     ],
+    legendaries: [
+      { item: 'wirethread_gloves', changes: `An enemy your echo kills throws a ${skillName(data, 'forkline')}, so a pack that starts dying keeps dying.` },
+      { item: 'lantern_of_second_sounds', changes: `Every ${skillName(data, 'forkline')} you throw jumps further and hits hardest at the end of its chain.` },
+      { item: 'crown_of_the_struck_hour', changes: `With a staff in hand, each ${skillName(data, 'storm_bolt')} also splits into a ${skillName(data, 'forkline')}.` },
+    ],
+    chase: 'They are the one piece that answers the echo itself, whatever weapon you hold.',
     strengths: [
       `Clearing. It was ${speedRank(data, id, second)} build to reach level ${second}.`,
       `The boss. At level ${second} it was ${bossSpeedRank(data, id, second)} build to win, and played steadily it won ${percent(steadyBossShare(data, id, first))} of its fights at level ${first}.`,
@@ -311,8 +329,6 @@ function windrunner(data: GuideData): BuildNotes {
     ],
     lookFor: [
       `A crossbow: ${weaponNames(groupWeapons(data, 'crossbow'))}.`,
-      legendaryLine(data, 'quietshot'),
-      legendaryLine(data, 'mist_treader_boots'),
       affixLine(data, 'quick'),
       affixLine(data, 'honed'),
       affixLine(data, 'hale'),
@@ -322,6 +338,13 @@ function windrunner(data: GuideData): BuildNotes {
       'Standing still. The Veil only works after you move.',
       'Armour to make up for the keystone. Life does more for you.',
     ],
+    legendaries: [
+      { item: 'quietshot', changes: 'A roll before you shoot is worth more than any line on your gear, and one bolt goes through a whole line of enemies.' },
+      { item: 'nightjar_gloves', changes: `Each roll turns the next shots into a fan of three bolts, so a roll into a pack is an attack.` },
+      { item: 'longsight_coat', changes: 'You shoot from much further back, and whatever reaches you is thrown away again.' },
+      { item: 'mist_treader_boots', changes: `You roll more often, and each roll leaves an ${skillName(data, 'downdraught')} behind. Any build can wear them; this one rolls most.` },
+    ],
+    chase: 'It is a weapon, and the other pieces all build on the roll it rewards. You can wear three legendaries at once, so with all three Quietshot pieces, leave the boots off.',
     strengths: [
       `Getting going. It was ${speedRank(data, id, first)} build to reach level ${first}.`,
       'Getting out of trouble. No build moves as much or as often.',

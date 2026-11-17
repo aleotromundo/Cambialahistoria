@@ -1,10 +1,12 @@
-import type { AffixDef, FamilyDef, ItemBaseDef, ItemSlot, RarityDef, SkillDef, StatId } from '../../../sim/content/types.ts';
+import type { AffixDef, DropLean, MonsterDef, FamilyDef, ItemBaseDef, ItemSlot, RarityDef, SkillDef, StatId, WeaponGroup, ZoneDef } from '../../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../../sim/content/types.ts';
 import { statLabel } from '../../../sim/stat-text.ts';
 import { ARMOUR_HALF_POINT, armourReduction } from '../../../sim/stats.ts';
 import type { GuideData } from '../data.ts';
 import { capPercent, SLOT_NAMES, statAmount, statCap } from '../facts.ts';
-import { esc, link, list, para, percent, section, table } from '../html.ts';
+import { decimal, esc, link, list, para, percent, section, table } from '../html.ts';
+import { familyPieces, leanWeapons, leanZones, legendaryShare, placesFor } from '../legendaries.ts';
+import { whereLikely } from './build-page.ts';
 import type { PageBody } from '../layout.ts';
 
 const STAT_MEANINGS: Readonly<Record<StatId, string>> = {
@@ -43,16 +45,55 @@ function rarityRows(data: GuideData): string[][] {
   ]);
 }
 
-function legendaries(data: GuideData): ItemBaseDef[] {
-  return [...data.content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.power !== null && base.dropWeight > 0);
-}
-
 function familyName(data: GuideData, id: string): string {
   return data.content.families.get(id)?.name ?? '';
 }
 
 function legendaryRows(data: GuideData): string[][] {
-  return legendaries(data).map((base: ItemBaseDef): string[] => [esc(base.name), base.slot === null ? '' : SLOT_NAMES[base.slot], esc(familyName(data, base.power?.family ?? '')), esc(base.power?.text ?? '')]);
+  return [...data.content.families.values()].flatMap((family: FamilyDef): string[][] =>
+    familyPieces(data.content, family.id).map((base: ItemBaseDef): string[] => [esc(familyName(data, family.id)), `<b>${esc(base.name)}</b>`, base.slot === null ? '' : SLOT_NAMES[base.slot], esc(base.power?.text ?? ''), esc(whereLikely(placesFor(data.content, base)))]),
+  );
+}
+
+function favouredWeapons(data: GuideData, lean: DropLean): string {
+  const groups: string[] = leanWeapons(data.content, lean).map((group: WeaponGroup): string => group.needs);
+  const slots: string[] = lean.slots.map((slot: ItemSlot): string => `${SLOT_NAMES[slot]} pieces`);
+  return esc(list([...groups, ...slots]));
+}
+
+function favouredFamilies(data: GuideData, lean: DropLean): string {
+  return esc(list(lean.families.map((id: string): string => familyName(data, id))));
+}
+
+function levelsOf(data: GuideData, lean: DropLean): string {
+  const levels: number[] = leanZones(data.content, lean).map((zone: ZoneDef): number => zone.level);
+  const low: number = Math.min(...levels);
+  const high: number = Math.max(...levels);
+  return low === high ? String(low) : `${low} to ${high}`;
+}
+
+function leanRows(data: GuideData): string[][] {
+  return data.content.leans.map((lean: DropLean): string[] => [
+    esc(`${lean.name.charAt(0).toUpperCase()}${lean.name.slice(1)}`),
+    levelsOf(data, lean),
+    lean.share > 1 ? favouredWeapons(data, lean) : '',
+    lean.share > 1 ? favouredFamilies(data, lean) : '',
+    lean.legendary > 1 ? `×${decimal(lean.legendary, 0)} legendaries` : '',
+  ]);
+}
+
+function bossLine(data: GuideData): string {
+  const court: DropLean | undefined = data.content.leans.find((lean: DropLean): boolean => lean.legendary > 1);
+  if (court === undefined) return '';
+  const floorId: string | undefined = [...data.content.monsters.values()].find((monster: MonsterDef): boolean => monster.boss !== null)?.boss?.drop.floor;
+  const floor: RarityDef | undefined = data.content.rarities.find((rarity: RarityDef): boolean => rarity.id === floorId);
+  const floorName: string = floor?.name.toLowerCase() ?? 'rare';
+  return `In ${esc(court.name)} every legendary is ${decimal(court.legendary, 0)} times as likely as anywhere else. A boss always drops ${esc(floorName)} items or better, and there ${percent(legendaryShare(data.content, court, floor?.id ?? null))} of them are legendary, against ${percent(legendaryShare(data.content, null, floor?.id ?? null))} elsewhere.`;
+}
+
+function shareWord(data: GuideData): string {
+  const shares: number[] = [...new Set(data.content.leans.filter((lean: DropLean): boolean => lean.share > 1).map((lean: DropLean): number => lean.share))];
+  return shares.length === 1 ? `${decimal(shares[0] ?? 1, 1)} times` : 'several times';
 }
 
 function affixRows(data: GuideData): string[][] {
@@ -97,7 +138,7 @@ export function itemsPage(data: GuideData): PageBody {
     kicker: 'Guide',
     title: 'Items',
     lede: 'What you can wear, how rare things are, and what every line on an item does for you.',
-    description: 'Items in The Lost Storm: the seven slots, rarities and how often each drops, every affix and its range, every weapon, the legendaries, and what each stat does.',
+    description: 'Items in The Lost Storm: slots, rarities and drop odds, every affix and weapon, the legendaries by family, where each kind drops most, and what each stat does.',
     body: [
       section(
         'slots',
@@ -130,7 +171,19 @@ export function itemsPage(data: GuideData): PageBody {
           para(
             `A ${esc(legendary?.name.toLowerCase() ?? 'legendary')} item is one of a handful of named pieces, each with a power no other item has. You can wear ${legendary?.wornLimit ?? 0} at once at most. They come in ${families.length} families, ${esc(list(families.map((family: FamilyDef): string => family.name)))}, whose powers work together.`,
           ),
-          table({ head: ['Item', 'Slot', 'Family', 'Power'], rows: legendaryRows(data), className: 'wide' }),
+          table({ head: ['Family', 'Item', 'Slot', 'Power', 'Most likely in'], rows: legendaryRows(data), className: 'wide' }),
+          para(`Each ${link('/guide/builds/', 'build page')} lists the legendaries made for it, what each changes, and which to chase first.`),
+        ].join('\n'),
+      ),
+      section(
+        'where',
+        'Where things drop',
+        [
+          para(
+            `Every area drops every item. Some areas lean toward certain kinds: there, each favoured kind of weapon drops about ${shareWord(data)} as often as it does elsewhere, measured against the other kinds, and a legendary from a favoured family gets the same lift. No area drops more items for it, and none drops rarer ones, except where the table says so.`,
+            bossLine(data),
+          ),
+          table({ head: ['Area', 'Monster levels', 'Favours', 'Legendaries favoured', 'Rarer drops'], rows: leanRows(data), className: 'wide' }),
         ].join('\n'),
       ),
       section(
