@@ -2707,6 +2707,76 @@
     "bodyParts": {}
   },
   {
+    "id": "cave_shade",
+    "url": "models/creatures/cave_shade.glb",
+    "clipFolder": "models/animations/cave_shade",
+    "scale": 0.3,
+    "yawOffsetDegrees": 0,
+    "height": 3.1,
+    "rootMotionBone": null,
+    "lift": 1.0,
+    "gaits": [
+      {
+        "clip": "Fast_Flying",
+        "groundSpeed": 2.5
+      }
+    ],
+    "clips": {
+      "idle": "Flying_Idle",
+      "run": "Fast_Flying",
+      "hit": [
+        "HitReact"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "dive": {
+          "clip": "Headbutt",
+          "impactFraction": 0.45
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
+    "id": "drifter",
+    "url": "models/creatures/drifter.glb",
+    "clipFolder": "models/animations/drifter",
+    "scale": 0.45,
+    "yawOffsetDegrees": 0,
+    "height": 2.74,
+    "rootMotionBone": null,
+    "lift": 0.9,
+    "gaits": [
+      {
+        "clip": "Fast_Flying",
+        "groundSpeed": 1.0
+      }
+    ],
+    "clips": {
+      "idle": "Flying_Idle",
+      "run": "Fast_Flying",
+      "hit": [
+        "HitReact"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "grasp": {
+          "clip": "Punch",
+          "impactFraction": 0.5
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [],
+    "bodyParts": {}
+  },
+  {
     "id": "standing_clock",
     "url": "models/creatures/standing_clock.glb",
     "clipFolder": "models/animations/standing_clock",

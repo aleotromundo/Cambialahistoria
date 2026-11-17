@@ -1,6 +1,8 @@
 {
   "defaults": { "volume": 1, "maxVoices": 4, "cooldown": 0, "reach": 30 },
   "skillStart": {
+    "shade_dive": [{ "sound": "wisp_whoosh", "volume": 0.4, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.7, 0.85] }],
+    "drifter_grasp": [{ "sound": "shade_breath", "volume": 0.45, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.85, 1.0] }],
     "silt_smother": [{ "sound": "bubble_hostile", "volume": 0.5, "maxVoices": 2, "cooldown": 0.5, "pitch": [0.8, 0.95] }],
     "spine_volley": [{ "sound": "spit_launch", "volume": 0.45, "maxVoices": 2, "cooldown": 0.4, "pitch": [0.8, 0.9] }],
     "sporecap_bite": [{ "sound": "dodge_whoosh", "volume": 0.35, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.75, 0.85] }],
@@ -123,6 +125,7 @@
     "thunderclap": [{ "sound": "bolt_impact", "volume": 0.55, "maxVoices": 3, "cooldown": 0.04 }]
   },
   "areaStart": {
+    "drifter_grasp": [{ "sound": "shade_hush", "volume": 0.35, "maxVoices": 2, "cooldown": 0.4, "pitch": [0.9, 1.05] }],
     "silt_pool": [{ "sound": "water_douse", "volume": 0.3, "maxVoices": 2, "cooldown": 0.3, "pitch": [0.75, 0.85] }],
     "weaver_web": [{ "sound": "spit_land", "volume": 0.5, "maxVoices": 2, "cooldown": 0.3, "pitch": [1.1, 1.25] }],
     "standing_storm": [{ "sound": "storm_hum", "volume": 0.45, "maxVoices": 1, "pitch": [0.95, 1.05] }, { "sound": "spark_tick", "volume": 0.25, "maxVoices": 2, "pitch": [0.95, 1.1] }],
@@ -205,6 +208,8 @@
     "broken": [{ "sound": "hit_shield", "volume": 1, "maxVoices": 2 }]
   },
   "death": {
+    "cave_shade": [{ "sound": "death_small", "volume": 0.35, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.7, 0.8] }],
+    "drifter": [{ "sound": "body_fall", "volume": 0.35, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.8, 0.9] }],
     "silt_ooze": [{ "sound": "water_douse", "volume": 0.45, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.7, 0.85] }],
     "spined_ooze": [{ "sound": "water_douse", "volume": 0.45, "maxVoices": 3, "cooldown": 0.05, "pitch": [0.85, 1.0] }],
     "sporecap": [{ "sound": "body_fall", "volume": 0.35, "maxVoices": 3, "cooldown": 0.05 }],

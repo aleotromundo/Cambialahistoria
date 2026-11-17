@@ -50,6 +50,10 @@ public/models/creatures/spined_ooze.glb  <-  https://poly.pizza/m/IoWG5F9WUc  ("
 public/models/animations/spined_ooze/*.glb  <-  https://poly.pizza/m/IoWG5F9WUc  ("Green Spiky Blob", Ultimate Monsters Bundle)
 public/models/creatures/sporecap.glb  <-  https://poly.pizza/m/0SZyA6MV51  ("Mushnub Evolved", Ultimate Monsters Bundle)
 public/models/animations/sporecap/*.glb  <-  https://poly.pizza/m/0SZyA6MV51  ("Mushnub Evolved", Ultimate Monsters Bundle)
+public/models/creatures/cave_shade.glb  <-  https://poly.pizza/m/Iip30bDHmu  ("Ghost", Ultimate Monsters Bundle)
+public/models/animations/cave_shade/*.glb  <-  https://poly.pizza/m/Iip30bDHmu  ("Ghost", Ultimate Monsters Bundle)
+public/models/creatures/drifter.glb  <-  https://poly.pizza/m/zjr7CmWGER  ("Hywirl", Ultimate Monsters Bundle)
+public/models/animations/drifter/*.glb  <-  https://poly.pizza/m/zjr7CmWGER  ("Hywirl", Ultimate Monsters Bundle)
 
 ----
 
