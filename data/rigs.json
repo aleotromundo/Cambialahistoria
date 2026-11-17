@@ -2599,6 +2599,114 @@
     "bodyParts": {}
   },
   {
+    "id": "silt_ooze",
+    "url": "models/creatures/silt_ooze.glb",
+    "clipFolder": "models/animations/silt_ooze",
+    "scale": 0.6,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk",
+        "groundSpeed": 0.92
+      }
+    ],
+    "clips": {
+      "idle": "Idle",
+      "run": "Walk",
+      "hit": [
+        "HitRecieve"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "pounce": {
+          "clip": "Jump",
+          "impactFraction": 0.75
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [
+      "Green_Blob.001"
+    ],
+    "bodyParts": {}
+  },
+  {
+    "id": "spined_ooze",
+    "url": "models/creatures/spined_ooze.glb",
+    "clipFolder": "models/animations/spined_ooze",
+    "scale": 0.4,
+    "yawOffsetDegrees": 0,
+    "height": 4.14,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk",
+        "groundSpeed": 0.75
+      }
+    ],
+    "clips": {
+      "idle": "Idle",
+      "run": "Walk",
+      "hit": [
+        "HitRecieve"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "spit": {
+          "clip": "Jump",
+          "impactFraction": 0.55
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [
+      "GreenSpiky_Blob.002"
+    ],
+    "bodyParts": {}
+  },
+  {
+    "id": "sporecap",
+    "url": "models/creatures/sporecap.glb",
+    "clipFolder": "models/animations/sporecap",
+    "scale": 0.38,
+    "yawOffsetDegrees": 0,
+    "height": 4.41,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk",
+        "groundSpeed": 0.83
+      }
+    ],
+    "clips": {
+      "idle": "Idle",
+      "run": "Walk",
+      "hit": [
+        "HitRecieve"
+      ],
+      "death": [
+        "Death"
+      ],
+      "actions": {
+        "bite": {
+          "clip": "Bite_Front",
+          "impactFraction": 0.55
+        }
+      }
+    },
+    "sockets": {},
+    "hiddenNodes": [
+      "Mushnub_Evolved.001"
+    ],
+    "bodyParts": {}
+  },
+  {
     "id": "standing_clock",
     "url": "models/creatures/standing_clock.glb",
     "clipFolder": "models/animations/standing_clock",
