@@ -525,8 +525,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'damage': {
             const isPlayer: boolean = event.targetTeam === 'player';
-            const stagger: boolean = isPlayer ? current.player.action === null && !current.player.moving : event.skill.stagger > 0;
-            const struck: HeroPush | null = event.targetId === current.player.id && !event.burn && !event.killed && stagger ? pushOnHero(current.player, event.skill.knockback, event.direction) : null;
+            const pushed: HeroPush | null = event.targetId === current.player.id && !event.burn && !event.killed && current.player.action === null ? pushOnHero(current.player, event.skill.knockback, event.direction) : null;
+            const stagger: boolean = isPlayer ? current.player.action === null && (!current.player.moving || (pushed !== null && pushed.reaction !== 'none')) : event.skill.stagger > 0;
+            const struck: HeroPush | null = stagger ? pushed : null;
             const reeled: boolean = struck?.reaction === 'reel' && struck.side !== null && (playerView.startAction(reelAnimation(struck.side), 0, ACTORS.reelTime) || playerView.startAction(HERO_PUSH.reelAnimation, 0, ACTORS.reelTime));
             if (event.burn) viewOf(event.targetId)?.hit(HIT_BURN, ACTORS.burnFlash, false);
             else viewOf(event.targetId)?.hit(isPlayer ? HIT_RED : HIT_WHITE, isPlayer ? ACTORS.playerFlash : ACTORS.monsterFlash, stagger && !reeled && !event.killed && !guarded.has(event.targetId));

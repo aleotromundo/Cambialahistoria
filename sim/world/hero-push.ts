@@ -38,7 +38,8 @@ export function hitSide(push: ReadonlyVec2, facing: number): HitSide | null {
 export function heroPush(push: ReadonlyVec2, facing: number): HeroPush {
   const side: HitSide | null = hitSide(push, facing);
   if (side === null) return UNMOVED;
-  return { reaction: pushDistance({ x: push.x, z: push.z }) >= HERO_PUSH.reelFrom ? 'reel' : 'flinch', side, travel: 0 };
+  const travel: number = pushDistance({ x: push.x, z: push.z });
+  return { reaction: travel >= HERO_PUSH.reelFrom ? 'reel' : 'flinch', side, travel };
 }
 
 export function pushOnHero(hero: Actor, knockback: number, direction: ReadonlyVec2): HeroPush {
