@@ -6,6 +6,7 @@ import { restOffset, restWeight, WAKE_POSE } from './wake-pose.ts';
 import type { Contact } from './wake-pose.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
 import type { Motion } from '../../sim/world/types.ts';
+import { angleBetween, turnToward } from '../../sim/world/movement.ts';
 import type { RigContact } from '../../sim/content/types.ts';
 import type { BodyRoles } from '../lobby/lobby-life.ts';
 import { bodyRoles, boneNamed, spineBelow } from '../lobby/lobby-life.ts';
@@ -145,19 +146,6 @@ export interface ActorView {
   bounds(out: Box3): void;
   prime(): void;
   dispose(): void;
-}
-
-function angleTo(current: number, target: number): number {
-  let delta: number = (target - current) % (Math.PI * 2);
-  if (delta > Math.PI) delta -= Math.PI * 2;
-  if (delta < -Math.PI) delta += Math.PI * 2;
-  return delta;
-}
-
-function turnToward(current: number, target: number, maxStep: number): number {
-  const delta: number = angleTo(current, target);
-  if (Math.abs(delta) <= maxStep) return target;
-  return current + Math.sign(delta) * maxStep;
 }
 
 function clamped(value: number, low: number, high: number): number {
@@ -424,7 +412,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         if (glance === null) yaw = turnToward(yaw, actor.facing, options.turnRate * dt * pace.value);
         else {
           glance.left = Math.max(0, glance.left - dt);
-          yaw = glance.from + angleTo(glance.from, actor.facing) * easeInOut(1 - glance.left / glance.span);
+          yaw = glance.from + angleBetween(glance.from, actor.facing) * easeInOut(1 - glance.left / glance.span);
           if (glance.left <= 0) glance = null;
         }
         rig.root.rotation.y = yaw + turned;
