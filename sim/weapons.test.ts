@@ -110,7 +110,7 @@ void test('a skill change and a skill mod work only with the place\'s weapon in 
 function armedWith(base: string): World {
   const world: World = createWorld(TAGGED, { seed: 3, save: null });
   world.player.inventory.fill(null);
-  addToInventory(world.player, made(base));
+  addToInventory(world, made(base));
   equipFromInventory(world, 0);
   world.player.bar = ['cleave', 'storm_bolt', null, null, null, null];
   world.player.cooldowns = {};

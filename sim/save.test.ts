@@ -5,6 +5,7 @@ import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { canAllocate } from './progression.ts';
 import { createRng } from './rng.ts';
+import { countOf, withCount } from './stacks.ts';
 import { armedFlag } from './save-arm.ts';
 import { parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
 import type { SaveData } from './save.ts';
@@ -496,4 +497,42 @@ void test('a save from before Millrace keeps its place and puts Millrace where S
   assert.equal(save.freeReset, true);
   const restored: World = createWorld(content, { seed: 3, save });
   assert.equal(restored.player.skills[2]?.id, 'millrace');
+});
+
+function threadAt(uid: number, count: number): ItemInstance {
+  return withCount(made('folded_hour', 'common', uid), count);
+}
+
+function threadCounts(save: SaveData): number[] {
+  return save.inventory.flatMap((item: ItemInstance | null): number[] => (item?.base === 'folded_hour' ? [countOf(item)] : []));
+}
+
+void test('a save from before stacking loads its separate threads as one stack in the first thread slot', (): void => {
+  const world: World = played();
+  world.player.inventory[1] = made('folded_hour', 'common', 51);
+  world.player.inventory[4] = made('folded_hour', 'common', 52);
+  world.player.inventory[7] = made('folded_hour', 'common', 53);
+  const save: SaveData = roundTrip(world);
+  assert.deepEqual(threadCounts(save), [3]);
+  assert.equal(save.inventory[1]?.uid, 51);
+  assert.equal(save.inventory[4], null);
+  assert.equal(save.inventory[7], null);
+  assert.equal(save.inventory[0]?.base, 'drowned_leathers');
+});
+
+void test('a stack count survives the save, and a broken count is read whole and never above the stack size', (): void => {
+  const world: World = played();
+  world.player.inventory[1] = threadAt(51, 13);
+  world.stash[0] = threadAt(52, 4);
+  const save: SaveData = roundTrip(world);
+  assert.deepEqual(threadCounts(save), [13]);
+  assert.equal(countOf(must(save.stash[0], 'stashed')), 4);
+  const size: number = must(content.itemBases.get('folded_hour'), 'thread').stack;
+  const base: SaveData = toSave(played());
+  const thread: ItemInstance = made('folded_hour', 'common', 60);
+  const raw: unknown = JSON.parse(JSON.stringify({ ...base, inventory: [{ ...thread, uid: 61, count: 0 }, { ...thread, uid: 62, count: -3 }, null, { ...thread, uid: 63, count: 2.5 }, { ...thread, uid: 64, count: 999 }, made('rusted_blade', 'common', 65)] }));
+  const odd: SaveData = must(readSave(content, raw), 'odd');
+  assert.deepEqual(threadCounts(odd), [size, 4]);
+  assert.equal(countOf(must(odd.inventory[5], 'blade')), 1);
+  assert.equal('count' in must(odd.inventory[5], 'blade'), false);
 });

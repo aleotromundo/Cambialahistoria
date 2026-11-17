@@ -109,6 +109,9 @@ export function itemProblems(content: Content): string[] {
       if (!ITEM_STAT_SET.has(mod.stat) && !BASE_DAMAGE.has(mod.stat)) problems.push(`item ${base.id} has ${mod.stat}, which is not one of the item stats`);
     }
   }
+  for (const base of content.itemBases.values()) {
+    if (base.stack > 1 && (base.slot !== null || base.implicit.length > 0 || base.power !== null || base.story || base.book !== null)) problems.push(`item ${base.id} stacks but is worn, rolled, a story item or a book`);
+  }
   for (const affix of content.affixes.values()) {
     if (affix.min > affix.max) problems.push(`line ${affix.id} rolls from ${affix.min} down to ${affix.max}`);
   }

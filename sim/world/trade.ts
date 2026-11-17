@@ -5,6 +5,7 @@ import type { TradeGood } from '../content/trade-types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import { createRng, pickWeighted } from '../rng.ts';
+import { countOf, fits, moveStack, placeIn } from '../stacks.ts';
 import { allHold } from './conditions.ts';
 import { hasNews, nextTalk, openDialogue } from './dialogue.ts';
 import type { ItemInstance, NoticeReason, NpcState, PlayerState, TradeAction, VendorStock, World } from './types.ts';
@@ -29,11 +30,11 @@ export function itemValue(content: Content, item: ItemInstance): number {
 }
 
 export function buyPrice(content: Content, item: ItemInstance): number {
-  return itemValue(content, item);
+  return itemValue(content, item) * countOf(item);
 }
 
 export function sellPrice(content: Content, item: ItemInstance): number {
-  return Math.max(1, Math.floor(itemValue(content, item) * content.trade.price.sellRatio));
+  return Math.max(1, Math.floor(itemValue(content, item) * content.trade.price.sellRatio)) * countOf(item);
 }
 
 export function emptyStash(content: Content): (ItemInstance | null)[] {
@@ -124,12 +125,11 @@ function changed(world: World): void {
 }
 
 function receive(world: World, item: ItemInstance): boolean {
-  const free: number = world.player.inventory.indexOf(null);
-  if (free < 0) {
+  if (!fits(world.content, world.player.inventory, item)) {
     notice(world, 'inventory_full');
     return false;
   }
-  world.player.inventory[free] = item;
+  placeIn(world.content, world.player.inventory, item);
   return true;
 }
 
@@ -198,22 +198,20 @@ function buyBack(world: World, vendor: VendorStock, index: number): void {
 
 function stash(world: World, inventoryIndex: number): void {
   const player: PlayerState = world.player;
-  const item: ItemInstance | null = player.inventory[inventoryIndex] ?? null;
-  if (item === null) return;
-  const free: number = world.stash.indexOf(null);
-  if (free < 0) {
+  if ((player.inventory[inventoryIndex] ?? null) === null) return;
+  if (!moveStack(world.content, player.inventory, inventoryIndex, world.stash)) {
     notice(world, 'stash_full');
     return;
   }
-  world.stash[free] = item;
-  player.inventory[inventoryIndex] = null;
   changed(world);
 }
 
 function unstash(world: World, index: number): void {
-  const item: ItemInstance | null = world.stash[index] ?? null;
-  if (item === null || !receive(world, item)) return;
-  world.stash[index] = null;
+  if ((world.stash[index] ?? null) === null) return;
+  if (!moveStack(world.content, world.stash, index, world.player.inventory)) {
+    notice(world, 'inventory_full');
+    return;
+  }
   changed(world);
 }
 

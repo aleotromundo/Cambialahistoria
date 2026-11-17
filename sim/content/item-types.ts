@@ -66,6 +66,7 @@ export interface ItemBaseDef {
   readonly variants: readonly SkillVariant[];
   readonly use: ItemUse | null;
   readonly unsellable: boolean;
+  readonly stack: number;
 }
 
 export const POWER_TRIGGERS = ['hit', 'kill', 'pulse', 'use'] as const;

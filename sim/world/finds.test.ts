@@ -1,18 +1,21 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../../test/support.ts';
+import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { createRng } from '../rng.ts';
+import { countOf, withCount } from '../stacks.ts';
+import { dropFromInventory } from './character.ts';
+import { dropOnGround } from './ground.ts';
 import { distance } from '../math.ts';
 import { createWorld } from './create.ts';
-import { aimedItem } from './finds.ts';
+import { aimedItem, pickUp } from './finds.ts';
 import { shoreDepth } from './shore.ts';
 import { stepWorld } from './step.ts';
 import { wakeLength } from './wake.ts';
-import type { Command, GroundItem, World } from './types.ts';
+import type { Command, GroundItem, ItemInstance, World } from './types.ts';
 
 const content: Content = loadContent();
 const DT: number = 1 / 60;
@@ -114,4 +117,35 @@ void test('standing on a find with a full pack leaves it there without a notice 
   for (let step: number = 0; step < 30; step += 1) notices += stepWorld(world, [], DT).filter((event): boolean => event.type === 'notice').length;
   assert.equal(notices, 0);
   assert.notEqual(findOf(world, 'journal'), null);
+});
+
+function threadOf(uid: number, count: number): ItemInstance {
+  return withCount(must(generateItem(content, createRng(uid), uid, 1, 'folded_hour', 'common'), 'thread'), count);
+}
+
+void test('a thread picked up from the ground joins the stack in the bag, even with every slot taken', (): void => {
+  const world: World = worldIn(content, content.world.town, 3);
+  const size: number = must(content.itemBases.get('folded_hour'), 'thread').stack;
+  world.player.inventory.fill(must(generateItem(content, createRng(8), 902, 1, 'rusted_blade', 'common'), 'filler'));
+  world.player.inventory[2] = threadOf(60, size - 1);
+  pickUp(world, dropOnGround(world, world.player.pos, { kind: 'item', item: threadOf(61, 1) }));
+  assert.equal(countOf(must(world.player.inventory[2], 'stack')), size);
+  assert.equal(world.ground.length, 0);
+});
+
+void test('a dropped stack lies whole on the ground, and a bag with room for part of it takes that part and leaves the rest', (): void => {
+  const world: World = worldIn(content, content.world.town, 4);
+  const size: number = must(content.itemBases.get('folded_hour'), 'thread').stack;
+  world.player.inventory[0] = threadOf(70, 9);
+  dropFromInventory(world, 0);
+  const lying: GroundItem = must(world.ground.at(-1), 'dropped');
+  assert.equal(lying.content.kind === 'item' ? countOf(lying.content.item) : 0, 9);
+  world.player.inventory.fill(must(generateItem(content, createRng(9), 903, 1, 'rusted_blade', 'common'), 'filler'));
+  world.player.inventory[5] = threadOf(71, size - 4);
+  world.events = [];
+  pickUp(world, lying);
+  assert.equal(countOf(must(world.player.inventory[5], 'stack')), size);
+  const rest: GroundItem = must(world.ground.find((ground: GroundItem): boolean => ground.id === lying.id), 'rest');
+  assert.equal(rest.content.kind === 'item' ? countOf(rest.content.item) : 0, 5);
+  assert.ok(world.events.some((event): boolean => event.type === 'notice' && event.reason === 'inventory_full'));
 });

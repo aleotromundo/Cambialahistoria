@@ -326,7 +326,7 @@ function raiseTo(world: World, level: number): void {
 function wear(world: World, bases: readonly string[]): void {
   for (const base of bases) {
     const item: ItemInstance | null = makeItem(world, world.player.level, base, CAVE.gearRarity, { kind: 'start', base });
-    if (item === null || !addToInventory(world.player, item)) throw new Error(`cannot give ${base}`);
+    if (item === null || !addToInventory(world, item)) throw new Error(`cannot give ${base}`);
     equipFromInventory(world, world.player.inventory.indexOf(item));
     if (!Object.values(world.player.equipped).includes(item)) throw new Error(`${base} could not be worn`);
   }

@@ -117,7 +117,7 @@ function giveStartingItems(world: World, emptyHanded: boolean): void {
     if (item === null) continue;
     const slot = slotOf(world.content, item);
     if (slot !== null && world.player.equipped[slot] === null) world.player.equipped[slot] = item;
-    else addToInventory(world.player, item);
+    else addToInventory(world, item);
   }
   world.player.wielding = heldGroup(world.content, world.player.equipped);
   world.player.skills = resolveSkillBar(world.content, world.player.bar, world.player.allocated, wornPowers(world.content, world.player.equipped), wornVariants(world.content, world.player.equipped), world.player.wielding, world.player.changes);

@@ -7,6 +7,7 @@ import type { Content, ItemBaseDef } from '../content/types.ts';
 import { generateItem } from '../items.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { createRng } from '../rng.ts';
+import { countOf, withCount } from '../stacks.ts';
 import type { SaveData } from '../save.ts';
 import { parseSaveText, readSave, toSave } from '../save.ts';
 import { createWorld } from './create.ts';
@@ -93,6 +94,78 @@ void test('the trader always sells the portal good for its data price, it never 
   handleTrade(world, { type: 'sell', inventoryIndex: index });
   assert.equal(world.player.inventory[index]?.base, PORTAL_BASE);
   assert.equal(world.player.gold, 5);
+});
+
+function atTrader(): World {
+  const world: World = worldIn(content, content.world.town, 2);
+  const vendor: NpcState = must(world.npcs.find((npc: NpcState): boolean => npc.def.service === 'vendor'), 'vendor');
+  for (const talk of vendor.def.talks) if (talk.once) world.heard.push(talk.id);
+  world.player.pos = { x: vendor.pos.x + 1, z: vendor.pos.z };
+  meetNpc(world, vendor);
+  return world;
+}
+
+function threadCounts(world: World): number[] {
+  return world.player.inventory.flatMap((item: ItemInstance | null): number[] => (item?.base === PORTAL_BASE ? [countOf(item)] : []));
+}
+
+void test('threads bought one per click gather in one bag slot, and the twenty-first starts a new stack', (): void => {
+  const world: World = atTrader();
+  const good = must(content.trade.goods[0], 'good');
+  const size: number = portalBase().stack;
+  world.player.gold = good.price * (size + 1);
+  for (let bought: number = 0; bought < size; bought += 1) handleTrade(world, { type: 'buy_good', index: 0 });
+  assert.deepEqual(threadCounts(world), [size]);
+  handleTrade(world, { type: 'buy_good', index: 0 });
+  assert.deepEqual(threadCounts(world), [size, 1]);
+  assert.equal(world.player.gold, 0);
+});
+
+void test('a full bag with a thread stack that has room still buys a thread, and refuses once the stack is full', (): void => {
+  const world: World = atTrader();
+  const good = must(content.trade.goods[0], 'good');
+  const size: number = portalBase().stack;
+  world.player.inventory = world.player.inventory.map((_: ItemInstance | null, index: number): ItemInstance => must(generateItem(content, createRng(700 + index), 700 + index, 1, 'rusted_blade', 'common'), 'blade'));
+  world.player.inventory[0] = withCount(must(goodItem(content, 0), 'thread'), size - 1);
+  world.player.gold = good.price * 2;
+  handleTrade(world, { type: 'buy_good', index: 0 });
+  assert.deepEqual(threadCounts(world), [size]);
+  assert.equal(world.player.gold, good.price);
+  world.events = [];
+  handleTrade(world, { type: 'buy_good', index: 0 });
+  assert.deepEqual(threadCounts(world), [size]);
+  assert.equal(world.player.gold, good.price);
+  assert.ok(world.events.some((event: WorldEvent): boolean => event.type === 'notice' && event.reason === 'inventory_full'));
+});
+
+void test('a stack of threads is never bought back, and the trader sells them as before', (): void => {
+  const world: World = atTrader();
+  world.player.inventory[0] = withCount(must(goodItem(content, 0), 'thread'), 6);
+  world.player.gold = 10;
+  handleTrade(world, { type: 'sell', inventoryIndex: 0 });
+  assert.equal(countOf(must(world.player.inventory[0], 'kept')), 6);
+  assert.equal(world.player.gold, 10);
+});
+
+void test('opening a way uses one thread from the stack, and the last one empties the slot', (): void => {
+  const world: World = wild();
+  const index: number = giveTear(world);
+  world.player.inventory[index] = withCount(must(world.player.inventory[index], 'thread'), 2);
+  useItem(world, index);
+  channelOut(world);
+  assert.notEqual(world.portal, null);
+  assert.equal(countOf(must(world.player.inventory[index], 'left')), 1);
+  useItem(world, index);
+  channelOut(world);
+  assert.notEqual(world.portal, null);
+  assert.equal(world.player.inventory[index], null);
+});
+
+void test('a stack of threads survives a save and a reload with its count', (): void => {
+  const world: World = wild();
+  const index: number = giveTear(world);
+  world.player.inventory[index] = withCount(must(world.player.inventory[index], 'thread'), 13);
+  assert.equal(countOf(must(reload(world).player.inventory[index], 'thread')), 13);
 });
 
 void test('the portal good is never rolled as a drop, and leaving it out changes no roll', (): void => {

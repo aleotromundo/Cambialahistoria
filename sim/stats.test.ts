@@ -243,7 +243,7 @@ void test('a worn weapon that turns Cleave into a shot does so only while it is 
   const world: World = createWorld(content, { seed: 4, save: null });
   world.player.inventory.fill(null);
   assert.equal(must(world.player.skills[0], 'bare cleave').delivery.type, 'arc');
-  addToInventory(world.player, must(generateItem(content, createRng(4), 901, 2, 'hand_crossbow', 'common'), 'crossbow'));
+  addToInventory(world, must(generateItem(content, createRng(4), 901, 2, 'hand_crossbow', 'common'), 'crossbow'));
   equipFromInventory(world, world.player.inventory.findIndex((held: ItemInstance | null): boolean => held?.base === 'hand_crossbow'));
   const shot: SkillDef = must(world.player.skills[0], 'shot');
   assert.equal(shot.id, 'cleave');

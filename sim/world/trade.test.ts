@@ -5,9 +5,10 @@ import { loadContent } from '../content/content.ts';
 import type { Content, ItemSlot, TalkDef } from '../content/types.ts';
 import { generateItem, slotOf } from '../items.ts';
 import { createRng } from '../rng.ts';
+import { countOf, withCount } from '../stacks.ts';
 import { stepWorld } from './step.ts';
 import type { Station } from './trade.ts';
-import { buyPrice, itemValue, meetNpc, openStation, sellPrice, stationAt, stationNear, stationReach } from './trade.ts';
+import { buyPrice, goodItem, itemValue, meetNpc, openStation, sellPrice, stationAt, stationNear, stationReach } from './trade.ts';
 import type { ItemInstance, NpcState, TradeAction, VendorStock, World, WorldEvent } from './types.ts';
 import { enterZone } from './zones.ts';
 
@@ -277,6 +278,23 @@ void test('items move between the inventory and the stash, and a full side refus
   world.stash = world.stash.map((_: ItemInstance | null, index: number): ItemInstance => made('rusted_blade', 'common', 1, 900 + index));
   assert.deepEqual(notices(trade(world, { type: 'stash', inventoryIndex: 2 })), ['stash_full']);
   assert.deepEqual(world.player.inventory[2], item);
+});
+
+void test('a thread stack moves to the stash whole, tops up a stash stack first and leaves what does not fit in the bag', (): void => {
+  const world: World = atStash(15);
+  const size: number = must(content.itemBases.get('folded_hour'), 'thread').stack;
+  const thread: ItemInstance = must(goodItem(content, 0), 'thread');
+  world.stash = world.stash.map((_: ItemInstance | null, index: number): ItemInstance => made('rusted_blade', 'common', 1, 900 + index));
+  world.stash[1] = withCount({ ...thread, uid: 50 }, size - 3);
+  world.player.inventory[0] = withCount({ ...thread, uid: 51 }, 7);
+  assert.deepEqual(notices(trade(world, { type: 'stash', inventoryIndex: 0 })), []);
+  assert.equal(countOf(must(world.stash[1], 'stash stack')), size);
+  assert.equal(countOf(must(world.player.inventory[0], 'bag rest')), 4);
+  assert.deepEqual(notices(trade(world, { type: 'stash', inventoryIndex: 0 })), ['stash_full']);
+  trade(world, { type: 'unstash', index: 1 });
+  assert.equal(countOf(must(world.player.inventory[0], 'bag stack')), size);
+  assert.equal(world.player.inventory.filter((item: ItemInstance | null): boolean => item?.base === 'folded_hour').length, 2);
+  assert.equal(world.stash[1], null);
 });
 
 void test('a story item cannot be sold', (): void => {

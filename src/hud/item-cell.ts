@@ -1,6 +1,8 @@
 import type { ItemBaseDef, ItemSlot } from '../../sim/content/types.ts';
 import { baseOf, rarityOf, slotOf } from '../../sim/items.ts';
+import { countOf } from '../../sim/stacks.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
+import { setCount } from './cell-count.ts';
 import type { HudContext } from './context.ts';
 import { el, retrigger } from './dom.ts';
 import { arrivalOrder, setPicture } from './item-picture.ts';
@@ -29,6 +31,7 @@ export function createItemCell(context: HudContext, parent: HTMLElement, hint: (
 }
 
 export function showItem(context: HudContext, view: ItemCell, item: ItemInstance | null): boolean {
+  setCount(view.cell, item === null ? 0 : countOf(item));
   if (item === null && view.current === null) return false;
   const image: string | null = item === null ? null : context.api.itemImage(item);
   if (item !== null && view.current !== null && item.uid === view.current.uid && image === view.image) {

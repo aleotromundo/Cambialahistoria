@@ -60,7 +60,7 @@ void test('the hero can be changed until a weapon is in hand, a level is gained 
   assert.equal(must(world.wake, 'wake').rate, 1);
   assert.equal(chooseHero(world, 'nobody'), false);
   assert.equal(world.player.hero, second.id);
-  addToInventory(world.player, must(generateItem(content, createRng(1), 77, 1, 'rusted_blade', 'common'), 'blade'));
+  addToInventory(world, must(generateItem(content, createRng(1), 77, 1, 'rusted_blade', 'common'), 'blade'));
   equipFromInventory(world, world.player.inventory.findIndex((item): boolean => item?.base === 'rusted_blade'));
   assert.equal(heroOpen(world.player), false);
   assert.equal(chooseHero(world, first.id), false);

@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { makeSave } from '../../test/backend-support.ts';
+import { must } from '../../test/support.ts';
+import { loadContent } from '../../sim/content/content.ts';
+import type { Content } from '../../sim/content/types.ts';
+import { readSave } from '../../sim/save.ts';
+import type { SaveData } from '../../sim/save.ts';
+import { countOf, withCount } from '../../sim/stacks.ts';
+import { goodItem } from '../../sim/world/trade.ts';
+import type { ItemInstance } from '../../sim/world/types.ts';
 import type { CloudState } from './api.ts';
 import { chooseOnConflict, chooseOnLoad, compareProgress } from './merge.ts';
 import type { SyncRecord } from './sync-record.ts';
@@ -13,6 +21,7 @@ function cloud(level: number, xp: number, revision: number, updatedAt: string = 
   return { save: makeSave(level, xp), revision, updatedAt, epoch: 2 };
 }
 
+const backendContent: Content = loadContent();
 const EMPTY: CloudState = { save: null, revision: 0, updatedAt: null, epoch: 2 };
 
 void test('progress is level first, then experience', (): void => {
@@ -65,4 +74,25 @@ void test('on a conflict the copy with the higher level and experience is kept',
   assert.equal(chooseOnConflict({ local: makeSave(5, 900), current: cloud(5, 900, 4), overwriteCloud: false }).side, 'local');
   assert.equal(chooseOnConflict({ local: makeSave(1, 0), current: cloud(9, 0, 4), overwriteCloud: true }).side, 'local');
   assert.equal(chooseOnConflict({ local: makeSave(1, 0), current: EMPTY, overwriteCloud: false }).side, 'local');
+});
+
+function withThreads(level: number, count: number): SaveData {
+  const save: SaveData = makeSave(level, 0);
+  const thread: ItemInstance = withCount(must(goodItem(backendContent, 0), 'thread'), count);
+  return { ...save, inventory: save.inventory.map((item: ItemInstance | null, index: number): ItemInstance | null => (index === 0 ? thread : item)) };
+}
+
+function heldThreads(save: SaveData | null): number {
+  return must(save, 'save').inventory.reduce((sum: number, item: ItemInstance | null): number => sum + (item?.base === 'folded_hour' ? countOf(item) : 0), 0);
+}
+
+void test('a thread stack goes with the copy that is kept, whole, and is never added to the other copy', (): void => {
+  const local: SaveData = withThreads(5, 7);
+  const ahead: CloudState = { save: withThreads(6, 12), revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 };
+  const onLoad = chooseOnLoad({ local, record: record({ pending: true }), cloud: ahead });
+  assert.equal(onLoad.side, 'cloud');
+  assert.equal(heldThreads(must(readSave(backendContent, JSON.parse(JSON.stringify(ahead.save))), 'read')), 12);
+  const onConflict = chooseOnConflict({ local, current: { ...ahead, save: withThreads(5, 12) }, overwriteCloud: false });
+  assert.equal(onConflict.side, 'local');
+  assert.equal(heldThreads(must(readSave(backendContent, JSON.parse(JSON.stringify(local))), 'read')), 7);
 });

@@ -82,7 +82,14 @@ export function itemBase(value: unknown, where: string): ItemBaseDef {
     variants: source['variants'] === undefined ? [] : each(source['variants'], `${where}.variants`, skillVariant),
     use: itemUse(source['use'], `${where}.use`),
     unsellable: source['unsellable'] === undefined ? false : flag(source, 'unsellable', where),
+    stack: source['stack'] === undefined ? 1 : stackSize(source, where),
   };
+}
+
+function stackSize(source: Fields, where: string): number {
+  const size: number = positive(source, 'stack', where);
+  if (!Number.isInteger(size)) throw new ContentError(`${where}.stack`, 'expected a whole number, one or more');
+  return size;
 }
 
 const ITEM_USES = ['portal'] as const;

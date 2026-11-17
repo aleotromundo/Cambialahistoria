@@ -69,7 +69,7 @@ function hero(held: CharacterLibrary): RigInstance {
 function armedWorld(): World {
   const world: World = createWorld(content, { seed: 1, save: null });
   world.player.inventory.fill(null);
-  addToInventory(world.player, must(generateItem(content, createRng(1), 900, 1, 'rusted_blade', 'common'), 'blade'));
+  addToInventory(world, must(generateItem(content, createRng(1), 900, 1, 'rusted_blade', 'common'), 'blade'));
   equipFromInventory(world, world.player.inventory.findIndex((item): boolean => item?.base === 'rusted_blade'));
   return world;
 }
@@ -119,7 +119,7 @@ void test('a weapon held in its own stance plays that stance\'s idle and shot, a
   const view: ActorView = createActorView(rig, 1, 0);
   holdEquipped(content, rig, world.player.equipped);
   assert.equal(rig.stance(), null);
-  addToInventory(world.player, must(generateItem(content, createRng(2), 901, 2, 'hand_crossbow', 'common'), 'crossbow'));
+  addToInventory(world, must(generateItem(content, createRng(2), 901, 2, 'hand_crossbow', 'common'), 'crossbow'));
   equipFromInventory(world, world.player.inventory.findIndex((item): boolean => item?.base === 'hand_crossbow'));
   holdEquipped(content, rig, world.player.equipped);
   const aim = must(clips.stances.get(AIM_STANCE), 'aim stance');

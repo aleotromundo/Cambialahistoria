@@ -2,6 +2,7 @@ import type { ItemBaseDef, ItemUse, ZoneDef, ZonePoint } from '../content/types.
 import { baseOf } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
+import { takeOne } from '../stacks.ts';
 import type { PortalChannelIntent, PortalEnd, PortalStage, PortalState } from './portal-types.ts';
 import type { ItemInstance, MonsterState, PlayerState, RespawnPoint, World } from './types.ts';
 import { enterZone, townZone } from './zones.ts';
@@ -94,7 +95,7 @@ export function stepChannel(world: World, intent: PortalChannelIntent, dt: numbe
   player.intent = { type: 'idle' };
   const index: number = player.inventory.findIndex((item: ItemInstance | null): boolean => item !== null && item.uid === intent.uid);
   if (index < 0) return;
-  player.inventory[index] = null;
+  takeOne(player.inventory, index);
   world.events.push({ type: 'character_changed' });
   openPortal(world, intent.reach);
 }

@@ -7,6 +7,7 @@ import { assignSlot, chartSkills } from '../skill-book.ts';
 import { computeStats, modTargets, resolveSkillBar, variantChain } from '../stats.ts';
 import { heldGroup } from '../weapons.ts';
 import { buffMods, heldPowers, wornVariants, wouldPassLimit } from '../powers.ts';
+import { fits, placeIn } from '../stacks.ts';
 import { dropOnGround } from './ground.ts';
 import { forget, learn } from './learn.ts';
 import type { EmpowerState, ItemInstance, PlayerState, World } from './types.ts';
@@ -61,10 +62,9 @@ export function grantXp(world: World, amount: number, reduced: XpReduction | nul
   world.events.push({ type: 'level_up', level: player.level });
 }
 
-export function addToInventory(player: PlayerState, item: ItemInstance): boolean {
-  const free: number = player.inventory.indexOf(null);
-  if (free < 0) return false;
-  player.inventory[free] = item;
+export function addToInventory(world: World, item: ItemInstance): boolean {
+  if (!fits(world.content, world.player.inventory, item)) return false;
+  placeIn(world.content, world.player.inventory, item);
   return true;
 }
 
@@ -87,7 +87,7 @@ export function unequip(world: World, slot: ItemSlot): void {
   const player: PlayerState = world.player;
   const item: ItemInstance | null = player.equipped[slot];
   if (item === null) return;
-  if (!addToInventory(player, item)) {
+  if (!addToInventory(world, item)) {
     world.events.push({ type: 'notice', reason: 'inventory_full' });
     return;
   }

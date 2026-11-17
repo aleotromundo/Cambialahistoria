@@ -2,7 +2,9 @@ import { bookOf } from '../../sim/content/story.ts';
 import type { ItemBaseDef, ItemSlot } from '../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../sim/content/types.ts';
 import { baseOf, rarityOf, slotOf } from '../../sim/items.ts';
+import { countOf } from '../../sim/stacks.ts';
 import type { ItemInstance, PlayerState } from '../../sim/world/types.ts';
+import { setCount } from './cell-count.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger } from './dom.ts';
 import { arrivalOrder, setPicture } from './item-picture.ts';
@@ -61,6 +63,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
   const grid: HTMLDivElement = el('div', 'inv-grid', element);
 
   const setItem = (view: CellView, item: ItemInstance | null): boolean => {
+    setCount(view.cell, item === null ? 0 : countOf(item));
     if (item === null && view.current === null) return false;
     const image: string | null = item === null ? null : context.api.itemImage(item);
     if (item !== null && view.current !== null && item.uid === view.current.uid && image === view.image) {

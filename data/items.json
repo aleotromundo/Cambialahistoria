@@ -3246,6 +3246,7 @@
       "wear": [],
       "implicit": [],
       "unsellable": true,
+      "stack": 20,
       "use": {"type": "portal", "channel": 1.2, "reach": 1.6}
     },
     {

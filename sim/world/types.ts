@@ -42,6 +42,7 @@ export interface ItemInstance {
   readonly level: number;
   readonly affixes: readonly RolledAffix[];
   readonly ledger: string | null;
+  readonly count?: number;
 }
 
 export type Equipment = Record<ItemSlot, ItemInstance | null>;
