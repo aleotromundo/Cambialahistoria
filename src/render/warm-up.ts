@@ -7,6 +7,7 @@ import { browserPacer, framesOf, PACED_WORK, workPaced } from './paced-work.ts';
 
 export const WARM_UP = {
   zoneWaitMs: 2500,
+  bodiesWaitMs: 6000,
   textureBytesPerFrame: 12 * 1024 * 1024,
   drawCostPerFrame: 4 * 1024 * 1024,
   drawFixedCost: 128 * 1024,
@@ -350,6 +351,18 @@ export function warmUp(compiler: ShaderCompiler, scene: Scene, camera: Camera, s
   return warmPaced(compiler, scene, camera, standIns, pacer).catch((error: unknown): void => {
     warnInConsole(`Warming the scene in slices failed: ${String(error)}`);
   });
+}
+
+export function waitWithin(work: Promise<unknown>, timers: Timers, ms: number): Promise<void> {
+  const cancels: (() => void)[] = [];
+  const waited: Promise<void> = new Promise<void>((resolve: () => void): void => {
+    cancels.push(timers.after(ms, resolve));
+  });
+  const done = async (): Promise<void> => {
+    await Promise.allSettled([work]);
+    for (const cancel of cancels) cancel();
+  };
+  return Promise.race([done(), waited]);
 }
 
 export function warmUpWithin(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], timers: Timers, ms: number, later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {

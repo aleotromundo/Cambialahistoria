@@ -115,7 +115,7 @@ import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
-import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
+import { WARM_UP, waitWithin, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { TurnGate } from './render/paced-work.ts';
 import { browserPacer, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
@@ -373,7 +373,7 @@ async function start(): Promise<void> {
     particles.clear();
     markers.dispose();
     zoneView.dispose();
-    loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate).catch((error: unknown): void => {
+    const bodies: Promise<void> = loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate).catch((error: unknown): void => {
       warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
     });
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
@@ -387,6 +387,7 @@ async function start(): Promise<void> {
     zoneView.setGraphics(gameSettings.preset());
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
+    await waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
     await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
     startZoneAmbience();
     glitches.refresh();
