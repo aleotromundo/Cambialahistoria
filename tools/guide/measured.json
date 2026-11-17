@@ -1,5 +1,5 @@
 {
- "fingerprint": "1bc711d34f775591",
+ "fingerprint": "5b239a30fbdf9a79",
  "runs": 4,
  "builds": [
   {
@@ -10,46 +10,46 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 21.6
+      "minutes": 20.3
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 45.6
+      "minutes": 43.3
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 84
+      "minutes": 80.3
      }
     ],
-    "killsPerMinute": 5,
-    "fightSeconds": 3.5,
-    "flasksPerFight": 0.03,
-    "deathsPerHour": 0,
+    "killsPerMinute": 5.2,
+    "fightSeconds": 3.7,
+    "flasksPerFight": 0.05,
+    "deathsPerHour": 0.7,
     "lowShare": 0,
-    "magicDeathShare": 0.01,
-    "rareDeathShare": 0.04,
+    "magicDeathShare": 0,
+    "rareDeathShare": 0.06,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 35,
+      "seconds": 31,
       "lifeLeft": 1
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 12,
+      "seconds": 11,
       "lifeLeft": 1
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 12,
+      "seconds": 10,
       "lifeLeft": 1
      }
     ]
@@ -60,47 +60,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 24.1
+      "minutes": 22.5
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 49
+      "minutes": 46.6
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 97.5
+      "minutes": 87.6
      }
     ],
-    "killsPerMinute": 4.8,
-    "fightSeconds": 3.6,
-    "flasksPerFight": 0.09,
-    "deathsPerHour": 11,
+    "killsPerMinute": 4.9,
+    "fightSeconds": 3.2,
+    "flasksPerFight": 0.06,
+    "deathsPerHour": 5.2,
     "lowShare": 0.05,
-    "magicDeathShare": 0.06,
-    "rareDeathShare": 0.25,
+    "magicDeathShare": 0.03,
+    "rareDeathShare": 0.13,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
-      "winShare": 0.92,
-      "seconds": 18,
-      "lifeLeft": 0.4
+      "winShare": 0.67,
+      "seconds": 17,
+      "lifeLeft": 0.29
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 13,
-      "lifeLeft": 0.63
+      "seconds": 15,
+      "lifeLeft": 0.53
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 13,
-      "lifeLeft": 0.75
+      "seconds": 10,
+      "lifeLeft": 0.62
      }
     ]
    }
@@ -113,46 +113,46 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 20.5
+      "minutes": 18.7
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 45.4
+      "minutes": 43.5
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 94.8
+      "minutes": 87.4
      }
     ],
-    "killsPerMinute": 4.3,
-    "fightSeconds": 5.1,
-    "flasksPerFight": 0.03,
-    "deathsPerHour": 0,
-    "lowShare": 0,
+    "killsPerMinute": 4.8,
+    "fightSeconds": 4.8,
+    "flasksPerFight": 0.08,
+    "deathsPerHour": 0.9,
+    "lowShare": 0.01,
     "magicDeathShare": 0,
-    "rareDeathShare": 0.03,
+    "rareDeathShare": 0.08,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 46,
+      "seconds": 22,
       "lifeLeft": 1
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 54,
+      "seconds": 55,
       "lifeLeft": 1
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 39,
+      "seconds": 22,
       "lifeLeft": 1
      }
     ]
@@ -163,47 +163,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 19.2
+      "minutes": 20.3
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 40.4
+      "minutes": 40.9
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 89.4
+      "minutes": 83.1
      }
     ],
-    "killsPerMinute": 4.7,
-    "fightSeconds": 4.6,
-    "flasksPerFight": 0.1,
-    "deathsPerHour": 2.9,
-    "lowShare": 0.04,
-    "magicDeathShare": 0.01,
-    "rareDeathShare": 0.08,
+    "killsPerMinute": 4.9,
+    "fightSeconds": 4.9,
+    "flasksPerFight": 0.11,
+    "deathsPerHour": 2.1,
+    "lowShare": 0.06,
+    "magicDeathShare": 0.02,
+    "rareDeathShare": 0.17,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
-      "winShare": 0.83,
-      "seconds": 17,
-      "lifeLeft": 0.77
+      "winShare": 1,
+      "seconds": 22,
+      "lifeLeft": 0.82
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 18,
-      "lifeLeft": 0.85
+      "seconds": 32,
+      "lifeLeft": 0.73
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 16,
-      "lifeLeft": 0.83
+      "seconds": 17,
+      "lifeLeft": 0.8
      }
     ]
    }
@@ -216,47 +216,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 26.9
+      "minutes": 20.6
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 54.9
+      "minutes": 48
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 99.7
+      "minutes": 90.7
      }
     ],
-    "killsPerMinute": 4.1,
-    "fightSeconds": 6.3,
-    "flasksPerFight": 0.08,
-    "deathsPerHour": 0.8,
-    "lowShare": 0,
+    "killsPerMinute": 4.9,
+    "fightSeconds": 5.4,
+    "flasksPerFight": 0.09,
+    "deathsPerHour": 1.5,
+    "lowShare": 0.01,
     "magicDeathShare": 0.01,
-    "rareDeathShare": 0.05,
+    "rareDeathShare": 0.14,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 82,
+      "seconds": 50,
       "lifeLeft": 1
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 81,
-      "lifeLeft": 0.95
+      "seconds": 38,
+      "lifeLeft": 1
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 77,
-      "lifeLeft": 0.98
+      "seconds": 27,
+      "lifeLeft": 1
      }
     ]
    },
@@ -266,47 +266,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 34.1
+      "minutes": 44.2
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 88.4
+      "minutes": 94.8
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 161.8
+      "minutes": 153.7
      }
     ],
-    "killsPerMinute": 4.5,
+    "killsPerMinute": 4.4,
     "fightSeconds": 5.1,
-    "flasksPerFight": 0.3,
-    "deathsPerHour": 22,
-    "lowShare": 0.13,
-    "magicDeathShare": 0.26,
-    "rareDeathShare": 0.44,
+    "flasksPerFight": 0.29,
+    "deathsPerHour": 27.6,
+    "lowShare": 0.12,
+    "magicDeathShare": 0.22,
+    "rareDeathShare": 0.46,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
       "winShare": 0.08,
-      "seconds": 39,
-      "lifeLeft": 0.13
+      "seconds": 29,
+      "lifeLeft": 0.2
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 0.75,
-      "seconds": 34,
-      "lifeLeft": 0.33
+      "seconds": 31,
+      "lifeLeft": 0.38
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 28,
-      "lifeLeft": 0.94
+      "seconds": 20,
+      "lifeLeft": 0.74
      }
     ]
    }
@@ -319,47 +319,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 24.9
+      "minutes": 26.2
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 49.5
+      "minutes": 65.6
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 98
+      "minutes": 122.7
      }
     ],
-    "killsPerMinute": 4.5,
-    "fightSeconds": 6.7,
-    "flasksPerFight": 0.16,
-    "deathsPerHour": 1.5,
-    "lowShare": 0.02,
-    "magicDeathShare": 0.03,
-    "rareDeathShare": 0.15,
+    "killsPerMinute": 4.2,
+    "fightSeconds": 7.2,
+    "flasksPerFight": 0.19,
+    "deathsPerHour": 5.9,
+    "lowShare": 0.03,
+    "magicDeathShare": 0.08,
+    "rareDeathShare": 0.21,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
-      "winShare": 1,
+      "winShare": 0.5,
       "seconds": 33,
-      "lifeLeft": 0.69
+      "lifeLeft": 0.63
      },
      {
       "level": 15,
       "attempts": 12,
-      "winShare": 1,
-      "seconds": 33,
-      "lifeLeft": 0.88
+      "winShare": 0.58,
+      "seconds": 87,
+      "lifeLeft": 0.4
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
       "seconds": 39,
-      "lifeLeft": 1
+      "lifeLeft": 0.72
      }
     ]
    },
@@ -369,47 +369,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 31.5
+      "minutes": 31.2
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 77.1
+      "minutes": 103.9
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 159
+      "minutes": 190.7
      }
     ],
-    "killsPerMinute": 4.4,
-    "fightSeconds": 6,
-    "flasksPerFight": 0.43,
-    "deathsPerHour": 24.7,
-    "lowShare": 0.23,
+    "killsPerMinute": 4.1,
+    "fightSeconds": 6.2,
+    "flasksPerFight": 0.4,
+    "deathsPerHour": 35.9,
+    "lowShare": 0.2,
     "magicDeathShare": 0.23,
-    "rareDeathShare": 0.56,
+    "rareDeathShare": 0.52,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
-      "winShare": 0.67,
-      "seconds": 17,
-      "lifeLeft": 0.38
+      "winShare": 0.5,
+      "seconds": 36,
+      "lifeLeft": 0.33
      },
      {
       "level": 15,
       "attempts": 12,
-      "winShare": 0.67,
-      "seconds": 36,
-      "lifeLeft": 0.2
+      "winShare": 0.83,
+      "seconds": 42,
+      "lifeLeft": 0.23
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 29,
-      "lifeLeft": 0.48
+      "seconds": 22,
+      "lifeLeft": 0.72
      }
     ]
    }
@@ -422,46 +422,46 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 20.1
+      "minutes": 22.3
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 44.5
+      "minutes": 47.4
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 79.4
+      "minutes": 90.4
      }
     ],
     "killsPerMinute": 4.9,
-    "fightSeconds": 4.6,
-    "flasksPerFight": 0.07,
-    "deathsPerHour": 0.7,
-    "lowShare": 0,
+    "fightSeconds": 4.5,
+    "flasksPerFight": 0.08,
+    "deathsPerHour": 1,
+    "lowShare": 0.01,
     "magicDeathShare": 0.01,
-    "rareDeathShare": 0.06,
+    "rareDeathShare": 0.16,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 48,
+      "seconds": 44,
       "lifeLeft": 1
      },
      {
       "level": 15,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 35,
+      "seconds": 32,
       "lifeLeft": 0.99
      },
      {
       "level": 20,
       "attempts": 12,
       "winShare": 1,
-      "seconds": 43,
+      "seconds": 20,
       "lifeLeft": 1
      }
     ]
@@ -472,47 +472,47 @@
      {
       "level": 10,
       "share": 1,
-      "minutes": 22.1
+      "minutes": 24.3
      },
      {
       "level": 15,
       "share": 1,
-      "minutes": 46.3
+      "minutes": 53.1
      },
      {
       "level": 20,
       "share": 1,
-      "minutes": 88.1
+      "minutes": 101.2
      }
     ],
-    "killsPerMinute": 5,
+    "killsPerMinute": 4.8,
     "fightSeconds": 3.4,
-    "flasksPerFight": 0.1,
-    "deathsPerHour": 4.6,
-    "lowShare": 0.06,
-    "magicDeathShare": 0.06,
-    "rareDeathShare": 0.19,
+    "flasksPerFight": 0.14,
+    "deathsPerHour": 7.3,
+    "lowShare": 0.08,
+    "magicDeathShare": 0.1,
+    "rareDeathShare": 0.26,
     "boss": [
      {
       "level": 10,
       "attempts": 12,
       "winShare": 0.58,
-      "seconds": 15,
-      "lifeLeft": 0.34
+      "seconds": 25,
+      "lifeLeft": 0.42
      },
      {
       "level": 15,
       "attempts": 12,
-      "winShare": 1,
-      "seconds": 18,
-      "lifeLeft": 0.6
+      "winShare": 0.92,
+      "seconds": 17,
+      "lifeLeft": 0.45
      },
      {
       "level": 20,
       "attempts": 12,
-      "winShare": 0.92,
-      "seconds": 17,
-      "lifeLeft": 0.48
+      "winShare": 1,
+      "seconds": 14,
+      "lifeLeft": 0.54
      }
     ]
    }
