@@ -364,7 +364,8 @@ void test('a legendary dropped in a lean picks its favoured families more often,
     return Array.from({ length: 3000 }, (_: unknown, index: number): ItemInstance => must(rollItem(leaning, rng, index, 20, { base: null, rarity: 'stormtouched', floor: null, zone }), 'legendary'));
   };
   const favoured = (items: readonly ItemInstance[]): number => items.filter((item: ItemInstance): boolean => halls.families.includes(baseOf(content, item)?.power?.family ?? '')).length / items.length;
-  assert.ok(favoured(legendaries('ledger_hall')) > favoured(legendaries(null)) * 1.5);
+  const moved: number = odds(favoured(legendaries('ledger_hall'))) / odds(favoured(legendaries(null)));
+  assert.ok(Math.abs(moved - halls.share) < 0.4, `favoured families' odds moved ${moved.toFixed(2)} times`);
   const court: DropLean = must(leanOf(leaning, 'ledger_court'), 'court');
   const bossDrops = (zone: string | null): number => {
     const rng: Rng = createRng(35);

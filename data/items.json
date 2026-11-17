@@ -3631,7 +3631,7 @@
           {
             "group": "spin",
             "field": "pull",
-            "value": 5
+            "value": 12
           }
         ],
         "triggers": [
