@@ -62,6 +62,22 @@ export const PORTRAIT = {
   padding: 0.06,
 } as const;
 
+export const STUDIO_CANVAS = {
+  width: Math.max(THUMBNAIL.size, PORTRAIT.width),
+  height: Math.max(THUMBNAIL.size, PORTRAIT.height),
+} as const;
+
+export interface Region {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export function viewportRegion(canvasHeight: number, width: number, height: number): Region {
+  return { x: 0, y: canvasHeight - height, width, height };
+}
+
 export type ItemThumbnails = ReadonlyMap<string, string>;
 
 export interface PortraitLook {
@@ -353,13 +369,27 @@ interface Studio {
   readonly camera: OrthographicCamera;
   readonly environment: Texture;
   readonly uploaded: WeakMap<Texture, number>;
+  readonly crop: HTMLCanvasElement;
   readonly close: () => void;
 }
 
-function sized(renderer: WebGLRenderer, width: number, height: number): void {
+function framed(renderer: WebGLRenderer, width: number, height: number): Region {
   const canvas: HTMLCanvasElement = renderer.domElement;
-  if (canvas.width === width && canvas.height === height) return;
-  renderer.setSize(width, height, false);
+  if (canvas.width !== STUDIO_CANVAS.width || canvas.height !== STUDIO_CANVAS.height) renderer.setSize(STUDIO_CANVAS.width, STUDIO_CANVAS.height, false);
+  renderer.setViewport(0, 0, width, height);
+  return viewportRegion(canvas.height, width, height);
+}
+
+function copyRegion(source: HTMLCanvasElement, region: Region, target: HTMLCanvasElement): boolean {
+  if (target.width !== region.width || target.height !== region.height) {
+    target.width = region.width;
+    target.height = region.height;
+  }
+  const context: CanvasRenderingContext2D | null = target.getContext('2d');
+  if (context === null) return false;
+  context.clearRect(0, 0, region.width, region.height);
+  context.drawImage(source, region.x, region.y, region.width, region.height, 0, 0, region.width, region.height);
+  return true;
 }
 
 function litScene(environment: Texture): Scene {
@@ -384,7 +414,7 @@ function openStudio(): Studio {
   const renderer: WebGLRenderer = new WebGLRenderer({ alpha: true, antialias: true });
   const letGo: () => void = GPU.hold((): void => renderer.forceContextLoss());
   renderer.setPixelRatio(1);
-  renderer.setSize(THUMBNAIL.size, THUMBNAIL.size, false);
+  renderer.setSize(STUDIO_CANVAS.width, STUDIO_CANVAS.height, false);
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -399,6 +429,7 @@ function openStudio(): Studio {
     camera: studioCamera(),
     environment: reflections.texture,
     uploaded: new WeakMap<Texture, number>(),
+    crop: document.createElement('canvas'),
     close: (): void => {
       reflections.dispose();
       room.dispose();
@@ -479,17 +510,9 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
         if (gone || studio === null) return false;
         const { renderer } = studio;
         spin.rotation.y = PORTRAIT.facing + angle;
-        sized(renderer, PORTRAIT.width, PORTRAIT.height);
+        const region: Region = framed(renderer, PORTRAIT.width, PORTRAIT.height);
         renderer.render(stage, camera);
-        if (target.width !== PORTRAIT.width || target.height !== PORTRAIT.height) {
-          target.width = PORTRAIT.width;
-          target.height = PORTRAIT.height;
-        }
-        const context: CanvasRenderingContext2D | null = target.getContext('2d');
-        if (context === null) return false;
-        context.clearRect(0, 0, target.width, target.height);
-        context.drawImage(renderer.domElement, 0, 0);
-        return true;
+        return copyRegion(renderer.domElement, region, target);
       },
       dispose(): void {
         if (gone) return;
@@ -503,7 +526,7 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     const images: Map<string, string> = new Map<string, string>();
     if (closed || pictures.length === 0) return images;
     studio ??= openStudio();
-    const { renderer, scene, camera, uploaded } = studio;
+    const { renderer, scene, camera, uploaded, crop } = studio;
     const made: Made = { materials: [], geometries: [] };
     const keepsakes: Keepsake[] = [];
     const shots: Shot[] = [];
@@ -530,9 +553,9 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
       camera.top = half;
       camera.bottom = -half;
       camera.updateProjectionMatrix();
-      sized(renderer, THUMBNAIL.size, THUMBNAIL.size);
+      const region: Region = framed(renderer, THUMBNAIL.size, THUMBNAIL.size);
       renderer.render(scene, camera);
-      const encoded: Promise<string | null> = encode(renderer.domElement);
+      const encoded: Promise<string | null> = copyRegion(renderer.domElement, region, crop) ? encode(crop) : Promise.resolve(null);
       posed.removeFromParent();
       const url: string | null = await encoded;
       if (url !== null) images.set(shot.name, url);

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { Box3, BufferGeometry } from 'three';
 import { BoxGeometry, BufferAttribute, Group, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import type { Timers } from '../backend/backend.ts';
-import { beyond, hanging, oneAtATime, oneGlove, THUMBNAIL, trunk, turnWidth } from './item-thumbnails.ts';
+import { beyond, hanging, oneAtATime, oneGlove, PORTRAIT, STUDIO_CANVAS, THUMBNAIL, trunk, turnWidth, viewportRegion } from './item-thumbnails.ts';
 
 interface ManualTimers extends Timers {
   readonly due: (() => void)[];
@@ -152,4 +152,14 @@ void test('a turning figure is framed on the widest it gets in a whole turn, so 
   assert.equal(turnWidth(new Vector3(0.6, 1.8, 0.8)), 1);
   assert.ok(turnWidth(new Vector3(0.4, 1.8, 1.2)) >= 1.2);
   assert.ok(turnWidth(new Vector3(0.4, 1.8, 1.2)) >= 0.4);
+});
+
+void test('the studio canvas holds both a portrait and a thumbnail, so drawing one after the other never resizes it', (): void => {
+  assert.ok(STUDIO_CANVAS.width >= PORTRAIT.width && STUDIO_CANVAS.height >= PORTRAIT.height);
+  assert.ok(STUDIO_CANVAS.width >= THUMBNAIL.size && STUDIO_CANVAS.height >= THUMBNAIL.size);
+});
+
+void test('a viewport at the bottom left of the drawing buffer is read from the bottom left of the canvas', (): void => {
+  assert.deepEqual(viewportRegion(720, 128, 128), { x: 0, y: 592, width: 128, height: 128 });
+  assert.deepEqual(viewportRegion(720, 480, 720), { x: 0, y: 0, width: 480, height: 720 });
 });
