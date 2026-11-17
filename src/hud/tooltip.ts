@@ -36,6 +36,7 @@ export interface Size {
 
 export interface Measure {
   get(): Size;
+  set(size: Size): void;
   clear(): void;
 }
 
@@ -46,6 +47,9 @@ export function measureOnce(read: () => Size): Measure {
       const size: Size = known ?? read();
       known = size;
       return size;
+    },
+    set(size: Size): void {
+      known = size;
     },
     clear(): void {
       known = null;
@@ -67,8 +71,10 @@ export function createTooltip(root: HTMLElement): Tooltip {
   let lastY: number = 0;
   let lastBeside: Box | null = null;
   const size: Measure = measureOnce((): Size => ({ width: node.offsetWidth, height: node.offsetHeight }));
-  new ResizeObserver((): void => {
-    size.clear();
+  new ResizeObserver((entries: ResizeObserverEntry[]): void => {
+    const box: ResizeObserverSize | undefined = entries.at(-1)?.borderBoxSize[0];
+    if (box === undefined) size.clear();
+    else size.set({ width: box.inlineSize, height: box.blockSize });
   }).observe(node);
   const place = (x: number, y: number): void => {
     lastX = x;

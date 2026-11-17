@@ -37,3 +37,15 @@ void test('the tooltip reads its size once and reuses it on every move until it 
   assert.deepEqual(size.get(), { width: 320, height: 240 });
   assert.equal(count, 2);
 });
+
+void test('a size the tooltip is told of replaces the measured one without reading it again', (): void => {
+  let count: number = 0;
+  const size: Measure = measureOnce((): Size => {
+    count += 1;
+    return { width: 300, height: 200 };
+  });
+  assert.deepEqual(size.get(), { width: 300, height: 200 });
+  size.set({ width: 310, height: 260 });
+  assert.deepEqual(size.get(), { width: 310, height: 260 });
+  assert.equal(count, 1);
+});
