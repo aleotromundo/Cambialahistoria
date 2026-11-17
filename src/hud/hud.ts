@@ -99,7 +99,6 @@ import type { TradeHud } from './trade-hud.ts';
 import volumeCss from './volume.css?inline';
 import { createFeedbackButton } from './feedback-button.ts';
 import { createVolumeButton } from './volume-panel.ts';
-import { markOverlay } from './overlay-mark.ts';
 
 const GROUND_HINT: string = 'pick up';
 
@@ -212,13 +211,11 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
         api.playUi('panel_open');
         view.refresh();
         view.element.classList.add('open');
-        markOverlay(view.element, true);
         buttons[panel]?.setActive(true);
       },
       hide(): void {
         api.playUi('panel_close');
         view.element.classList.remove('open');
-        markOverlay(view.element, false);
         buttons[panel]?.setActive(false);
         tooltip.hide();
         hovered.delete(view.element);
@@ -444,14 +441,10 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           }
 
           case 'glitch_start':
-          case 'glitch_clock':
-          case 'glitch_phase':
           case 'glitch_end':
           case 'glitch_word':
-          case 'silence':
           case 'unison_look':
           case 'unison_flinch':
-          case 'zone_edited':
           case 'moment_mark':
           case 'moment_strike':
           case 'moment_woke':

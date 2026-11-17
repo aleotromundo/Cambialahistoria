@@ -83,7 +83,7 @@ void test('a version 5 save from before the log loads with an empty log, and the
   assert.deepEqual(loaded?.path, current.path);
   const older: SaveData = must(readSave(content, JSON.parse(JSON.stringify({ ...current, version: 5, path: undefined, glitch: undefined }))), 'version 5 save');
   assert.deepEqual(older.path, pathToSave(emptyPathLog()));
-  assert.deepEqual(older.glitch, { progress: 0, fired: [], played: null });
+  assert.deepEqual(older.glitch, { progress: 0, fired: [] });
 });
 
 void test('when thinning is not enough, old steps go before any notable moment', (): void => {

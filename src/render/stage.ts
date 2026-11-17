@@ -118,7 +118,7 @@ export interface Stage {
   drawOnce(target: Object3D, viewer: Camera): void;
   initTexture(texture: Texture): void;
   setFinish(pass: Pass | null): void;
-  setSeam(pass: Pass | null): void;
+  setTear(pass: Pass | null): void;
 }
 
 export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): Stage {
@@ -197,8 +197,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   let finish: Pass | null = null;
   let builtBloom: boolean = false;
   let builtFinish: Pass | null = null;
-  let seam: Pass | null = null;
-  let builtSeam: Pass | null = null;
+  let tear: Pass | null = null;
+  let builtTear: Pass | null = null;
 
   const buildComposer = (): EffectComposer => {
     const samples: number = msaaSamples();
@@ -207,7 +207,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     if (builtBloom) made.addPass(new UnrealBloomPass(new Vector2(1, 1), STAGE.bloomStrength, STAGE.bloomRadius, STAGE.bloomThreshold));
     if (builtFinish !== null) made.addPass(builtFinish);
     made.addPass(ditheredOutputPass());
-    if (builtSeam !== null) made.addPass(builtSeam);
+    if (builtTear !== null) made.addPass(builtTear);
     return made;
   };
 
@@ -238,14 +238,14 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       storm.shadow.mapSize.set(shadowSize, shadowSize);
     }
     texel = (STAGE.shadowExtent * 2) / shadowSize;
-    if (composer !== null && (bloom !== builtBloom || finish !== builtFinish || seam !== builtSeam)) {
-      for (const pass of composer.passes) if (pass !== builtFinish && pass !== builtSeam) pass.dispose();
+    if (composer !== null && (bloom !== builtBloom || finish !== builtFinish || tear !== builtTear)) {
+      for (const pass of composer.passes) if (pass !== builtFinish && pass !== builtTear) pass.dispose();
       composer.dispose();
       composer = null;
     }
     builtBloom = bloom;
     builtFinish = finish;
-    builtSeam = seam;
+    builtTear = tear;
     composer ??= buildComposer();
     resize();
   };
@@ -329,9 +329,9 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       finish = pass;
       apply();
     },
-    setSeam(pass: Pass | null): void {
-      if (pass === seam) return;
-      seam = pass;
+    setTear(pass: Pass | null): void {
+      if (pass === tear) return;
+      tear = pass;
       apply();
     },
     render(): void {

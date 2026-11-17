@@ -1,9 +1,8 @@
-import type { HudTear } from './seam-look.ts';
+import type { HudTear } from './tear-look.ts';
 
 export const HUD_TEAR = {
-  filterId: 'seam-hud-tear',
-  onClass: 'seam-torn',
-  splitVar: '--seam-split',
+  filterId: 'hud-tear',
+  onClass: 'hud-torn',
   bandRows: 96,
   bandWidth: 4,
   stillShare: 0.55,

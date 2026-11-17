@@ -21,7 +21,6 @@ export const SAVE_EVENTS: ReadonlySet<WorldEvent['type']> = new Set<WorldEvent['
   'flask_used',
   'flasks_refilled',
   'glitch_start',
-  'glitch_clock',
   'path_marked',
 ]);
 

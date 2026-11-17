@@ -10,7 +10,6 @@ import { createCloseButton } from './close-button.ts';
 import { iconSvg } from './icons.ts';
 import type { ItemCell } from './item-cell.ts';
 import { createItemCell, showItem } from './item-cell.ts';
-import { markOverlay } from './overlay-mark.ts';
 import { promptText, use } from './prompts.ts';
 
 export const PLAYER_TRADE_PANEL = {
@@ -266,7 +265,6 @@ export function mountPlayerTrade(parent: HTMLElement, context: HudContext, flow:
       if (next !== open) {
         open = next;
         panel.element.classList.toggle('open', open);
-        markOverlay(panel.element, open);
         if (!open) context.tooltip.hide();
       }
       panel.refresh(now);

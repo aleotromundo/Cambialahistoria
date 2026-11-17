@@ -1340,7 +1340,7 @@
       "spreadDegrees": 0
     },
     "damage": {
-      "weaponPercent": 1.7,
+      "weaponPercent": 1.85,
       "flatMin": 3,
       "flatMax": 6
     },

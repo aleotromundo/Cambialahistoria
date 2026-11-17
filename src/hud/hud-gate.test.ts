@@ -21,7 +21,7 @@ interface Mount {
 
 const FAINT_LIMIT: number = 0.5;
 
-const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'elsewhere-card', 'fb', 'glitch-white', 'hud-bottom', 'hud-fps', 'hud-hint', 'name-echo', 'pause', 'reader-veil', 'stall-notice', 'tc-stick'];
+const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'elsewhere-card', 'fb', 'hud-bottom', 'hud-fps', 'hud-hint', 'name-echo', 'pause', 'reader-veil', 'stall-notice', 'tc-stick'];
 
 const MOUNT_SITES: Readonly<Record<string, string>> = {
   'src/mobile/touch-ui.ts:canvas.after(layer)': '.tc',

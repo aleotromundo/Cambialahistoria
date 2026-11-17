@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { worldIn } from '../../test/support.ts';
 import type { Content } from '../content/types.ts';
-import { requestGlitch } from './glitch.ts';
 import { loadContent } from '../content/content.ts';
 import { toSave } from '../save.ts';
 import type { SkillDef } from '../content/types.ts';
@@ -10,27 +8,9 @@ import { generateItem } from '../items.ts';
 import { createWorld } from './create.ts';
 import type { HudPart } from './hud.ts';
 import { HUD_FRAME, hudBegun, hudHidden, hudView, partShown } from './hud.ts';
-import { stepWorld } from './step.ts';
 import type { ItemInstance, World } from './types.ts';
 
 const real: Content = loadContent();
-
-void test('while a glitch holds the hero in the mist the HUD is hidden, and it returns after', (): void => {
-  const world: World = worldIn(real, 'hall_of_time', 3);
-  world.monsters = [];
-  requestGlitch(world, 'hard_cut', 'debug');
-  stepWorld(world, [], 1 / 30);
-  assert.equal(hudHidden(world), false);
-  let hidden: boolean = false;
-  for (let step: number = 0; step < 600 && world.glitch.active !== null; step += 1) {
-    stepWorld(world, [], 1 / 30);
-    hidden ||= hudHidden(world);
-  }
-  assert.equal(hidden, true);
-  assert.equal(world.glitch.active, null);
-  assert.equal(hudHidden(world), false);
-});
-
 
 function newHero(): World {
   return createWorld(real, { seed: 2, save: null, opening: true });

@@ -9,8 +9,6 @@ import soundIds from '../../data/sound-ids.json' with { type: 'json' };
 import type { AmbienceStinger, AudioDef, CueDef, KnownIds, WeaponCue } from './audio.ts';
 import { knownIdsOf, loadAudio, parseAudio, UI_ACTIONS, WORLD_SOUND_EVENTS } from './audio.ts';
 import { loadContent } from './content.ts';
-import { loadGlitches } from './glitches.ts';
-import type { SeamTimes } from './glitches.ts';
 import { ContentError } from './read.ts';
 import type { Content, ItemBaseDef } from './types.ts';
 
@@ -38,17 +36,6 @@ void test('the shipped audio data loads against the shipped content', (): void =
   assert.equal(audio.defaults.maxVoices, 4);
   assert.ok(audio.skillStart.size >= 5);
   assert.ok(audio.ambience.has(AMBIENT_ZONE));
-});
-
-void test('a seam sample on the tear in is cut before the silent mist begins, and a bad cut is rejected', (): void => {
-  const times: SeamTimes = loadGlitches().seam;
-  const tear: number | null = loadAudio(content).seam.parts.tear.cut;
-  assert.ok(tear !== null && tear <= times.tear);
-  reject(variant((draft: Record<string, unknown>): void => {
-    const seam: unknown = draft['seam'];
-    if (typeof seam !== 'object' || seam === null) throw new Error('audio.json has no seam');
-    draft['seam'] = { ...Object.fromEntries(Object.entries(seam)), tear: { synth: true, cut: -1, cues: [] } };
-  }), /seam\.tear\.cut/);
 });
 
 void test('every skill the player or a monster uses has a start sound', (): void => {

@@ -10,7 +10,7 @@ import { stepPackReturns } from './pack-return.ts';
 import { stepWaitingPacks } from './packs.ts';
 import { stepExploration } from './exploration.ts';
 import { stepFlasks } from './flasks.ts';
-import { heldCommands, stepGlitch } from './glitch.ts';
+import { stepGlitch } from './glitch.ts';
 import { recordPath } from './path-log.ts';
 import { separateActors, settleGaits, strideOf } from './movement.ts';
 import { handleCommand, stepPlayer } from './player.ts';
@@ -41,7 +41,7 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   announceArming(world);
   world.time += dt;
   stepDrifts(world);
-  for (const command of heldCommands(world, commands)) {
+  for (const command of commands) {
     if (acceptsCommand(world, command)) handleCommand(world, command);
     else hurryWake(world, command);
   }

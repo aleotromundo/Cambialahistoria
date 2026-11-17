@@ -162,9 +162,4 @@ export interface GlitchSettingCommand {
   readonly enabled: boolean;
 }
 
-export interface OverlayCommand {
-  readonly type: 'overlay';
-  readonly open: boolean;
-}
-
-export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | OverlayCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand;
+export type Command = HeroCommand | StrikeCommand | SpawnCommand | BenchCommand | SlotCommand | HoldCommand | SteerCommand | GlitchCommand | GlitchSettingCommand | ReadCommand | MoveCommand | WalkCommand | SkillCommand | PickupCommand | StopCommand | EquipCommand | UnequipCommand | DropCommand | AllocateCommand | RefundCommand | RespecCommand | ChooseChangeCommand | TravelCommand | TalkCommand | AdvanceCommand | ReplayCommand | TeleportCommand | RespawnCommand | FlaskCommand | UseCommand | OpenChest | TradeCommand | PurseCommand | UseItemCommand | EnterPortalCommand;

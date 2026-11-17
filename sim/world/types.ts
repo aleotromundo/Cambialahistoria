@@ -27,7 +27,7 @@ import type { Tally } from '../tally.ts';
 import type { PortalChannelIntent, PortalIntent, PortalStage, PortalState } from './portal-types.ts';
 import type { Command, OpenChest } from './command-types.ts';
 
-export type { AdvanceCommand, AllocateCommand, ChooseChangeCommand, Command, DropCommand, EquipCommand, FlaskCommand, GlitchCommand, GlitchSettingCommand, HeroCommand, HoldCommand, MoveCommand, OpenChest, OverlayCommand, PickupCommand, ReadCommand, RefundCommand, RespawnChoice, RespawnCommand, RespecCommand, SkillCommand, SlotCommand, SteerCommand, StopCommand, StrikeCommand, TalkCommand, TeleportCommand, TradeAction, TradeCommand, TravelCommand, UnequipCommand, UseCommand, WalkCommand } from './command-types.ts';
+export type { AdvanceCommand, AllocateCommand, ChooseChangeCommand, Command, DropCommand, EquipCommand, FlaskCommand, GlitchCommand, GlitchSettingCommand, HeroCommand, HoldCommand, MoveCommand, OpenChest, PickupCommand, ReadCommand, RefundCommand, RespawnChoice, RespawnCommand, RespecCommand, SkillCommand, SlotCommand, SteerCommand, StopCommand, StrikeCommand, TalkCommand, TeleportCommand, TradeAction, TradeCommand, TravelCommand, UnequipCommand, UseCommand, WalkCommand } from './command-types.ts';
 export type { HazardState, MomentFigure, NpcState, ProjectileState, QueuedShot };
 
 export interface RolledAffix {
@@ -427,8 +427,6 @@ export type WorldEvent =
   | { readonly type: 'flask_used'; readonly slot: number; readonly flask: string; readonly resource: FlaskResource; readonly pos: Vec2 }
   | { readonly type: 'character_changed' }
   | GlitchEvent
-  | { readonly type: 'silence'; readonly duration: number }
-  | { readonly type: 'zone_edited'; readonly zone: string }
   | { readonly type: 'path_marked'; readonly act: PathAct }
   | { readonly type: 'moment_mark'; readonly moment: MomentState }
   | { readonly type: 'moment_strike'; readonly moment: MomentState }

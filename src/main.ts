@@ -277,7 +277,7 @@ async function start(): Promise<void> {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
   const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, overlays: overlayManager, pageVoice: { busy: (): boolean => audio.speaking().length > 0, soundOn: (): boolean => voiceAudible(controls.get()), say: (line: LineDef): void => void voice.play(line) }, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), setRain: (amount: number): void => rain.setWeather({ ...world.zone.weather, rain: amount }), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
-  const glitches: GlitchView = startGameGlitches({ world, content, stage, quality: mobile.quality.tier.name, glitchSettings, audio, audioDef, actors, voice, send, relight: (): void => opening.relight(), startZoneAmbience, hushBeds });
+  const glitches: GlitchView = startGameGlitches({ world, stage, glitchSettings, actors, send });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
   const perf: PerfReports = startPerfReports({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
@@ -323,10 +323,7 @@ async function start(): Promise<void> {
     effects.handle(events, world);
     overlays.handle(events, world);
     glitches.handle(events);
-    if (!glitches.silences(events)) for (const event of events) playCues(cuesForEvent(audioDef, world, event));
-    if (events.some((event: WorldEvent): boolean => event.type === 'zone_edited')) void refreshZone().catch((error: unknown): void => {
-        warnInConsole(`Zone rebuild after a glitch failed: ${String(error)}`);
-      });
+    for (const event of events) playCues(cuesForEvent(audioDef, world, event));
     hitStop = Math.max(hitStop, effects.takeHitStop());
     if (changesSave(events)) {
       dirty = true;
@@ -337,20 +334,6 @@ async function start(): Promise<void> {
   const present = (events: readonly WorldEvent[]): void => {
     presentScene(events);
     hud.handleEvents(events);
-  };
-
-  const refreshZone = async (): Promise<void> => {
-    const edited: World['zone'] = world.zone;
-    const next: ZoneView = await buildZoneView(loader, content, edited, stage.scene, mobile.quality.tier.name);
-    if (world.zone !== edited || zoneView.zone.id !== edited.id) {
-      next.dispose();
-      return;
-    }
-    zoneView.dispose();
-    zoneView = next;
-    zoneView.setGraphics(gameSettings.preset());
-    effects.setTorches(zoneView.torches);
-    torchVersion = zoneView.lightsVersion;
   };
 
   const preloadNearZones = (): void => {

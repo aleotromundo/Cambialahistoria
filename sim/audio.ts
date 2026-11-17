@@ -14,7 +14,7 @@ export interface SoundCue extends CueDef {
 
 const NONE: readonly SoundCue[] = [];
 
-type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'lobby' | 'seam' | 'silent'>;
+type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'lobby' | 'silent'>;
 
 const NO_KEYS: readonly string[] = [];
 
@@ -245,14 +245,10 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'monster_remove':
     case 'xp':
     case 'glitch_start':
-    case 'glitch_clock':
-    case 'glitch_phase':
     case 'glitch_end':
     case 'glitch_word':
-    case 'silence':
     case 'unison_look':
     case 'unison_flinch':
-    case 'zone_edited':
     case 'moment_mark':
     case 'moment_ended':
     case 'item_found':
@@ -344,7 +340,6 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'read':
     case 'glitch':
     case 'glitch_setting':
-    case 'overlay':
     case 'strike':
     case 'spawn':
     case 'bench':

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { KeyValueStore } from '../backend/backend.ts';
 import type { GlitchSettings, SettingStep } from './glitch-settings.ts';
-import { createGlitchSettings, DEFAULT_GLITCH_SETTINGS, GLITCH_SETTINGS_KEY, readGlitchSettings, seamIsGentle, settingStep } from './glitch-settings.ts';
+import { createGlitchSettings, DEFAULT_GLITCH_SETTINGS, GLITCH_SETTINGS_KEY, readGlitchSettings, tearIsGentle, settingStep } from './glitch-settings.ts';
 
 function memory(): KeyValueStore & { readonly data: Map<string, string> } {
   const data: Map<string, string> = new Map<string, string>();
@@ -22,8 +22,8 @@ function memory(): KeyValueStore & { readonly data: Map<string, string> } {
 void test('glitches are on and flashes full by default, and broken text falls back to that', (): void => {
   assert.deepEqual(readGlitchSettings(null), DEFAULT_GLITCH_SETTINGS);
   assert.deepEqual(readGlitchSettings('{nope'), DEFAULT_GLITCH_SETTINGS);
-  assert.deepEqual(readGlitchSettings('{"glitches":"no","reduceFlashes":true}'), { glitches: true, reduceFlashes: true, gentleSeam: false });
-  assert.deepEqual(readGlitchSettings('{"gentleSeam":true}'), { glitches: true, reduceFlashes: false, gentleSeam: true });
+  assert.deepEqual(readGlitchSettings('{"glitches":"no","reduceFlashes":true}'), { glitches: true, reduceFlashes: true });
+  assert.deepEqual(readGlitchSettings('{"glitches":false,"reduceFlashes":true,"gentleSeam":true}'), { glitches: false, reduceFlashes: true });
 });
 
 void test('a change is kept, stored and told to every listener', (): void => {
@@ -34,9 +34,9 @@ void test('a change is kept, stored and told to every listener', (): void => {
     heard.push(next);
   });
   settings.set({ glitches: false });
-  assert.deepEqual(settings.get(), { glitches: false, reduceFlashes: false, gentleSeam: false });
-  assert.deepEqual(heard, [{ glitches: false, reduceFlashes: false, gentleSeam: false }]);
-  assert.deepEqual(createGlitchSettings(store).get(), { glitches: false, reduceFlashes: false, gentleSeam: false });
+  assert.deepEqual(settings.get(), { glitches: false, reduceFlashes: false });
+  assert.deepEqual(heard, [{ glitches: false, reduceFlashes: false }]);
+  assert.deepEqual(createGlitchSettings(store).get(), { glitches: false, reduceFlashes: false });
   assert.equal(store.data.has(GLITCH_SETTINGS_KEY), true);
 });
 
@@ -49,13 +49,10 @@ void test('a setting the world has not taken is sent once per world step until i
   assert.deepEqual(settingStep(false, false, dropped.asked, 2), { send: false, asked: null });
 });
 
-void test('the seam is gentle when the system asks for less motion, the player turns it on, or flashes are softened', (): void => {
+void test('the portal tear is gentle when the system asks for less motion or flashes are softened', (): void => {
   const settings = createGlitchSettings(memory());
-  assert.equal(seamIsGentle(settings.get(), false), false);
-  assert.equal(seamIsGentle(settings.get(), true), true);
-  settings.set({ gentleSeam: true });
-  assert.equal(seamIsGentle(settings.get(), false), true);
-  assert.deepEqual(createGlitchSettings(memory()).get().gentleSeam, false);
-  settings.set({ gentleSeam: false, reduceFlashes: true });
-  assert.equal(seamIsGentle(settings.get(), false), true);
+  assert.equal(tearIsGentle(settings.get(), false), false);
+  assert.equal(tearIsGentle(settings.get(), true), true);
+  settings.set({ reduceFlashes: true });
+  assert.equal(tearIsGentle(settings.get(), false), true);
 });

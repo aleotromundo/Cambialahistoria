@@ -1,4 +1,3 @@
-import type { Object3D } from 'three';
 import { CircleGeometry, Color, DataTexture, LinearFilter, Mesh, MeshBasicMaterial, RGBAFormat } from 'three';
 
 export const CONTACT_SHADOW = {
@@ -39,8 +38,6 @@ function radialTexture(): DataTexture {
 }
 
 export const CONTACT_SHADOW_NAME: string = 'contact-shadow';
-
-export const SHADOW_OWNERS: WeakMap<Object3D, Object3D> = new WeakMap<Object3D, Object3D>();
 
 let shared: { readonly geometry: CircleGeometry; readonly material: MeshBasicMaterial } | null = null;
 

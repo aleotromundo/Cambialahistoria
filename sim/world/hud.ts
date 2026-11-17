@@ -1,4 +1,3 @@
-import { inMist } from './glitch.ts';
 import type { SkillDef } from '../content/types.ts';
 import { activeQuests } from './quests.ts';
 import type { ItemInstance, PlayerState, World } from './types.ts';
@@ -61,7 +60,7 @@ export function hudBegun(world: World): boolean {
 }
 
 export function hudHidden(world: World): boolean {
-  return inMist(world) || !hudBegun(world);
+  return !hudBegun(world);
 }
 
 export function partShown(world: World, part: HudPart): boolean {

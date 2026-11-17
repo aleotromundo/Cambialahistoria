@@ -21,11 +21,9 @@ function switchRow(page: HTMLElement, name: string, onClick: () => void): HTMLBu
 function mountGlitchSwitches(page: HTMLElement, glitches: GlitchSettingsStore): void {
   const world: HTMLButtonElement = switchRow(page, 'World glitches', (): void => glitches.set({ glitches: !glitches.get().glitches }));
   const soft: HTMLButtonElement = switchRow(page, 'Soften flashes', (): void => glitches.set({ reduceFlashes: !glitches.get().reduceFlashes }));
-  const gentle: HTMLButtonElement = switchRow(page, 'Gentle seam', (): void => glitches.set({ gentleSeam: !glitches.get().gentleSeam }));
   const render = (current: GlitchSettings): void => {
     world.setAttribute('aria-checked', String(current.glitches));
     soft.setAttribute('aria-checked', String(current.reduceFlashes));
-    gentle.setAttribute('aria-checked', String(current.gentleSeam));
   };
   glitches.subscribe(render);
   render(glitches.get());

@@ -1,7 +1,7 @@
 import audio from '../../data/audio.json' with { type: 'json' };
 import type { NoticeReason } from '../world/types.ts';
 import type { Fields } from './read.ts';
-import { choiceList, ContentError, each, fields, flag, isFields, numeric, text } from './read.ts';
+import { choiceList, ContentError, each, fields, isFields, numeric, text } from './read.ts';
 import type { ZoneEncounter } from './story-types.ts';
 import type { Content, RarityDef, WeaponKind, ZoneDef } from './types.ts';
 import { BODY_MATERIALS, WEAPON_KINDS } from './types.ts';
@@ -39,8 +39,6 @@ const LIMITS = {
   pitchMax: 2,
   jitterMax: 0.5,
   brightenMax: 0.5,
-  cutMin: 0.05,
-  cutMax: 10,
   scoreMin: 10,
   scoreMax: 900,
 } as const;
@@ -114,23 +112,8 @@ export interface ZoneAmbience {
   readonly score: Score | null;
 }
 
-export const SEAM_PARTS = ['buildUp', 'tear', 'tearBack', 'settle'] as const;
-export type SeamPart = (typeof SEAM_PARTS)[number];
-
-export interface SeamPartSound {
-  readonly synth: boolean;
-  readonly cut: number | null;
-  readonly cues: readonly CueDef[];
-}
-
-export interface SeamSound {
-  readonly worldFloor: number;
-  readonly parts: Readonly<Record<SeamPart, SeamPartSound>>;
-}
-
 export interface AudioDef {
   readonly defaults: CueDefaults;
-  readonly seam: SeamSound;
   readonly skillStart: CueTable;
   readonly skillImpact: CueTable;
   readonly projectileSpawn: CueTable;
@@ -199,10 +182,6 @@ function pitchRange(source: Fields, where: string): PitchRange | null {
   if (typeof min !== 'number' || typeof max !== 'number' || pair.length !== 2) throw new ContentError(`${where}.pitch`, 'expected [lowest, highest] playback rates');
   if (!(min >= LIMITS.pitchMin && max <= LIMITS.pitchMax && min <= max)) throw new ContentError(`${where}.pitch`, `expected ${LIMITS.pitchMin} to ${LIMITS.pitchMax}, lowest first`);
   return { min, max };
-}
-
-function cue(value: unknown, defaults: CueDefaults, where: string): CueDef {
-  return cueFields(fields(value, where), defaults, where);
 }
 
 function weaponCue(value: unknown, defaults: CueDefaults, where: string): WeaponCue {
@@ -315,23 +294,6 @@ function zone(value: unknown, surfaces: ReadonlySet<string>, where: string): Zon
   };
 }
 
-function seamPart(value: unknown, defaults: CueDefaults, where: string): SeamPartSound {
-  const source: Fields = fields(value, where);
-  const cut: number | null = source['cut'] === undefined || source['cut'] === null ? null : required(source, 'cut', LIMITS.cutMin, LIMITS.cutMax, where);
-  return { synth: flag(source, 'synth', where), cut, cues: each(source['cues'], `${where}.cues`, (entry: unknown, entryWhere: string): CueDef => cue(entry, defaults, entryWhere)) };
-}
-
-function seamSound(value: unknown, defaults: CueDefaults, where: string): SeamSound {
-  const source: Fields = fields(value, where);
-  const parts: Record<SeamPart, SeamPartSound> = {
-    buildUp: seamPart(source['buildUp'], defaults, `${where}.buildUp`),
-    tear: seamPart(source['tear'], defaults, `${where}.tear`),
-    tearBack: seamPart(source['tearBack'], defaults, `${where}.tearBack`),
-    settle: seamPart(source['settle'], defaults, `${where}.settle`),
-  };
-  return { worldFloor: required(source, 'worldFloor', 0, 1, where), parts };
-}
-
 export function parseAudio(value: unknown, known: KnownIds): AudioDef {
   const where: string = 'audio';
   const source: Fields = fields(value, where);
@@ -348,7 +310,6 @@ export function parseAudio(value: unknown, known: KnownIds): AudioDef {
   const items: ReadonlySet<string> = withExtras(known.rarities, GOLD_KEY);
   return {
     defaults,
-    seam: seamSound(source['seam'], defaults, `${where}.seam`),
     skillStart: read('skillStart', known.skills),
     skillImpact: read('skillImpact', known.skills),
     projectileSpawn: read('projectileSpawn', known.projectileSkills),

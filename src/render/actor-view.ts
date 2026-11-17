@@ -13,7 +13,7 @@ import type { ActionClip, GaitClip, RigInstance } from './character-loader.ts';
 import { findNode } from './character-loader.ts';
 import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
 import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
-import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
+import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
 import { actorBounds } from './actor-bounds.ts';
 import type { RestShadows } from './rest-shadows.ts';
 import { createRestShadows } from './rest-shadows.ts';
@@ -290,7 +290,6 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
   rig.root.rotation.order = 'YXZ';
   rig.root.rotation.y = yaw;
   const shadow: Mesh = contactShadow();
-  SHADOW_OWNERS.set(shadow, rig.root);
   let ownShadow: MeshBasicMaterial | null = null;
   current.play();
 

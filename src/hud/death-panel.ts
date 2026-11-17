@@ -7,7 +7,6 @@ import { mountDither } from '../dither/layer.ts';
 import { el, label, setText } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
 import type { WorldStatus } from './status.ts';
-import { markOverlay } from './overlay-mark.ts';
 
 const DEATH_PANEL: { readonly confirmKeys: readonly string[]; readonly backdropRatio: number } = {
   confirmKeys: ['Enter', 'Space'],
@@ -59,12 +58,10 @@ export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus 
       visible = true;
       backdrop.paint();
       screen.classList.add('visible');
-      markOverlay(screen, true);
     },
     hide(): void {
       visible = false;
       screen.classList.remove('visible');
-      markOverlay(screen, false);
     },
   });
 

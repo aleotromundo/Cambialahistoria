@@ -6,7 +6,6 @@ import { createLobbyPanel } from './lobby-panel.ts';
 import type { LobbyPanel } from './lobby-panel.ts';
 import { passedNames, rankText } from './lobby-model.ts';
 import type { OverlayManager } from '../hud/overlays.ts';
-import { markOverlay } from '../hud/overlay-mark.ts';
 
 export interface GameBoard {
   setPlaying(playing: boolean): void;
@@ -85,13 +84,11 @@ export function mountGameBoard(hud: HTMLElement, lobby: Lobby, options: GameBoar
     element: root,
     show(): void {
       root.classList.add('open');
-      markOverlay(root, true);
       void lobby.feed.refresh(false);
     },
     hide(): void {
       panel.closeOnline();
       root.classList.remove('open');
-      markOverlay(root, false);
     },
   });
 

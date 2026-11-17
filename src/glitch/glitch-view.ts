@@ -1,75 +1,41 @@
 import type { Object3D, Scene } from 'three';
-import { Camera, Group, Light, PointLight } from 'three';
-import type { QualityName } from '../mobile/quality.ts';
-import type { GlitchKind } from '../../sim/content/glitches.ts';
-import type { ZoneAmbience, ZoneDef } from '../../sim/content/types.ts';
+import { Group } from 'three';
 import type { Vec2 } from '../../sim/math.ts';
-import { inMist, isMist, seamMoment } from '../../sim/world/glitch.ts';
-import type { SeamMoment } from '../../sim/world/seam.ts';
-import type { SeamPass } from '../render/seam-pass.ts';
-import type { SeamAudio } from './seam-audio.ts';
-import type { SeamLook } from './seam-look.ts';
-import { CALM_LOOK, hudTear, portalTear, seamLook } from './seam-look.ts';
+import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
+import type { TearPass } from '../render/tear-pass.ts';
+import type { TearLook } from './tear-look.ts';
+import { CALM_LOOK, hudTear, portalTear } from './tear-look.ts';
 import type { HudTearView } from './hud-tear.ts';
 import { createHudTear } from './hud-tear.ts';
-import type { Silhouette } from '../../sim/world/glitch-types.ts';
-import type { Command, World, WorldEvent } from '../../sim/world/types.ts';
-import { createOverlayWatch } from '../hud/overlay-mark.ts';
-import type { OverlayWatch } from '../hud/overlay-mark.ts';
-import type { VoidView } from '../render/void-view.ts';
-import { buildVoidView } from '../render/void-view.ts';
-import type { FigureGauge } from '../render/figure-gauge.ts';
-import { createFigureGauge, figureJoints } from '../render/figure-gauge.ts';
 import type { Ghost } from './ghost.ts';
 import { createGhost } from './ghost.ts';
 import type { GlitchSettings, GlitchSettingsStore, SettingRequest, SettingStep } from './glitch-settings.ts';
-import { heroRig } from '../../sim/hero.ts';
-import { seamIsGentle, settingStep } from './glitch-settings.ts';
-import { SHADOW_OWNERS } from '../render/contact-shadow.ts';
+import { settingStep, tearIsGentle } from './glitch-settings.ts';
 import glitchCss from './glitch.css?inline';
 
 export const GLITCH_VIEW = {
-  whiteHold: 0.1,
-  softSwap: 0.32,
-  softPeak: 0.55,
-  quietPeak: 0.8,
   stutterLag: 0.3,
   stutterMerge: 0.35,
   ghostTint: 0xdfe6ee,
   ghostOpacity: 0.4,
-  shadeTint: 0xf2f4f6,
-  shadeOpacity: 0.2,
   historySeconds: 1.2,
-  calledOffFade: 0.35,
   portalFade: 0.9,
-  mistHoldAt: 0.94,
-  whiteVar: '--seam-white',
-  mistClass: 'glitch-mist',
-  softClass: 'soft',
+  whiteVar: '--tear-white',
 } as const;
 
 export interface GlitchViewDeps {
   readonly world: World;
   readonly scene: Scene;
   readonly app: HTMLElement;
-  readonly mistZone: ZoneDef;
-  readonly quality: QualityName;
   readonly settings: GlitchSettingsStore;
-  readonly overlays: HTMLElement;
-  readonly seamPass: SeamPass;
-  readonly seamAudio: SeamAudio;
+  readonly tearPass: TearPass;
   reducedMotion(): boolean;
   hero(): Object3D;
   send(command: Command): void;
-  setAmbience(ambience: ZoneAmbience): void;
-  restoreAmbience(): void;
-  silence(): void;
-  resume(): void;
 }
 
 export interface GlitchView {
   handle(events: readonly WorldEvent[]): void;
-  silences(events: readonly WorldEvent[]): boolean;
   update(now: number, dt: number, simDt: number): void;
   refresh(): void;
 }
@@ -80,12 +46,8 @@ interface Sample {
   readonly facing: number;
 }
 
-type Phase = { readonly type: 'idle' } | { readonly type: 'entering'; left: number } | { readonly type: 'mist' } | { readonly type: 'leaving'; left: number };
-
-type SeamHold = 'none' | 'tear' | 'mist_end';
-
-interface SeamFade {
-  readonly look: SeamLook;
+interface TearFade {
+  readonly look: TearLook;
   readonly span: number;
   left: number;
 }
@@ -98,31 +60,15 @@ interface Stutter {
 
 export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   const { world, scene, app, settings } = deps;
-  const figureGauge: FigureGauge = createFigureGauge(figureJoints(world.content.rigs.get(heroRig(world.content, world.player.hero))?.bodyParts ?? {}));
-  const overlayWatch: OverlayWatch = createOverlayWatch(document, (command: Command): void => deps.send(command));
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = glitchCss;
   app.append(style);
-  const white: HTMLDivElement = document.createElement('div');
-  white.className = 'glitch-white';
-  app.append(white);
   const own: Group = new Group();
   scene.add(own);
-  const hidden: Set<Object3D> = new Set<Object3D>();
   const history: Sample[] = [];
-  const shades: Ghost[] = [];
-  let mist: VoidView | null = null;
-  let parked: VoidView | null = null;
-  let phase: Phase = { type: 'idle' };
-  let soft: boolean = settings.get().reduceFlashes;
-  let pendingShades: readonly Silhouette[] = [];
   let stutter: Stutter | null = null;
   let clock: number = 0;
-  let seamMist: boolean = false;
-  let seamHeld: SeamHold = 'none';
-  let seamSilenced: boolean = false;
-  let lastLook: SeamLook = CALM_LOOK;
-  let fade: SeamFade | null = null;
+  let fade: TearFade | null = null;
   const tear: HudTearView = createHudTear(app);
 
   let asked: SettingRequest | null = null;
@@ -134,143 +80,19 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
   apply(settings.get());
   settings.subscribe(apply);
 
-  const setWhite = (opacity: number, eased: boolean): void => {
-    white.classList.toggle(GLITCH_VIEW.softClass, eased);
-    white.style.opacity = opacity.toFixed(3);
-  };
-
-  const kept = (object: Object3D): boolean => object === own || object === mist?.group || object === deps.hero() || SHADOW_OWNERS.get(object) === deps.hero() || (object instanceof Light && !(object instanceof PointLight)) || object instanceof Camera;
-
-  const sweep = (): void => {
-    for (const child of scene.children) {
-      if (kept(child) || !child.visible) continue;
-      child.visible = false;
-      hidden.add(child);
-    }
-  };
-
-  const placeShades = (): void => {
-    for (const shade of pendingShades) {
-      const ghost: Ghost = createGhost(deps.hero(), GLITCH_VIEW.shadeTint, GLITCH_VIEW.shadeOpacity);
-      ghost.root.position.set(shade.x, world.zone.floorHeight, shade.z);
-      ghost.root.rotation.y = shade.facing;
-      own.add(ghost.root);
-      shades.push(ghost);
-    }
-    pendingShades = [];
-  };
-
-  const retire = (view: VoidView | null): void => {
-    if (view === null) return;
-    parked?.dispose();
-    view.park();
-    parked = view;
-  };
-
-  const showMist = (): void => {
-    retire(mist);
-    mist = buildVoidView({ ...deps.mistZone, floorHeight: world.zone.floorHeight }, deps.quality, null, null);
-    scene.add(mist.group);
-    deps.setAmbience(deps.mistZone.ambience);
-    document.body.classList.add(GLITCH_VIEW.mistClass);
-    sweep();
-    placeShades();
-    phase = { type: 'mist' };
-  };
-
-  const hideMist = (): void => {
-    retire(mist);
-    mist = null;
-    for (const object of hidden) object.visible = true;
-    hidden.clear();
-    for (const shade of shades) shade.dispose();
-    shades.length = 0;
-    deps.restoreAmbience();
-    document.body.classList.remove(GLITCH_VIEW.mistClass);
-  };
-
-  const enter = (kind: GlitchKind, silhouettes: readonly Silhouette[]): void => {
-    soft = settings.get().reduceFlashes || kind === 'quiet_pass';
-    pendingShades = silhouettes;
-    document.body.classList.add(GLITCH_VIEW.mistClass);
-    if (soft) {
-      setWhite(kind === 'quiet_pass' && !settings.get().reduceFlashes ? GLITCH_VIEW.quietPeak : GLITCH_VIEW.softPeak, true);
-      phase = { type: 'entering', left: GLITCH_VIEW.softSwap };
-      return;
-    }
-    setWhite(1, false);
-    phase = { type: 'entering', left: GLITCH_VIEW.whiteHold };
-  };
-
-  const gentleNow = (): boolean => seamIsGentle(settings.get(), deps.reducedMotion());
-
-  const resumeSeam = (): void => {
-    if (!seamSilenced) return;
-    seamSilenced = false;
-    deps.resume();
-  };
-
-  const endSeam = (): void => {
-    if (seamMist) {
-      hideMist();
-      seamMist = false;
-    }
-    seamHeld = 'none';
-    deps.seamPass.release();
-    deps.seamAudio.end();
-    resumeSeam();
-  };
-
-  const showSeam = (moment: SeamMoment, now: number): void => {
-    const look: SeamLook = seamLook(moment, gentleNow());
-    if (moment.phase === 'tear' && seamHeld === 'none') {
-      deps.seamPass.hold();
-      seamHeld = 'tear';
-    }
-    if (moment.phase === 'mist' && moment.progress >= GLITCH_VIEW.mistHoldAt && seamHeld !== 'mist_end') {
-      deps.seamPass.hold();
-      seamHeld = 'mist_end';
-    }
-    if (look.swapped && !seamMist) {
-      showMist();
-      phase = { type: 'idle' };
-      seamMist = true;
-    } else if (!look.swapped && seamMist) {
-      hideMist();
-      seamMist = false;
-    }
-    document.body.classList.toggle(GLITCH_VIEW.mistClass, inMist(world));
-    deps.seamPass.show(look, now);
-    tear.show(hudTear(look), now);
-    document.body.style.setProperty(GLITCH_VIEW.whiteVar, look.white.toFixed(3));
-    lastLook = look;
-  };
-
   const showFade = (dt: number, now: number): void => {
     if (fade === null) return;
     fade.left -= dt;
     const share: number = Math.max(0, fade.left / fade.span);
-    const look: SeamLook = { ...fade.look, split: fade.look.split * share, slip: fade.look.slip * share, density: fade.look.density, blocks: fade.look.blocks * share, tear: fade.look.tear * share, white: fade.look.white * share };
-    deps.seamPass.show(look, now);
+    const look: TearLook = { ...fade.look, split: fade.look.split * share, slip: fade.look.slip * share, density: fade.look.density, blocks: fade.look.blocks * share, tear: fade.look.tear * share, white: fade.look.white * share };
+    deps.tearPass.show(look, now);
     tear.show(hudTear(look), now);
     document.body.style.setProperty(GLITCH_VIEW.whiteVar, look.white.toFixed(3));
     if (fade.left <= 0) {
       fade = null;
-      deps.seamPass.show(CALM_LOOK, now);
+      deps.tearPass.show(CALM_LOOK, now);
       tear.calm();
     }
-  };
-
-  const leave = (): void => {
-    if (phase.type === 'entering') showMist();
-    if (soft) {
-      setWhite(GLITCH_VIEW.softPeak, true);
-      phase = { type: 'leaving', left: GLITCH_VIEW.softSwap };
-      return;
-    }
-    hideMist();
-    setWhite(0, false);
-    phase = { type: 'idle' };
   };
 
   const startStutter = (duration: number): void => {
@@ -316,79 +138,21 @@ export function createGlitchView(deps: GlitchViewDeps): GlitchView {
     while (history.length > 0 && (history[0]?.time ?? clock) < clock - GLITCH_VIEW.historySeconds) history.shift();
   };
 
-  const stepPhase = (dt: number): void => {
-    switch (phase.type) {
-      case 'idle':
-      case 'mist':
-        return;
-      case 'entering':
-        phase.left -= dt;
-        if (phase.left > 0) return;
-        showMist();
-        setWhite(0, soft);
-        return;
-      case 'leaving':
-        phase.left -= dt;
-        if (phase.left > 0) return;
-        hideMist();
-        setWhite(0, true);
-        phase = { type: 'idle' };
-        return;
-    }
-  };
-
   return {
     handle(events: readonly WorldEvent[]): void {
       for (const event of events) {
-        if (event.type === 'silence') {
-          deps.silence();
-          if (world.glitch.active?.kind === 'hard_cut') seamSilenced = true;
-        } else if (event.type === 'glitch_start' && event.kind === 'quiet_pass') enter(event.kind, event.silhouettes);
-        else if (event.type === 'glitch_start' && event.kind === 'hard_cut') fade = null;
-        else if (event.type === 'glitch_start' && event.kind === 'stutter') startStutter(event.duration);
-        else if (event.type === 'portal' && event.stage === 'entered' && world.glitch.active === null) fade = { look: portalTear(gentleNow()), span: GLITCH_VIEW.portalFade, left: GLITCH_VIEW.portalFade };
-        else if (event.type === 'glitch_phase') {
-          deps.seamAudio.phase(event.phase);
-          if (event.phase === 'settle') resumeSeam();
-        } else if (event.type === 'glitch_end' && event.kind === 'hard_cut') {
-          if (event.calledOff) fade = { look: lastLook, span: GLITCH_VIEW.calledOffFade, left: GLITCH_VIEW.calledOffFade };
-          else {
-            deps.seamPass.show(CALM_LOOK, clock);
-            document.body.style.setProperty(GLITCH_VIEW.whiteVar, '0');
-          }
-          if (!event.calledOff) tear.calm();
-          document.body.classList.remove(GLITCH_VIEW.mistClass);
-          lastLook = CALM_LOOK;
-          endSeam();
-        } else if (event.type === 'glitch_end' && isMist(event.kind)) {
-          leave();
-          deps.resume();
-        }
+        if (event.type === 'glitch_start' && event.kind === 'stutter') startStutter(event.duration);
+        else if (event.type === 'portal' && event.stage === 'entered' && world.glitch.active === null) fade = { look: portalTear(tearIsGentle(settings.get(), deps.reducedMotion())), span: GLITCH_VIEW.portalFade, left: GLITCH_VIEW.portalFade };
       }
     },
     refresh(): void {
       asked = null;
-      if (phase.type === 'idle' && !seamMist) return;
-      deps.silence();
-      if (mist !== null) deps.setAmbience(deps.mistZone.ambience);
-    },
-    silences(events: readonly WorldEvent[]): boolean {
-      return phase.type !== 'idle' || inMist(world) || events.some((event: WorldEvent): boolean => event.type === 'silence');
     },
     update(now: number, dt: number, simDt: number): void {
       apply(settings.get());
-      overlayWatch.update(world, simDt);
       record(simDt);
-      stepPhase(dt);
       stepStutter(simDt);
-      const active = world.glitch.active;
-      const moment: SeamMoment | null = active === null ? null : seamMoment(active);
-      if (moment !== null) showSeam(moment, now);
-      else showFade(dt, now);
-      if (mist !== null) {
-        sweep();
-        mist.update(now, dt, world, { look: null, figure: figureGauge.measure(deps.hero(), now), flash: 0 });
-      }
+      showFade(dt, now);
     },
   };
 }

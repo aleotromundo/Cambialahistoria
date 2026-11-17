@@ -8,7 +8,6 @@ import { LINKS } from '../launch/data.ts';
 import { outboundLinks } from '../launch/links.ts';
 import type { OutboundLink } from '../launch/links.ts';
 import { el, label } from './dom.ts';
-import { markOverlay } from './overlay-mark.ts';
 import { mountControls } from './settings-controls.ts';
 import type { ControlsPage } from './settings-controls.ts';
 import { mountGraphics } from './settings-graphics.ts';
@@ -200,7 +199,6 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       hurt = { life: hooks.life(), hold: 0 };
       lastWatch = performance.now();
       requestAnimationFrame(watch);
-      markOverlay(overlay, true);
       hooks.onOpen();
     },
     hide(): void {
@@ -209,7 +207,6 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       wanted = null;
       overlay.classList.remove('open');
       hurtLine.classList.remove('shown');
-      markOverlay(overlay, false);
       hooks.onClose();
     },
   });

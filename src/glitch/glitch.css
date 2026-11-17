@@ -1,46 +1,9 @@
-.glitch-white {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 59;
-  background: #ffffff;
-  opacity: 0;
-}
-
-.glitch-white.soft {
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-#overlays {
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-body.glitch-mist #overlays,
-body.glitch-mist .hud-dialogue,
-body.glitch-mist .globe-flask,
-body.glitch-mist .hud-banners,
-body.glitch-mist .hud-boss,
-body.glitch-mist .hud-target,
-body.glitch-mist .hud-hint {
-  opacity: 0 !important;
-  pointer-events: none !important;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-body.seam-torn #hud,
-body.seam-torn #overlays,
-body.seam-torn .tc {
-  filter: url(#seam-hud-tear);
-}
-
-.tc {
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
-body.glitch-mist .tc {
-  opacity: 0;
+body.hud-torn #hud,
+body.hud-torn #overlays,
+body.hud-torn .tc {
+  filter: url(#hud-tear);
 }
 
 #vignette {
-  opacity: calc(1 - var(--seam-white, 0));
+  opacity: calc(1 - var(--tear-white, 0));
 }

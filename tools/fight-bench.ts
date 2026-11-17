@@ -24,7 +24,7 @@ const BENCH = {
   stored: [
     { key: 'the-lost-storm.audio.v1', value: { volumes: { master: 0, effects: 0, voice: 0, ambience: 0 }, muted: true } },
     { key: 'the-lost-storm.settings.v1', value: { graphics: { quality: 'high', showFps: false, lensWater: true }, controls: {} } },
-    { key: 'the-lost-storm.glitches.v1', value: { glitches: false, reduceFlashes: false, gentleSeam: false } },
+    { key: 'the-lost-storm.glitches.v1', value: { glitches: false, reduceFlashes: false } },
   ],
   steps: ['^enter$', '^(choose for me|take .+)$', '^enter$'],
   begin: '^(enter the storm|continue)$',

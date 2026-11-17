@@ -1,5 +1,4 @@
 import { el, label, setAttr, setClass } from './dom.ts';
-import { markOverlay } from './overlay-mark.ts';
 import type { ChangeChoice, SkillChanges } from './skill-changes.ts';
 
 export interface ChangeList {
@@ -23,7 +22,6 @@ export function createChangeList(parent: HTMLElement, choose: (skill: string, be
     skill = null;
     element.classList.remove('open');
     element.setAttribute('aria-hidden', 'true');
-    markOverlay(element, false);
     return true;
   };
 
@@ -68,7 +66,6 @@ export function createChangeList(parent: HTMLElement, choose: (skill: string, be
       paint(changes);
       element.classList.add('open');
       element.setAttribute('aria-hidden', 'false');
-      markOverlay(element, true);
     },
     refresh(changes: SkillChanges | null): void {
       if (skill === null) return;

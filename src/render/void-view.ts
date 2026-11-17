@@ -202,11 +202,7 @@ export function voidNoiseTexture(): DataTexture {
   return sharedNoise;
 }
 
-export interface VoidView extends ZoneView {
-  park(): void;
-}
-
-export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: SurfaceDef | null, glimpse: VoidGlimpses | null): VoidView {
+export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: SurfaceDef | null, glimpse: VoidGlimpses | null): ZoneView {
   const tier: VoidTier = VOID_VIEW.tiers[quality];
   const defines: Record<string, number | string> = { VOID_OCTAVES: tier.octaves, VOID_EDDIES: MIST.eddies, VOID_NOISE_SIZE: VOID_NOISE.size.toFixed(1) };
   const noiseTexture: DataTexture = voidNoiseTexture();
@@ -490,13 +486,6 @@ export function buildVoidView(zone: ZoneDef, quality: QualityName, rockSurface: 
       ground.position.set(world.player.pos.x, zone.floorHeight, world.player.pos.z);
       for (const layer of layers) layer.mesh.position.set(world.player.pos.x, layer.mesh.position.y, world.player.pos.z);
       hookScene();
-    },
-    park(): void {
-      group.removeFromParent();
-      unhook();
-      for (const layer of layers) layer.target.dispose();
-      fieldTexture.dispose();
-      WAKE_LAMPS.value = 0;
     },
     dispose(): void {
       group.removeFromParent();

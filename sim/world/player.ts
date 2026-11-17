@@ -26,7 +26,7 @@ import type { Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, P
 import { handlePurse } from './purse.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import type { Station } from './trade.ts';
-import { requestGlitch, setGlitchesEnabled, setOverlay } from './glitch.ts';
+import { requestGlitch, setGlitchesEnabled } from './glitch.ts';
 import { readPage } from './story.ts';
 import { chooseGait } from '../gait.ts';
 import type { GaitChoice } from '../gait.ts';
@@ -270,7 +270,6 @@ function act(world: World, command: Command): void {
     case 'read':
     case 'glitch':
     case 'glitch_setting':
-    case 'overlay':
     case 'strike':
     case 'spawn':
     case 'bench':
@@ -352,9 +351,6 @@ export function handleCommand(world: World, command: Command): void {
       return;
     case 'glitch_setting':
       setGlitchesEnabled(world, command.enabled);
-      return;
-    case 'overlay':
-      setOverlay(world, command.open);
       return;
     case 'strike':
       forceStrike(world, command.at, command.moment);

@@ -55,8 +55,6 @@ const SYSTEM = {
   soundTimeoutMs: 20000,
   warmLanes: 2,
   warmFill: 0.75,
-  fadeTimeConstants: 4,
-  cutFade: 0.12,
   echoSpeaker: 'echo',
   measureIdleMs: 2000,
   scoreLookahead: 2,
@@ -91,9 +89,6 @@ export interface AudioSystem {
   stopAmbience(fadeOut: number): void;
   update(dt: number): void;
   setMuffled(on: boolean): void;
-  playSeam(cue: SoundCue, cut: number | null): void;
-  synth(play: (context: BaseAudioContext, out: AudioNode, at: number) => void): void;
-  thinWorld(level: number, seconds: number): void;
   onTrigger(listener: (trigger: Trigger) => void): void;
 }
 
@@ -129,13 +124,11 @@ interface StingerTimer {
   left: number;
 }
 
-type Bus = 'effects' | 'ambience' | 'seam';
+type Bus = 'effects' | 'ambience';
 
 interface Graph {
   readonly context: AudioContext;
   readonly master: GainNode;
-  readonly world: GainNode;
-  readonly seam: GainNode;
   readonly effects: GainNode;
   readonly voice: GainNode;
   readonly ambience: GainNode;
@@ -207,7 +200,6 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     graph.effects.gain.setTargetAtTime(settings.volumes.effects * ducked, now, voicesPlaying > 0 ? SYSTEM.duckAttack : SYSTEM.duckRelease);
     graph.ambience.gain.setTargetAtTime(settings.volumes.ambience * ducked, now, voicesPlaying > 0 ? SYSTEM.duckAttack : SYSTEM.duckRelease);
     graph.voice.gain.setTargetAtTime(settings.volumes.voice, now, SYSTEM.settingsSmoothing);
-    graph.seam.gain.setTargetAtTime(settings.volumes.effects, now, SYSTEM.settingsSmoothing);
   };
 
   controls.subscribe(applySettings);
@@ -232,7 +224,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   });
   const load = (path: string, how: LoadOptions = PLAY_LOAD): Promise<AudioBuffer | null> => buffers.load(path, how);
 
-  const connect = (source: AudioBufferSourceNode, volume: number, pan: number, bus: GainNode, current: Graph, onEnd: () => void): GainNode => {
+  const connect = (source: AudioBufferSourceNode, volume: number, pan: number, bus: GainNode, current: Graph, onEnd: () => void): void => {
     const gain: GainNode = current.context.createGain();
     gain.gain.value = volume;
     const panner: StereoPannerNode = current.context.createStereoPanner();
@@ -246,10 +238,9 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       panner.disconnect();
       onEnd();
     });
-    return gain;
   };
 
-  const playOn = async (bus: Bus, cue: SoundCue, place: Placement, cut: number | null): Promise<void> => {
+  const playOn = async (bus: Bus, cue: SoundCue, place: Placement): Promise<void> => {
     const current: Graph | null = graph;
     if (current === null) {
       limiter.end(cue.sound);
@@ -273,21 +264,15 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     source.buffer = buffer;
     source.playbackRate.value = pitchRate(random, cue.pitch);
     const level: number = cue.volume * place.gain * volumeScale(random, cue.volumeJitter);
-    const voice: GainNode = connect(source, level, place.pan, current[bus], current, (): void => limiter.end(cue.sound));
+    connect(source, level, place.pan, current[bus], current, (): void => limiter.end(cue.sound));
     source.start();
-    if (cut === null) return;
-    const now: number = current.context.currentTime;
-    const end: number = now + Math.max(0, cut - (clock() - asked));
-    voice.gain.setValueAtTime(level, Math.max(now, end - SYSTEM.cutFade));
-    voice.gain.linearRampToValueAtTime(0, end);
-    source.stop(end);
   };
 
-  const trigger = (bus: Bus, cue: SoundCue, place: Placement, cut: number | null = null): void => {
+  const trigger = (bus: Bus, cue: SoundCue, place: Placement): void => {
     ensureManifest();
     if (!limiter.tryStart(cue.sound, cue.maxVoices, cue.cooldown)) return;
     report(cue, place);
-    playOn(bus, cue, place, cut).catch((): void => limiter.end(cue.sound));
+    playOn(bus, cue, place).catch((): void => limiter.end(cue.sound));
   };
 
   const duck = (delta: number): void => {
@@ -548,21 +533,17 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       try {
         const context: AudioContext = new AudioContext();
         const master: GainNode = context.createGain();
-        const world: GainNode = context.createGain();
-        const seam: GainNode = context.createGain();
         const effects: GainNode = context.createGain();
         const voice: GainNode = context.createGain();
         const ambience: GainNode = context.createGain();
         const muffle: BiquadFilterNode = context.createBiquadFilter();
         muffle.type = 'lowpass';
         muffle.frequency.value = muffled ? SYSTEM.muffleClosedHz : SYSTEM.muffleOpenHz;
-        for (const bus of [effects, voice]) bus.connect(world);
+        for (const bus of [effects, voice]) bus.connect(master);
         ambience.connect(muffle);
-        muffle.connect(world);
-        world.connect(master);
-        seam.connect(master);
+        muffle.connect(master);
         master.connect(context.destination);
-        graph = { context, master, world, seam, effects, voice, ambience, muffle };
+        graph = { context, master, effects, voice, ambience, muffle };
         applySettings(controls.get());
         context.resume().catch((): void => undefined);
         document.addEventListener('visibilitychange', (): void => {
@@ -644,22 +625,6 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       muffled = on;
       if (graph === null) return;
       graph.muffle.frequency.setTargetAtTime(on ? SYSTEM.muffleClosedHz : SYSTEM.muffleOpenHz, graph.context.currentTime, SYSTEM.muffleSmoothing);
-    },
-    playSeam(cue: SoundCue, cut: number | null): void {
-      trigger('seam', cue, CENTRE, cut);
-    },
-    synth(play: (context: BaseAudioContext, out: AudioNode, at: number) => void): void {
-      const current: Graph | null = graph;
-      if (current === null) return;
-      play(current.context, current.seam, current.context.currentTime);
-    },
-    thinWorld(level: number, seconds: number): void {
-      const current: Graph | null = graph;
-      if (current === null) return;
-      const now: number = current.context.currentTime;
-      current.world.gain.cancelScheduledValues(now);
-      current.world.gain.setValueAtTime(current.world.gain.value, now);
-      current.world.gain.setTargetAtTime(level, now, Math.max(seconds, SYSTEM.settingsSmoothing) / SYSTEM.fadeTimeConstants);
     },
     update(dt: number): void {
       ensureManifest();

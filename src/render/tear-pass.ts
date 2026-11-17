@@ -1,11 +1,8 @@
-import type { IUniform, Texture, WebGLRenderer } from 'three';
-import { HalfFloatType, ShaderMaterial, UniformsUtils, WebGLRenderTarget } from 'three';
-import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import type { IUniform } from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { CopyShader } from 'three/addons/shaders/CopyShader.js';
-import type { SeamLook } from '../glitch/seam-look.ts';
+import type { TearLook } from '../glitch/tear-look.ts';
 
-export const SEAM_PASS = {
+export const TEAR_PASS = {
   fastRate: 20,
   slowRate: 11,
   rowsMin: 70,
@@ -17,7 +14,6 @@ export const SEAM_PASS = {
   tearReach: 0.16,
   channelPull: 0.22,
   smearShare: 0.22,
-  lagShare: 0.3,
   edgeStart: 0.25,
   edgeEnd: 0.95,
   blockRows: 26,
@@ -30,29 +26,23 @@ export const SEAM_PASS = {
   whiteSoft: 0.4,
 } as const;
 
-export interface SeamPass {
+export interface TearPass {
   readonly pass: ShaderPass;
-  show(look: SeamLook, time: number): void;
-  hold(): void;
-  release(): void;
-  dispose(): void;
+  show(look: TearLook, time: number): void;
 }
 
 function glsl(value: number): string {
   return Number.isInteger(value) ? `${value}.0` : `${value}`;
 }
 
-export const SEAM_VERTEX: string = ['varying vec2 vUv;', 'void main() {', '  vUv = uv;', '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', '}'].join('\n');
+export const TEAR_VERTEX: string = ['varying vec2 vUv;', 'void main() {', '  vUv = uv;', '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', '}'].join('\n');
 
-const P = SEAM_PASS;
+const P = TEAR_PASS;
 
-export const SEAM_FRAGMENT: string = [
+export const TEAR_FRAGMENT: string = [
   'uniform sampler2D tDiffuse;',
-  'uniform sampler2D tHeld;',
-  'uniform float uHeld;',
   'uniform float uAspect;',
   'uniform float uTime;',
-  'uniform float uSeed;',
   'uniform float uSplit;',
   'uniform float uSlip;',
   'uniform float uDensity;',
@@ -80,8 +70,8 @@ export const SEAM_FRAGMENT: string = [
   '}',
   'void main() {',
   '  vec2 uv = vUv;',
-  `  float fast = floor(uTime * ${glsl(P.fastRate)}) + uSeed;`,
-  `  float slow = floor(uTime * ${glsl(P.slowRate)}) + uSeed;`,
+  `  float fast = floor(uTime * ${glsl(P.fastRate)});`,
+  `  float slow = floor(uTime * ${glsl(P.slowRate)});`,
   `  float rows = mix(${glsl(P.rowsMin)}, ${glsl(P.rowsMax)}, hash11(fast * 1.7));`,
   '  float band = floor(uv.y * rows + hash11(fast) * rows);',
   '  float slipOn = step(hash21(vec2(band, fast)), uDensity);',
@@ -95,13 +85,12 @@ export const SEAM_FRAGMENT: string = [
   `  float smear = step(1.0 - ${glsl(P.smearShare)} * uTear, hash21(vec2(slice, fast + 59.0)));`,
   '  float row = clamp((slice - drift + hash21(vec2(slice, fast + 67.0))) / slices, 0.0, 1.0);',
   '  torn.y = mix(torn.y, row, smear);',
-  `  float lag = uHeld * step(1.0 - ${glsl(P.lagShare)} * uTear, hash21(vec2(slice, fast + 71.0)));`,
   '  vec2 centred = (uv - 0.5) * vec2(uAspect, 1.0);',
   '  float reach = length(centred);',
   `  float edge = smoothstep(${glsl(P.edgeStart)}, ${glsl(P.edgeEnd)}, reach);`,
   '  vec2 outward = reach > 0.0001 ? centred / reach / vec2(uAspect, 1.0) : vec2(0.0);',
   `  vec2 shift = outward * uSplit * edge + vec2(tearShift * ${glsl(P.channelPull)} + uSplit * uTear, 0.0);`,
-  '  vec3 colour = mix(split3(tDiffuse, torn, shift), split3(tHeld, torn, shift), lag);',
+  '  vec3 colour = split3(tDiffuse, torn, shift);',
   `  vec2 grid = vec2(${glsl(P.blockRows)} * uAspect, ${glsl(P.blockRows)});`,
   '  vec2 cell = floor(uv * grid);',
   `  float blockOn = step(1.0 - uBlocks * ${glsl(P.blockShare)}, hash21(cell + slow * 7.13));`,
@@ -111,24 +100,21 @@ export const SEAM_FRAGMENT: string = [
   '  vec3 block = texture2D(tDiffuse, blockSource).rgb;',
   `  block = mix(block, block.gbr, step(0.5, hash21(cell + slow + 3.0))) * ${glsl(P.blockDim)};`,
   '  colour = mix(colour, block, blockOn);',
-  `  float whiteBand = floor(uv.y * ${glsl(P.whiteRows)} + hash11(uSeed) * ${glsl(P.whiteRows)});`,
-  `  float threshold = hash21(vec2(whiteBand, uSeed + 97.0)) * ${glsl(P.whiteSpread)};`,
+  `  float whiteBand = floor(uv.y * ${glsl(P.whiteRows)});`,
+  `  float threshold = hash21(vec2(whiteBand, 97.0)) * ${glsl(P.whiteSpread)};`,
   `  float whiteHere = mix(uWhite, max(smoothstep(threshold, threshold + ${glsl(P.whiteSoft)}, uWhite), uWhite * uWhite * uWhite), uBanded);`,
   '  colour = mix(colour, vec3(1.0), whiteHere);',
   '  gl_FragColor = vec4(colour, 1.0);',
   '}',
 ].join('\n');
 
-type SeamUniforms = Record<string, IUniform>;
+type TearUniforms = Record<string, IUniform>;
 
-function uniformsOf(): SeamUniforms {
+function uniformsOf(): TearUniforms {
   return {
     tDiffuse: { value: null },
-    tHeld: { value: null },
-    uHeld: { value: 0 },
     uAspect: { value: 1 },
     uTime: { value: 0 },
-    uSeed: { value: 0 },
     uSplit: { value: 0 },
     uSlip: { value: 0 },
     uDensity: { value: 0 },
@@ -139,41 +125,22 @@ function uniformsOf(): SeamUniforms {
   };
 }
 
-function set(uniforms: SeamUniforms, name: string, value: number | Texture | null): void {
+function set(uniforms: TearUniforms, name: string, value: number): void {
   const uniform: IUniform | undefined = uniforms[name];
   if (uniform !== undefined) uniform.value = value;
 }
 
-export function createSeamPass(): SeamPass {
-  const pass: ShaderPass = new ShaderPass({ name: 'Seam', uniforms: uniformsOf(), vertexShader: SEAM_VERTEX, fragmentShader: SEAM_FRAGMENT });
+export function createTearPass(): TearPass {
+  const pass: ShaderPass = new ShaderPass({ name: 'Tear', uniforms: uniformsOf(), vertexShader: TEAR_VERTEX, fragmentShader: TEAR_FRAGMENT });
   pass.enabled = false;
-  const copy: ShaderMaterial = new ShaderMaterial({ uniforms: UniformsUtils.clone(CopyShader.uniforms), vertexShader: CopyShader.vertexShader, fragmentShader: CopyShader.fragmentShader });
-  const quad: FullScreenQuad = new FullScreenQuad(copy);
-  let held: WebGLRenderTarget | null = null;
-  let capture: boolean = false;
-  const draw = pass.render.bind(pass);
   const resize = pass.setSize.bind(pass);
   pass.setSize = (width: number, height: number): void => {
     resize(width, height);
     set(pass.uniforms, 'uAspect', height > 0 ? width / height : 1);
-    held?.setSize(width, height);
-  };
-  pass.render = (renderer: WebGLRenderer, writeBuffer: WebGLRenderTarget, readBuffer: WebGLRenderTarget, deltaTime: number, maskActive: boolean): void => {
-    if (capture) {
-      capture = false;
-      held ??= new WebGLRenderTarget(readBuffer.width, readBuffer.height, { type: HalfFloatType });
-      held.setSize(readBuffer.width, readBuffer.height);
-      set(copy.uniforms, 'tDiffuse', readBuffer.texture);
-      renderer.setRenderTarget(held);
-      quad.render(renderer);
-      set(pass.uniforms, 'tHeld', held.texture);
-      set(pass.uniforms, 'uHeld', 1);
-    }
-    draw(renderer, writeBuffer, readBuffer, deltaTime, maskActive);
   };
   return {
     pass,
-    show(look: SeamLook, time: number): void {
+    show(look: TearLook, time: number): void {
       const calm: boolean = look.split <= 0 && look.slip <= 0 && look.tear <= 0 && look.blocks <= 0 && look.white <= 0;
       pass.enabled = !calm;
       set(pass.uniforms, 'uTime', time);
@@ -184,23 +151,6 @@ export function createSeamPass(): SeamPass {
       set(pass.uniforms, 'uBlocks', look.blocks);
       set(pass.uniforms, 'uWhite', look.white);
       set(pass.uniforms, 'uBanded', look.banded ? 1 : 0);
-      if (!look.held) set(pass.uniforms, 'uHeld', 0);
-    },
-    hold(): void {
-      capture = true;
-      set(pass.uniforms, 'uSeed', Math.floor(Math.random() * 997));
-    },
-    release(): void {
-      held?.dispose();
-      held = null;
-      set(pass.uniforms, 'tHeld', null);
-      set(pass.uniforms, 'uHeld', 0);
-    },
-    dispose(): void {
-      held?.dispose();
-      copy.dispose();
-      quad.dispose();
-      pass.dispose();
     },
   };
 }

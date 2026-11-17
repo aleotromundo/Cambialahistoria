@@ -547,10 +547,6 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'player_respawn':
             playerView.revive();
             break;
-          case 'glitch_phase':
-          case 'glitch_end':
-            playerView.face(current.player.facing);
-            break;
           case 'character_changed':
             dressHero(current);
             break;
@@ -622,12 +618,10 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'encounter_nearing':
           case 'encounter_shown':
           case 'revive':
-          case 'glitch_clock':
           case 'explored':
           case 'glitch_start':
+          case 'glitch_end':
           case 'glitch_word':
-          case 'silence':
-          case 'zone_edited':
           case 'moment_mark':
           case 'moment_strike':
           case 'moment_woke':

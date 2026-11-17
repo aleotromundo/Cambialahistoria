@@ -1,5 +1,4 @@
 import type { BookDef, PageDef } from '../../sim/content/story-types.ts';
-import { markOverlay } from '../hud/overlay-mark.ts';
 import { promptText, use } from '../hud/prompts.ts';
 import { whenDropped } from '../hud/overlays.ts';
 import type { OverlayManager, OverlaySurface } from '../hud/overlays.ts';
@@ -61,7 +60,6 @@ export function createReader(root: HTMLElement, touch: boolean, overlays: Overla
     current = null;
     for (const timer of timers) window.clearTimeout(timer);
     veil.classList.add('leaving');
-    markOverlay(veil, false);
     window.setTimeout((): void => veil.remove(), READER.leaveMs);
     onClose();
   };
@@ -82,7 +80,6 @@ export function createReader(root: HTMLElement, touch: boolean, overlays: Overla
     const hint: HTMLParagraphElement = line(sheet, 'reader-hint', promptText(touch, use(READER.hint, READER.hintKey)));
     veil.style.zIndex = surface.style.zIndex;
     root.append(veil);
-    markOverlay(veil, true);
     current = veil;
     onOpen();
     const timers: number[] = [
