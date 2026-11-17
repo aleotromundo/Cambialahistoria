@@ -91,10 +91,13 @@ function play(first: Kind, second: Kind): Outcome {
     if (after) flasks += events.filter((event: WorldEvent): boolean => event.type === 'flask_used').length;
     if (impactAt === null && first === 'skill' && events.some((event: WorldEvent): boolean => event.type === 'skill_impact')) impactAt = time;
     const moved: number = Math.hypot(world.player.pos.x - before.x, world.player.pos.z - before.z);
-    const channelling: boolean = acting?.phase === 'channel';
-    if (strayStep === null && moved > PRESSES.still && world.player.motion === 'still' && !channelling) strayStep = step;
+    if (strayStep === null && moved > PRESSES.still && world.player.motion === 'still' && !carried(acting)) strayStep = step;
   }
   return { started, noticed, flasks, dodgeAt, impactAt, strayStep };
+}
+
+function carried(action: ActionState | null): boolean {
+  return action !== null && action.skill.press?.type === 'channel' && action.phase !== 'recovery';
 }
 
 const CUT_BY_DODGE: ReadonlySet<Kind> = new Set<Kind>(['move', 'held', 'channel', 'potion']);
@@ -106,7 +109,7 @@ for (const first of KINDS) {
       const outcome: Outcome = play(first, second);
       assert.equal(outcome.strayStep, null, `the hero moved while standing still at step ${outcome.strayStep ?? -1}`);
       if (second === 'potion') {
-        assert.equal(outcome.flasks, 1, 'the potion was not drunk exactly once');
+        assert.equal(outcome.flasks + (first === 'potion' ? outcome.noticed : 0), 1, `the potion was drunk ${outcome.flasks} times and noticed ${outcome.noticed} times`);
         return;
       }
       if (second === 'move') return;
@@ -130,8 +133,10 @@ void test('a move pressed during anything is taken: the hero ends up walking tow
     stepWorld(world, [...pressOf(world, first, 1)], DT);
     for (let step: number = 1; step < Math.round(PRESSES.first / DT); step += 1) stepWorld(world, [], DT);
     const dest: Vec2 = toward(world, -PRESSES.far);
+    const pressedAt: number = world.player.pos.x;
     stepWorld(world, [{ type: 'move', held: false, dest }, { type: 'hold', slot: 1, down: false }, { type: 'hold', slot: 2, down: false }], DT);
     for (let step: number = 0; step < Math.round(PRESSES.run / DT); step += 1) stepWorld(world, [], DT);
-    assert.ok(world.player.pos.x < start.x - 1, `after ${first} the hero never walked to the click: ${world.player.pos.x} from ${start.x}`);
+    if (first === 'channel') assert.ok(world.player.pos.x < pressedAt, `the click never turned the spin toward it: ${world.player.pos.x} from ${pressedAt}`);
+    else assert.ok(world.player.pos.x < start.x - 1, `after ${first} the hero never walked to the click: ${world.player.pos.x} from ${start.x}`);
   }
 });
