@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
-import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
+import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot, hotGround } from './bot.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
 import { exitWithheld } from './content/withheld.ts';
@@ -14,6 +14,7 @@ import type { Vec2 } from './math.ts';
 import { stepWorld } from './world/step.ts';
 import { createWorld } from './world/create.ts';
 import { placeHazard } from './world/hazards.ts';
+import { placeArea } from './world/areas.ts';
 import { startSkill } from './world/skills.ts';
 import type { MonsterState, World } from './world/types.ts';
 
@@ -154,6 +155,44 @@ void test('a bot holding a charge lets it go when a blow is coming at it, and st
   assert.ok(seen.letGoAt - start < CHARGE_TEST.letGoBy, `let go at ${seen.letGoAt - start}`);
   assert.equal(seen.hurt, 0);
   assert.ok(seen.farthest > CHARGE_TEST.slamReach, `got only ${seen.farthest} from the slam`);
+});
+
+const HOT_TEST = {
+  foe: 1.4,
+  outside: 4,
+  patch: 1.6,
+  watch: 0.8,
+} as const;
+
+void test('ground that hurts while you stand in it is danger: a foe\'s burning patch and a heated floor, never the hero\'s own fire', (): void => {
+  const world: World = arena(25);
+  const foe: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + HOT_TEST.outside * 2, z: ARENA_CENTRE.z });
+  const patch: SkillDef = must(world.content.skills.get('cinder_patch'), 'cinder_patch');
+  assert.equal(hotGround(world, ARENA_CENTRE), false);
+  placeArea(world, offenceOf(world.player), patch, ARENA_CENTRE);
+  assert.equal(hotGround(world, ARENA_CENTRE), false);
+  world.areas = [];
+  placeArea(world, offenceOf(foe), patch, ARENA_CENTRE);
+  assert.equal(hotGround(world, ARENA_CENTRE), true);
+  assert.equal(botInDanger(world, ARENA_CENTRE), true);
+  assert.equal(hotGround(world, { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + HOT_TEST.outside }), false);
+  world.areas = [];
+  world.zone = { ...world.zone, floors: Object.fromEntries(Object.keys(world.zone.floors).map((tile: string): [string, string] => [tile, 'vent_ground'])) };
+  assert.equal(hotGround(world, ARENA_CENTRE), true);
+});
+
+void test('a bot fighting from a foe\'s burning patch steps out by a short step that keeps the foe in reach', (): void => {
+  const world: World = arena(26);
+  world.player.pos = { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z };
+  const foe: MonsterState = place(world, 'test_rower', { x: ARENA_CENTRE.x + HOT_TEST.foe, z: ARENA_CENTRE.z });
+  const patch: SkillDef = must(world.content.skills.get('cinder_patch'), 'cinder_patch');
+  placeArea(world, offenceOf(foe), patch, { x: ARENA_CENTRE.x - HOT_TEST.patch / 2, z: ARENA_CENTRE.z });
+  const bot: Bot = createBot(world, { dodges: true, reaction: 0 });
+  const start: number = world.time;
+  botFight(bot, (): boolean => world.time - start >= HOT_TEST.watch, null);
+  assert.equal(hotGround(world, world.player.pos), false);
+  const reach: number = must(world.player.skills[0], 'basic attack').engageRange;
+  assert.ok(Math.hypot(world.player.pos.x - foe.pos.x, world.player.pos.z - foe.pos.z) - foe.radius <= reach + world.player.radius, 'the foe stays in reach');
 });
 
 void test('a fight that makes no progress for twelve seconds is dropped, and the foe is left alone for a while', (): void => {
