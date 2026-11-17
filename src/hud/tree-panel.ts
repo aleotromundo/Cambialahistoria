@@ -35,8 +35,8 @@ import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
 import type { CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
-import { cardNode, CLOSED_CARD, stepCard } from './tree-card.ts';
-import type { CardEvent, CardState } from './tree-card.ts';
+import { cardNode, CLOSED_CARD, glidesFrom, HIDDEN_PRESENCE, stepCard, stepPresence, viewIsMoving } from './tree-card.ts';
+import type { CardEvent, CardPresence, CardState, CardWish } from './tree-card.ts';
 import { createTreeHead } from './tree-head.ts';
 import type { TreeHead } from './tree-head.ts';
 
@@ -135,13 +135,16 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const goldFor = (count: number): number => refundCost(content, player().level, count);
 
   let cardState: CardState = CLOSED_CARD;
+  let presence: CardPresence = HIDDEN_PRESENCE;
+  let hiddenAt: number = Number.NEGATIVE_INFINITY;
+  let movedAt: number = Number.NEGATIVE_INFINITY;
   let shownCard: string = '';
   let segments: readonly ChangeSegment[] = [];
   let pinnedButton: HTMLButtonElement | null = null;
   const cardView = (): NodeView | null => {
-    const id: string | null = cardNode(cardState);
-    return id === null ? null : (viewOf.get(id) ?? null);
+    return presence.node === null ? null : (viewOf.get(presence.node) ?? null);
   };
+  const wish = (): CardWish => ({ now: performance.now(), open: cardState.open, wanted: cardNode(cardState), movedAt });
 
   const costLine = (node: SkillTreeNodeDef, status: TreeNodeStatus): string => {
     if (status.kind === 'allocated') return takenLine(refundBlock(content, player().allocated, node.id));
@@ -163,10 +166,15 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   };
 
   const fillCard = (): void => {
+    const before: CardPresence = presence;
+    const asked: CardWish = wish();
+    presence = stepPresence(before, asked);
     const view: NodeView | null = cardView();
-    card.classList.toggle('visible', view !== null);
-    if (view === null) {
-      shownCard = '';
+    if (before.visible && !presence.visible) hiddenAt = asked.now;
+    card.classList.toggle('gliding', glidesFrom(before, hiddenAt, asked.now, asked.movedAt));
+    card.classList.toggle('visible', presence.visible);
+    if (view === null || !presence.visible) {
+      if (view === null) shownCard = '';
       showRoute(null);
       return;
     }
@@ -190,7 +198,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       return;
     }
     shownCard = key;
-    const body: HTMLDivElement = el('div', 'chart-card-inner', null);
+    const body: HTMLDivElement = el('div', before.visible ? 'chart-card-inner refill' : 'chart-card-inner', null);
     const path: ChartPath | undefined = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path);
     label('chart-card-path', path === undefined ? node.kind : `${path.name} · ${kindWord(node)}`, body);
     const family: WeaponGroup | null = placeFamily(content, node);
@@ -215,6 +223,16 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     return context.api.touch ? ` · slot ${slot + 1}` : ` · on ${context.api.settings.keys().labelOf(slotAction(slot))}`;
   };
 
+  const tickCard = (): void => {
+    const next: CardPresence = stepPresence(presence, wish());
+    if (next.node !== presence.node || next.visible !== presence.visible) fillCard();
+    else presence = next;
+  };
+  const markMoved = (): void => {
+    movedAt = performance.now();
+    tickCard();
+  };
+
   const sendCard = (event: CardEvent): void => {
     cardState = stepCard(cardState, event);
     const pinned: HTMLButtonElement | null = cardState.pinned === null ? null : (viewOf.get(cardState.pinned)?.button ?? null);
@@ -233,7 +251,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   action.addEventListener('click', (event: MouseEvent): void => {
     event.stopPropagation();
     const view: NodeView | null = cardView();
-    if (view === null) return;
+    if (view === null || !presence.visible) return;
     if (refundState(content, player(), view.def.id) === 'no_gold') {
       retrigger(action, 'deny');
       return;
@@ -277,6 +295,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let raster: RasterState = FRESH_RASTER;
   let warmed: boolean = false;
   let holding: boolean = false;
+  let pointerAt: ScreenPoint | null = null;
+  let wasMoving: boolean = false;
 
   let frameDirty: boolean = true;
   let remeasure: boolean = true;
@@ -304,14 +324,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   };
   const placeCard = (): void => {
     const view: NodeView | null = cardView();
-    if (view === null) return;
+    if (view === null || !presence.visible) return;
     const own: NodeSpot | undefined = spots.find((spot: NodeSpot): boolean => spot.id === view.def.id);
     if (own === undefined) return;
     const reach: number = TREE_NODES.neighbourReach * CHART.unit;
     const near: readonly NodeSpot[] = spots.filter((spot: NodeSpot): boolean => spot !== own && Math.hypot(spot.x - own.x, spot.y - own.y) <= reach).map(onScreen);
     const at: CardSpot = cardSpot(onScreen(own), cardSize, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap });
-    card.style.left = `${Math.round(at.x)}px`;
-    card.style.top = `${Math.round(at.y)}px`;
+    card.style.translate = `${Math.round(at.x)}px ${Math.round(at.y)}px`;
   };
   let wantedFoot: number = CHART_VIEW.labelFoot;
   const measureFoot = (): void => {
@@ -354,6 +373,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       motion = still(target);
       pinch = now;
       suppressClick = true;
+      markMoved();
       apply();
       return;
     }
@@ -375,6 +395,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
     target = panChart(target, frame, dx, dy);
     motion = { ...motion, view: panChart(motion.view, frame, dx, dy) };
+    markMoved();
     apply();
   });
   const release = (event: PointerEvent): void => {
@@ -406,16 +427,19 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       event.preventDefault();
       event.stopPropagation();
       target = zoomChart(target, frame, local(event), event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * CHART.wheelLine : event.deltaY);
+      markMoved();
     },
     { passive: false },
   );
   const zoomBy = (delta: number): void => {
     target = zoomChart(target, frame, { x: frame.width / 2, y: frame.height / 2 }, delta);
+    markMoved();
   };
   zoomIn.addEventListener('click', (): void => zoomBy(-CHART.zoomStep));
   zoomOut.addEventListener('click', (): void => zoomBy(CHART.zoomStep));
   recentre.addEventListener('click', (): void => {
     target = frameChart(frame, openingView());
+    markMoved();
   });
 
   const views: NodeView[] = [];
@@ -458,7 +482,13 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   }
   const spots: readonly NodeSpot[] = views.map((view: NodeView): NodeSpot => ({ id: view.def.id, ...centreOf(view.def), radius: nodeDiameter(view.def) / 2 }));
   const viewOf: ReadonlyMap<string, NodeView> = new Map<string, NodeView>(views.map((view: NodeView): [string, NodeView] => [view.def.id, view]));
+  const rehit = (): void => {
+    if (pointerAt === null || viewport.classList.contains('dragging')) return;
+    const at: ScreenPoint = toMap(motion.view, frame, pointerAt);
+    sendCard({ type: 'point', node: nodeAt(spots, at.x, at.y) });
+  };
   viewport.addEventListener('pointermove', (event: PointerEvent): void => {
+    pointerAt = event.pointerType === 'touch' ? null : local(event);
     if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
     if (card.contains(event.target instanceof Node ? event.target : null)) return;
     const at: ScreenPoint = toMap(motion.view, frame, local(event));
@@ -470,6 +500,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (cardState.pinned !== null) sendCard({ type: 'clear' });
   });
   viewport.addEventListener('pointerleave', (event: PointerEvent): void => {
+    pointerAt = null;
     if (event.pointerType !== 'touch') sendCard({ type: 'point', node: null });
   });
 
@@ -493,6 +524,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     findIndex += 1;
     const at: ChartPoint = centreOf(next.def);
     target = clampChart({ x: at.x, y: at.y, scale: Math.max(target.scale, CHART.findZoom) }, frame);
+    markMoved();
     sendCard({ type: 'pin', node: next.def.id });
   });
   search.addEventListener('keyup', (event: KeyboardEvent): void => event.stopPropagation());
@@ -611,6 +643,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
         const now: AtlasFrame = measured();
         if (!sameFrame(now, frame)) {
           frame = now;
+          movedAt = performance.now();
           target = clampChart(target, frame);
           motion = still(clampChart(motion.view, frame));
           measureNames();
@@ -622,6 +655,12 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
       const shifting: boolean = foot !== wantedFoot;
       if (shifting) foot = easeFoot(foot, wantedFoot, dt);
       const resting: boolean = atRest(motion, target);
+      const clock: number = performance.now();
+      if (!resting) movedAt = clock;
+      const moving: boolean = viewIsMoving(clock, movedAt);
+      if (wasMoving && !moving) rehit();
+      wasMoving = moving;
+      tickCard();
       const step: RasterStep = stepRaster(raster, motion.view.scale, resting);
       raster = step.state;
       if (step.hold !== holding) {

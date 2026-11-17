@@ -527,13 +527,33 @@ body:has(.hud.chart-open) #overlays {
   pointer-events: auto;
 }
 
+.chart-card.gliding {
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-smooth-ms) var(--spring-smooth),
+    box-shadow var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-smooth-ms) var(--spring-smooth);
+}
+
 .chart-card-inner {
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 11.5px;
   line-height: 1.32;
-  animation: hud-tick var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.chart-card-inner.refill {
+  animation: tree-refill var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+@keyframes tree-refill {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .chart-card-path {

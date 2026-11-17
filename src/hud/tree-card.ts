@@ -39,3 +39,46 @@ export function stepCard(state: CardState, event: CardEvent): CardState {
 export function cardNode(state: CardState): string | null {
   return state.open ? (state.hovered ?? state.pinned) : null;
 }
+
+export const CARD_PRESENCE = {
+  stillMs: 280,
+  graceMs: 200,
+  fadeMs: 260,
+} as const;
+
+export interface CardPresence {
+  readonly node: string | null;
+  readonly visible: boolean;
+  readonly leftAt: number | null;
+}
+
+export interface CardWish {
+  readonly now: number;
+  readonly open: boolean;
+  readonly wanted: string | null;
+  readonly movedAt: number;
+}
+
+export const HIDDEN_PRESENCE: CardPresence = { node: null, visible: false, leftAt: null };
+
+export function viewIsMoving(now: number, movedAt: number): boolean {
+  return now - movedAt < CARD_PRESENCE.stillMs;
+}
+
+export function stepPresence(state: CardPresence, wish: CardWish): CardPresence {
+  if (!wish.open) return HIDDEN_PRESENCE;
+  const moving: boolean = viewIsMoving(wish.now, wish.movedAt);
+  if (wish.wanted !== null) {
+    if (moving) return { node: state.node ?? wish.wanted, visible: false, leftAt: null };
+    return { node: wish.wanted, visible: true, leftAt: null };
+  }
+  if (!state.visible || moving) return { node: state.node, visible: false, leftAt: null };
+  const leftAt: number = state.leftAt ?? wish.now;
+  if (wish.now - leftAt >= CARD_PRESENCE.graceMs) return { node: state.node, visible: false, leftAt: null };
+  return { node: state.node, visible: true, leftAt };
+}
+
+export function glidesFrom(before: CardPresence, hiddenAt: number, now: number, movedAt: number): boolean {
+  if (viewIsMoving(now, movedAt)) return false;
+  return before.visible || now - hiddenAt < CARD_PRESENCE.fadeMs;
+}
