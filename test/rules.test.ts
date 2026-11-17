@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import type { MarkerKind, MarkerLibrary } from '../sim/content/marker-types.ts';
+import { markerLibrary } from '../sim/content/parse-markers.ts';
 
 interface SourceFile {
   readonly path: string;
@@ -88,6 +90,17 @@ void test('ground effects are light from the ground-light shader, never flat rin
     });
   }
   assert.deepEqual(found, [], 'draw ground effects with createGroundLight in src/render/ground-light.ts');
+});
+
+const PLACE_GLOW: RegExp = /\b(createGroundLight|createLightPool)\(/;
+const PLACE_READ: RegExp = /\.(waypoint|exits|checkpoints)\b/;
+
+void test('waypoints, ways between levels and checkpoints are solid models, never drawn by ground light alone', (): void => {
+  const library: MarkerLibrary = markerLibrary(JSON.parse(readFileSync('data/markers.json', 'utf8')), 'markers');
+  const missing: string[] = [...library.kinds.values()].filter((kind: MarkerKind): boolean => !kind.model.endsWith('.glb') || !existsSync(join('public', kind.model))).map((kind: MarkerKind): string => kind.id);
+  assert.deepEqual(missing, [], 'every marker kind in data/markers.json names a model under public/models');
+  const glowing: string[] = typescript.filter((source: SourceFile): boolean => source.path.startsWith('src') && !source.path.endsWith('.test.ts') && source.lines.some((line: string): boolean => PLACE_GLOW.test(line)) && source.lines.some((line: string): boolean => PLACE_READ.test(line))).map((source: SourceFile): string => source.path);
+  assert.deepEqual(glowing, [], 'draw a place with createPlaceMarkers from a marker kind, not with ground light');
 });
 
 const WHOLE_OBJECT_BOUNDS: RegExp = /\.(setFromObject|expandByObject)\(/;

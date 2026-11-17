@@ -221,6 +221,8 @@ Clothes are the modular parts in `public/models/wear/<frame>/` listed in the tab
 
 The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and stalls are built from boxes, cylinders and noise by `blender/build_environment.py` (helpers in `blender/environment_kit.py`). They carry no textures of their own: each material in a file has a plain name (`stone`, `wood`, `iron`, `cloth`, `bark`), and `data/props.json` dresses that name in a surface from `data/surfaces.json`, so one wall model serves the town in one stone and the bastion in another.
 
+The waypoint, the ways down and up and the checkpoint stone are built by `blender/build_markers.py` in the same way. Their moving parts are separate nodes (`focal`, `seal`, `veil`), and `data/markers.json` names the parts that light up and the stone the zone's `markerSurfaces` may redress. Rebuild with `/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup --python blender/build_markers.py -- "$PWD/public/models/world"`, then `node tools/compress-models.ts public/models/world/waypoint.glb public/models/world/way_up.glb public/models/world/way_down.glb public/models/world/checkpoint_stone.glb`.
+
 | File | What it is | Source | Licence |
 |---|---|---|---|
 | `public/models/world/banner.glb` | Hanging banner | Built by `blender/build_environment.py` | MIT |
@@ -229,6 +231,7 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/brazier.glb` | Iron brazier | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/bridge_broken.glb` | Broken timber bridge | Built by `blender/build_road.py` | MIT |
 | `public/models/world/cairn.glb` | Stacked stone post | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/checkpoint_stone.glb` | Waist-high carved stele that marks a checkpoint, a groove and a diamond cut in its face (`glyph`) | Made for this game: built by `blender/build_markers.py` | MIT |
 | `public/models/world/candles.glb` | Three candles | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/coins.glb` | Pile of coins (gold drops) | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/column.glb` | Round column | Built by `blender/build_environment.py` | MIT |
@@ -289,6 +292,9 @@ The walls, pillars, stairs, lamps, furniture, graves, dead trees, houses and sta
 | `public/models/world/wall_scaffold.glb` | Wall section with scaffolding | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_window.glb` | Wall section with a barred window | Built by `blender/build_environment.py` | MIT |
 | `public/models/world/wall_works.glb` | Unfinished wall with a timber frame | Built by `blender/build_environment.py` | MIT |
+| `public/models/world/waypoint.glb` | Waypoint: an octagonal two-step dais with four corner posts, a cradle at its centre and inlaid marks (`glyph`), and a diamond-shaped crystal on its own node (`focal`) that rests in the cradle | Made for this game: built by `blender/build_markers.py` | MIT |
+| `public/models/world/way_down.glb` | Way down: a stone well ringed by waist-high parapets with four corner blocks, marks inlaid on their tops and a chevron on the back coping (`glyph`), a floor and back plane for the shader inside (`veil`), and a lid that closes it (`seal`) | Made for this game: built by `blender/build_markers.py` | MIT |
+| `public/models/world/way_up.glb` | Way up: a round stone arch of nine voussoirs on two piers above three rising steps, a plane filling the opening for the shader (`veil`), and a slab that closes it (`seal`) | Made for this game: built by `blender/build_markers.py` | MIT |
 | `public/models/world/warden_stone.glb` | Road marker stone with a lantern hook | Built by `blender/build_road.py` | MIT |
 | `public/models/world/wide_stair.glb` | Broad flight of worn steps | Built by `blender/build_road.py` | MIT |
 

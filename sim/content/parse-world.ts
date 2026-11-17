@@ -127,12 +127,13 @@ function zoneExit(value: unknown, where: string): ZoneExit {
     toExit: text(source, 'toExit', where),
     arrival: point(source['arrival'], `${where}.arrival`),
     look: exitLook(source['look'], `${where}.look`),
+    marker: nullableText(source, 'marker', where),
   };
 }
 
 function zoneCheckpoint(value: unknown, where: string): ZoneCheckpoint {
   const source: Fields = fields(value, where);
-  return { id: text(source, 'id', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+  return { id: text(source, 'id', where), x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where), marker: nullableText(source, 'marker', where) };
 }
 
 function zoneNpc(value: unknown, where: string): ZoneNpc {
@@ -144,7 +145,15 @@ function zoneWaypoint(value: unknown, where: string): ZoneWaypoint | null {
   if (value === undefined) throw new ContentError(where, 'expected a waypoint, or null for a zone without one');
   if (value === null) return null;
   const source: Fields = fields(value, where);
-  return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where) };
+  return { x: numeric(source, 'x', where), z: numeric(source, 'z', where), radius: positive(source, 'radius', where), marker: nullableText(source, 'marker', where) };
+}
+
+function markerSurfaces(value: unknown, where: string): Record<string, string> {
+  if (value === undefined) return {};
+  const source: Fields = fields(value, where);
+  const mapped: Record<string, string> = {};
+  for (const key of Object.keys(source)) mapped[key] = text(source, key, where);
+  return mapped;
 }
 
 function zoneReturn(value: unknown, where: string): ZoneReturn | null {
@@ -301,6 +310,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     exits: [...byId(each(source['exits'], `${where}.exits`, zoneExit), `${where}.exits`).values()],
     checkpoints: [...byId(each(source['checkpoints'], `${where}.checkpoints`, zoneCheckpoint), `${where}.checkpoints`).values()],
     waypoint: zoneWaypoint(source['waypoint'], `${where}.waypoint`),
+    markerSurfaces: markerSurfaces(source['markerSurfaces'], `${where}.markerSurfaces`),
     portalSpot: source['portalSpot'] === undefined || source['portalSpot'] === null ? null : point(source['portalSpot'], `${where}.portalSpot`),
     deathReturn: zoneReturn(source['deathReturn'], `${where}.deathReturn`),
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),

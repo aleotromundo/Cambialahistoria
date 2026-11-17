@@ -1,3 +1,4 @@
+import type { MarkerLibrary } from './marker-types.ts';
 import type { MonsterRank, PackRanks } from './rank-types.ts';
 import type { TailwindDef } from './tailwind-types.ts';
 import type { AffixDef, DropLean, FamilyDef, ItemBaseDef, ItemScaling, PowerTriggerDef, RarityDef } from './item-types.ts';
@@ -434,4 +435,5 @@ export interface Content {
   readonly packRanks: PackRanks;
   readonly runTable: RunTableDef;
   readonly tailwind: TailwindDef;
+  readonly markers: MarkerLibrary;
 }

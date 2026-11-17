@@ -31,6 +31,7 @@ import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { TagBound } from './overlay-place.ts';
 import { createFloatingNumbers } from './floating-numbers.ts';
+import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
 import type { FloatingNumbers } from './floating-numbers.ts';
 
 export const OVERLAYS = {
@@ -80,6 +81,7 @@ interface ExitLabel {
   readonly z: number;
   readonly open: (world: World) => boolean;
   readonly secret: boolean;
+  readonly lift: number;
   readonly glide: LabelGlide;
   readonly stack: LabelGlide;
   pinned: boolean;
@@ -287,6 +289,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
     for (const label of exits) label.element.remove();
     exitsOf = world.zone;
     aimed = null;
+    const lifts: Map<string, number> = new Map<string, number>();
+    for (const marked of zonePlaces(world.content, world.zone)) if (marked.kind.label > 0) lifts.set(placeKey(marked.ref), marked.kind.label);
     exits = world.zone.exits.map((exit): ExitLabel => {
       const element: HTMLDivElement = document.createElement('div');
       element.className = world.zone.kind === 'void' ? 'exit-label distant' : 'exit-label';
@@ -302,7 +306,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTravel(exit.id);
       });
       labelLayer.append(element);
-      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked, glide: createGlide(), stack: createGlide(), pinned: false };
+      return { element, id: exit.id, x: exit.x, z: exit.z, open: (current: World): boolean => allHold(current, exit.requires), secret: exit.hiddenWhenLocked, lift: lifts.get(placeKey({ type: 'exit', exit: exit.id })) ?? OVERLAYS.exitLift, glide: createGlide(), stack: createGlide(), pinned: false };
     });
     world.zone.props.forEach((placed, index: number): void => {
       const name: string | null = world.content.props.get(placed.prop)?.label ?? null;
@@ -318,7 +322,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onUse(index);
       });
       labelLayer.append(element);
-      exits.push({ element, id: `${OVERLAYS.stationId}${index}`, x: placed.x, z: placed.z, open: (current: World): boolean => stationAt(current, index) !== null, secret: true, glide: createGlide(), stack: createGlide(), pinned: false });
+      exits.push({ element, id: `${OVERLAYS.stationId}${index}`, x: placed.x, z: placed.z, open: (current: World): boolean => stationAt(current, index) !== null, secret: true, lift: OVERLAYS.exitLift, glide: createGlide(), stack: createGlide(), pinned: false });
     });
     const waypoint = world.zone.waypoint;
     if (waypoint === null) return;
@@ -333,7 +337,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       if (event.button === 0) hooks.onWaypoint();
     });
     labelLayer.append(element);
-    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false, glide: createGlide(), stack: createGlide(), pinned: false });
+    exits.push({ element, id: OVERLAYS.waypointId, x: waypoint.x, z: waypoint.z, open: (current: World): boolean => current.waypoints.includes(current.zone.id), secret: false, lift: lifts.get(placeKey({ type: 'waypoint' })) ?? OVERLAYS.exitLift, glide: createGlide(), stack: createGlide(), pinned: false });
   };
 
   const showPeople = (world: World): void => {
@@ -542,7 +546,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         const open: boolean = label.open(world);
         label.element.classList.toggle('locked', !open);
         label.element.classList.toggle('secret', !open && label.secret);
-        camera.project(label.x, floorUp(label.x, OVERLAYS.exitLift, label.z), label.z, point);
+        camera.project(label.x, floorUp(label.x, label.lift, label.z), label.z, point);
         anchor.copy(point);
         const edge: boolean = !anchorInView(point.x, point.y, view);
         label.element.classList.toggle('edge', edge);

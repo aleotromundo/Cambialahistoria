@@ -1,3 +1,5 @@
+import { markerLibrary } from './parse-markers.ts';
+import { markerProblems } from './markers.ts';
 import { packRanks, rankProblems } from './parse-ranks.ts';
 import { runTable, runTableProblems } from './parse-run-table.ts';
 import { tailwind, tailwindProblems } from './parse-tailwind.ts';
@@ -93,6 +95,7 @@ export interface RawContent {
   readonly packRanks: unknown;
   readonly runTable: unknown;
   readonly tailwind: unknown;
+  readonly markers: unknown;
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -424,6 +427,7 @@ export function parseContent(raw: RawContent): Content {
     packRanks: packRanks(raw.packRanks, 'packRanks'),
     runTable: runTable(raw.runTable, 'runTable'),
     tailwind: tailwind(raw.tailwind, 'tailwind'),
+    markers: markerLibrary(raw.markers, 'markers'),
   };
 }
 
@@ -526,7 +530,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...rankProblems(content), ...tailwindProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...rankProblems(content), ...tailwindProblems(content), ...markerProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

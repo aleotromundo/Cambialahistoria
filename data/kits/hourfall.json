@@ -264,6 +264,7 @@
     [{"prop": "cave_stalagmites", "dx": 0.0, "dz": 0.0, "turn": 9}]
   ],
   "zone": {
+    "markerSurfaces": {"stone": "cave_stone"},
     "kind": "wild",
     "ranks": true,
     "floors": {"c": "cave_floor", "s": "cave_stone", "g": "cave_gravel", "w": "cave_water", "m": "mud", "k": "black_rock", "l": "lichen_stone"},

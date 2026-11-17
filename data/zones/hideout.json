@@ -68,6 +68,7 @@
   ],
   "checkpoints": [],
   "waypoint": {"x": 24, "z": 14.5, "radius": 1.8},
+  "markerSurfaces": {"stone": "hall_stone"},
   "portalSpot": {"x": 21, "z": 17.5},
   "npcs": [
     {"npc": "warden_trader", "x": 29.5, "z": 15, "facingDegrees": 220},

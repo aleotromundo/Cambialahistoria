@@ -1341,6 +1341,7 @@
     {"id":"under_hall_3_c4","x":165,"z":219,"radius":2.5}
   ],
   "waypoint": {"x":109,"z":33,"radius":1.8},
+  "markerSurfaces": {"stone":"cave_stone"},
   "deathReturn": null,
   "npcs": []
 }
