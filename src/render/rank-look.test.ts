@@ -46,9 +46,11 @@ void test('a ranked monster carries a rim in its rank colour, eased in and eased
 });
 
 void test('a rare leader has the strongest rim, its followers match their rank, and a plain monster has none', (): void => {
-  const rare: MonsterState = ranked('rare').monster;
-  const look = must(rankLookOf(rare), 'rare look');
-  const leader: MonsterState = { ...rare, def: { ...rare.def, rank: { ...must(rare.def.rank, 'rank'), leader: true } } };
+  const placed: MonsterState = ranked('rare').monster;
+  const look = must(rankLookOf(placed), 'rare look');
+  const rank = must(placed.def.rank, 'rank');
+  const rare: MonsterState = { ...placed, def: { ...placed.def, rank: { ...rank, leader: false } } };
+  const leader: MonsterState = { ...placed, def: { ...placed.def, rank: { ...rank, leader: true } } };
   assert.ok(rankRimStrength(leader, look) > rankRimStrength(rare, look));
   assert.equal(rankRimStrength(rare, look), look.rim);
   const world: World = arena(5, ARENA_CONTENT);
