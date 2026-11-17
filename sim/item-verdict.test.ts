@@ -8,21 +8,18 @@ import { emptyEquipment } from './items.ts';
 import { buildOf, compareBuilds, itemVerdict, OUTSIDE_VERDICT, verdictNote, verdictParts, VERDICT } from './item-verdict.ts';
 import type { Build, Verdict, VerdictSubject } from './item-verdict.ts';
 import { computeStats } from './stats.ts';
-import type { Threat } from './threat.ts';
-import { threatNear } from './threat.ts';
+import type { Threat, ThreatZone } from './threat.ts';
+import { mixThreat, threatNear } from './threat.ts';
 import type { ItemInstance } from './world/types.ts';
 
 const content: Content = loadContent();
-const physical: Threat = { zones: [], shares: [{ type: 'physical', stormTier: 0, share: 1 }] };
-const storm: Threat = { zones: [], shares: [{ type: 'storm', stormTier: 0, share: 1 }] };
-const even: Threat = {
-  zones: [],
-  shares: [
-    { type: 'physical', stormTier: 0, share: 1 / 3 },
-    { type: 'storm', stormTier: 0, share: 1 / 3 },
-    { type: 'frost', stormTier: 0, share: 1 / 3 },
-  ],
-};
+const physical: Threat = mixThreat({ physical: 1, storm: 0, frost: 0 });
+const storm: Threat = mixThreat({ physical: 0, storm: 1, frost: 0 });
+const even: Threat = mixThreat({ physical: 1 / 3, storm: 1 / 3, frost: 1 / 3 });
+
+function zone(id: string, weight: number, ahead: boolean, mix: ThreatZone['mix']): ThreatZone {
+  return { id, name: id, stormTier: 0, weight, ahead, mix };
+}
 
 function item(base: string, rarity: string, affixes: ItemInstance['affixes'], level: number = 9): ItemInstance {
   return { uid: 1, base, rarity, level, affixes, ledger: null };
@@ -49,23 +46,49 @@ function withStats(build: Build, mods: readonly StatMod[], subject: VerdictSubje
   return { ...build, stats: computeStats(content, subject.level, subject.equipped, subject.allocated, mods) };
 }
 
-void test('the owner case: in the Hourfall Caves the rare token loses damage and life, and its storm and frost buy almost nothing there', (): void => {
-  const hourfall: Threat = threatNear(content, ['hall_of_time', 'under_hall', 'under_hall_2'], zoneOf(content, 'hideout'));
-  assert.deepEqual(hourfall.zones, ['under_hall_2', 'under_hall_3']);
+void test('the owner case: looking ahead through the Act I route the rare token is still worse, level only at the Inner Hall', (): void => {
+  const hideout = zoneOf(content, 'hideout');
   for (const level of [14, 15, 16, 17]) {
-    const verdict: Verdict = verdictOf(blade(level, quickToken), hourfall, groundedToken);
+    const threat: Threat = threatNear(content, ['hall_of_time', 'under_hall', 'under_hall_2'], hideout, level);
+    assert.equal(threat.zones.length, 9);
+    const verdict: Verdict = verdictOf(blade(level, quickToken), threat, groundedToken);
     assert.equal(verdict.kind, 'worse');
     assert.ok(verdict.damage < -VERDICT.clear, `damage at ${level}`);
-    assert.ok(verdict.toughness < -VERDICT.clear, `toughness at ${level}`);
-    assert.deepEqual(verdict.scarce, ['storm']);
-    assert.deepEqual(verdict.absent, ['frost']);
-    assert.deepEqual(verdict.against, []);
-    assert.equal(verdictNote(verdict), 'Little storm and no frost damage nearby');
+    assert.ok(verdict.here < -VERDICT.clear && (verdict.ahead ?? 0) < -VERDICT.clear, `toughness at ${level}`);
+    assert.ok((verdict.ahead ?? 0) > verdict.here);
+    assert.deepEqual(verdict.absent, []);
+    assert.equal(verdictNote(verdict), 'Storm and frost hit hardest in the Inner Hall');
   }
-  assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), hourfall, groundedToken)), ['−4% damage', '−5% toughness']);
-  const columned: Threat = threatNear(content, ['ledger_hall'], zoneOf(content, 'hideout'));
-  const deeper: Verdict = verdictOf(blade(14, quickToken), columned, groundedToken);
-  assert.ok(deeper.toughness > verdictOf(blade(14, quickToken), hourfall, groundedToken).toughness);
+  const threat: Threat = threatNear(content, ['under_hall_2'], hideout, 14);
+  assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), threat, groundedToken)), ['−4% damage', '−5% toughness']);
+  const court: Threat = mixThreat(must(threat.zones.find((entry: ThreatZone): boolean => entry.id === 'ledger_court'), 'court').mix);
+  const atBoss: Verdict = verdictOf(blade(14, quickToken), court, groundedToken);
+  assert.ok(atBoss.toughness > VERDICT.clear);
+  assert.ok(Math.abs(atBoss.power) < VERDICT.even);
+});
+
+void test('toughness down against what is near and up against what is ahead is a trade that names both', (): void => {
+  const threat: Threat = { zones: [zone('cave', 0.5, false, { physical: 1, storm: 0, frost: 0 }), zone('hall', 0.5, true, { physical: 0.2, storm: 0.8, frost: 0 })] };
+  const subject: VerdictSubject = blade(14, null);
+  const before: Build = buildOf(content, subject, subject.equipped);
+  const life: number = before.stats.maxLife;
+  const verdict: Verdict = compareBuilds(content, before, withStats(before, [{ stat: 'maxLife', op: 'add', value: -life * 0.05 }, { stat: 'stormResist', op: 'add', value: 0.3 }], subject), threat);
+  assert.equal(verdict.kind, 'trade');
+  assert.ok(verdict.here < 0 && (verdict.ahead ?? 0) > 0);
+  assert.deepEqual(verdictParts(verdict), [`toughness +${Math.round((verdict.ahead ?? 0) * 100)}% ahead, −${Math.round(-verdict.here * 100)}% here`]);
+  assert.equal(verdictNote(verdict), 'Storm hits hardest in the hall');
+  const lost: Verdict = compareBuilds(content, before, withStats(before, [{ stat: 'maxLife', op: 'add', value: -life * 0.3 }, { stat: 'stormResist', op: 'add', value: 0.05 }], subject), threat);
+  assert.equal(lost.kind, 'worse');
+});
+
+void test('a resistance to an element nothing here or ahead deals is worth nothing and the note says so', (): void => {
+  const threat: Threat = { zones: [zone('cave', 0.5, false, { physical: 1, storm: 0, frost: 0 }), zone('hall', 0.5, true, { physical: 0.5, storm: 0.5, frost: 0 })] };
+  const plain: ItemInstance = item('gilded_token', 'common', []);
+  const verdict: Verdict = verdictOf(blade(14, plain), threat, item('gilded_token', 'magic', [{ affix: 'hearthwarm', value: 0.1 }]));
+  assert.deepEqual(verdict.absent, ['frost']);
+  assert.equal(verdict.toughness, 0);
+  assert.equal(verdict.kind, 'same');
+  assert.equal(verdictNote(verdict), 'No frost here or ahead');
 });
 
 void test('storm resistance counts fully up to the cap and nothing past it', (): void => {
@@ -88,7 +111,7 @@ void test('resistance to an element nobody nearby deals is worth nothing and the
   const verdict: Verdict = verdictOf(blade(14, null), physical, item('tidestone_charm', 'magic', [{ affix: 'hearthwarm', value: 0.1 }]));
   assert.deepEqual(verdict.absent, ['frost']);
   assert.equal(verdict.damage, 0);
-  assert.equal(verdictNote(verdict), 'No frost damage nearby');
+  assert.equal(verdictNote(verdict), 'No frost nearby');
   const frostless: Verdict = verdictOf(blade(14, null), physical, item('gilded_token', 'magic', [{ affix: 'hearthwarm', value: 0.1 }]));
   assert.ok(frostless.toughness > 0);
   assert.ok(verdictParts(frostless).every((part: string): boolean => !part.includes('frost')));

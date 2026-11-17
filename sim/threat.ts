@@ -1,33 +1,50 @@
+import type { BossPhase } from './content/boss-types.ts';
 import type { MonsterModDef } from './content/combat-types.ts';
 import type { PackRankDef, RankScale } from './content/rank-types.ts';
-import type { Content, DamageType, MonsterDef, SkillDef, ZoneDef, ZonePack } from './content/types.ts';
+import type { ActDef, Content, DamageType, MonsterDef, SkillDef, ZoneDef, ZonePack } from './content/types.ts';
 import { DAMAGE_TYPES } from './content/types.ts';
 import { rankChance } from './world/ranks.ts';
 import { withMods } from './world/elites.ts';
 
 export const THREAT = {
   engagedSeconds: 6,
+  bossSeconds: 30,
   minCycle: 0.25,
   summonDepth: 1,
+  hereShare: 0.5,
+  aheadFalloff: 0.75,
+  staleLevels: 5,
 } as const;
 
 export type DamageMix = Readonly<Record<DamageType, number>>;
 
-export interface ThreatShare {
-  readonly type: DamageType;
+export interface ThreatZone {
+  readonly id: string;
+  readonly name: string;
   readonly stormTier: number;
-  readonly share: number;
+  readonly weight: number;
+  readonly ahead: boolean;
+  readonly mix: DamageMix;
 }
 
 export interface Threat {
-  readonly zones: readonly string[];
-  readonly shares: readonly ThreatShare[];
+  readonly zones: readonly ThreatZone[];
+}
+
+export interface RouteZone {
+  readonly zone: ZoneDef;
+  readonly steps: number;
 }
 
 type Dealt = Record<DamageType, number>;
 
 interface RankOdds {
   readonly rank: PackRankDef | null;
+  readonly odds: number;
+}
+
+interface ModOdds {
+  readonly mod: MonsterModDef;
   readonly odds: number;
 }
 
@@ -47,13 +64,48 @@ function cycleOf(skill: SkillDef): number {
   return Math.max(skill.windup + skill.recovery, skill.cooldown, THREAT.minCycle);
 }
 
+function phaseRate(content: Content, def: MonsterDef, phase: BossPhase): Dealt {
+  const rate: Dealt = none();
+  if (phase.measure.length > 0) {
+    const span: number = Math.max(THREAT.minCycle, phase.beat) * phase.measure.length;
+    for (const id of phase.measure) {
+      const skill: SkillDef | undefined = content.skills.get(id);
+      if (skill !== undefined) rate[skill.damage.type] += hitOf(def, skill) / span;
+    }
+    return rate;
+  }
+  const weighed: number = phase.skills.reduce((sum: number, entry): number => {
+    const skill: SkillDef | undefined = content.skills.get(entry.skill);
+    return skill === undefined ? sum : sum + entry.weight * cycleOf(skill);
+  }, 0);
+  if (weighed <= 0) return rate;
+  for (const entry of phase.skills) {
+    const skill: SkillDef | undefined = content.skills.get(entry.skill);
+    if (skill !== undefined) rate[skill.damage.type] += (entry.weight * hitOf(def, skill)) / weighed;
+  }
+  return rate;
+}
+
+function bossDealt(content: Content, def: MonsterDef, phases: readonly BossPhase[]): Dealt {
+  const dealt: Dealt = none();
+  const ordered: BossPhase[] = phases.toSorted((a: BossPhase, b: BossPhase): number => b.below - a.below);
+  ordered.forEach((phase: BossPhase, index: number): void => {
+    const share: number = Math.max(0, phase.below - (ordered[index + 1]?.below ?? 0));
+    addInto(dealt, phaseRate(content, def, phase), share * THREAT.bossSeconds);
+  });
+  return dealt;
+}
+
 function dealtBy(content: Content, def: MonsterDef, depth: number): Dealt {
   const dealt: Dealt = none();
-  const skill: SkillDef | undefined = content.skills.get(def.skill);
-  if (skill !== undefined) dealt[skill.damage.type] += hitOf(def, skill) * (THREAT.engagedSeconds / cycleOf(skill));
+  if (def.boss !== null && def.boss.phases.length > 0) addInto(dealt, bossDealt(content, def, def.boss.phases), 1);
+  else {
+    const skill: SkillDef | undefined = content.skills.get(def.skill);
+    if (skill !== undefined) dealt[skill.damage.type] += hitOf(def, skill) * (THREAT.engagedSeconds / cycleOf(skill));
+  }
   const last: SkillDef | undefined = def.deathSkill === null ? undefined : content.skills.get(def.deathSkill);
   if (last !== undefined) dealt[last.damage.type] += hitOf(def, last);
-  const called: MonsterDef | undefined = def.summon?.monster === null || def.summon === null ? undefined : content.monsters.get(def.summon.monster);
+  const called: MonsterDef | undefined = def.summon === null || def.summon.monster === null ? undefined : content.monsters.get(def.summon.monster);
   if (called !== undefined && def.summon !== null && depth < THREAT.summonDepth) addInto(dealt, dealtBy(content, called, depth + 1), def.summon.limit);
   return dealt;
 }
@@ -62,10 +114,10 @@ function scaledDef(def: MonsterDef, scale: RankScale): MonsterDef {
   return { ...def, damageMin: def.damageMin * scale.damage, damageMax: def.damageMax * scale.damage };
 }
 
-function modOdds(content: Content, picks: number): readonly { readonly mod: MonsterModDef; readonly odds: number }[] {
+function modOdds(content: Content, picks: number): readonly ModOdds[] {
   const total: number = content.packRanks.pool.reduce((sum: number, choice): number => sum + Math.max(0, choice.weight), 0);
   if (total <= 0 || picks <= 0) return [];
-  return content.packRanks.pool.flatMap((choice) => {
+  return content.packRanks.pool.flatMap((choice): ModOdds[] => {
     const mod: MonsterModDef | undefined = content.monsterMods.get(choice.mod);
     const one: number = Math.max(0, choice.weight) / total;
     return mod === undefined ? [] : [{ mod, odds: 1 - Math.pow(1 - one, picks) }];
@@ -102,7 +154,7 @@ function rankOdds(content: Content, zone: ZoneDef, pack: ZonePack): readonly Ran
 }
 
 function packDealt(content: Content, zone: ZoneDef, pack: ZonePack): Dealt {
-  const defs: MonsterDef[] = pack.members.flatMap((member) => {
+  const defs: MonsterDef[] = pack.members.flatMap((member): MonsterDef[] => {
     const base: MonsterDef | undefined = content.monsters.get(member.monster);
     if (base === undefined) return [];
     const mods: MonsterModDef[] = member.mods.flatMap((id: string): MonsterModDef[] => {
@@ -137,28 +189,67 @@ function fights(zone: ZoneDef): boolean {
   return zone.kind === 'wild' && zone.packs.length > 0;
 }
 
-export function depthZones(content: Content, visited: readonly string[], here: ZoneDef): readonly ZoneDef[] {
-  const wild: ZoneDef[] = [...content.zones.values()].filter(fights).toSorted((a: ZoneDef, b: ZoneDef): number => a.level - b.level);
-  const seen: ZoneDef[] = wild.filter((zone: ZoneDef): boolean => visited.includes(zone.id));
-  const current: ZoneDef | undefined = fights(here) ? here : (seen[seen.length - 1] ?? wild[0]);
-  if (current === undefined) return [];
-  const next: ZoneDef | undefined = wild.find((zone: ZoneDef): boolean => zone.level > current.level);
-  return next === undefined ? [current] : [current, next];
+export function currentZone(content: Content, visited: readonly string[], here: ZoneDef): ZoneDef | null {
+  if (fights(here)) return here;
+  const seen: ZoneDef[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => fights(zone) && visited.includes(zone.id)).toSorted((a: ZoneDef, b: ZoneDef): number => a.level - b.level);
+  return seen[seen.length - 1] ?? null;
 }
 
-export function threatOf(content: Content, zones: readonly ZoneDef[]): Threat {
-  if (zones.length === 0) return { zones: [], shares: [{ type: 'physical', stormTier: 0, share: 1 }] };
-  const shares: ThreatShare[] = zones.flatMap((zone: ZoneDef): ThreatShare[] => {
-    const mix: DamageMix = zoneDamageMix(content, zone);
-    return DAMAGE_TYPES.map((type: DamageType): ThreatShare => ({ type, stormTier: zone.stormTier, share: mix[type] / zones.length }));
+export function routeAhead(content: Content, from: ZoneDef): readonly RouteZone[] {
+  const act: ActDef | undefined = content.world.acts.find((candidate: ActDef): boolean => candidate.atlas.places.some((place): boolean => place.zone === from.id));
+  if (act === undefined) return [];
+  const steps: Map<string, number> = new Map<string, number>([[from.id, 0]]);
+  const queue: string[] = [from.id];
+  for (let index: number = 0; index < queue.length; index += 1) {
+    const at: string = queue[index] ?? '';
+    const step: number = steps.get(at) ?? 0;
+    for (const road of act.atlas.roads) {
+      if (road.from !== at || steps.has(road.to)) continue;
+      steps.set(road.to, step + 1);
+      queue.push(road.to);
+    }
+  }
+  return [...steps.entries()].flatMap(([id, step]: [string, number]): RouteZone[] => {
+    const zone: ZoneDef | undefined = content.zones.get(id);
+    return zone === undefined || step === 0 || !fights(zone) ? [] : [{ zone, steps: step }];
   });
-  return { zones: zones.map((zone: ZoneDef): string => zone.id), shares };
 }
 
-export function threatNear(content: Content, visited: readonly string[], here: ZoneDef): Threat {
-  return threatOf(content, depthZones(content, visited, here));
+function stale(zone: ZoneDef, level: number): boolean {
+  return level - Math.max(zone.level, zone.levelUpTo) > THREAT.staleLevels;
+}
+
+function threatZone(content: Content, zone: ZoneDef, weight: number, ahead: boolean): ThreatZone {
+  return { id: zone.id, name: zone.name, stormTier: zone.stormTier, weight, ahead, mix: zoneDamageMix(content, zone) };
+}
+
+export function threatAt(content: Content, current: ZoneDef | null, level: number): Threat {
+  if (current === null) return mixThreat({ physical: 1, storm: 0, frost: 0 });
+  const route: RouteZone[] = routeAhead(content, current).filter((entry: RouteZone): boolean => !stale(entry.zone, level));
+  const raw: number[] = route.map((entry: RouteZone): number => Math.pow(THREAT.aheadFalloff, entry.steps - 1));
+  const total: number = raw.reduce((sum: number, value: number): number => sum + value, 0);
+  const counted: boolean = !stale(current, level) || total <= 0;
+  const hereWeight: number = !counted ? 0 : total <= 0 ? 1 : THREAT.hereShare;
+  const aheadShare: number = 1 - hereWeight;
+  const ahead: ThreatZone[] = route.map((entry: RouteZone, index: number): ThreatZone => threatZone(content, entry.zone, total <= 0 ? 0 : (aheadShare * (raw[index] ?? 0)) / total, true));
+  return { zones: [threatZone(content, current, hereWeight, false), ...ahead].filter((zone: ThreatZone): boolean => zone.weight > 0) };
+}
+
+export function threatNear(content: Content, visited: readonly string[], here: ZoneDef, level: number): Threat {
+  return threatAt(content, currentZone(content, visited, here), level);
+}
+
+export function mixThreat(mix: DamageMix, stormTier: number = 0): Threat {
+  return { zones: [{ id: '', name: '', stormTier, weight: 1, ahead: false, mix }] };
+}
+
+export function partOf(threat: Threat, ahead: boolean): Threat | null {
+  const zones: ThreatZone[] = threat.zones.filter((zone: ThreatZone): boolean => zone.ahead === ahead);
+  const total: number = zones.reduce((sum: number, zone: ThreatZone): number => sum + zone.weight, 0);
+  if (total <= 0) return null;
+  return { zones: zones.map((zone: ThreatZone): ThreatZone => ({ id: zone.id, name: zone.name, stormTier: zone.stormTier, weight: zone.weight / total, ahead: zone.ahead, mix: zone.mix })) };
 }
 
 export function shareOf(threat: Threat, type: DamageType): number {
-  return threat.shares.reduce((sum: number, entry: ThreatShare): number => (entry.type === type ? sum + entry.share : sum), 0);
+  return threat.zones.reduce((sum: number, zone: ThreatZone): number => sum + zone.weight * zone.mix[type], 0);
 }

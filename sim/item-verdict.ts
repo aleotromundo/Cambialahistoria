@@ -1,9 +1,10 @@
-import type { Content, ItemSlot, ResistedType, SkillDef, StatBlock, StatId } from './content/types.ts';
+import type { Content, DamageType, ItemSlot, ResistedType, SkillDef, StatBlock, StatId } from './content/types.ts';
+import { DAMAGE_TYPES } from './content/types.ts';
 import { baseOf, slotOf } from './items.ts';
 import { wornPowers, wornVariants } from './powers.ts';
 import { computeStats, damagePerSecond, damageTakenScale, effectiveAttackSpeed, resistanceOf, resolveSkillBar, skillCycle } from './stats.ts';
-import type { Threat, ThreatShare } from './threat.ts';
-import { shareOf } from './threat.ts';
+import type { Threat, ThreatZone } from './threat.ts';
+import { partOf, shareOf } from './threat.ts';
 import { heldGroup } from './weapons.ts';
 import type { Equipment, ItemInstance, PlayerState } from './world/types.ts';
 
@@ -13,7 +14,6 @@ export const VERDICT = {
   tradeBand: 0.25,
   fightSeconds: 10,
   sharpSpeed: 0.1,
-  scarce: 0.05,
   absent: 0.001,
   leastTaken: 0.005,
 } as const;
@@ -29,15 +29,24 @@ const RESISTED: readonly ResistedType[] = ['storm', 'frost'];
 
 export type VerdictKind = 'better' | 'worse' | 'trade' | 'same';
 
+export interface Peak {
+  readonly types: readonly ResistedType[];
+  readonly zone: string;
+  readonly ahead: boolean;
+}
+
 export interface Verdict {
   readonly kind: VerdictKind;
   readonly power: number;
   readonly damage: number;
   readonly toughness: number;
+  readonly here: number;
+  readonly ahead: number | null;
   readonly speed: number;
   readonly against: readonly ResistedType[];
-  readonly scarce: readonly ResistedType[];
+  readonly peaks: readonly Peak[];
   readonly absent: readonly ResistedType[];
+  readonly looksAhead: boolean;
   readonly capped: readonly ResistedType[];
 }
 
@@ -94,7 +103,8 @@ function lead(build: Build): { readonly skill: SkillDef | null; readonly damage:
 }
 
 export function takenScale(content: Content, stats: StatBlock, threat: Threat): number {
-  const taken: number = threat.shares.reduce((sum: number, entry: ThreatShare): number => sum + entry.share * damageTakenScale(stats, entry.type, content.player.resistance, entry.stormTier), 0);
+  const rules = content.player.resistance;
+  const taken: number = threat.zones.reduce((sum: number, zone: ThreatZone): number => sum + zone.weight * DAMAGE_TYPES.reduce((inner: number, type: DamageType): number => inner + zone.mix[type] * damageTakenScale(stats, type, rules, zone.stormTier), 0), 0);
   return Math.max(VERDICT.leastTaken, taken);
 }
 
@@ -134,36 +144,73 @@ function withResistance(stats: StatBlock, from: StatBlock): StatBlock {
   return kept;
 }
 
+function lookedAhead(power: number, here: number, ahead: number | null, damage: number, toughness: number): VerdictKind {
+  if (ahead !== null) {
+    const upHere: boolean = here > VERDICT.even;
+    const downHere: boolean = here < -VERDICT.even;
+    const upAhead: boolean = ahead > VERDICT.even;
+    const downAhead: boolean = ahead < -VERDICT.even;
+    if ((downHere && upAhead) || (upHere && downAhead)) return 'trade';
+    if (downHere && downAhead) return 'worse';
+    if (upHere && upAhead) return 'better';
+  }
+  return kindOf(power, damage, toughness);
+}
+
+function lifeChange(content: Content, before: Build, after: Build, threat: Threat | null): number | null {
+  if (threat === null) return null;
+  return change(standingOf(content, after, threat).toughness, standingOf(content, before, threat).toughness);
+}
+
+function noGain(content: Content, before: Build, after: Build, threat: Threat, type: ResistedType): boolean {
+  const rules = content.player.resistance;
+  return threat.zones.every((zone: ThreatZone): boolean => zone.mix[type] < VERDICT.absent || resistanceOf(after.stats, type, rules, zone.stormTier) <= resistanceOf(before.stats, type, rules, zone.stormTier) + VERDICT.absent);
+}
+
+function peaksOf(threat: Threat, types: readonly ResistedType[]): Peak[] {
+  const peaks: Peak[] = [];
+  for (const type of types) {
+    const top: ThreatZone | undefined = threat.zones.toSorted((a: ThreatZone, b: ThreatZone): number => b.mix[type] - a.mix[type])[0];
+    if (top === undefined) continue;
+    const known: Peak | undefined = peaks.find((peak: Peak): boolean => peak.zone === top.name && peak.ahead === top.ahead);
+    if (known === undefined) peaks.push({ types: [type], zone: top.name, ahead: top.ahead });
+    else peaks[peaks.indexOf(known)] = { ...known, types: [...known.types, type] };
+  }
+  return peaks;
+}
+
 export function compareBuilds(content: Content, before: Build, after: Build, threat: Threat): Verdict {
   const was: Standing = standingOf(content, before, threat);
   const now: Standing = standingOf(content, after, threat);
   const damage: number = change(now.damage, was.damage);
   const toughness: number = change(now.toughness, was.toughness);
   const power: number = change(now.damage * now.toughness, was.damage * was.toughness);
+  const nearby: Threat | null = partOf(threat, false);
+  const beyond: Threat | null = partOf(threat, true);
+  const here: number = lifeChange(content, before, after, nearby) ?? toughness;
+  const ahead: number | null = nearby === null ? null : lifeChange(content, before, after, beyond);
+  const powerOf = (life: number): number => (1 + damage) * (1 + life) - 1;
   const raised: ResistedType[] = RESISTED.filter((type: ResistedType): boolean => after.stats[RESISTED_STATS[type]] > before.stats[RESISTED_STATS[type]] + VERDICT.absent);
   const moved: ResistedType[] = RESISTED.filter((type: ResistedType): boolean => Math.abs(after.stats[RESISTED_STATS[type]] - before.stats[RESISTED_STATS[type]]) > VERDICT.absent);
-  const rules = content.player.resistance;
-  const capped: ResistedType[] = raised.filter(
-    (type: ResistedType): boolean =>
-      shareOf(threat, type) >= VERDICT.absent &&
-      threat.shares.every((entry: ThreatShare): boolean => entry.type !== type || resistanceOf(after.stats, type, rules, entry.stormTier) <= resistanceOf(before.stats, type, rules, entry.stormTier) + VERDICT.absent),
-  );
-  const open: ResistedType[] = raised.filter((type: ResistedType): boolean => !capped.includes(type));
-  const absent: ResistedType[] = open.filter((type: ResistedType): boolean => shareOf(threat, type) < VERDICT.absent);
-  const scarce: ResistedType[] = open.filter((type: ResistedType): boolean => !absent.includes(type) && shareOf(threat, type) < VERDICT.scarce);
+  const absent: ResistedType[] = raised.filter((type: ResistedType): boolean => shareOf(threat, type) < VERDICT.absent);
+  const capped: ResistedType[] = raised.filter((type: ResistedType): boolean => !absent.includes(type) && noGain(content, before, after, threat, type));
+  const open: ResistedType[] = raised.filter((type: ResistedType): boolean => !absent.includes(type) && !capped.includes(type));
   const bare: number = effectiveLife(content, withResistance(after.stats, before.stats), now.lead, threat);
   const fromResistance: number = change(now.toughness, bare);
   const resistanceLed: boolean = Math.abs(fromResistance) >= VERDICT.clear && Math.sign(fromResistance) === Math.sign(toughness) && Math.abs(fromResistance) * 2 >= Math.abs(toughness);
   const against: ResistedType[] = resistanceLed ? moved.filter((type: ResistedType): boolean => shareOf(threat, type) >= VERDICT.absent) : [];
   return {
-    kind: kindOf(power, damage, toughness),
+    kind: lookedAhead(power, powerOf(here), ahead === null ? null : powerOf(ahead), damage, toughness),
     power,
     damage,
     toughness,
+    here,
+    ahead,
     speed: change(effectiveAttackSpeed(after.stats), effectiveAttackSpeed(before.stats)),
     against,
-    scarce,
+    peaks: peaksOf(threat, open),
     absent,
+    looksAhead: beyond !== null,
     capped,
   };
 }
@@ -194,10 +241,23 @@ interface Part {
   readonly text: string;
 }
 
+function split(verdict: Verdict): Part | null {
+  if (verdict.ahead === null) return null;
+  const here: number = percent(verdict.here);
+  const ahead: number = percent(verdict.ahead);
+  if (here === 0 || ahead === 0 || Math.sign(here) === Math.sign(ahead)) return null;
+  const gainAhead: boolean = ahead > 0;
+  const gain: string = gainAhead ? `${signedPercent(verdict.ahead)} ahead` : `${signedPercent(verdict.here)} here`;
+  const loss: string = gainAhead ? `${signedPercent(verdict.here)} here` : `${signedPercent(verdict.ahead)} ahead`;
+  return { value: Math.max(verdict.here, verdict.ahead), text: `toughness ${gain}, ${loss}` };
+}
+
 export function verdictParts(verdict: Verdict): readonly string[] {
   const parts: Part[] = [];
   if (percent(verdict.damage) !== 0) parts.push({ value: verdict.damage, text: `${signedPercent(verdict.damage)} damage` });
-  if (percent(verdict.toughness) !== 0) {
+  const divided: Part | null = split(verdict);
+  if (divided !== null) parts.push(divided);
+  else if (percent(verdict.toughness) !== 0) {
     const against: string = verdict.against.length === 0 ? '' : ` against ${listed(verdict.against)}`;
     parts.push({ value: verdict.toughness, text: `${signedPercent(verdict.toughness)} toughness${against}` });
   }
@@ -205,12 +265,21 @@ export function verdictParts(verdict: Verdict): readonly string[] {
   return parts.toSorted((a: Part, b: Part): number => b.value - a.value).map((part: Part): string => part.text);
 }
 
+export function placeName(zone: string): string {
+  const head: string = zone.split(',')[0]?.trim() ?? zone;
+  return `the ${head.replace(/^the\s+/i, '')}`;
+}
+
+function peakText(peak: Peak): string {
+  const verb: string = peak.types.length > 1 ? 'hit' : 'hits';
+  return `${listed(peak.types)} ${verb} hardest ${peak.ahead ? `in ${placeName(peak.zone)}` : 'here'}`;
+}
+
 export function verdictNote(verdict: Verdict): string | null {
-  const nearby: string[] = [];
-  if (verdict.scarce.length > 0) nearby.push(`little ${listed(verdict.scarce)}`);
-  if (verdict.absent.length > 0) nearby.push(`no ${listed(verdict.absent)}`);
   const notes: string[] = [];
-  if (nearby.length > 0) notes.push(`${nearby.join(' and ')} damage nearby`);
+  const peak: Peak | undefined = verdict.peaks[0];
+  if (peak !== undefined) notes.push(peakText(peak));
+  if (verdict.absent.length > 0) notes.push(`no ${listed(verdict.absent)} ${verdict.looksAhead ? 'here or ahead' : 'nearby'}`);
   if (verdict.capped.length > 0) notes.push(`${listed(verdict.capped)} resistance already capped`);
   if (notes.length === 0) return null;
   const text: string = notes.join(' · ');

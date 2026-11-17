@@ -123,7 +123,7 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   const family: FamilyReading | null = familyReading(content, item, api.world.player.equipped);
   if (family !== null) appendPower(root, family);
   if (compare) {
-    const verdict: Verdict | null = itemVerdict(content, api.world.player, threatNear(content, api.world.visited, api.world.zone), item);
+    const verdict: Verdict | null = itemVerdict(content, api.world.player, threatNear(content, api.world.visited, api.world.zone, api.world.player.level), item);
     if (verdict !== null) appendVerdict(root, verdict);
   }
   if (hint !== null) label('tip-hint', hint, root);
