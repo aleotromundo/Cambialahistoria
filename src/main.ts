@@ -8,6 +8,7 @@ import { carriedPictures, goodsPictures } from '../sim/pictures.ts';
 import { heroRig } from '../sim/hero.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { keepFrames } from './frame-keeper.ts';
+import { HOST } from './host.ts';
 import type { WatchEffect } from './frame-watch.ts';
 import { startPerfReports } from './perf/perf-start.ts';
 import type { PerfReports } from './perf/perf-start.ts';
@@ -418,7 +419,7 @@ async function start(): Promise<void> {
     if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
-    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, hidden: HOST.pauseWhenHidden && document.hidden, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
     if (gate.present) {
       overlays.readHud(dt);
       objectiveMarker.readHud(dt);

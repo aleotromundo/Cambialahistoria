@@ -13,6 +13,6 @@ export function applyKeys(html: string, keys: string): string {
   return html.replace(DESK_KEYS, (_match: string, open: string, close: string): string => `${open}${keys}${close}`);
 }
 
-export function buildPage(html: string, links: Links, hasServer: boolean, keys: string): string {
+export function buildPage(html: string, links: Links | null, hasServer: boolean, keys: string): string {
   return applyKeys(applyLinks(applyServer(html, hasServer), links), keys);
 }

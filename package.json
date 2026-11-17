@@ -16,6 +16,7 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
     "build:portal": "tsc -p tsconfig.json && vite build --mode portal && node tools/pack-portal.ts",
+    "build:gamepix": "tsc -p tsconfig.json && vite build --mode gamepix && node tools/pack-portal.ts gamepix",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint --type-aware --deny-warnings",

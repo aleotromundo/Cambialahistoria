@@ -4,8 +4,7 @@ import type { SettingsSection } from '../settings/settings.ts';
 import { SETTINGS_SECTIONS } from '../settings/settings.ts';
 import type { GlitchSettingsStore } from '../glitch/glitch-settings.ts';
 import type { SettingsStore } from '../settings/store.ts';
-import { LINKS } from '../launch/data.ts';
-import { outboundLinks } from '../launch/links.ts';
+import { LINK_SET } from '../launch/link-set.ts';
 import type { OutboundLink } from '../launch/links.ts';
 import { el, label } from './dom.ts';
 import { mountControls } from './settings-controls.ts';
@@ -143,7 +142,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
     api.close();
     hooks.onTitle();
   });
-  const links: readonly OutboundLink[] = outboundLinks(LINKS);
+  const links: readonly OutboundLink[] = LINK_SET.outbound;
   const linkRow: HTMLParagraphElement = el('p', 'pause-links', main);
   for (const link of links) {
     const anchor: HTMLAnchorElement = el('a', 'pause-link', linkRow);

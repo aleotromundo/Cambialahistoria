@@ -25,7 +25,7 @@ const ALLOWED_IN_A_HIDDEN_HUD: readonly string[] = ['ctx-notice', 'elsewhere-car
 
 const MOUNT_SITES: Readonly<Record<string, string>> = {
   'src/mobile/touch-ui.ts:canvas.after(layer)': '.tc',
-  'src/mobile/touch-ui.ts:document.body)': '.tc-rotate',
+  'src/mobile/rotate-hint.ts:document.body)': '.tc-rotate',
   'src/mobile/mobile.ts:canvas.parentElement': '.ctx-notice',
 };
 

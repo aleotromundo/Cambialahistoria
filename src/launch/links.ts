@@ -70,12 +70,14 @@ function escapeAttribute(value: string): string {
 const LINKED_ELEMENT: RegExp = /<a\b([^>]*?)\sdata-link="([a-z]+)"([^>]*)>([\s\S]*?)<\/a>/g;
 const SITE_TOKEN: string = '%LINK_SITE%';
 
-export function applyLinks(html: string, links: Links): string {
+export function applyLinks(html: string, links: Links | null): string {
   const linked: string = html.replace(LINKED_ELEMENT, (_match: string, before: string, id: string, after: string, inner: string): string => {
     if (!isLinkId(id)) throw new Error(`unknown data-link "${id}"`);
-    const href: string | null = hrefOf(links, id);
+    const href: string | null = links === null ? null : hrefOf(links, id);
     if (href === null) return '';
     return `<a${before} href="${escapeAttribute(href)}" target="_blank" rel="noopener"${after}>${inner}</a>`;
   });
-  return linked.replaceAll(SITE_TOKEN, escapeAttribute(links.site));
+  if (links !== null) return linked.replaceAll(SITE_TOKEN, escapeAttribute(links.site));
+  if (linked.includes(SITE_TOKEN)) throw new Error(`the page asks for the site address with ${SITE_TOKEN}, but this build links nowhere`);
+  return linked;
 }

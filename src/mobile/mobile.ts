@@ -6,7 +6,9 @@ import { CAMERA } from '../render/iso-camera.ts';
 import type { Stage } from '../render/stage.ts';
 import type { ContextWatch } from '../hud/context-notice.ts';
 import { watchContext } from '../hud/context-notice.ts';
-import { enterLandscapeFullscreen, holdPageStill, readDeviceFacts } from './page.ts';
+import { HOST } from '../host.ts';
+import { enterLandscapeFullscreen } from './landscape.ts';
+import { holdPageStill, readDeviceFacts } from './page.ts';
 import type { DeviceFacts, Quality, QualityTier } from './quality.ts';
 import { chooseQuality, configureRenderBudget, createQuality } from './quality.ts';
 import { prefersTouch } from './touch-map.ts';
@@ -45,7 +47,7 @@ export function bootMobile(): MobileBoot {
   configureRenderBudget(quality.tier);
   quality.subscribe(configureRenderBudget);
   const touch: boolean = prefersTouch(facts.search, facts.coarsePointer, facts.shortSide, facts.longSide);
-  if (touch) holdPageStill();
+  if (touch || HOST.stillPage) holdPageStill();
   return { quality, touch };
 }
 

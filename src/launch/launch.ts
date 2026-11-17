@@ -14,12 +14,12 @@ import { createAskView } from './ask-view.ts';
 import type { AskView } from './ask-view.ts';
 import { ASK_PROMPT, IDLE_ASK, keepAskSpent, readAskSpent, spendAsk, stepAsk, worthAsking } from './ask-prompt.ts';
 import type { AskPrompt } from './ask-prompt.ts';
-import { ALPHA_RULES, LINKS } from './data.ts';
+import { ALPHA_RULES } from './data.ts';
+import { LINK_SET } from './link-set.ts';
 import { createFeedbackCard } from './feedback-card.ts';
 import type { CardHooks, CardMode, FeedbackCard } from './feedback-card.ts';
 import { createLaunchLoop } from './launch-loop.ts';
 import type { LaunchLoop, SendResult } from './launch-loop.ts';
-import { outboundLinks } from './links.ts';
 import { addPlayed, PLAYED_KEY, readPlayed } from './played.ts';
 
 export interface LaunchOptions {
@@ -92,8 +92,8 @@ export function startLaunch(options: LaunchOptions): Launch {
     keepAskSpent(store);
   };
   const hooks: CardHooks = {
-    links: outboundLinks(LINKS),
-    site: LINKS.site,
+    links: LINK_SET.outbound,
+    site: LINK_SET.share,
     timers: createBrowserTimers(),
     send:
       loop === null

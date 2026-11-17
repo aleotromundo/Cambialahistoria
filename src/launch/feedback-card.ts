@@ -12,7 +12,7 @@ export type CardMode = 'end' | 'ask';
 
 export interface CardHooks {
   readonly links: readonly OutboundLink[];
-  readonly site: string;
+  readonly site: string | null;
   readonly send: ((rating: Rating, text: string) => Promise<SendResult>) | null;
   readonly timers: Timers;
 }
@@ -69,6 +69,23 @@ function keepKeysInside(root: HTMLElement): void {
   root.addEventListener('keyup', stop);
 }
 
+function shareButton(row: HTMLParagraphElement, site: string): HTMLButtonElement {
+  const copy: HTMLButtonElement = el('button', 'fb-copy', row);
+  copy.type = 'button';
+  el('span', 'fb-copy-idle', copy).textContent = 'Copy link';
+  const copied: HTMLSpanElement = el('span', 'fb-copy-done', copy);
+  copied.textContent = 'Copied';
+  copied.setAttribute('aria-hidden', 'true');
+  const copyLink = async (): Promise<void> => {
+    await navigator.clipboard.writeText(site);
+    copy.classList.add('copied');
+  };
+  copy.addEventListener('click', (): void => {
+    copyLink().catch((): void => undefined);
+  });
+  return copy;
+}
+
 const STYLE_ID: string = 'fb-style';
 
 function addStyle(): void {
@@ -117,27 +134,15 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
   const sendButton: HTMLButtonElement = el('button', 'fb-send', follow);
   sendButton.type = 'submit';
   sendButton.textContent = 'Send';
-  const row: HTMLParagraphElement = el('p', 'fb-links', thanks);
-  for (const link of hooks.links) {
+  const row: HTMLParagraphElement | null = hooks.links.length > 0 || hooks.site !== null ? el('p', 'fb-links', thanks) : null;
+  for (const link of row === null ? [] : hooks.links) {
     const anchor: HTMLAnchorElement = el('a', `fb-link fb-link-${link.id}`, row);
     anchor.href = link.href;
     anchor.target = '_blank';
     anchor.rel = 'noopener';
     anchor.textContent = link.id === 'discord' ? 'Join the Discord' : link.label;
   }
-  const copy: HTMLButtonElement = el('button', 'fb-copy', row);
-  copy.type = 'button';
-  el('span', 'fb-copy-idle', copy).textContent = 'Copy link';
-  const copied: HTMLSpanElement = el('span', 'fb-copy-done', copy);
-  copied.textContent = 'Copied';
-  copied.setAttribute('aria-hidden', 'true');
-  const copyLink = async (): Promise<void> => {
-    await navigator.clipboard.writeText(hooks.site);
-    copy.classList.add('copied');
-  };
-  copy.addEventListener('click', (): void => {
-    copyLink().catch((): void => undefined);
-  });
+  const copy: HTMLButtonElement | null = row === null || hooks.site === null ? null : shareButton(row, hooks.site);
   const done: HTMLButtonElement = el('button', 'fb-done', thanks);
   done.type = 'button';
   keepKeysInside(card);
@@ -207,7 +212,7 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
     note.textContent = '';
     card.dataset['step'] = hooks.send === null ? 'thanks' : 'ask';
     card.classList.remove('fb-sent', 'fb-noted', 'fb-added');
-    copy.classList.remove('copied');
+    copy?.classList.remove('copied');
   };
 
   const api: FeedbackCard = {

@@ -38,6 +38,16 @@ body {
   font-variant-numeric: lining-nums;
 }
 
+body.still {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+body.still .hud-panel,
+body.still .pause-card {
+  touch-action: pan-y;
+}
+
 #app {
   position: fixed;
   inset: 0;

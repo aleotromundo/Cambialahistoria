@@ -28,3 +28,8 @@ void test('a page loses every element of an empty link and the rest open in a ne
   assert.match(filled, /<a class="play quiet" href="https:\/\/discord.gg\/a&quot;b" target="_blank" rel="noopener">Join the Discord<\/a>/);
   assert.throws((): string => applyLinks('<a data-link="myspace">M</a>', readLinks(BASE)));
 });
+
+void test('a build that links nowhere loses every linked element, and refuses a page that asks for the site address', (): void => {
+  assert.equal(applyLinks('<p><a class="play quiet" data-link="discord">Join the Discord</a><a data-link="github">GitHub</a></p>', null), '<p></p>');
+  assert.throws((): string => applyLinks('<button data-copy="%LINK_SITE%">Copy</button>', null), /links nowhere/);
+});

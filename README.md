@@ -103,6 +103,23 @@ This makes the offline build for game portals that host an uploaded HTML5 zip: t
 
 It is always the offline build: it ignores `.env` files and stops if `VITE_SERVER_URL` or `VITE_ASSET_BASE` is set in the shell. It makes no network request, saves to the browser's `localStorage` (a portal's iframe keeps that save apart from the one on theloststorm.com), and plays without sound. The shared Hideout, chat, trading, the auction house, the ladder, sign-in and feedback are not in it. Local-only assets in `public/models/local/` and `public/audio/local/` never go in. The script prints the file count and total size, and fails if the build is over itch.io's limits: 1,000 files, 500 MB in all, 200 MB for one file.
 
+### GamePix build
+
+```bash
+npm run build:gamepix
+```
+
+The same offline build for a host that forbids any address outside its own domain: the folder `dist-gamepix/` and the zip `the-lost-storm-gamepix.zip`. It is the portal build with these differences, all made at build time by the Vite mode `gamepix` (`GAMEPIX` in `tools/portal.ts`):
+
+- No link out. The Guide, Privacy and Terms row, the Discord and GitHub links, the pause menu's links and the end card's links and Copy link button are absent, as are the canonical, Open Graph and Twitter tags in the page head.
+- No sign-in code. `GAMEPIX.swaps` replaces modules with quiet ones beside them (`src/keep/keep-start.ts` by `keep-start-none.ts`, and so on), so the Google sign-in and Turnstile addresses are not in the bundle, and the sign-in block is not in the page.
+- No "Turn your phone sideways" prompt, no landscape lock and no fullscreen request; the game plays in portrait and landscape.
+- The world pauses while the page is hidden (Page Visibility) and moves again when it shows; a click outside the frame does not pause it. `src/host-framed.ts` holds these rules.
+- `touch-action: none` on the body on every device; the viewport is `user-scalable=no` as in every build.
+- The landing films in `public/landing/` are left out.
+
+The pack script then reads every file in `dist-gamepix/` and fails on any `http://` or `https://` address. The only ones it lets through are listed with their reasons in `INERT_ADDRESSES`: the SVG and XHTML namespaces, and a citation in a comment inside a three.js shader. None is ever fetched.
+
 The overlay state machine (which panel, screen or card may be up, in what order, and what Escape closes) is specified in TLA+ in `spec/Overlays.tla`. Check it with `spec/run-tlc.sh`; [spec/README.md](spec/README.md) says how to get TLC.
 
 ## Layout

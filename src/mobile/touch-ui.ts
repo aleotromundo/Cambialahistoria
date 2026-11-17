@@ -21,11 +21,11 @@ import type { Input } from '../input.ts';
 import type { ItemNames } from '../render/item-names.ts';
 import { INPUT } from '../input.ts';
 import { createBrowserStore } from '../storage.ts';
-import { TITLE_SCREEN } from '../title-screen.ts';
 import type { ButtonInputs, ButtonPlan, FlaskEntry, SkillBarEntry, StickReading, TouchButton } from './touch-map.ts';
-import { aimedSkill, autoAimTarget, buttonInputsChanged, buttonKey, createButtonInputs, glideAim, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, readStick, rotateHintShows, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
+import { aimedSkill, autoAimTarget, buttonInputsChanged, buttonKey, createButtonInputs, glideAim, clampKnob, cooldownTurn, facingVector, isTap, joinsPinch, movedIndex, pinchWheelDelta, planButtons, readStick, startsStick, stickDirection, stickMove, TOUCH, touchButtons } from './touch-map.ts';
 import type { PhoneLayout, Rect, SafeInsets } from './phone-layout.ts';
 import { PHONE, phoneLayout } from './phone-layout.ts';
+import { startRotateHint } from './rotate-hint.ts';
 import touchCss from './touch.css?inline';
 import touchSheetCss from './touch-sheet.css?inline';
 import touchHeldCss from './touch-held.css?inline';
@@ -71,7 +71,6 @@ const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonl
   { panel: 'map', label: 'Map', icon: PANEL_ICONS.map },
 ];
 
-const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2"/><path d="M14.5 24.5h3"/></svg><div><b>Turn your phone sideways</b><span>The storm needs room.</span></div>';
 const MENU_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>';
 const FEEDBACK_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8.2L7 20v-3.5H4.5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z"/></svg>';
 const CLOSE_HTML: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
@@ -266,44 +265,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   };
   new MutationObserver(syncClose).observe(hudRoot, { attributes: true, attributeFilter: ['class'], subtree: true });
 
-  const rotate: HTMLDivElement = el('div', 'tc-rotate', document.body);
-  rotate.setAttribute('role', 'status');
-  rotate.innerHTML = ROTATE_HTML;
-  const portrait: MediaQueryList = window.matchMedia('(orientation: portrait)');
-  let portraitSince: number = performance.now();
-  const seenStore: KeyValueStore = createBrowserStore();
-  let rotateDismissed: boolean = seenStore.read(TOUCH.rotateSeenKey) !== null;
-  let rotateShown: boolean = false;
-  let rotateTimer: number | undefined;
-  const showRotate = (): void => {
-    const shownFor: number = performance.now() - portraitSince;
-    const on: boolean = rotateHintShows(portrait.matches, shownFor, rotateDismissed, document.body.classList.contains(TITLE_SCREEN.playingClass));
-    rotate.classList.toggle('on', on);
-    if (on && !rotateShown) {
-      rotateShown = true;
-      seenStore.write(TOUCH.rotateSeenKey, '1');
-    }
-    if (!on && rotateShown) rotateDismissed = true;
-    window.clearTimeout(rotateTimer);
-    if (on) rotateTimer = window.setTimeout(showRotate, TOUCH.rotateHintMs - shownFor);
-  };
-  portrait.addEventListener('change', (): void => {
-    portraitSince = performance.now();
-    showRotate();
-  });
-  rotate.addEventListener('pointerdown', (): void => {
-    rotateDismissed = true;
-    showRotate();
-  });
-  let wasPlaying: boolean = document.body.classList.contains(TITLE_SCREEN.playingClass);
-  new MutationObserver((): void => {
-    const playing: boolean = document.body.classList.contains(TITLE_SCREEN.playingClass);
-    if (playing === wasPlaying) return;
-    wasPlaying = playing;
-    portraitSince = performance.now();
-    showRotate();
-  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  showRotate();
+  startRotateHint();
 
   let views: ButtonView[] = [];
   let shownSignature: string = '';

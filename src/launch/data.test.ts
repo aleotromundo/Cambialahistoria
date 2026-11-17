@@ -5,20 +5,28 @@ import { runInNewContext } from 'node:vm';
 import { loadContent } from '../../sim/content/content.ts';
 import type { Content } from '../../sim/content/types.ts';
 import { BROWSER_NOTICES, RETRY } from '../browser-support.ts';
-import { ALPHA_RULES, LINKS } from './data.ts';
-
-void test('the shipped links have the site, the game and the repository', (): void => {
-  assert.equal(LINKS.site, 'https://theloststorm.com');
-  assert.equal(LINKS.play, 'https://theloststorm.com/play/');
-  assert.match(LINKS.github, /^https:\/\/github\.com\//);
-  assert.equal(LINKS.discord, 'https://discord.gg/XTRePF4HJs');
-});
+import { sealPage } from '../../tools/portal.ts';
+import { ALPHA_RULES } from './data.ts';
+import { applyLinks } from './links.ts';
 
 void test('every page names only links the data knows', (): void => {
   for (const page of ['index.html', 'play/index.html']) {
     const html: string = readFileSync(page, 'utf8');
     for (const match of html.matchAll(/data-link="([a-z]+)"/g)) assert.ok(['discord', 'github', 'x'].includes(match[1] ?? ''), `${page} names ${match[1] ?? ''}`);
   }
+});
+
+void test('the sealed game page keeps the credits as plain text and has no link out', (): void => {
+  const html: string = readFileSync('play/index.html', 'utf8');
+  const credits: RegExp = /<p class="title-credits">[\s\S]*?<\/p>/;
+  const shipped: string = credits.exec(html)?.[0] ?? '';
+  assert.match(shipped, /CC BY 4\.0/);
+  assert.match(shipped, /creativecommons\.org\/licenses\/by\/4\.0/);
+  assert.doesNotMatch(shipped, /<a\b/);
+  const sealed: string = sealPage(applyLinks(html, null));
+  assert.equal(credits.exec(sealed)?.[0], shipped);
+  assert.doesNotMatch(sealed, /<a\b/);
+  assert.doesNotMatch(sealed, /https?:\/\//);
 });
 
 void test('the slice ends on the alpha flag', (): void => {
