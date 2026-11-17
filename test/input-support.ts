@@ -27,6 +27,7 @@ export interface Rig {
   readonly fire: (type: string, pointer?: Partial<FakePointer>) => void;
   readonly settings: SettingsStore;
   readonly focus: (field: EventTarget) => void;
+  readonly keyMoveLines: number[];
 }
 
 export interface FakePointer {
@@ -80,7 +81,8 @@ export function rig(world: World, overUi: () => boolean = (): boolean => false, 
     project: (): boolean => false,
     zoomBy: (): void => undefined,
   };
-  const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, readInput: (): void => undefined };
+  const keyMoveLines: number[] = [];
+  const hud: InputHud = { isPointerOverUi: overUi, closePanels: (): boolean => false, togglePanel: (): void => undefined, requestMap: (): void => undefined, showKeyMoveLine: (): void => void keyMoveLines.push(keyMoveLines.length), readInput: (): void => undefined };
   const store: KeyValueStore = { read: (): null => null, write: (): boolean => true, remove: (): void => undefined };
   const settings: SettingsStore = createSettingsStore(store, slots, { flasks: 0, ladder: false });
   const hooks: InputHooks = { heightOf: (): number => 1.8, boundsOf: (): boolean => false, labelHover: label, clickMarker: (): void => undefined, aimPlace: (): void => undefined, placeAt: (): null => null, usePlace: (): void => undefined, aimItem: (): void => undefined,
@@ -98,7 +100,7 @@ export function rig(world: World, overUi: () => boolean = (): boolean => false, 
     for (const listener of heard.get('focusin') ?? []) field.addEventListener('focusin', listener);
     field.dispatchEvent(new Event('focusin'));
   };
-  return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks), fire, settings, focus };
+  return { world, input: createInput(canvas, keys, world, camera, hud, settings, hooks), fire, settings, focus, keyMoveLines };
 }
 
 export function heroCamera(world: World): InputCamera {

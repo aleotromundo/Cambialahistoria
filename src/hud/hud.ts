@@ -50,6 +50,9 @@ import hudCss from './hud.css?inline';
 import type { Hud, HudApi, HudPanel } from './hud-api.ts';
 import { itemTooltip } from './item-tooltip.ts';
 import type { ResolvedKeys } from '../settings/bindings.ts';
+import { createBrowserTimers } from '../browser-timers.ts';
+import { createKeyMoveLine } from './key-move-line.ts';
+import type { KeyMoveLine } from './key-move-line.ts';
 import { createHints } from './hints.ts';
 import type { Hints } from './hints.ts';
 import { createInventoryPanel } from './inventory-panel.ts';
@@ -195,6 +198,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   };
   let mapWanted: boolean = false;
 
+  const keyMoveLine: KeyMoveLine = createKeyMoveLine(bottom, root, createBrowserTimers());
   const hints: Hints = createHints(bottom, loadHints(api.world.content), createHintStore(createBrowserStore()), (): ResolvedKeys => api.settings.keys(), (): ReadonlySet<HintPanel> => new Set<HintPanel>(HINT_PANELS.filter((id: HintPanel): boolean => isOpen(id))), api.touch);
   const pending: WorldEvent[] = [];
 
@@ -532,6 +536,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     },
     requestMap(wanted: boolean): void {
       mapWanted = wanted;
+    },
+    showKeyMoveLine(): void {
+      keyMoveLine.show();
     },
     closePanels(): boolean {
       if (skillBar.closePicker()) return true;

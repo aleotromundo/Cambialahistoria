@@ -1,3 +1,5 @@
+import type { KeyMoveHintState, KeyMoveHintStep } from './key-move-hint.ts';
+import { NO_KEY_MOVE_HINT, noteGroundClick } from './key-move-hint.ts';
 import { heightAt, terrainMap } from '../sim/nav/terrain.ts';
 import type { Box3 as Box3Type } from 'three';
 import { Box3, Vector2 } from 'three';
@@ -110,7 +112,7 @@ export interface KeySource {
 
 export type InputCamera = Pick<IsoCamera, 'groundPoint' | 'project' | 'zoomBy'>;
 
-export type InputHud = Pick<Hud, 'isPointerOverUi' | 'closePanels' | 'togglePanel' | 'requestMap' | 'readInput'>;
+export type InputHud = Pick<Hud, 'isPointerOverUi' | 'closePanels' | 'togglePanel' | 'requestMap' | 'showKeyMoveLine' | 'readInput'>;
 
 export function createInput(canvas: InputSurface, windowEvents: KeySource, world: World, camera: InputCamera, hud: InputHud, settings: SettingsStore, hooks: InputHooks): Input {
   const pointer: Vector2 = new Vector2(0, 0);
@@ -128,6 +130,8 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
   let tapping: boolean = false;
   let pressedItem: boolean = false;
   let pressedExit: string | null = null;
+  let keyHint: KeyMoveHintState = NO_KEY_MOVE_HINT;
+  let hintClock: number = 0;
   let pressedPlayer: boolean = false;
   let enteredZone: string = world.zone.id;
   let lastClick: ClickResolution | null = null;
@@ -376,6 +380,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     },
     collect(dt: number): Command[] {
       const commands: Command[] = extra.splice(0, extra.length);
+      hintClock += dt;
       const endToggle = (): void => {
         if (toggled === null) return;
         commands.push({ type: 'hold', slot: toggled.slot, down: false });
@@ -492,7 +497,12 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       if (leftFresh) pressedExit = exit?.id ?? null;
       else if (!leftHeld) pressedExit = null;
       const click: ClickResolution = resolveClick(facts(leftFresh, pressedItem, pressedExit !== null));
-      if (leftFresh) lastClick = click;
+      if (leftFresh) {
+        lastClick = click;
+        const noted: KeyMoveHintStep = noteGroundClick(keyHint, { at: hintClock, movement: settings.get().movement, touch: touching, moveKeyHeld: moveKeys.up || moveKeys.down || moveKeys.left || moveKeys.right, facts: facts(true, pressedItem, pressedExit !== null) });
+        keyHint = noted.state;
+        if (noted.show) hud.showKeyMoveLine();
+      }
       if (leftFresh || leftHeld) {
         switch (click.kind) {
           case 'skill':

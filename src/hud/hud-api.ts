@@ -42,6 +42,7 @@ export interface Hud {
   togglePanel(panel: HudPanel): void;
   closePanels(): boolean;
   requestMap(wanted: boolean): void;
+  showKeyMoveLine(): void;
   showGroundItem(item: ItemInstance, x: number, y: number): void;
   moveGroundItem(x: number, y: number): void;
   hideGroundItem(): void;
