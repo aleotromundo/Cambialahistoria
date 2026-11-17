@@ -9,7 +9,7 @@ export const PORTAL = {
   page: { from: 'play/index.html', to: 'index.html' },
   withheldEnv: ['VITE_SERVER_URL', 'VITE_ASSET_BASE'],
   privateFolders: ['models/local/', 'audio/local/'],
-  siteOnly: ['privacy.html', 'terms.html', 'og.jpg'],
+  siteOnly: ['privacy.html', 'terms.html', 'og.jpg', 'site.webmanifest', 'icon-512.png', 'icon-maskable-512.png'],
   siteOnlyPage: /^[^/]+\.html$/,
   limits: { files: 1000, totalBytes: 500 * 1024 * 1024, fileBytes: 200 * 1024 * 1024 },
 } as const;

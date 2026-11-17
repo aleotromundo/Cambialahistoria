@@ -31,6 +31,7 @@
     { "kind": "only", "paths": ["index.html", "play/**"], "run": ["src/launch/data.test.ts", "tools/site/head.test.ts"] },
     { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts", "sim/content/bodies.test.ts"] },
     { "kind": "only", "paths": ["public/*.html", "public/landing/**"], "run": ["tools/site/head.test.ts"] },
+    { "kind": "only", "paths": ["index.html", "play/index.html", "public/*.webmanifest", "public/*.png", "public/*.svg", "public/*.ico", "public/landing/**"], "run": ["tools/site/head.manifest.test.ts"] },
     { "kind": "only", "paths": ["guide/**"], "run": ["tools/guide/site.test.ts", "tools/site/head.test.ts"] },
     { "kind": "only", "paths": ["public/models/characters/man.glb", "public/models/characters/woman.glb", "public/models/wear/man/**", "public/models/wear/woman/**"], "run": ["tools/fit-over.test.ts"] },
     { "kind": "only", "paths": ["spec/**"], "run": ["src/hud/overlay-core.test.ts"] },

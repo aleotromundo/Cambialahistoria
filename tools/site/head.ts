@@ -1,4 +1,7 @@
+import links from '../../data/links.json' with { type: 'json' };
 import { esc } from '../guide/html.ts';
+import type { Links, OutboundLink } from '../../src/launch/links.ts';
+import { outboundLinks, readLinks } from '../../src/launch/links.ts';
 
 export type Json = string | number | boolean | null | readonly Json[] | JsonObject;
 
@@ -36,9 +39,16 @@ export interface SiteVideo {
   readonly description: string;
 }
 
+export interface SiteLogo {
+  readonly path: string;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface SiteFacts {
   readonly origin: string;
   readonly name: string;
+  readonly alternateNames: readonly string[];
   readonly language: string;
   readonly description: string;
   readonly genres: readonly string[];
@@ -48,6 +58,8 @@ export interface SiteFacts {
   readonly currency: string;
   readonly playPath: string;
   readonly image: ShareImage;
+  readonly logo: SiteLogo;
+  readonly manifestPath: string;
   readonly publisher: Organization;
   readonly screenshots: readonly SitePicture[];
   readonly trailer: SiteVideo;
@@ -56,6 +68,7 @@ export interface SiteFacts {
 export const SITE: SiteFacts = {
   origin: 'https://theloststorm.com',
   name: 'The Lost Storm',
+  alternateNames: ['Lost Storm', 'theloststorm.com'],
   language: 'en',
   description: 'The Lost Storm is a free hack-and-slash action RPG that runs in your browser: fight under a night storm, find loot and level up. Early alpha, no download.',
   genres: ['Action role-playing game', 'Hack and slash'],
@@ -65,6 +78,8 @@ export const SITE: SiteFacts = {
   currency: 'USD',
   playPath: '/play/',
   image: { path: '/og.jpg', width: 1200, height: 630, alt: 'The hero stands with a sword in a shaft of pale light in the mist, beside the words The Lost Storm.' },
+  logo: { path: '/icon-512.png', width: 512, height: 512 },
+  manifestPath: '/site.webmanifest',
   publisher: { name: 'Mergestorm', url: 'https://mergestorm.ai' },
   screenshots: [
     { path: '/landing/tree-1200.webp', width: 1200, height: 675, caption: 'The Skill Tree: five paths spiral out from the centre, and a lightning build lights up the Gathering Storm.' },
@@ -132,6 +147,12 @@ export function shareTags(page: SharePage): readonly string[] {
   ];
 }
 
+const SITE_LINKS: Links = readLinks(links);
+
+export function socialProfiles(): readonly string[] {
+  return outboundLinks(SITE_LINKS).map((link: OutboundLink): string => link.href);
+}
+
 function organization(): JsonObject {
   return { '@type': 'Organization', name: SITE.publisher.name, url: SITE.publisher.url };
 }
@@ -164,7 +185,22 @@ function video(entry: SiteVideo): JsonObject {
 }
 
 export function webSite(): JsonObject {
-  return { ...siteRef(), '@id': absolute('/#website'), description: SITE.description, inLanguage: SITE.language, publisher: organization() };
+  return { ...siteRef(), '@id': absolute('/#website'), alternateName: [...SITE.alternateNames], description: SITE.description, inLanguage: SITE.language, publisher: organization() };
+}
+
+export function brand(): JsonObject {
+  const logo: string = absolute(SITE.logo.path);
+  return {
+    '@type': 'Organization',
+    '@id': absolute('/#brand'),
+    name: SITE.name,
+    alternateName: [...SITE.alternateNames],
+    url: absolute('/'),
+    logo: { '@type': 'ImageObject', url: logo, contentUrl: logo, width: SITE.logo.width, height: SITE.logo.height },
+    image: absolute(SITE.image.path),
+    sameAs: [...socialProfiles()],
+    parentOrganization: organization(),
+  };
 }
 
 export function videoGame(): JsonObject {
@@ -182,6 +218,7 @@ export function videoGame(): JsonObject {
     offers: { '@type': 'Offer', price: '0', priceCurrency: SITE.currency, url: absolute(SITE.playPath) },
     screenshot: SITE.screenshots.map(picture),
     trailer: video(SITE.trailer),
+    sameAs: [...socialProfiles()],
     publisher: organization(),
   };
 }
@@ -217,5 +254,5 @@ export function ldScript(nodes: readonly JsonObject[]): string {
 }
 
 export function fillHome(html: string): string {
-  return html.replace(HOME_LD_MARK, ldScript([webSite(), videoGame()]));
+  return html.replace(HOME_LD_MARK, ldScript([webSite(), brand(), videoGame()]));
 }
