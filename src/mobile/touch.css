@@ -209,7 +209,7 @@ body.touch .tc-close svg {
   position: absolute;
   top: calc(4px + env(safe-area-inset-top, 0px));
   right: calc(4px + env(safe-area-inset-right, 0px));
-  z-index: 40;
+  z-index: 41;
   opacity: 0;
   visibility: hidden;
   transform: scale(0.8);
@@ -606,6 +606,19 @@ body.touch:has(.reader-veil:not(.leaving)) .tc-stick {
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-bouncy-ms) var(--spring-bouncy),
     visibility 0s linear var(--spring-snappy-ms);
+}
+
+.tc-tabs::before {
+  content: '';
+  position: absolute;
+  top: calc(-8px - env(safe-area-inset-top, 0px));
+  left: calc(-12px - env(safe-area-inset-left, 0px));
+  z-index: -1;
+  width: 100vw;
+  height: calc(56px + env(safe-area-inset-top, 0px));
+  background: rgb(12, 16, 24);
+  box-shadow: 0 10px 10px -4px rgb(12, 16, 24);
+  pointer-events: none;
 }
 
 .tc-tabs.on {
