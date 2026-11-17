@@ -8,7 +8,16 @@ export function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: str
   return node;
 }
 
-export function retrigger(node: HTMLElement, className: string): void {
+export interface Restartable {
+  readonly classList: Pick<DOMTokenList, 'add' | 'contains' | 'remove'>;
+  getBoundingClientRect(): unknown;
+}
+
+export function retrigger(node: Restartable, className: string): void {
+  if (!node.classList.contains(className)) {
+    node.classList.add(className);
+    return;
+  }
   node.classList.remove(className);
   node.getBoundingClientRect();
   node.classList.add(className);
@@ -21,19 +30,25 @@ export function label(className: string, content: string, parent: HTMLElement | 
 }
 
 const TICK_CLASS: string = 'tick';
-const ticking: WeakSet<HTMLElement> = new WeakSet<HTMLElement>();
+const settling: WeakMap<HTMLElement, Set<string>> = new WeakMap<HTMLElement, Set<string>>();
 
-function settleTick(node: HTMLElement): void {
-  if (ticking.has(node)) return;
-  ticking.add(node);
+function settle(node: HTMLElement, className: string): void {
+  const known: Set<string> | undefined = settling.get(node);
+  if (known?.has(className) === true) return;
+  if (known === undefined) settling.set(node, new Set<string>([className]));
+  else known.add(className);
   node.addEventListener('animationend', (event: AnimationEvent): void => {
-    if (event.target === node) node.classList.remove(TICK_CLASS);
+    if (event.target === node) node.classList.remove(className);
   });
 }
 
+export function replay(node: HTMLElement, className: string): void {
+  settle(node, className);
+  retrigger(node, className);
+}
+
 export function tick(node: HTMLElement): void {
-  settleTick(node);
-  retrigger(node, TICK_CLASS);
+  replay(node, TICK_CLASS);
 }
 
 export function setText(node: HTMLElement, value: string, animate: boolean): boolean {
