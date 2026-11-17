@@ -6,7 +6,7 @@ import { loadContent } from '../content/content.ts';
 import type { Content, SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { refreshPlayer } from './character.ts';
-import { givesWayToDodge, isDodge } from './dodge.ts';
+import { dodgesAtOnce, givesWayToDodge, isDodge } from './dodge.ts';
 import { stepWorld } from './step.ts';
 import type { ActionState, Command, World, WorldEvent } from './types.ts';
 
@@ -27,6 +27,18 @@ function action(phase: ActionState['phase'], press: SkillDef): ActionState {
 void test('every dodge on the bar is a dash or a step through, and no attack counts as a dodge', (): void => {
   for (const id of DODGES) assert.ok(isDodge(skill(id)), id);
   for (const id of ['cleave', ...HELD_SKILLS]) assert.equal(isDodge(skill(id)), false, id);
+});
+
+void test('a roll always goes at once; a step through goes at once only when it is not aimed at someone it may first have to walk to', (): void => {
+  for (const id of ['dodge_roll', 'dodge_roll_riptide', 'dodge_roll_shoulder']) {
+    assert.equal(dodgesAtOnce(skill(id), false), true, id);
+    assert.equal(dodgesAtOnce(skill(id), true), true, id);
+  }
+  for (const id of ['dodge_roll_slip', 'mist_step', 'thunderhead_leap']) {
+    assert.equal(dodgesAtOnce(skill(id), false), true, id);
+    assert.equal(dodgesAtOnce(skill(id), true), false, id);
+  }
+  assert.equal(dodgesAtOnce(skill('cleave'), false), false);
 });
 
 void test('a dodge cuts a recovery, a running channel and a held charge, and waits for a committed windup or a released charge', (): void => {

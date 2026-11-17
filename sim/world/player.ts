@@ -14,7 +14,7 @@ import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
-import { givesWayToDodge, isDodge } from './dodge.ts';
+import { dodgesAtOnce, givesWayToDodge } from './dodge.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, replayDialogue } from './dialogue.ts';
 import { pickUp } from './finds.ts';
@@ -297,7 +297,7 @@ function cutByDodge(player: PlayerState, command: Command | null): boolean {
   const action: ActionState | null = player.action;
   if (command?.type !== 'skill' || action === null || !givesWayToDodge(action, isHeld(player, action))) return false;
   const skill: SkillDef | undefined = player.skills[command.slot] ?? undefined;
-  return skill !== undefined && isDodge(skill) && canDash(player) && blockedReason(player, skill) === null;
+  return skill !== undefined && dodgesAtOnce(skill, command.targetId !== null) && canDash(player) && blockedReason(player, skill) === null;
 }
 
 export function handleCommand(world: World, command: Command): void {
