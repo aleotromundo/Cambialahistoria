@@ -28,6 +28,8 @@ import type { LabelGlide } from './label-glide.ts';
 import { createGlide, glideToward } from './label-glide.ts';
 import type { Folding, LabelSpot, RankedBox, ScreenRect } from './label-stack.ts';
 import type { TagSize, TagSizes } from './tag-sizes.ts';
+import { createPanelCover } from './panel-cover.ts';
+import type { PanelCover } from './panel-cover.ts';
 import { browserTagMeasure, createTagSizes } from './tag-sizes.ts';
 import { blockersIn, glideAt, glidePlace, place } from './overlay-place.ts';
 import type { TagBound } from './overlay-place.ts';
@@ -240,6 +242,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
   const itemNames: ItemNames = createItemNames((): readonly string[] => hooks.nameKeys(), sessionFlag(ITEM_NAMES.sessionKey));
   watchItemNames(itemNames, window);
   const healthBars: HealthBars = createHealthBars(root, camera);
+  const panelCover: PanelCover = createPanelCover(root);
   const targetBar: TargetBar = createTargetBar(root);
   const floating: FloatingNumbers = createFloatingNumbers(numberLayer, camera);
 
@@ -676,6 +679,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.element.style.setProperty('--tag-mid', `${(-box.height / 2).toFixed(1)}px`);
         }
       }
+      panelCover.cover();
 
     },
   };

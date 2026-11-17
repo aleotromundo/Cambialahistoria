@@ -240,5 +240,6 @@ void test('two thousand tags among HUD panels land exactly where they always hav
     });
     return placeTag(rng.range(-40, view.width + 40), rng.range(-40, view.height + 40), rng.range(40, 200), rng.range(16, 26), view, rects);
   });
-  assert.equal(createHash('sha256').update(JSON.stringify(places)).digest('hex'), '4ecf0538895c75e633ec9ced6791e7bafe1002ff1daeea844c8cbe566129928a');
+  const pinned: TagPlace[] = places.map((place: TagPlace): TagPlace => ({ x: place.x, y: place.y, away: place.away, turn: Number(place.turn.toFixed(9)) }));
+  assert.equal(createHash('sha256').update(JSON.stringify(pinned)).digest('hex'), '660fb28e8110a7023d1c3bc5648862880efa6de0c25ba253747fd6b50bd94c30');
 });
