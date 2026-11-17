@@ -226,6 +226,54 @@
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35
         },
+        "spin_mocap_in": {
+          "clip": "Spin_Mocap_In",
+          "impactFraction": 0
+        },
+        "spin_mocap_loop": {
+          "clip": "Spin_Mocap_Loop",
+          "impactFraction": 0
+        },
+        "spin_mocap_out": {
+          "clip": "Spin_Mocap_Out",
+          "impactFraction": 0
+        },
+        "spin_skate_in": {
+          "clip": "Spin_Skate_In",
+          "impactFraction": 0
+        },
+        "spin_skate_loop": {
+          "clip": "Spin_Skate_Loop",
+          "impactFraction": 0
+        },
+        "spin_skate_out": {
+          "clip": "Spin_Skate_Out",
+          "impactFraction": 0
+        },
+        "spin_twohand_in": {
+          "clip": "Spin_Twohand_In",
+          "impactFraction": 0
+        },
+        "spin_twohand_loop": {
+          "clip": "Spin_Twohand_Loop",
+          "impactFraction": 0
+        },
+        "spin_twohand_out": {
+          "clip": "Spin_Twohand_Out",
+          "impactFraction": 0
+        },
+        "spin_low_in": {
+          "clip": "Spin_Low_In",
+          "impactFraction": 0
+        },
+        "spin_low_loop": {
+          "clip": "Spin_Low_Loop",
+          "impactFraction": 0
+        },
+        "spin_low_out": {
+          "clip": "Spin_Low_Out",
+          "impactFraction": 0
+        },
         "roll": {
           "clip": "Roll",
           "impactFraction": 0.6
@@ -465,6 +513,54 @@
         "cast": {
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35
+        },
+        "spin_mocap_in": {
+          "clip": "Spin_Mocap_In",
+          "impactFraction": 0
+        },
+        "spin_mocap_loop": {
+          "clip": "Spin_Mocap_Loop",
+          "impactFraction": 0
+        },
+        "spin_mocap_out": {
+          "clip": "Spin_Mocap_Out",
+          "impactFraction": 0
+        },
+        "spin_skate_in": {
+          "clip": "Spin_Skate_In",
+          "impactFraction": 0
+        },
+        "spin_skate_loop": {
+          "clip": "Spin_Skate_Loop",
+          "impactFraction": 0
+        },
+        "spin_skate_out": {
+          "clip": "Spin_Skate_Out",
+          "impactFraction": 0
+        },
+        "spin_twohand_in": {
+          "clip": "Spin_Twohand_In",
+          "impactFraction": 0
+        },
+        "spin_twohand_loop": {
+          "clip": "Spin_Twohand_Loop",
+          "impactFraction": 0
+        },
+        "spin_twohand_out": {
+          "clip": "Spin_Twohand_Out",
+          "impactFraction": 0
+        },
+        "spin_low_in": {
+          "clip": "Spin_Low_In",
+          "impactFraction": 0
+        },
+        "spin_low_loop": {
+          "clip": "Spin_Low_Loop",
+          "impactFraction": 0
+        },
+        "spin_low_out": {
+          "clip": "Spin_Low_Out",
+          "impactFraction": 0
         },
         "roll": {
           "clip": "Roll",
