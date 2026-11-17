@@ -29,6 +29,30 @@ export function tooltipSpot(x: number, y: number, width: number, height: number,
   return { left: Math.max(view.left + TOOLTIP.margin, right), top };
 }
 
+export interface Size {
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface Measure {
+  get(): Size;
+  clear(): void;
+}
+
+export function measureOnce(read: () => Size): Measure {
+  let known: Size | null = null;
+  return {
+    get(): Size {
+      const size: Size = known ?? read();
+      known = size;
+      return size;
+    },
+    clear(): void {
+      known = null;
+    },
+  };
+}
+
 export interface Tooltip {
   show(content: HTMLElement, x: number, y: number, beside: Box | null): void;
   move(x: number, y: number): void;
@@ -42,10 +66,15 @@ export function createTooltip(root: HTMLElement): Tooltip {
   let lastX: number = 0;
   let lastY: number = 0;
   let lastBeside: Box | null = null;
+  const size: Measure = measureOnce((): Size => ({ width: node.offsetWidth, height: node.offsetHeight }));
+  new ResizeObserver((): void => {
+    size.clear();
+  }).observe(node);
   const place = (x: number, y: number): void => {
     lastX = x;
     lastY = y;
-    const spot: Spot = tooltipSpot(x, y, node.offsetWidth, node.offsetHeight, { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }, lastBeside);
+    const { width, height }: Size = size.get();
+    const spot: Spot = tooltipSpot(x, y, width, height, { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }, lastBeside);
     node.style.left = `${spot.left}px`;
     node.style.top = `${spot.top}px`;
   };
@@ -54,6 +83,7 @@ export function createTooltip(root: HTMLElement): Tooltip {
     if (event.key !== 'Shift') return;
     shifted = event.type === 'keydown';
     node.classList.toggle('compare', shifted);
+    size.clear();
     place(lastX, lastY);
   };
   window.addEventListener('keydown', compare);
@@ -61,6 +91,7 @@ export function createTooltip(root: HTMLElement): Tooltip {
   window.addEventListener('blur', (): void => {
     shifted = false;
     node.classList.remove('compare');
+    size.clear();
   });
 
   return {
@@ -68,6 +99,7 @@ export function createTooltip(root: HTMLElement): Tooltip {
       lastBeside = beside;
       node.replaceChildren(content);
       node.classList.toggle('compare', shifted);
+      size.clear();
       place(x, y);
       node.classList.add('visible');
     },

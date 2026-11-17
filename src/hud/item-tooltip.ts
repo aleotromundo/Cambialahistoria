@@ -1,4 +1,4 @@
-import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, ItemUse, RarityDef, WeaponGroup } from '../../sim/content/types.ts';
+import type { ArmourMaterial, Content, ItemBaseDef, ItemSlot, ItemUse, RarityDef, WeaponGroup, ZoneDef } from '../../sim/content/types.ts';
 import { readItem, readingLines } from '../../sim/item-reading.ts';
 import type { Headline, ItemReading, ReadingRow } from '../../sim/item-reading.ts';
 import { itemVerdict, verdictNote, verdictParts } from '../../sim/item-verdict.ts';
@@ -8,12 +8,32 @@ import { familyReading } from '../../sim/powers.ts';
 import type { FamilyPiece, FamilyReading } from '../../sim/powers.ts';
 import { countOf } from '../../sim/stacks.ts';
 import { threatNear } from '../../sim/threat.ts';
+import type { Threat } from '../../sim/threat.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
 import { heldText } from './cell-count.ts';
 import { el, label } from './dom.ts';
 import type { HudApi } from './hud-api.ts';
 import { setPicture } from './item-picture.ts';
 import { baseFamily, familyLine, familyRow } from './weapon-family.ts';
+
+interface KnownThreat {
+  readonly content: Content;
+  readonly visited: string;
+  readonly zone: string;
+  readonly level: number;
+  readonly threat: Threat;
+}
+
+let knownThreat: KnownThreat | null = null;
+
+export function threatFor(content: Content, visited: readonly string[], zone: ZoneDef, level: number): Threat {
+  const seen: string = visited.join('\n');
+  const known: KnownThreat | null = knownThreat;
+  if (known !== null && known.content === content && known.visited === seen && known.zone === zone.id && known.level === level) return known.threat;
+  const threat: Threat = threatNear(content, visited, zone, level);
+  knownThreat = { content, visited: seen, zone: zone.id, level, threat };
+  return threat;
+}
 
 export const TOOLTIP_WORDS: { readonly unverified: string } = { unverified: 'Unverified' };
 
@@ -123,7 +143,7 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   const family: FamilyReading | null = familyReading(content, item, api.world.player.equipped);
   if (family !== null) appendPower(root, family);
   if (compare) {
-    const verdict: Verdict | null = itemVerdict(content, api.world.player, threatNear(content, api.world.visited, api.world.zone, api.world.player.level), item);
+    const verdict: Verdict | null = itemVerdict(content, api.world.player, threatFor(content, api.world.visited, api.world.zone, api.world.player.level), item);
     if (verdict !== null) appendVerdict(root, verdict);
   }
   if (hint !== null) label('tip-hint', hint, root);
