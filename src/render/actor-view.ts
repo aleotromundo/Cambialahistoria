@@ -530,8 +530,10 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         yaw += turned;
         turned = 0;
         spinning = false;
-        const ending: ActionClip | undefined = clipSpin === null || dead ? undefined : actionClip(rig, clipSpin.clips.end);
+        const handedOver: boolean = acting !== null && acting !== spinPose && acting === current;
+        const ending: ActionClip | undefined = clipSpin === null || dead || handedOver ? undefined : actionClip(rig, clipSpin.clips.end);
         clipSpin = null;
+        if (handedOver) return;
         if (ending !== undefined) {
           play(ending.clip, ACTOR.spinFade, 1, true, true);
           acting = current;

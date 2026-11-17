@@ -14,6 +14,7 @@ import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
+import { givesWayToDodge, isDodge } from './dodge.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, replayDialogue } from './dialogue.ts';
 import { pickUp } from './finds.ts';
@@ -21,9 +22,9 @@ import { useFlask } from './flasks.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { beingKnocked, faceToward, steerAlong, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
-import { blockedReason, startSkill, steerAction, stepAction } from './skills.ts';
+import { blockedReason, isHeld, startSkill, steerAction, stepAction } from './skills.ts';
 import { aimGlide, glide, glidesWith, stepMomentum } from './momentum.ts';
-import type { Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
+import type { ActionState, Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handlePurse } from './purse.ts';
 import { handleTrade, meetNpc, openStation, stationAt, stationReach } from './trade.ts';
 import { setOut } from './run-table.ts';
@@ -292,10 +293,11 @@ function act(world: World, command: Command): void {
   }
 }
 
-function cutsRecovery(player: PlayerState, command: Command | null): boolean {
-  if (command?.type !== 'skill' || player.action?.phase !== 'recovery') return false;
+function cutByDodge(player: PlayerState, command: Command | null): boolean {
+  const action: ActionState | null = player.action;
+  if (command?.type !== 'skill' || action === null || !givesWayToDodge(action, isHeld(player, action))) return false;
   const skill: SkillDef | undefined = player.skills[command.slot] ?? undefined;
-  return skill !== undefined && skill.delivery.type === 'dash' && canDash(player) && blockedReason(player, skill) === null;
+  return skill !== undefined && isDodge(skill) && canDash(player) && blockedReason(player, skill) === null;
 }
 
 export function handleCommand(world: World, command: Command): void {
@@ -390,7 +392,7 @@ export function handleCommand(world: World, command: Command): void {
       if (!player.alive) return;
       if (command.type !== 'skill') closeDialogue(world, false);
       if ((command.type === 'move' || command.type === 'walk') && aimGlide(player, command.dest)) return;
-      if (cutsRecovery(player, command)) player.action = null;
+      if (cutByDodge(player, command)) player.action = null;
       if (player.action !== null) {
         if (!keepsQueuedSkill(player.queued, command)) player.queued = command;
         return;
@@ -613,7 +615,7 @@ export function stepPlayer(world: World, dt: number): void {
   player.moving = false;
   const startX: number = player.pos.x;
   const startZ: number = player.pos.z;
-  if (cutsRecovery(player, player.queued)) player.action = null;
+  if (cutByDodge(player, player.queued)) player.action = null;
   if (player.action === null && player.queued !== null) {
     const queued: Command = player.queued;
     player.queued = null;
