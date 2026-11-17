@@ -44,7 +44,7 @@ export interface WarmSurvey {
 const warmedTextures: WeakMap<Texture, number> = new WeakMap<Texture, number>();
 const warmedGeometries: WeakSet<BufferGeometry> = new WeakSet<BufferGeometry>();
 const warmedDrawables: WeakSet<Object3D> = new WeakSet<Object3D>();
-const compiledDrawables: WeakSet<Object3D> = new WeakSet<Object3D>();
+const compiledDrawables: WeakMap<Object3D, Promise<Object3D>> = new WeakMap<Object3D, Promise<Object3D>>();
 
 function isMaterial(value: unknown): value is Material {
   return value instanceof Material;
@@ -295,15 +295,20 @@ function compileOne(compiler: ShaderCompiler, stage: SliceStage, camera: Camera,
 }
 
 async function compilePaced(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, drawables: readonly Object3D[], pacer: FramePacer): Promise<void> {
-  const fresh: readonly Object3D[] = drawables.filter((object: Object3D): boolean => !compiledDrawables.has(object));
   const compiling: Promise<Object3D>[] = [];
+  const fresh: Object3D[] = [];
+  for (const object of drawables) {
+    const started: Promise<Object3D> | undefined = compiledDrawables.get(object);
+    if (started === undefined) fresh.push(object);
+    else compiling.push(started);
+  }
   await workPaced(
     fresh,
     (object: Object3D): void => {
       const started: Promise<Object3D> | null = compileOne(compiler, stage, camera, object);
       if (started === null) return;
       compiling.push(started);
-      compiledDrawables.add(object);
+      compiledDrawables.set(object, started);
     },
     pacer,
   );

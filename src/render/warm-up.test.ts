@@ -236,6 +236,23 @@ void test('a mesh compiled by one warm-up is not compiled by the next, and one a
   assert.deepEqual(compiled, [[first], [second]]);
 });
 
+void test('a warm-up that finds a mesh another warm-up is still compiling waits for that compile before it draws', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const mesh: Mesh = new Mesh();
+  scene.add(mesh);
+  const compiler: Recorder = recorder(mesh);
+  let draws: number = 0;
+  const counting: ShaderCompiler = { ...compiler, drawOnce: (): void => void (draws += 1) };
+  const first: Promise<void> = warmUp(counting, scene, new PerspectiveCamera(), [], null, PACER);
+  await settle();
+  const second: Promise<void> = warmUp(counting, scene, new PerspectiveCamera(), [], null, PACER);
+  await settle();
+  assert.deepEqual([compiler.seen.length, draws], [1, 0]);
+  compiler.finish();
+  await Promise.all([first, second]);
+  assert.equal(draws, 1);
+});
+
 interface ClockPacer extends FramePacer {
   frame(): number;
   spend(ms: number): void;
