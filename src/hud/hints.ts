@@ -1,6 +1,6 @@
 import { hintSegments, hintWording } from '../../sim/content/hints.ts';
 import type { HintDef, HintPanel, HintsDef, HintSegment, HintTrigger } from '../../sim/content/hints.ts';
-import { createHintState, seedVeteran, stepHints, stillTeaches } from '../../sim/hints.ts';
+import { createHintState, rememberedSeen, seedVeteran, stepHints, stillTeaches } from '../../sim/hints.ts';
 import type { HintChange, HintState } from '../../sim/hints.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 import type { HintStore } from '../hints-store.ts';
@@ -83,7 +83,7 @@ export function createHints(parent: HTMLElement, defs: HintsDef, store: HintStor
       for (const change of changes) {
         if (change.type === 'show') swap.show(change.hint);
         else {
-          if (change.done) store.remember(change.hint.id, [...state.seen]);
+          if (change.done && !change.hint.perSession) store.remember(change.hint.id, rememberedSeen(defs, state.seen));
           swap.hide();
         }
       }

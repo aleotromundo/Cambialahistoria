@@ -12,6 +12,7 @@ import { parseSaveText, readSave, SAVE_VERSION, toSave } from './save.ts';
 import type { SaveData } from './save.ts';
 import { createWorld } from './world/create.ts';
 import { blockedReason } from './world/skills.ts';
+import { setFlaskTier } from './world/flask-tiers.ts';
 import { areaLevel } from './world/spawn.ts';
 import type { ItemInstance, World } from './world/types.ts';
 import { made, played, roundTrip, saveContent as content } from '../test/save-support.ts';
@@ -325,6 +326,37 @@ void test('flask charges survive a save, and a version 2 save from before flasks
 void test('saved flask charges that are unknown, negative or too large are cleaned up', (): void => {
   const save: SaveData = must(readSave(content, { ...JSON.parse(JSON.stringify(toSave(played()))), flasks: { life_flask: 500, mana_flask: -3, made_up: 4 } }), 'save');
   assert.deepEqual(save.flasks, { life_flask: must(content.flasks[0], 'life').maxCharges });
+});
+
+void test('flask tiers survive a save, with charges above the base flask kept', (): void => {
+  const world: World = played();
+  const red = must(world.player.flasks[0], 'life flask');
+  const top = must(must(content.flasks[0], 'life').tiers[3], 'top tier');
+  setFlaskTier(must(content.flasks[0], 'life'), red, 4);
+  red.charges = top.maxCharges - 1;
+  const save: SaveData = roundTrip(world);
+  assert.deepEqual(save.flaskTiers, { life_flask: 4 });
+  const restored: World = createWorld(content, { seed: 2, save });
+  const back = must(restored.player.flasks[0], 'restored life flask');
+  assert.equal(back.tier, 4);
+  assert.equal(back.def.amount, top.amount);
+  assert.equal(back.charges, top.maxCharges - 1);
+  assert.equal(must(restored.player.flasks[1], 'mana flask').tier, 0);
+});
+
+void test('a save from before flask tiers, or with bad tiers, loads with base flasks', (): void => {
+  const { flaskTiers: _dropped, ...older } = toSave(played());
+  const old: SaveData = must(readSave(content, JSON.parse(JSON.stringify(older))), 'old save');
+  assert.deepEqual(old.flaskTiers, {});
+  assert.ok(createWorld(content, { seed: 2, save: old }).player.flasks.every((flask): boolean => flask.tier === 0));
+  const bad: SaveData = must(readSave(content, { ...JSON.parse(JSON.stringify(toSave(played()))), flaskTiers: { life_flask: 'high', mana_flask: -2, made_up: 3 } }), 'bad tiers');
+  assert.deepEqual(bad.flaskTiers, {});
+  const odd: SaveData = must(readSave(content, { ...JSON.parse(JSON.stringify(toSave(played()))), flaskTiers: [1, 2] }), 'odd tiers');
+  assert.deepEqual(odd.flaskTiers, {});
+  const over: SaveData = must(readSave(content, { ...JSON.parse(JSON.stringify(toSave(played()))), flaskTiers: { life_flask: 40 }, flasks: { life_flask: 999 } }), 'too high');
+  const life = must(content.flasks[0], 'life');
+  assert.deepEqual(over.flaskTiers, { life_flask: life.tiers.length });
+  assert.equal(over.flasks['life_flask'], must(life.tiers[life.tiers.length - 1], 'top').maxCharges);
 });
 
 void test('the stash survives a save slot for slot', (): void => {

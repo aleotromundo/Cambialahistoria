@@ -1,5 +1,5 @@
 import type { BotPlan } from './bot-plan.ts';
-import { flaskCommands, junkIndex, letGoCommands, nextPlace, planAttack, releaseCommands, rollCommand, upgradeIndex } from './bot-plan.ts';
+import { flaskCommands, junkIndex, letGoCommands, nextPlace, planAttack, releaseCommands, rollCommand, shopCommands, upgradeIndex } from './bot-plan.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
 import { revealCarried } from './identify.ts';
 import { canAllocate } from './progression.ts';
@@ -18,6 +18,7 @@ import { glidesWith } from './world/momentum.ts';
 import { harmful, hazardDue, SPIN_DODGE, spinStep, wheelReach } from './bot-spin.ts';
 import { heldAtLine, holdersOf, strikeWaiting } from './world/count.ts';
 import { markRow } from './world/hazards.ts';
+import { anyUpgradeReady } from './world/flask-tiers.ts';
 import { hotGround, worthTheBurn } from './bot-ground.ts';
 import { playerMayStrike } from './world/factions.ts';
 import type { ActionState, Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
@@ -27,6 +28,7 @@ export const BOT = {
   walkLimit: 90,
   talkLimit: 60,
   talksPerVisit: 4,
+  shopRounds: 8,
   fightLimit: 300,
   bubbleKeep: 0.8,
   questLimit: 900,
@@ -97,7 +99,7 @@ function planned(bot: Bot, commands: readonly Command[]): Command[] {
     return first === null ? [...commands] : [...commands, { type: 'allocate', node: first.id }];
   }
   const steered: boolean = commands.some((command: Command): boolean => command.type === 'steer');
-  const extra: Command[] = [...flaskCommands(world, plan), ...(steered ? [] : releaseCommands(world))];
+  const extra: Command[] = [...flaskCommands(world, plan), ...shopCommands(world), ...(steered ? [] : releaseCommands(world))];
   const place: string | null = nextPlace(world.content, plan, world.player.allocated, world.player.skillPoints);
   if (place !== null) extra.push({ type: 'allocate', node: place });
   if (plan.loot && bot.bagChanged && world.player.action === null) {
@@ -501,8 +503,32 @@ function through(bot: Bot, exit: ZoneExit): boolean {
   return false;
 }
 
+export function botShop(bot: Bot): boolean {
+  const world: World = bot.world;
+  if (world.zone.kind !== 'town' || !anyUpgradeReady(world.content, world.player)) return false;
+  const npc: NpcState | undefined = world.npcs.find((candidate: NpcState): boolean => candidate.def.service === 'vendor');
+  if (npc === undefined) return false;
+  const steps: number = Math.round(BOT.talkLimit / BOT.step);
+  let sinceOrder: number = BOT.idleRepeat;
+  for (let step: number = 0; step < steps && world.service?.kind !== 'vendor'; step += 1) {
+    if (talking(world)) {
+      tick(bot, [{ type: 'advance' }]);
+      continue;
+    }
+    sinceOrder += BOT.step;
+    const order: boolean = free(world) && (sinceOrder >= BOT.idleRepeat || world.player.intent.type !== 'talk');
+    if (order) sinceOrder = 0;
+    tick(bot, order ? [{ type: 'talk', npcId: npc.id }] : []);
+  }
+  if (world.service?.kind !== 'vendor') return false;
+  for (let buy: number = 0; buy < world.player.flasks.length * BOT.shopRounds && anyUpgradeReady(world.content, world.player); buy += 1) tick(bot, shopCommands(world));
+  tick(bot, [{ type: 'trade', action: { type: 'close' } }]);
+  return true;
+}
+
 export function botTravelTo(bot: Bot, target: string): boolean {
   for (let hop: number = 0; hop <= bot.world.content.zones.size; hop += 1) {
+    botShop(bot);
     if (bot.world.zone.id === target) return true;
     const next: ZoneExit | undefined = botRoute(bot.world, target)?.[0];
     if (next === undefined || !through(bot, next)) return false;

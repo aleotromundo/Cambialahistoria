@@ -100,6 +100,17 @@ void test('a thread stack goes with the copy that is kept, whole, and is never a
   assert.equal(heldThreads(must(readSave(backendContent, JSON.parse(JSON.stringify(local))), 'read')), 7);
 });
 
+void test('flask tiers go with the copy that is kept and are read back whole', (): void => {
+  const local: SaveData = { ...makeSave(9, 0), flaskTiers: { life_flask: 1 } };
+  const ahead: CloudState = { save: { ...makeSave(15, 0), flaskTiers: { life_flask: 2, mana_flask: 2 } }, revision: 4, updatedAt: '2026-11-11T10:00:00.000Z', epoch: 2 };
+  const onLoad = chooseOnLoad({ local, record: record({ pending: true }), cloud: ahead });
+  assert.equal(onLoad.side, 'cloud');
+  assert.deepEqual(must(readSave(backendContent, JSON.parse(JSON.stringify(ahead.save))), 'cloud').flaskTiers, { life_flask: 2, mana_flask: 2 });
+  const onConflict = chooseOnConflict({ local: { ...local, level: 16 }, current: ahead, overwriteCloud: false });
+  assert.equal(onConflict.side, 'local');
+  assert.deepEqual(must(readSave(backendContent, JSON.parse(JSON.stringify({ ...local, level: 16 }))), 'local').flaskTiers, { life_flask: 1 });
+});
+
 function withHidden(level: number): SaveData {
   const save: SaveData = makeSave(level, 0);
   const rolled: ItemInstance = must(generateItem(backendContent, createRng(31), 31, level, 'gale_charm', 'rare'), 'charm');

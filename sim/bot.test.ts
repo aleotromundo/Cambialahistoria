@@ -4,7 +4,7 @@ import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
 import { wheelReach } from './bot-spin.ts';
-import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
+import { botFight, botInDanger, botPlay, botRoute, botShop, botStep, botTalk, botTravelTo, botWalkTo, createBot } from './bot.ts';
 import { hotGround } from './bot-ground.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
@@ -315,6 +315,30 @@ void test('a careful bot caught in a telegraphed swing while the Millwheel turns
   const goal: Vec2 | null = goalOf(world);
   assert.ok(goal !== null);
   assert.equal(botInDanger(world, goal), false);
+});
+
+void test('a bot in the Hideout buys every flask tier it can afford and leaves the rest', (): void => {
+  const world: World = finishQuests(createWorld(content, { seed: 12, save: null }));
+  const bot: Bot = createBot(world);
+  const [life, mana] = content.flasks;
+  const lifeFirst = must(life?.tiers[0], 'life tier 1');
+  const manaFirst = must(mana?.tiers[0], 'mana tier 1');
+  world.player.level = lifeFirst.level;
+  world.player.gold = lifeFirst.price + manaFirst.price + 1;
+  assert.equal(botTravelTo(bot, 'hideout'), true);
+  assert.deepEqual(world.player.flasks.map((flask): number => flask.tier), [1, 1]);
+  assert.ok(world.player.gold < manaFirst.price);
+  assert.equal(world.service, null);
+  assert.equal(botShop(bot), false);
+});
+
+void test('a bot with a high level and a full purse climbs both flasks to the top in one visit', (): void => {
+  const world: World = finishQuests(createWorld(content, { seed: 13, save: null }));
+  const bot: Bot = createBot(world);
+  world.player.level = 30;
+  world.player.gold = 1e6;
+  assert.equal(botTravelTo(bot, 'hideout'), true);
+  assert.deepEqual(world.player.flasks.map((flask): number => flask.tier), content.flasks.map((def): number => def.tiers.length));
 });
 
 void test('the bot reads what it carries for free as soon as its bag changes', (): void => {

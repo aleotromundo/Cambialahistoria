@@ -424,3 +424,139 @@ body:not(.touch) .trade-head {
     transform: none;
   }
 }
+
+.flask-offers {
+  contain: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flask-offer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: background-color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.flask-offer.ready {
+  background: rgba(232, 184, 102, 0.08);
+}
+
+.fo-side {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fo-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.fo-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.flask-offer.life .fo-name {
+  color: #e7a69a;
+}
+
+.flask-offer.mana .fo-name {
+  color: #a9c2ec;
+}
+
+.fo-tier {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.fo-next {
+  min-height: 2.7em;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.fo-need {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.flask-offer.ready .fo-need {
+  color: var(--ember);
+}
+
+.flask-offer.short .fo-need {
+  color: #c4675c;
+}
+
+.fo-buy {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  max-width: 0;
+  padding: 5px 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ember);
+  background: rgba(232, 184, 102, 0.1);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+  transition:
+    max-width var(--spring-smooth-ms) var(--spring-smooth),
+    padding var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    color var(--spring-smooth-ms) var(--spring-smooth),
+    background var(--spring-smooth-ms) var(--spring-smooth),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.flask-offer.ready .fo-buy,
+.flask-offer.short .fo-buy {
+  max-width: 90px;
+  padding: 5px 10px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.flask-offer.short .fo-buy {
+  color: #c4675c;
+  background: rgba(196, 103, 92, 0.08);
+}
+
+.flask-offer.ready .fo-buy:hover {
+  background: rgba(232, 184, 102, 0.18);
+}
+
+.fo-buy:active {
+  transform: scale(0.94);
+}
+
+.fo-buy.deny {
+  animation: tree-deny var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.fo-buy .gold-icon {
+  display: flex;
+  width: 12px;
+  height: 12px;
+}

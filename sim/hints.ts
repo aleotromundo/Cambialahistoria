@@ -8,6 +8,7 @@ import { objectiveTarget } from './world/objective.ts';
 import { questState } from './world/conditions.ts';
 import type { ObjectiveTarget } from './world/objective.ts';
 import { insideAwakeMoment, insideChestMoment } from './world/moments.ts';
+import { anyUpgradeReady } from './world/flask-tiers.ts';
 import type { FlaskState, GroundItem, ItemInstance, MonsterState, World, WorldEvent } from './world/types.ts';
 
 export const HINTS = { maxShowSeconds: 14 } as const;
@@ -20,6 +21,7 @@ export interface HintState {
   zoneChanged: boolean;
   pickedUp: boolean;
   drank: Set<FlaskResource>;
+  upgraded: boolean;
   skillsUsed: Set<string>;
   allocatedBase: number;
   equippedUids: ReadonlySet<number>;
@@ -41,7 +43,7 @@ function wornUids(world: World): number[] {
 }
 
 export function createHintState(seen: Iterable<string>): HintState {
-  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, drank: new Set<FlaskResource>(), skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false, visibleFor: 0, lastTime: 0 };
+  return { seen: new Set<string>(seen), active: null, anchor: { x: 0, z: 0 }, talked: false, zoneChanged: false, pickedUp: false, drank: new Set<FlaskResource>(), upgraded: false, skillsUsed: new Set<string>(), allocatedBase: 0, equippedUids: new Set<number>(), started: false, visibleFor: 0, lastTime: 0 };
 }
 
 export function seedVeteran(defs: HintsDef, state: HintState, world: World): void {
@@ -61,6 +63,15 @@ function lifeFraction(world: World): number {
 
 function canDrink(world: World, resource: FlaskResource | null): boolean {
   return resource === null || world.player.flasks.some((flask: FlaskState): boolean => flask.def.resource === resource && flask.charges >= flask.def.chargesPerUse);
+}
+
+function quiet(world: World, range: number): boolean {
+  return world.dialogue === null && !world.monsters.some((monster: MonsterState): boolean => monster.alive && monster.aggro && near(world, range, monster.pos));
+}
+
+export function rememberedSeen(defs: HintsDef, seen: Iterable<string>): string[] {
+  const fleeting: ReadonlySet<string> = new Set<string>(defs.hints.filter((hint: HintDef): boolean => hint.perSession).map((hint: HintDef): string => hint.id));
+  return [...seen].filter((id: string): boolean => !fleeting.has(id));
 }
 
 function gearInBag(world: World): boolean {
@@ -112,6 +123,9 @@ function triggered(trigger: HintTrigger, world: World, objective: ObjectiveTarge
     case 'chest_moment':
       holds = insideChestMoment(world);
       break;
+    case 'flask_upgrade':
+      holds = anyUpgradeReady(world.content, player) && quiet(world, trigger.range);
+      break;
   }
   return holds;
 }
@@ -158,6 +172,9 @@ function finished(done: HintDone, world: World, state: HintState, open: Readonly
     case 'moment_over':
       complete = !insideAwakeMoment(world);
       break;
+    case 'flask_upgraded':
+      complete = state.upgraded;
+      break;
   }
   return complete;
 }
@@ -168,6 +185,7 @@ function observe(state: HintState, world: World, events: readonly WorldEvent[]):
     else if (event.type === 'zone_changed') state.zoneChanged = true;
     else if (event.type === 'pickup') state.pickedUp = true;
     else if (event.type === 'flask_used') state.drank.add(event.resource);
+    else if (event.type === 'flask_upgraded') state.upgraded = true;
     else if (event.type === 'skill_start' && event.actorId === world.player.id) state.skillsUsed.add(event.skill.id);
   }
 }
@@ -179,6 +197,7 @@ function begin(state: HintState, world: World, hint: HintDef): void {
   state.zoneChanged = false;
   state.pickedUp = false;
   state.drank = new Set<FlaskResource>();
+  state.upgraded = false;
   state.skillsUsed = new Set<string>();
   state.allocatedBase = world.player.allocated.length;
   state.equippedUids = new Set<number>(wornUids(world));

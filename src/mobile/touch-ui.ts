@@ -12,6 +12,7 @@ import type { KeyValueStore } from '../backend/backend.ts';
 import { el } from '../hud/dom.ts';
 import { flaskGauge, readFlask } from '../hud/flask-gauge.ts';
 import type { FlaskVessel } from '../hud/flask-vessel.ts';
+import { upgradeReady } from '../../sim/world/flask-tiers.ts';
 import { createVessel } from '../hud/flask-vessel.ts';
 import type { Hud, HudPanel } from '../hud/hud-api.ts';
 import { iconSvg } from '../hud/icons.ts';
@@ -613,7 +614,10 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
       for (const view of views) {
         if (view.spec.kind === 'flask') {
           const flask: FlaskState | undefined = player.flasks[view.spec.slot];
-          if (flask !== undefined) view.vessel?.paint(readFlask(flask));
+          if (flask !== undefined) {
+            view.vessel?.paint(readFlask(flask));
+            view.vessel?.setMark(upgradeReady(world.content, player, flask));
+          }
           continue;
         }
         if (!view.spec.filled) continue;

@@ -147,7 +147,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
     const action: ActionId | null = flaskAction(slot);
     return action === null ? '' : api.settings.keys().labelOf(action);
   };
-  const flasks: FlaskBelt = createFlaskBelt(globes, api.world.player.flasks, flaskKey, (resource: FlaskResource, on: boolean): void => globes.setRestoring(resource, on));
+  const flasks: FlaskBelt = createFlaskBelt(globes, api.world.content, api.world.player.flasks, flaskKey, (resource: FlaskResource, on: boolean): void => globes.setRestoring(resource, on));
   const fps: FpsReadout = createFpsReadout(root, (): string => api.qualityTier());
   const surge: WorldStatus = createSurgeStatus(root);
   const banners: Banners = createBanners(root);
@@ -499,6 +499,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'boss_held':
           case 'count_broken':
           case 'piece_unsealed':
+          case 'flask_upgraded':
           case 'flasks_refilled':
             break;
         }

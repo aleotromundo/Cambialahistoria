@@ -1,4 +1,6 @@
 import type { FlaskResource } from '../../sim/content/flasks.ts';
+import type { Content } from '../../sim/content/types.ts';
+import { upgradeReady } from '../../sim/world/flask-tiers.ts';
 import type { FlaskState, PlayerState } from '../../sim/world/types.ts';
 import type { FlaskReading } from './flask-gauge.ts';
 import { flaskGauge, readFlask } from './flask-gauge.ts';
@@ -15,7 +17,7 @@ export interface FlaskBelt {
   refreshKeys(): void;
 }
 
-export function createFlaskBelt(hosts: FlaskHosts, flasks: readonly FlaskState[], keyOf: (slot: number) => string, setRestoring: (resource: FlaskResource, on: boolean) => void): FlaskBelt {
+export function createFlaskBelt(hosts: FlaskHosts, content: Content, flasks: readonly FlaskState[], keyOf: (slot: number) => string, setRestoring: (resource: FlaskResource, on: boolean) => void): FlaskBelt {
   const vessels: FlaskVessel[] = flasks.map((flask: FlaskState): FlaskVessel => {
     const reading: FlaskReading = readFlask(flask);
     const vessel: FlaskVessel = createVessel(hosts.flask(flask.def.resource), flask.def.resource, true, reading);
@@ -34,6 +36,7 @@ export function createFlaskBelt(hosts: FlaskHosts, flasks: readonly FlaskState[]
       player.flasks.forEach((flask: FlaskState, slot: number): void => {
         const reading: FlaskReading = readFlask(flask);
         vessels[slot]?.paint(reading);
+        vessels[slot]?.setMark(upgradeReady(content, player, flask));
         if (reading.restoring) restoring[flask.def.resource] = true;
       });
       setRestoring('life', restoring.life);

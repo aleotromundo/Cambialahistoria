@@ -283,6 +283,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'boss_held':
     case 'count_broken':
     case 'piece_unsealed':
+    case 'flask_upgraded':
     case 'flasks_refilled':
       break;
   }

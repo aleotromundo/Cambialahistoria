@@ -139,6 +139,7 @@ export type TradeAction =
   | { readonly type: 'sell'; readonly inventoryIndex: number }
   | { readonly type: 'buy_back'; readonly index: number }
   | { readonly type: 'buy_good'; readonly index: number }
+  | { readonly type: 'upgrade_flask'; readonly flask: string }
   | { readonly type: 'stash'; readonly inventoryIndex: number }
   | { readonly type: 'unstash'; readonly index: number }
   | { readonly type: 'identify'; readonly place: ItemPlace; readonly index: number }

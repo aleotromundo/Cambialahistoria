@@ -27,7 +27,8 @@ export type HintTrigger =
   | { readonly type: 'low_life'; readonly fraction: number; readonly flask: FlaskResource | null }
   | { readonly type: 'player_dead' }
   | { readonly type: 'in_moment' }
-  | { readonly type: 'chest_moment' };
+  | { readonly type: 'chest_moment' }
+  | { readonly type: 'flask_upgrade'; readonly range: number };
 
 export type HintDone =
   | { readonly type: 'moved'; readonly distance: number }
@@ -40,7 +41,8 @@ export type HintDone =
   | { readonly type: 'allocated' }
   | { readonly type: 'drank'; readonly flask: FlaskResource | null }
   | { readonly type: 'alive' }
-  | { readonly type: 'moment_over' };
+  | { readonly type: 'moment_over' }
+  | { readonly type: 'flask_upgraded' };
 
 export interface HintDef {
   readonly id: string;
@@ -51,6 +53,7 @@ export interface HintDef {
   readonly after: readonly string[];
   readonly forNewPlayers: boolean;
   readonly lapses: boolean;
+  readonly perSession: boolean;
 }
 
 export interface HintsDef {
@@ -77,7 +80,7 @@ export function hintSegments(template: string): HintSegment[] {
 
 function readTrigger(value: unknown, where: string): HintTrigger {
   const source: Fields = fields(value, where);
-  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead', 'in_moment', 'chest_moment'] as const, where);
+  const type = choice(source, 'type', ['game_started', 'objective_person', 'objective_exit', 'waypoint_near', 'monster_near', 'item_near', 'skill_point', 'skill_learned', 'slot_filled', 'gear_in_bag', 'low_life', 'player_dead', 'in_moment', 'chest_moment', 'flask_upgrade'] as const, where);
   let trigger: HintTrigger;
   switch (type) {
     case 'game_started':
@@ -93,6 +96,7 @@ function readTrigger(value: unknown, where: string): HintTrigger {
     case 'waypoint_near':
     case 'monster_near':
     case 'item_near':
+    case 'flask_upgrade':
       trigger = { type, range: numeric(source, 'range', where) };
       break;
     case 'skill_learned':
@@ -117,7 +121,7 @@ function readSlots(value: unknown, where: string): number[] {
 
 function readDone(value: unknown, where: string): HintDone {
   const source: Fields = fields(value, where);
-  const type = choice(source, 'type', ['moved', 'talked', 'panel', 'zone_changed', 'skills_used', 'picked_up', 'equipped', 'allocated', 'drank', 'alive', 'moment_over'] as const, where);
+  const type = choice(source, 'type', ['moved', 'talked', 'panel', 'zone_changed', 'skills_used', 'picked_up', 'equipped', 'allocated', 'drank', 'alive', 'moment_over', 'flask_upgraded'] as const, where);
   let done: HintDone;
   switch (type) {
     case 'talked':
@@ -127,6 +131,7 @@ function readDone(value: unknown, where: string): HintDone {
     case 'allocated':
     case 'alive':
     case 'moment_over':
+    case 'flask_upgraded':
       done = { type };
       break;
     case 'moved':
@@ -156,6 +161,7 @@ function readHint(value: unknown, where: string): HintDef {
     after: textList(source, 'after', where),
     forNewPlayers: flag(source, 'forNewPlayers', where),
     lapses: flag(source, 'lapses', where),
+    perSession: source['perSession'] === undefined ? false : flag(source, 'perSession', where),
   };
 }
 

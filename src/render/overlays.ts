@@ -1,5 +1,6 @@
 import { Vector2 } from 'three';
 import { shownTitle } from '../hud/npc-title.ts';
+import { anyUpgradeReady } from '../../sim/world/flask-tiers.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import type { ItemInstance } from '../../sim/world/types.ts';
@@ -96,6 +97,7 @@ interface NpcLabel {
   readonly element: HTMLDivElement;
   readonly npc: NpcState;
   pinned: boolean | null;
+  upgrade: boolean | null;
   readonly glide: LabelGlide;
   readonly stack: LabelGlide;
 }
@@ -369,6 +371,10 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
       pin.textContent = OVERLAYS.pinGlyph;
       const name: HTMLElement = document.createElement('b');
       name.textContent = npc.def.name;
+      const mark: HTMLElement = document.createElement('em');
+      mark.textContent = OVERLAYS.pinGlyph;
+      mark.setAttribute('aria-hidden', 'true');
+      name.append(mark);
       const title: HTMLElement = document.createElement('small');
       title.textContent = shownTitle(npc.def);
       inner.append(pin, name, title);
@@ -385,7 +391,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         if (event.button === 0) hooks.onTalk(npc.id);
       });
       labelLayer.append(element);
-      return { element, npc, pinned: null, glide: createGlide(), stack: createGlide() };
+      return { element, npc, pinned: null, upgrade: null, glide: createGlide(), stack: createGlide() };
     });
   };
 
@@ -503,6 +509,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'boss_held':
           case 'count_broken':
           case 'piece_unsealed':
+          case 'flask_upgraded':
           case 'flasks_refilled':
             break;
         }
@@ -553,11 +560,17 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
         settleTag(label.element, label.glide, label.stack, dt, !edge && (open || !label.secret));
       }
       if (peopleOf !== world.npcs) showPeople(world);
+      const upgradeReady: boolean = anyUpgradeReady(world.content, world.player);
       for (const label of people) {
         const pinned: boolean = pinnedNpcs.has(label.npc.id);
         if (pinned !== label.pinned) {
           label.pinned = pinned;
           label.element.classList.toggle('pinned', pinned);
+        }
+        const upgrade: boolean = upgradeReady && label.npc.def.service === 'vendor';
+        if (upgrade !== label.upgrade) {
+          label.upgrade = upgrade;
+          label.element.classList.toggle('upgrade', upgrade);
         }
         label.element.classList.toggle('aimed', label.npc.id === hoveredId);
         camera.project(label.npc.pos.x, floorUp(label.npc.pos.x, hooks.heightOf(label.npc.id) + OVERLAYS.npcLift, label.npc.pos.z), label.npc.pos.z, point);

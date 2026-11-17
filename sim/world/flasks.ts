@@ -2,14 +2,17 @@ import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { Content } from '../content/types.ts';
 import type { FlaskDose, FlaskState, NoticeReason, PlayerState, World } from './types.ts';
 import { refillFlasks } from './flask-charges.ts';
+import { clampTier, tieredFlask } from './flask-tiers.ts';
 import { onWaypoint } from './waypoints.ts';
 
 const FULL_NOTICE: Readonly<Record<FlaskResource, NoticeReason>> = { life: 'life_full', mana: 'mana_full' };
 
-export function createFlasks(content: Content, saved: Readonly<Record<string, number>> | null): FlaskState[] {
-  return content.flasks.map((def: FlaskDef): FlaskState => {
+export function createFlasks(content: Content, saved: Readonly<Record<string, number>> | null, tiers: Readonly<Record<string, number>> | null = null): FlaskState[] {
+  return content.flasks.map((base: FlaskDef): FlaskState => {
+    const tier: number = clampTier(base, tiers?.[base.id] ?? 0);
+    const def: FlaskDef = tieredFlask(base, tier);
     const charges: number | undefined = saved?.[def.id];
-    return { def, charges: charges === undefined ? def.maxCharges : Math.max(0, Math.min(def.maxCharges, Math.floor(charges))), cooldown: 0, doses: [] };
+    return { def, tier, charges: charges === undefined ? def.maxCharges : Math.max(0, Math.min(def.maxCharges, Math.floor(charges))), cooldown: 0, doses: [] };
   });
 }
 

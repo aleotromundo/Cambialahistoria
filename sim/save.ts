@@ -21,6 +21,7 @@ import type { AdoptedPlaces } from './progression.ts';
 import { readBar, readLearned } from './skill-book.ts';
 import { grantIds } from './world/learning.ts';
 import { flaskCharges } from './world/flasks.ts';
+import { clampTier, tieredFlask, flaskTiers } from './world/flask-tiers.ts';
 import { glitchToSave } from './world/glitch.ts';
 import type { GlitchSave, PathLogSave } from './world/glitch-types.ts';
 import { readGlitchSave } from './world/glitch-save.ts';
@@ -66,6 +67,7 @@ export interface SaveData {
   readonly waypoints: readonly string[];
   readonly explored: Readonly<Record<string, string>>;
   readonly flasks: Readonly<Record<string, number>>;
+  readonly flaskTiers: Readonly<Record<string, number>>;
   readonly stash: readonly (ItemInstance | null)[];
   readonly vendors: Readonly<Record<string, VendorStock>>;
   readonly flags: StoryFlags;
@@ -121,6 +123,7 @@ export function toSave(world: World): SaveData {
     waypoints: [...world.waypoints],
     explored: Object.fromEntries(Object.entries(world.explored).map(([zone, cells]: [string, Uint8Array]): [string, string] => [zone, savedExplored(cells)])),
     flasks: flaskCharges(player.flasks),
+    flaskTiers: flaskTiers(player.flasks),
     stash: [...world.stash],
     vendors: copyVendors(world.vendors),
     flags: { ...world.flags },
@@ -270,12 +273,23 @@ function readExplored(content: Content, value: unknown): Record<string, string> 
   return explored;
 }
 
-function readFlasks(content: Content, value: unknown): Record<string, number> {
+function readFlaskTiers(content: Content, value: unknown): Record<string, number> {
+  const tiers: Record<string, number> = {};
+  if (!isFields(value)) return tiers;
+  for (const flask of content.flasks) {
+    const saved: number | null = count(value, flask.id, 0);
+    const tier: number = saved === null ? 0 : clampTier(flask, saved);
+    if (tier > 0) tiers[flask.id] = tier;
+  }
+  return tiers;
+}
+
+function readFlasks(content: Content, value: unknown, tiers: Readonly<Record<string, number>>): Record<string, number> {
   const flasks: Record<string, number> = {};
   if (!isFields(value)) return flasks;
   for (const flask of content.flasks) {
     const charges: number | null = count(value, flask.id, 0);
-    if (charges !== null) flasks[flask.id] = Math.min(Math.floor(charges), flask.maxCharges);
+    if (charges !== null) flasks[flask.id] = Math.min(Math.floor(charges), tieredFlask(flask, tiers[flask.id] ?? 0).maxCharges);
   }
   return flasks;
 }
@@ -389,6 +403,7 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     else slots[free] = item;
   }
   const savedHero: unknown = value['hero'];
+  const tiers: Record<string, number> = readFlaskTiers(content, value['flaskTiers']);
   return retireUnworn(content, {
     version: SAVE_VERSION,
     hero: heroOf(content, typeof savedHero === 'string' ? savedHero : null).id,
@@ -416,7 +431,8 @@ export function readSave(content: Content, value: unknown): SaveData | null {
     quests: readQuests(content, value['quests']),
     waypoints: readWaypoints(content, value['waypoints']).filter((id: string): boolean => !held.has(id)),
     explored: readExplored(content, value['explored']),
-    flasks: readFlasks(content, value['flasks']),
+    flasks: readFlasks(content, value['flasks'], tiers),
+    flaskTiers: tiers,
     stash: stashed.stash,
     vendors: readVendors(content, value['vendors']),
     flags: armed.flags,

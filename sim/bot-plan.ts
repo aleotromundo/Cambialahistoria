@@ -11,6 +11,7 @@ import { heldAtLine, strikeWaiting } from './world/count.ts';
 import { canDash } from './world/dash.ts';
 import { playerMayStrike } from './world/factions.ts';
 import { blockedFlask } from './world/flasks.ts';
+import { upgradeReady } from './world/flask-tiers.ts';
 import { glidesWith, momentumShare } from './world/momentum.ts';
 import { chargeOf, spunSkill } from './world/skills.ts';
 import type { Command, Equipment, FlaskState, ItemInstance, MonsterState, PlayerState, World } from './world/types.ts';
@@ -249,6 +250,12 @@ export function flaskCommands(world: World, plan: BotPlan): Command[] {
 function reachOf(skill: SkillDef): number {
   const delivery = skill.delivery;
   return delivery.type === 'nova' ? delivery.radius : BOT_PLAN.crowdReach;
+}
+
+export function shopCommands(world: World): Command[] {
+  if (world.service?.kind !== 'vendor') return [];
+  const buyable: FlaskState | undefined = world.player.flasks.find((flask: FlaskState): boolean => upgradeReady(world.content, world.player, flask));
+  return buyable === undefined ? [] : [{ type: 'trade', action: { type: 'upgrade_flask', flask: buyable.def.id } }];
 }
 
 export function spinAim(world: World, skill: SkillDef): ReadonlyVec2 | null {

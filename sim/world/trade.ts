@@ -11,8 +11,11 @@ import { createRng, pickWeighted } from '../rng.ts';
 import { countOf, fits, moveStack, placeIn } from '../stacks.ts';
 import { allHold } from './conditions.ts';
 import { hasNews, nextTalk, openDialogue } from './dialogue.ts';
+import type { FlaskDef } from '../content/flasks.ts';
+import type { FlaskOffer } from './flask-tiers.ts';
+import { baseFlask, flaskOffer, setFlaskTier } from './flask-tiers.ts';
 import type { ItemPlace } from './service-types.ts';
-import type { ItemInstance, NoticeReason, NpcState, PlayerState, TradeAction, VendorStock, World } from './types.ts';
+import type { FlaskState, ItemInstance, NoticeReason, NpcState, PlayerState, TradeAction, VendorStock, World } from './types.ts';
 
 export const TRADE = {
   leaveSlack: 1.5,
@@ -150,6 +153,24 @@ export function chargeGold(world: World, price: number): boolean {
   world.player.gold -= price;
   changed(world);
   return true;
+}
+
+function upgradeFlask(world: World, id: string): void {
+  const flask: FlaskState | undefined = world.player.flasks.find((entry: FlaskState): boolean => entry.def.id === id);
+  const base: FlaskDef | null = baseFlask(world.content, id);
+  if (flask === undefined || base === null) return;
+  const offer: FlaskOffer = flaskOffer(base, flask.tier, world.player.level, world.player.gold);
+  switch (offer.kind) {
+    case 'top':
+    case 'locked':
+      return;
+    case 'short':
+    case 'ready':
+      if (!chargeGold(world, offer.next.price)) return;
+      setFlaskTier(base, flask, offer.tier + 1);
+      world.events.push({ type: 'flask_upgraded', flask: id, tier: flask.tier });
+      return;
+  }
 }
 
 function buy(world: World, vendor: VendorStock, index: number): void {
@@ -298,6 +319,9 @@ export function handleTrade(world: World, action: TradeAction): void {
       return;
     case 'buy_good':
       if (vendor !== null) buyGood(world, action.index);
+      return;
+    case 'upgrade_flask':
+      if (vendor !== null) upgradeFlask(world, action.flask);
       return;
     case 'stash':
       if (service.kind === 'stash') stash(world, action.inventoryIndex);

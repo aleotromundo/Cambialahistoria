@@ -84,7 +84,8 @@ export interface FlaskDose {
 }
 
 export interface FlaskState {
-  readonly def: FlaskDef;
+  def: FlaskDef;
+  tier: number;
   charges: number;
   cooldown: number;
   doses: FlaskDose[];
@@ -436,6 +437,7 @@ export type WorldEvent =
   | { readonly type: 'armed'; readonly group: string; readonly base: string; readonly where: ArmedWhere | null }
   | { readonly type: 'portal'; readonly stage: PortalStage; readonly zone: string; readonly pos: Vec2 }
   | { readonly type: 'flasks_refilled' }
+  | { readonly type: 'flask_upgraded'; readonly flask: string; readonly tier: number }
   | { readonly type: 'flask_used'; readonly slot: number; readonly flask: string; readonly resource: FlaskResource; readonly pos: Vec2 }
   | { readonly type: 'character_changed' }
   | GlitchEvent

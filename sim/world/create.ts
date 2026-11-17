@@ -104,7 +104,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
     chase: { mark: { x: 0, z: 0 }, still: 0 },
     kills: save?.kills ?? 0,
     tally: save === null ? emptyTally() : copyTally(save.tally),
-    flasks: createFlasks(content, save?.flasks ?? null),
+    flasks: createFlasks(content, save?.flasks ?? null, save?.flaskTiers ?? null),
     powers: emptyPowerState(),
     momentum: { skill: null, value: 0, quiet: 0 },
     leech: { at: 0, taken: 0 },

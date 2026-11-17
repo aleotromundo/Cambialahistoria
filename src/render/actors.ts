@@ -595,6 +595,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'boss_held':
           case 'count_broken':
           case 'piece_unsealed':
+          case 'flask_upgraded':
           case 'flasks_refilled':
           case 'projectile_spawn':
           case 'projectile_end':

@@ -3,7 +3,11 @@ import type { NpcDef } from '../../sim/content/types.ts';
 import { itemName, rarityOf } from '../../sim/items.ts';
 import { shownTitle } from './npc-title.ts';
 import { buyPrice, goodItem, sellPrice } from '../../sim/world/trade.ts';
-import type { Command, ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
+import type { FlaskDef } from '../../sim/content/flasks.ts';
+import { baseFlask, offerFor } from '../../sim/world/flask-tiers.ts';
+import type { Command, FlaskState, ItemInstance, VendorStock, World } from '../../sim/world/types.ts';
+import type { FlaskOfferState, FlaskOfferView } from './flask-offer.ts';
+import { flaskOfferView } from './flask-offer.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
 import { iconSvg } from './icons.ts';
@@ -37,6 +41,56 @@ function showPriced(context: HudContext, cell: PricedCell, item: ItemInstance | 
   return changed;
 }
 
+interface FlaskRow {
+  readonly id: string;
+  readonly root: HTMLDivElement;
+  readonly tier: HTMLSpanElement;
+  readonly next: HTMLDivElement;
+  readonly need: HTMLDivElement;
+  readonly buy: HTMLButtonElement;
+  readonly price: HTMLSpanElement;
+}
+
+function flaskRow(context: HudContext, parent: HTMLElement, base: FlaskDef): FlaskRow {
+  const root: HTMLDivElement = el('div', `flask-offer ${base.resource}`, parent);
+  const side: HTMLDivElement = el('div', 'fo-side', root);
+  const head: HTMLDivElement = el('div', 'fo-head', side);
+  label('fo-name', base.name, head);
+  const tier: HTMLSpanElement = el('span', 'fo-tier', head);
+  const next: HTMLDivElement = label('fo-next', '', side);
+  const need: HTMLDivElement = label('fo-need', '', side);
+  const buy: HTMLButtonElement = el('button', 'fo-buy', root);
+  buy.type = 'button';
+  el('span', 'gold-icon', buy).innerHTML = iconSvg('coin');
+  const price: HTMLSpanElement = el('span', 'fo-price', buy);
+  buy.addEventListener('click', (event: MouseEvent): void => {
+    event.stopPropagation();
+    const world: World = context.api.world;
+    const flask: FlaskState | undefined = world.player.flasks.find((entry: FlaskState): boolean => entry.def.id === base.id);
+    if (flask === undefined) return;
+    if (offerFor(world.content, world.player, flask).kind !== 'ready') retrigger(buy, 'deny');
+    context.api.send({ type: 'trade', action: { type: 'upgrade_flask', flask: base.id } });
+  });
+  return { id: base.id, root, tier, next, need, buy, price };
+}
+
+function showFlaskRow(row: FlaskRow, world: World): void {
+  const flask: FlaskState | undefined = world.player.flasks.find((entry: FlaskState): boolean => entry.def.id === row.id);
+  const base: FlaskDef | null = baseFlask(world.content, row.id);
+  if (flask === undefined || base === null) return;
+  const maximum: number = flask.def.resource === 'life' ? world.player.maxLife : world.player.stats.maxMana;
+  const view: FlaskOfferView = flaskOfferView(base, offerFor(world.content, world.player, flask), maximum, world.player.gold);
+  for (const state of FLASK_STATES) row.root.classList.toggle(state, state === view.state);
+  setText(row.tier, view.tier, true);
+  setText(row.next, view.next, true);
+  setText(row.need, view.need, true);
+  setText(row.price, view.price === null ? '' : String(view.price), true);
+  row.buy.tabIndex = view.state === 'ready' || view.state === 'short' ? 0 : -1;
+  row.buy.setAttribute('aria-label', view.price === null ? `${base.name} fully upgraded` : `Upgrade ${base.name} for ${view.price} gold`);
+}
+
+const FLASK_STATES: readonly FlaskOfferState[] = ['top', 'locked', 'short', 'ready'];
+
 export function createVendorPanel(parent: HTMLElement, context: HudContext): PanelView {
   const element: HTMLDivElement = el('div', 'hud-panel right beside trade-panel', parent);
   element.dataset['tab'] = 'Shop';
@@ -50,6 +104,10 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
   const purse: HTMLDivElement = el('div', 'trade-gold', head);
   el('span', 'gold-icon', purse).innerHTML = iconSvg('coin');
   const gold: HTMLSpanElement = el('span', 'gold-text', purse);
+  label('panel-subtitle', 'Flasks', element);
+  const flaskList: HTMLDivElement = el('div', 'flask-offers', element);
+  const flaskRows: FlaskRow[] = context.api.world.content.flasks.map((base: FlaskDef): FlaskRow => flaskRow(context, flaskList, base));
+  label('panel-subtitle', 'For sale', element);
   const goodsGrid: HTMLDivElement = el('div', 'inv-grid trade-goods', element);
   const stockGrid: HTMLDivElement = el('div', 'inv-grid', element);
   label('panel-subtitle', 'Buy back', element);
@@ -103,6 +161,7 @@ export function createVendorPanel(parent: HTMLElement, context: HudContext): Pan
       }
       const coins: number = world.player.gold;
       setText(gold, String(coins), true);
+      for (const row of flaskRows) showFlaskRow(row, world);
       let changed: boolean = false;
       for (const [index, cell] of goodCells.entries()) {
         if (showPriced(context, cell, goods[index] ?? null, content.trade.goods[index]?.price ?? 0, coins)) changed = true;

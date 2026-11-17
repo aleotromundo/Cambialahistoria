@@ -8,7 +8,7 @@ import type { HintDef, HintsDef } from './content/hints.ts';
 import { loadHints } from './content/hints.ts';
 import type { Content, QuestDef } from './content/types.ts';
 import type { HintChange, HintInput, HintState } from './hints.ts';
-import { createHintState, HINTS, seedVeteran, stepHints, stillTeaches } from './hints.ts';
+import { createHintState, HINTS, rememberedSeen, seedVeteran, stepHints, stillTeaches } from './hints.ts';
 import { startQuests } from './world/quests.ts';
 import type { ItemInstance, MomentState, MonsterState, World, WorldEvent } from './world/types.ts';
 import { forceStrike } from './world/moments.ts';
@@ -298,4 +298,56 @@ void test('a hint still teaches its trigger until it has been seen, and never wh
   assert.equal(stillTeaches(defs, createHintState([]), 'skill_point', true), true);
   assert.equal(stillTeaches(defs, createHintState([taught.id]), 'skill_point', true), false);
   assert.equal(stillTeaches(defs, createHintState([]), 'skill_point', false), false);
+});
+
+function upgradeWorld(): World {
+  const world: World = worldIn(content, 'hall_of_time', 1);
+  startQuests(world);
+  world.player.skillPoints = 0;
+  const first = must(must(content.flasks[0], 'life').tiers[0], 'first tier');
+  world.player.level = first.level;
+  world.player.gold = first.price;
+  return world;
+}
+
+void test('an upgrade the hero can afford is told once in a quiet moment, waits while a monster is on the hero, and does not come back', (): void => {
+  const world: World = upgradeWorld();
+  const monster: MonsterState = must(world.monsters[0], 'a monster in the Hall');
+  world.monsters = [monster];
+  monster.aggro = true;
+  monster.pos = { x: world.player.pos.x + 3, z: world.player.pos.z };
+  const state: HintState = createHintState(allBut('flask_upgrade'));
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  monster.aggro = false;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'flask_upgrade');
+  monster.aggro = true;
+  assert.deepEqual(stepHints(defs, world, state, IDLE), []);
+  world.time += HINTS.maxShowSeconds + 1;
+  assert.deepEqual(stepHints(defs, world, state, IDLE).map((change: HintChange): string => change.type), ['hide']);
+  assert.equal(state.seen.has('flask_upgrade'), true);
+  monster.aggro = false;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+});
+
+void test('the upgrade line waits for the gold and the level, and buying puts it away', (): void => {
+  const world: World = upgradeWorld();
+  world.monsters = [];
+  const state: HintState = createHintState(allBut('flask_upgrade'));
+  world.player.gold = 0;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  world.player.gold = 1e6;
+  world.player.level = 1;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), null);
+  world.player.level = 30;
+  assert.equal(shown(stepHints(defs, world, state, IDLE)), 'flask_upgrade');
+  const done: HintChange[] = stepHints(defs, world, state, { ...IDLE, events: [{ type: 'flask_upgraded', flask: 'life_flask', tier: 1 }] });
+  assert.deepEqual(done.map((change: HintChange): string => change.type), ['hide']);
+  assert.equal(state.seen.has('flask_upgrade'), true);
+});
+
+void test('the upgrade line is kept for this session only: it is never remembered across sessions', (): void => {
+  const hint: HintDef = must(defs.hints.find((entry: HintDef): boolean => entry.id === 'flask_upgrade'), 'flask_upgrade');
+  assert.equal(hint.perSession, true);
+  assert.deepEqual(rememberedSeen(defs, ['move', 'flask_upgrade', 'loot']), ['move', 'loot']);
+  assert.ok(defs.hints.filter((entry: HintDef): boolean => entry.id !== 'flask_upgrade').every((entry: HintDef): boolean => !entry.perSession));
 });

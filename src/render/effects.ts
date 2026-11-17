@@ -533,6 +533,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'boss_held':
           case 'count_broken':
           case 'piece_unsealed':
+          case 'flask_upgraded':
           case 'flasks_refilled':
           case 'monster_remove':
           case 'aggro':

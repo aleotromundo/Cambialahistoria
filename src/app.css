@@ -545,6 +545,48 @@ body.zone-banner .exit-label span {
   color: #f3d9a4;
 }
 
+.npc-label b {
+  position: relative;
+}
+
+.npc-label b em {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  translate: 0 -55%;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  color: #ffdf9a;
+  text-shadow:
+    0 0 4px rgba(255, 214, 140, 0.9),
+    0 0 10px rgba(232, 160, 70, 0.6);
+  opacity: 0;
+  scale: 0.4;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.npc-label.upgrade b em {
+  opacity: 1;
+  scale: 1;
+  animation: npc-upgrade-glow calc(var(--drift-ms) / 2) var(--drift-ease) infinite;
+}
+
+@keyframes npc-upgrade-glow {
+  0% {
+    filter: opacity(0.55);
+  }
+  50% {
+    filter: opacity(1);
+  }
+  100% {
+    filter: opacity(0.55);
+  }
+}
+
 .npc-label small {
   font-family: var(--sans);
   font-size: 11px;

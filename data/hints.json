@@ -13,6 +13,7 @@
     {"id": "skill_point", "trigger": {"type": "skill_point"}, "text": "Press {tree} to spend your points on the Skill Tree", "touch": "Tap {tree} at the top to spend your points on the Skill Tree", "done": {"type": "allocated"}, "after": [], "forNewPlayers": false, "lapses": false},
     {"id": "low_life", "trigger": {"type": "low_life", "fraction": 0.5, "flask": "life"}, "text": "Press {flask} to drink", "touch": "Tap {flask} to drink", "done": {"type": "drank", "flask": "life"}, "after": [], "forNewPlayers": false, "lapses": false},
     {"id": "moment_edge", "trigger": {"type": "in_moment"}, "text": "Leave a moment and it is gone", "touch": "Leave a moment and it is gone", "done": {"type": "moment_over"}, "after": [], "forNewPlayers": true, "lapses": false},
+    {"id": "flask_upgrade", "trigger": {"type": "flask_upgrade", "range": 18}, "text": "A flask upgrade is ready at the Warden Trader", "touch": "A flask upgrade is ready at the Warden Trader", "done": {"type": "flask_upgraded"}, "after": [], "forNewPlayers": false, "lapses": false, "perSession": true},
     {"id": "moment_chest", "trigger": {"type": "chest_moment"}, "text": "Click the chest to open it", "touch": "Tap the chest to open it", "done": {"type": "moment_over"}, "after": [], "forNewPlayers": true, "lapses": false}
   ]
 }
