@@ -6,6 +6,7 @@ import type { HazardState, MonsterState, World } from './world/types.ts';
 
 export const SPIN_DODGE = {
   reaches: [0.8, 1.4, 2, 2.8, 4, 6, 8, 11],
+  cool: [0.8, 1.4, 2, 2.8, 4],
   angles: 16,
   margin: 0.2,
 } as const;
@@ -31,10 +32,10 @@ function packReach(pack: readonly MonsterState[], spot: ReadonlyVec2, reach: num
   return best;
 }
 
-export function spinStep(world: World, pack: readonly MonsterState[], reach: number, safe: (spot: ReadonlyVec2) => boolean): Vec2 | null {
+export function spinStep(world: World, pack: readonly MonsterState[], reach: number, safe: (spot: ReadonlyVec2) => boolean, coolOnly: boolean = false): Vec2 | null {
   const from: Vec2 = world.player.pos;
   let fallback: Vec2 | null = null;
-  for (const step of SPIN_DODGE.reaches) {
+  for (const step of coolOnly ? SPIN_DODGE.cool : SPIN_DODGE.reaches) {
     let chosen: Vec2 | null = null;
     let closest: number = Infinity;
     for (let turn: number = 0; turn < SPIN_DODGE.angles; turn += 1) {
@@ -50,5 +51,5 @@ export function spinStep(world: World, pack: readonly MonsterState[], reach: num
     }
     if (chosen !== null) return chosen;
   }
-  return fallback;
+  return coolOnly ? null : fallback;
 }

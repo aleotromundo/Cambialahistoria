@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
+import { wheelReach } from './bot-spin.ts';
 import { botFight, botInDanger, botPlay, botRoute, botStep, botTalk, botTravelTo, botWalkTo, createBot, hotGround } from './bot.ts';
 import type { Bot, BotReport } from './bot.ts';
 import { loadContent } from './content/content.ts';
@@ -162,6 +163,10 @@ const HOT_TEST = {
   outside: 4,
   patch: 1.6,
   watch: 0.8,
+  ring: 2.8,
+  ringPatches: 8,
+  coolStep: 4,
+  idle: 60,
 } as const;
 
 void test('ground that hurts while you stand in it is danger: a foe\'s burning patch and a heated floor, never the hero\'s own fire', (): void => {
@@ -193,6 +198,45 @@ void test('a bot fighting from a foe\'s burning patch steps out by a short step 
   assert.equal(hotGround(world, world.player.pos), false);
   const reach: number = must(world.player.skills[0], 'basic attack').engageRange;
   assert.ok(Math.hypot(world.player.pos.x - foe.pos.x, world.player.pos.z - foe.pos.z) - foe.radius <= reach + world.player.radius, 'the foe stays in reach');
+});
+
+function spinningAt(world: World, foe: MonsterState): SkillDef {
+  const spin: SkillDef = resolveSkill(world.content, must(world.content.skills.get('cleave'), 'cleave'), ['whirling_cleave', 'endless_turn']);
+  world.player.skills = [spin, null, null, null, null, null];
+  world.player.mana = 200;
+  foe.aggro = true;
+  stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: foe.pos, targetId: foe.id }], 1 / 60);
+  world.player.skills = [spin, null, null, null, null, null];
+  assert.ok(world.player.action !== null);
+  return spin;
+}
+
+void test('a spinning bot on a foe\'s burning ground steps out only by a short step that keeps the pack in the wheel, and otherwise keeps turning where it stands', (): void => {
+  const world: World = arena(27);
+  world.player.pos = { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z };
+  const foe: MonsterState = place(world, 'test_rower', { x: ARENA_CENTRE.x + HOT_TEST.foe, z: ARENA_CENTRE.z });
+  const spin: SkillDef = spinningAt(world, foe);
+  foe.action = null;
+  foe.cooldowns = { [foe.def.skill]: HOT_TEST.idle };
+  const patch: SkillDef = must(world.content.skills.get('cinder_patch'), 'cinder_patch');
+  const from: Vec2 = { ...world.player.pos };
+  placeArea(world, offenceOf(foe), patch, from);
+  for (let turn: number = 0; turn < HOT_TEST.ringPatches; turn += 1) {
+    const angle: number = (turn / HOT_TEST.ringPatches) * Math.PI * 2;
+    placeArea(world, offenceOf(foe), patch, { x: from.x + Math.cos(angle) * HOT_TEST.ring, z: from.z + Math.sin(angle) * HOT_TEST.ring });
+  }
+  assert.equal(hotGround(world, from), true);
+  let steps: number = 0;
+  botFight(createBot(world), (): boolean => (steps += 1) > 1, null);
+  const held: Vec2 | null = goalOf(world);
+  assert.ok(held === null || Math.hypot(held.x - from.x, held.z - from.z) <= HOT_TEST.coolStep, 'no far walk away from the pack');
+  world.areas = world.areas.slice(0, 1);
+  steps = 0;
+  botFight(createBot(world), (): boolean => (steps += 1) > 1, null);
+  const goal: Vec2 = must(goalOf(world), 'a short step');
+  assert.equal(hotGround(world, goal), false);
+  assert.ok(Math.hypot(goal.x - from.x, goal.z - from.z) <= HOT_TEST.coolStep);
+  assert.ok(Math.hypot(goal.x - foe.pos.x, goal.z - foe.pos.z) - foe.radius <= wheelReach(spin), 'the foe stays in the wheel');
 });
 
 void test('a fight that makes no progress for twelve seconds is dropped, and the foe is left alone for a while', (): void => {

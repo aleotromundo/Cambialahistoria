@@ -14,7 +14,7 @@ import { stepWorld } from './world/step.ts';
 import { fightZones, nearestFight } from './world/moments.ts';
 import { heldIn } from './world/bubble.ts';
 import { glidesWith } from './world/momentum.ts';
-import { harmful, hazardDue, spinStep, wheelReach } from './bot-spin.ts';
+import { harmful, hazardDue, SPIN_DODGE, spinStep, wheelReach } from './bot-spin.ts';
 import { heldAtLine, holdersOf, strikeWaiting } from './world/count.ts';
 import { markRow } from './world/hazards.ts';
 import { heatAt } from './world/heat.ts';
@@ -40,7 +40,7 @@ export const BOT = {
   dodgeMargin: 0.6,
   dodgeAngles: 16,
   dodgeReach: [2.5, 4, 6, 8, 11],
-  coolReach: [0.8, 1.4, 2, 2.8, 4],
+  coolReach: SPIN_DODGE.cool,
   meleeReach: 1.5,
   bodyEpsilon: 1e-6,
   retreatReach: 5,
@@ -283,11 +283,14 @@ function struckSoon(world: World, pos: ReadonlyVec2, reaction: number): boolean 
   return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos, reaction));
 }
 
-export function spinInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
+function spinBlowComing(world: World, pos: ReadonlyVec2, reaction: number): boolean {
   const reach: number = world.player.radius + BOT.dodgeMargin;
-  if (hotGround(world, pos)) return true;
   if (world.hazards.some((hazard: HazardState): boolean => harmful(hazard) && hazardDue(world, hazard, pos, reach, reaction))) return true;
   return struckSoon(world, pos, reaction);
+}
+
+export function spinInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
+  return hotGround(world, pos) || spinBlowComing(world, pos, reaction);
 }
 
 function spinSafe(world: World, spot: ReadonlyVec2): boolean {
@@ -295,10 +298,10 @@ function spinSafe(world: World, spot: ReadonlyVec2): boolean {
   return within(world, spot, BOT.bubbleKeep) && !hotGround(world, spot) && !world.hazards.some((hazard: HazardState): boolean => harmful(hazard) && distance(spot, hazard.pos) <= hazard.radius + reach) && !struckSoon(world, spot, 0);
 }
 
-function spinRefuge(world: World, pack: readonly MonsterState[]): Vec2 | null {
+function spinRefuge(world: World, pack: readonly MonsterState[], heatOnly: boolean): Vec2 | null {
   const action: ActionState | null = world.player.action;
   if (action === null) return null;
-  return spinStep(world, pack, wheelReach(action.skill), (spot: ReadonlyVec2): boolean => spinSafe(world, spot));
+  return spinStep(world, pack, wheelReach(action.skill), (spot: ReadonlyVec2): boolean => spinSafe(world, spot), heatOnly);
 }
 
 function attackReach(world: World): number {
@@ -399,9 +402,12 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
     return spot !== null;
   }
   if (bot.habits.dodges && gliding(world) && spinInDanger(world, world.player.pos, bot.habits.reaction)) {
-    const spot: Vec2 | null = spinRefuge(world, hostile);
-    tick(bot, spot === null ? [] : [{ type: 'steer', aim: spot }]);
-    return true;
+    const heatOnly: boolean = !spinBlowComing(world, world.player.pos, bot.habits.reaction);
+    const spot: Vec2 | null = spinRefuge(world, hostile, heatOnly);
+    if (spot !== null || !heatOnly) {
+      tick(bot, spot === null ? [] : [{ type: 'steer', aim: spot }]);
+      return true;
+    }
   }
   if (bot.habits.dodges && world.player.alive && !gliding(world) && botInDanger(world, world.player.pos, bot.habits.reaction)) {
     const heatOnly: boolean = !blowComing(world, world.player.pos, bot.habits.reaction);
