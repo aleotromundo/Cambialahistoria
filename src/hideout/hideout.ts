@@ -10,6 +10,7 @@ import type { LiveEvent } from '../backend/live.ts';
 import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_ZONE } from '../backend/live-protocol.ts';
 import type { CharacterLibrary, Dresser } from '../render/character-loader.ts';
+import type { TurnGate } from '../render/paced-work.ts';
 import { loadNeeds } from '../render/character-loader.ts';
 import type { InputHooks } from '../input.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
@@ -39,6 +40,7 @@ export interface HideoutParts {
   readonly hud: HTMLElement;
   readonly loader: GLTFLoader;
   readonly dresser: Dresser;
+  readonly gate: TurnGate;
   readonly sight: Sight;
   readonly screen: Pick<Hud, 'attachPlayerTrade'>;
   readonly sync: () => Promise<void>;
@@ -76,7 +78,7 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
     feather: parts.feather,
     camera: parts.camera,
     labels: parts.labels,
-    load: (needs: CharacterNeeds): Promise<void> => loadNeeds(parts.loader, parts.content, parts.dresser, parts.library, needs),
+    load: (needs: CharacterNeeds): Promise<void> => loadNeeds(parts.loader, parts.content, parts.dresser, parts.library, needs, parts.gate),
     clock: (): number => performance.now(),
     sight: parts.sight,
   });

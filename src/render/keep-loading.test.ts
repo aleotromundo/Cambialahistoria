@@ -5,6 +5,8 @@ import { createFakeClock, createFakeTimers, settle } from '../../test/backend-su
 import type { KeepLoadingDeps, KeptLoad } from './keep-loading.ts';
 import { KEEP_LOADING, keepLoading, loadAllKeepTrying, retryDelay } from './keep-loading.ts';
 import { STALL, withStallLimit } from './stall-limit.ts';
+import type { FramePacer, TurnGate } from './paced-work.ts';
+import { PACED_WORK, turnGate } from './paced-work.ts';
 
 interface FakeModelLoader {
   readonly asked: () => number;
@@ -169,4 +171,57 @@ void test('the late stage settles once every model has had its first try, and a 
   loader.answer(3);
   await settle();
   assert.deepEqual([...library.keys()].toSorted(), ['brute', 'taker', 'thrower']);
+});
+
+const PACED_LOADS = {
+  frameMs: 16,
+  workMs: 4,
+  dressedWithinMs: 1000,
+} as const;
+
+void test("one clip stalls for 40 s while another character's wearables are requested: the other character is dressed without waiting", async (): Promise<void> => {
+  const { clock, deps, fake } = harness();
+  const loader: FakeModelLoader = fakeModelLoader();
+  const pacer: FramePacer = {
+    now: (): number => clock.now,
+    next: (): Promise<void> =>
+      new Promise<void>((resolve: () => void): void => {
+        fake.timers.after(PACED_LOADS.frameMs, resolve);
+      }),
+  };
+  const gate: TurnGate = turnGate(pacer, PACED_WORK.frameBudgetMs);
+  const work = async (): Promise<void> => {
+    await gate.turn();
+    clock.now += PACED_LOADS.workMs;
+  };
+  const paced = async (path: string): Promise<string> => {
+    const model: string = await withStallLimit((): Promise<string> => loader.load(path), fake.timers, STALL.limitMs, path);
+    await work();
+    await work();
+    return model;
+  };
+  const frames = async (ms: number): Promise<void> => {
+    if (ms <= 0) return;
+    await fake.advance(PACED_LOADS.frameMs);
+    await frames(ms - PACED_LOADS.frameMs);
+  };
+  const library: Map<string, string> = new Map<string, string>();
+  const worn: string[] = ['hair_cropped', 'patched_tunic', 'odd_breeches', 'plain_shoes'];
+  void loadAllKeepTrying(
+    [
+      { what: 'Rig thrower', load: async (): Promise<void> => void library.set('thrower', await paced('Throw.glb')) },
+      ...worn.map((id: string) => ({ what: `Wearable ${id} on unfinished`, load: async (): Promise<void> => void library.set(id, await paced(`${id}.glb`)) })),
+    ],
+    deps,
+  );
+  assert.equal(loader.asked(), 1 + worn.length);
+  for (const index of worn.keys()) loader.answer(index + 1);
+  await frames(PACED_LOADS.dressedWithinMs);
+  assert.deepEqual([...library.keys()].toSorted(), worn.toSorted());
+  await fake.advance(STALL.limitMs);
+  await fake.advance(retryDelay(1));
+  assert.equal(loader.asked(), 2 + worn.length);
+  loader.answer(1 + worn.length);
+  await frames(PACED_LOADS.dressedWithinMs);
+  assert.equal(library.get('thrower'), 'model of Throw.glb');
 });

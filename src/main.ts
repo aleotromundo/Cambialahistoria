@@ -110,6 +110,8 @@ import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import { WARM_UP, warmUp, warmUpWithin } from './render/warm-up.ts';
+import type { TurnGate } from './render/paced-work.ts';
+import { browserPacer, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
 import type { Rainfall } from './render/rainfall.ts';
@@ -182,10 +184,11 @@ async function start(): Promise<void> {
     keepHero(createBrowserStore(), id);
     send({ type: 'hero', hero: id });
   };
+  const loadGate: TurnGate = turnGate(browserPacer());
   const pick: HeroPick = createHeroPick({ content, chosen: startingHero(content, save === null ? null : world.player.hero, keptHero), standing: (): PlayerState => world.player, entered: (): boolean => entered, keep: keepChosen, restage: (): void => flow.restage(), settled: (): Promise<void> => {
     wantCarried();
     return pictures.items.settled();
-  }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id)) });
+  }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id), loadGate) });
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   const loot: LootView = await createLootView(loader, stage.scene, library);
@@ -251,7 +254,7 @@ async function start(): Promise<void> {
   const hud: Hud = createHud(element('hud', HTMLDivElement), hudApi);
   const profilePanel = startProfile(lobby, { api: hudApi, content, pictures, hosts: { play: element('hud', HTMLDivElement), lobby: element('lobby', HTMLDivElement) } });
   const overlays: Overlays = createPlayOverlays({ world, camera, touch: mobile.touch, gameSettings, actors, hud, send });
-  const hideout = startHideout(import.meta.env.VITE_SERVER_URL, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), hud: element('hud', HTMLDivElement), loader, dresser, sight: cameraSight(stage.camera), screen: hud, sync: (): Promise<void> => { dirty = true; saveNow(); return backend.sync(); }, openProfile: lobby === null ? null : (name: string): void => lobby.profiles.open(name) });
+  const hideout = startHideout(import.meta.env.VITE_SERVER_URL, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), hud: element('hud', HTMLDivElement), loader, dresser, gate: loadGate, sight: cameraSight(stage.camera), screen: hud, sync: (): Promise<void> => { dirty = true; saveNow(); return backend.sync(); }, openProfile: lobby === null ? null : (name: string): void => lobby.profiles.open(name) });
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement), hud.targets);
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
   const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
@@ -349,6 +352,9 @@ async function start(): Promise<void> {
     particles.clear();
     markers.dispose();
     zoneView.dispose();
+    loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate).catch((error: unknown): void => {
+      warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
+    });
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     preloadNearZones();
@@ -488,7 +494,7 @@ async function start(): Promise<void> {
   });
   void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], zoneView.ready).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const loadTheRest = async (): Promise<void> => {
-    await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole });
+    await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, loadGate);
     actors.refreshWear(world);
     await warmUp(stage, stage.scene, stage.camera, loot.standIns(world));
     hud.warm();
