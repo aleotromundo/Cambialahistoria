@@ -37,7 +37,7 @@ The Discord, GitHub and X marks in the footers of the title screen (`play/index.
 
 "Free Pack - Human Skeleton" by PolyOne Studio, https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf, licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: posed onto the Quaternius rig, decimated and repainted; lower-detail copies removed. The same credit is shown on the game's title screen.
 
-"The 100STYLE Dataset" by Ian Mason, Sebastian Starke and Taku Komura, https://www.ianxmason.com/100style/ (https://zenodo.org/records/8127870), licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: the SpinAntiClock_ID take retargeted onto the Quaternius universal skeleton, its heading removed, played at twice its speed, its arms replaced by authored Quaternius sword poses, and cut into `public/models/animations/universal/Spin_Mocap_In.glb`, `Spin_Mocap_Loop.glb` and `Spin_Mocap_Out.glb`.
+"The 100STYLE Dataset" by Ian Mason, Sebastian Starke and Taku Komura, https://www.ianxmason.com/100style/ (https://zenodo.org/records/8127870), licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: the SpinAntiClock_ID take retargeted onto the Quaternius universal skeleton, its heading removed, played at twice its speed, its arms replaced by authored Quaternius sword poses, and cut into `public/models/animations/universal/Spin_Mocap_In.glb`, `Spin_Mocap_Loop.glb` and `Spin_Mocap_Out.glb`. The same credit is shown on the game's title screen.
 
 ## Characters and animations
 

@@ -223,6 +223,22 @@ void test('every shipped model and texture is listed in ASSETS.md', (): void => 
   for (const path of [...models('public/models'), ...models('public/textures')]) assert.ok(assets.includes(path), `${path} is missing from ASSETS.md`);
 });
 
+const CREDIT_PAGE: string = 'play/index.html';
+const CC_BY_SOURCE: RegExp = /^\| ([^|(`]+?)(?: \([^|]*\))? \| [^|]+ \| [^|]+ \| CC BY 4\.0 \|/;
+
+void test('every CC BY source in ASSETS.md is credited on the title screen', (): void => {
+  const page: string = readFileSync(CREDIT_PAGE, 'utf8');
+  const titles: readonly string[] = readFileSync('ASSETS.md', 'utf8')
+    .split('\n')
+    .flatMap((row: string): string[] => {
+      const title: string | undefined = CC_BY_SOURCE.exec(row)?.[1];
+      return title === undefined ? [] : [title];
+    });
+  assert.ok(titles.length > 0, 'ASSETS.md names no CC BY source');
+  for (const title of titles) assert.ok(page.includes(title), `${CREDIT_PAGE} does not credit the CC BY source "${title}"`);
+  assert.ok(page.includes('creativecommons.org/licenses/by/4.0'), `${CREDIT_PAGE} does not name where the CC BY 4.0 licence is`);
+});
+
 const ASSET_URL_HOME: string = 'src/render/asset-url.ts';
 const PUBLIC_BASE: RegExp = /import\.meta\.env\.BASE_URL/;
 const RAW_ASSET_PATH: RegExp = /(?<!\bassetUrl)\(\s*['"`](?:\.?\/)?(?:models|textures)\//;
