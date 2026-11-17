@@ -14,6 +14,7 @@ import { findNode } from './character-loader.ts';
 import type { BodyState, ClipKind, GaitChoice, KnockPose } from './locomotion.ts';
 import { chooseGait, clipKindOf, clipsFor, knockPose } from './locomotion.ts';
 import { CONTACT_SHADOW, contactShadow, SHADOW_OWNERS } from './contact-shadow.ts';
+import { actorBounds } from './actor-bounds.ts';
 import type { RestShadows } from './rest-shadows.ts';
 import { createRestShadows } from './rest-shadows.ts';
 import type { Spring } from '../hud/character-spring.ts';
@@ -643,7 +644,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
       springTo(edgeLevel, amount);
     },
     bounds(out: Box3): void {
-      out.setFromObject(rig.root);
+      actorBounds(rig.root, out);
     },
     prime(): void {
       for (const clip of rig.clips.death) rig.mixer.clipAction(clip);
