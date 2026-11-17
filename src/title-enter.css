@@ -60,6 +60,11 @@
   animation: threshold-breath var(--drift-ms) var(--drift-ease) infinite;
 }
 
+#title.gone #title-enter::before,
+.lobby-screen:not(.shown) .threshold-button::before {
+  animation-play-state: paused;
+}
+
 #title-enter::after,
 .threshold-button::after {
   opacity: 0;

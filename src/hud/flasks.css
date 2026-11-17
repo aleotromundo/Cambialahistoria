@@ -134,6 +134,10 @@ body.touch .globe-flask {
   animation: globe-restore calc(var(--drift-ms) / 4) var(--drift-ease) infinite alternate;
 }
 
+.hud-globe:not(.restoring) .globe-restore::before {
+  animation-play-state: paused;
+}
+
 .hud-globe.life .globe-restore::before {
   background: radial-gradient(circle at 50% 75%, rgba(220, 90, 80, 0.34), rgba(200, 80, 70, 0) 70%);
 }

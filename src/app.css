@@ -626,6 +626,11 @@ body.zone-banner .exit-label span {
   scale: 1;
 }
 
+.npc-label:not(.pinned) i,
+.exit-label:not(.pinned) i {
+  animation-play-state: paused;
+}
+
 @keyframes quest-pin-bob {
   from {
     translate: -50% 0;

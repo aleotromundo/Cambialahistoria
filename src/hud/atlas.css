@@ -425,6 +425,10 @@
   animation: atlas-pulse var(--drift-ms) var(--drift-ease) infinite;
 }
 
+.atlas:not(.open) .atlas-node.here .atlas-halo {
+  animation-play-state: paused;
+}
+
 .atlas-node.travel {
   cursor: pointer;
 }

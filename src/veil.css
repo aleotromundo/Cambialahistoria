@@ -32,6 +32,10 @@
   animation: veil-drift var(--drift-ms) var(--drift-ease) infinite alternate;
 }
 
+#fade:not(.on)::before {
+  animation-play-state: paused;
+}
+
 @keyframes veil-drift {
   from {
     transform: translate3d(-5%, -2%, 0) scale(1);

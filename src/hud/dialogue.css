@@ -120,6 +120,10 @@ body.touch .dialogue-again {
   animation: dialogue-wait calc(var(--spring-bouncy-ms) * 3) var(--spring-smooth) infinite;
 }
 
+.hud-dialogue:not(.open) .dialogue-hint {
+  animation-play-state: paused;
+}
+
 @keyframes dialogue-wait {
   0%,
   100% {
