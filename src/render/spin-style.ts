@@ -33,7 +33,7 @@ export interface SpinStyle {
 
 export const SPIN_STYLE = {
   param: 'spin',
-  shipped: 'twohand',
+  shipped: 'upright',
   order: ['now', 'upright', 'heavy', 'stepping', 'mocap', 'skate', 'twohand', 'low'],
 } as const satisfies { readonly param: string; readonly shipped: SpinStyleId; readonly order: readonly SpinStyleId[] };
 
