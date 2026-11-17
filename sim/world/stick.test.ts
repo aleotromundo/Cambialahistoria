@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import { test } from 'node:test';
 import { sceneZone } from '../../test/motion-support.ts';
 import { SCENE_BASE } from '../../test/road-support.ts';
@@ -59,7 +60,7 @@ function standAt(world: World, at: Vec2, facing: number): void {
   world.player.path = [];
   world.player.intent = { type: 'idle' };
   world.player.repathTimer = 0;
-  world.player.queued = null;
+  world.player.buffered = EMPTY_BUFFER;
   world.player.knock = { x: 0, z: 0 };
 }
 

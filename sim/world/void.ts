@@ -1,3 +1,4 @@
+import type { Buffered } from './press-buffer.ts';
 import type { VoidShore, ZoneVoid } from '../content/story-types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
@@ -18,8 +19,10 @@ function shiftedIntent(intent: Intent, by: Vec2): Intent {
   return intent.type === 'move' ? { type: 'move', dest: moved(intent.dest, by) } : intent;
 }
 
-function shiftedQueue(queued: Command | null, by: Vec2): Command | null {
-  return queued !== null && (queued.type === 'move' || queued.type === 'walk') ? { ...queued, dest: moved(queued.dest, by) } : queued;
+function shiftedPress(press: Buffered | null, by: Vec2): Buffered | null {
+  if (press === null) return null;
+  const command: Command = press.command;
+  return command.type === 'move' || command.type === 'walk' ? { ...press, command: { ...command, dest: moved(command.dest, by) } } : press;
 }
 
 export function shiftWorld(world: World, by: Vec2): void {
@@ -27,7 +30,7 @@ export function shiftWorld(world: World, by: Vec2): void {
   player.pos = moved(player.pos, by);
   player.path = player.path.map((point: Vec2): Vec2 => moved(point, by));
   player.intent = shiftedIntent(player.intent, by);
-  player.queued = shiftedQueue(player.queued, by);
+  player.buffered = { ...player.buffered, move: shiftedPress(player.buffered.move, by) };
   for (const ground of world.ground) {
     ground.pos = moved(ground.pos, by);
     ground.from = moved(ground.from, by);

@@ -1,3 +1,4 @@
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import { calmTailwind } from './tailwind.ts';
 import type { GlitchDef } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
@@ -95,7 +96,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
     intent: { type: 'idle' },
     path: [],
     repathTimer: 0,
-    queued: null,
+    buffered: EMPTY_BUFFER,
     held: [],
     invulnerable: 0,
     stridePhase: 0,

@@ -1,3 +1,4 @@
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import { endTailwind } from './tailwind.ts';
 import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
@@ -73,7 +74,7 @@ export function placePlayer(world: World): void {
   player.knock = { x: 0, z: 0 };
   player.intent = { type: 'idle' };
   player.path = [];
-  player.queued = null;
+  player.buffered = EMPTY_BUFFER;
   player.moving = false;
 }
 

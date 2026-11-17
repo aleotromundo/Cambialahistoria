@@ -4,6 +4,7 @@ import type { GlitchEvent, GlitchState, PathAct, PathLog } from './glitch-types.
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, XpReduction, ZoneDef, ZonePack } from '../content/types.ts';
 import type { PowerState } from './power-types.ts';
 import type { ActionState } from './action-types.ts';
+import type { PressBuffer } from './press-buffer.ts';
 export type { ActionPhase, ActionState } from './action-types.ts';
 export type { BuffState, EmpowerState, PowerState } from './power-types.ts';
 import type { ItemPlace, OpenService } from './service-types.ts';
@@ -26,7 +27,7 @@ import type { WardState } from './wards.ts';
 import type { MomentumState } from './momentum-types.ts';
 import type { Tally } from '../tally.ts';
 import type { PortalChannelIntent, PortalIntent, PortalStage, PortalState } from './portal-types.ts';
-import type { Command, OpenChest } from './command-types.ts';
+import type { OpenChest } from './command-types.ts';
 import type { RunEnd, RunState } from './run-types.ts';
 
 export type { AdvanceCommand, AllocateCommand, ChooseChangeCommand, Command, DropCommand, EquipCommand, FlaskCommand, GlitchCommand, GlitchSettingCommand, HeroCommand, HoldCommand, MoveCommand, OpenChest, PickupCommand, ReadCommand, RefundCommand, RespawnChoice, RespawnCommand, RespecCommand, SkillCommand, SlotCommand, SteerCommand, StopCommand, StrikeCommand, TalkCommand, TeleportCommand, TradeAction, TradeCommand, TravelCommand, UnequipCommand, UseCommand, WalkCommand } from './command-types.ts';
@@ -185,7 +186,7 @@ export interface PlayerState extends ActorState {
   intent: Intent;
   path: Vec2[];
   repathTimer: number;
-  queued: Command | null;
+  buffered: PressBuffer;
   held: number[];
   invulnerable: number;
   stridePhase: number;

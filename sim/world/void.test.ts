@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { EMPTY_BUFFER, isEmpty } from './press-buffer.ts';
 import { test } from 'node:test';
 import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
@@ -63,9 +64,9 @@ void test('nothing can be cast in a void, but walking works', (): void => {
 
 void test('a skill queued before the hero arrives in a void is dropped on arrival', (): void => {
   const world: World = worldIn(content, voidZone.id, 3);
-  world.player.queued = { type: 'skill', slot: 0, aim: { x: 1, z: 0 }, targetId: null };
+  world.player.buffered = { ...EMPTY_BUFFER, skill: { command: { type: 'skill', slot: 0, aim: { x: 1, z: 0 }, targetId: null }, rank: 'skill', at: world.time } };
   beginVoid(world, 'first');
-  assert.equal(world.player.queued, null);
+  assert.ok(isEmpty(world.player.buffered));
 });
 
 void test('walking one way forever never reaches an edge: the void recentres and keeps the walk going', (): void => {

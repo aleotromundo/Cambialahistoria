@@ -223,7 +223,7 @@ void test('travel is queued behind an attack in progress and ignored while dead'
   run(world, 0.02, [{ type: 'skill', slot: 0, aim: { x: 22, z: 10 }, targetId: null }]);
   assert.notEqual(world.player.action, null);
   stepWorld(world, [{ type: 'travel', exit: 'outpost_stair' }], DT);
-  assert.deepEqual(world.player.queued, { type: 'travel', exit: 'outpost_stair' });
+  assert.deepEqual(world.player.buffered.move?.command, { type: 'travel', exit: 'outpost_stair' });
   run(world, 1);
   assert.deepEqual(world.player.intent, { type: 'travel', exit: 'outpost_stair' });
   const dead: World = createWorld(shipped, { seed: 12, save: null });

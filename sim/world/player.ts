@@ -14,7 +14,9 @@ import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
 import { canDash, dashAim } from './dash.ts';
-import { dodgesAtOnce, givesWayToDodge } from './dodge.ts';
+import { dodgesAtOnce, givesWayToDodge, isDodge } from './dodge.ts';
+import type { Buffered, PressRank, Taken } from './press-buffer.ts';
+import { bufferPress, takePress } from './press-buffer.ts';
 import { respawnPlayer } from './death.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, replayDialogue } from './dialogue.ts';
 import { pickUp } from './finds.ts';
@@ -394,7 +396,7 @@ export function handleCommand(world: World, command: Command): void {
       if ((command.type === 'move' || command.type === 'walk') && aimGlide(player, command.dest)) return;
       if (cutByDodge(player, command)) player.action = null;
       if (player.action !== null) {
-        if (!keepsQueuedSkill(player.queued, command)) player.queued = command;
+        player.buffered = bufferPress(player.buffered, pressOf(world, command));
         return;
       }
       act(world, command);
@@ -402,9 +404,21 @@ export function handleCommand(world: World, command: Command): void {
   }
 }
 
-function keepsQueuedSkill(queued: Command | null, next: Command): boolean {
-  if (queued === null || queued.type !== 'skill') return false;
-  return next.type === 'walk' || next.type === 'stop' || (next.type === 'move' && next.held);
+function rankOf(player: PlayerState, command: Command): PressRank {
+  if (command.type !== 'skill') return 'move';
+  const skill: SkillDef | null = player.skills[command.slot] ?? null;
+  return skill !== null && isDodge(skill) ? 'dodge' : 'skill';
+}
+
+function pressOf(world: World, command: Command): Buffered {
+  return { command, rank: rankOf(world.player, command), at: world.time };
+}
+
+function canTake(player: PlayerState, command: Command): boolean {
+  if (command.type !== 'skill') return true;
+  const skill: SkillDef | null = player.skills[command.slot] ?? null;
+  if (skill === null) return true;
+  return blockedReason(player, skill) === null && (!isDodge(skill) || canDash(player));
 }
 
 function pursue(world: World, dest: Vec2, dt: number): void {
@@ -615,11 +629,11 @@ export function stepPlayer(world: World, dt: number): void {
   player.moving = false;
   const startX: number = player.pos.x;
   const startZ: number = player.pos.z;
-  if (cutByDodge(player, player.queued)) player.action = null;
-  if (player.action === null && player.queued !== null) {
-    const queued: Command = player.queued;
-    player.queued = null;
-    act(world, queued);
+  if (cutByDodge(player, player.buffered.dodge?.command ?? null)) player.action = null;
+  if (player.action === null) {
+    const taken: Taken = takePress(player.buffered, world.time, (command: Command): boolean => canTake(player, command));
+    player.buffered = taken.rest;
+    if (taken.press !== null) act(world, taken.press.command);
   }
   if (player.action === null) {
     stepIntent(world, dt);

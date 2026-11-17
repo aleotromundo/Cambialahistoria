@@ -1,3 +1,4 @@
+import { isEmpty } from './world/press-buffer.ts';
 import type { BotPlan } from './bot-plan.ts';
 import { flaskCommands, junkIndex, letGoCommands, nextPlace, planAttack, releaseCommands, rollCommand, shopCommands, upgradeIndex } from './bot-plan.ts';
 import type { ObjectiveDef, PathObjective, QuestDef, SkillDef, SkillTreeNodeDef, ZoneDef, ZoneExit } from './content/types.ts';
@@ -162,7 +163,7 @@ function gliding(world: World): boolean {
 }
 
 function free(world: World): boolean {
-  return world.player.alive && world.player.action === null && world.player.queued === null;
+  return world.player.alive && world.player.action === null && isEmpty(world.player.buffered);
 }
 
 function within(world: World, spot: ReadonlyVec2, share: number): boolean {

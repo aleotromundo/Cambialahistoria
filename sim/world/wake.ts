@@ -1,3 +1,4 @@
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import type { VoidShore, ZoneEncounter, ZoneVoid, ZoneWake } from '../content/story-types.ts';
 import type { ZoneExit } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -36,7 +37,7 @@ export function beginVoid(world: World, arrival: VoidArrival): void {
   const rules: ZoneVoid | null = world.zone.void;
   world.wake = rules === null || rules.wake === null || arrival === 'return' ? null : { elapsed: 0, rate: 1, plan: rules.wake };
   if (rules === null) return;
-  world.player.queued = null;
+  world.player.buffered = EMPTY_BUFFER;
   world.player.held = [];
   world.trail = { x: world.player.pos.x, z: world.player.pos.z };
   world.heading = { x: Math.sin(world.player.facing), z: Math.cos(world.player.facing) };

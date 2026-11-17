@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isEmpty } from './press-buffer.ts';
 import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import { damageTo, dummy, offset, run, shapeArena, shapeSkill, SHAPE_DT } from '../../test/shape-support.ts';
@@ -122,7 +123,7 @@ void test('steering, a walk or a move while spinning changes where the hero goes
   startSpin(world, offset(0, 0));
   run(world, 0.2);
   stepWorld(world, [{ type: 'walk', held: true, dest: offset(0, 9) }], SHAPE_DT);
-  assert.equal(world.player.queued, null);
+  assert.ok(isEmpty(world.player.buffered));
   run(world, 0.4);
   assert.ok(world.player.pos.z > offset(0, 0).z + 2);
   run(world, 0.4, [{ type: 'steer', aim: offset(-9, 0) }]);

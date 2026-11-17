@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import { test } from 'node:test';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
@@ -94,7 +95,7 @@ function standAt(world: World, at: Vec2): void {
   world.player.path = [];
   world.player.intent = { type: 'idle' };
   world.player.repathTimer = 0;
-  world.player.queued = null;
+  world.player.buffered = EMPTY_BUFFER;
   clearMoments(world);
   world.monsters = [];
   world.strikeTimer = ARROW_WALK.quiet;

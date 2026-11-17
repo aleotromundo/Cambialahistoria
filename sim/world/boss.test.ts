@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import { test } from 'node:test';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
 import { armed, must, worldIn, zoneOf } from '../../test/support.ts';
@@ -89,7 +90,7 @@ function strike(world: World, boss: MonsterState): WorldEvent[] {
   world.player.pos = { x: boss.pos.x, z: boss.pos.z + 1.6 };
   world.player.cooldowns = {};
   world.player.action = null;
-  world.player.queued = null;
+  world.player.buffered = EMPTY_BUFFER;
   const events: WorldEvent[] = [];
   for (let step: number = 0; step < 150; step += 1) {
     const fresher: WorldEvent[] = stepWorld(world, step === 0 ? [{ type: 'skill', slot: 0, aim: boss.pos, targetId: boss.id }] : [], DT);

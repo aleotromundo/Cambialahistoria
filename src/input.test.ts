@@ -446,7 +446,7 @@ void test('the Millwheel held on a key spins while the key is held, glides towar
   assert.equal(freshMoves(walk).length, 1);
   stepWorld(world, walk, DT);
   play(setup, 0.6);
-  assert.ok(world.player.pos.z > after.z + 1, `a click after the spin walks: ${JSON.stringify({ intent: world.player.intent, action: world.player.action?.phase ?? null, queued: world.player.queued, from: after, now: world.player.pos })}`);
+  assert.ok(world.player.pos.z > after.z + 1, `a click after the spin walks: ${JSON.stringify({ intent: world.player.intent, action: world.player.action?.phase ?? null, buffered: world.player.buffered, from: after, now: world.player.pos })}`);
 });
 
 void test('with held skills on press to toggle, one press keeps the Millwheel turning and steering until the same key, another skill or the sim ends it', (): void => {

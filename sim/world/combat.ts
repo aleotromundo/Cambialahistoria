@@ -1,3 +1,4 @@
+import { EMPTY_BUFFER } from './press-buffer.ts';
 import type { TailwindShares } from './tailwind.ts';
 import { endTailwind, feedTailwind, tailwindShares } from './tailwind.ts';
 import { PLAYER_SIDE } from '../content/combat-types.ts';
@@ -155,7 +156,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
     endTailwind(world, 'fell');
     target.intent = { type: 'idle' };
     target.path = [];
-    target.queued = null;
+    target.buffered = EMPTY_BUFFER;
     return;
   }
   flinchTogether(world, target);

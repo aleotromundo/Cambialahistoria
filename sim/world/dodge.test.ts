@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isEmpty } from './press-buffer.ts';
 import { test } from 'node:test';
 import { must } from '../../test/support.ts';
 import { shapeArena } from '../../test/shape-support.ts';
@@ -90,7 +91,7 @@ for (const held of HELD_SKILLS) {
       const events: WorldEvent[] = stepWorld(world, [press], DT);
       assert.ok(started(events, dodge), `${dodge} did not start on the step it was pressed`);
       assert.equal(world.player.action?.skill.id, dodge);
-      assert.equal(world.player.queued, null);
+      assert.ok(isEmpty(world.player.buffered));
     });
   }
 }

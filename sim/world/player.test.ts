@@ -494,11 +494,11 @@ void test('a skill pressed during another skill is kept through a held walk, a h
   const next: Command = { type: 'skill', slot: BUFFERED.second, aim: { x: at.x, z: at.z + BUFFERED.reach }, targetId: null };
   const ahead: Vec2 = { x: at.x - BUFFERED.reach, z: at.z };
   stepWorld(world, [next], MOTION_DT);
-  assert.deepEqual(world.player.queued, next);
+  assert.deepEqual(world.player.buffered.skill?.command, next);
   for (const held of [{ type: 'walk', held: true, dest: ahead }, { type: 'walk', held: false, dest: ahead }, { type: 'move', held: true, dest: ahead }, { type: 'stop' }] as const) {
     stepWorld(world, [held], MOTION_DT);
     assert.equal(must(world.player.action, `first cast during ${held.type}`).goal, null);
-    assert.deepEqual(world.player.queued, next, held.type);
+    assert.deepEqual(world.player.buffered.skill.command, next, held.type);
   }
   let fired: boolean = false;
   for (let clock: number = 0; clock < BUFFERED.seconds && !fired; clock += MOTION_DT) {
@@ -514,5 +514,6 @@ void test('a fresh click on the ground still replaces a skill waiting behind ano
   const click: Command = { type: 'move', held: false, dest: { x: at.x - BUFFERED.reach, z: at.z } };
   stepWorld(world, [{ type: 'skill', slot: BUFFERED.second, aim: { x: at.x, z: at.z + BUFFERED.reach }, targetId: null }], MOTION_DT);
   stepWorld(world, [click], MOTION_DT);
-  assert.deepEqual(world.player.queued, click);
+  assert.deepEqual(world.player.buffered.move?.command, click);
+  assert.equal(world.player.buffered.skill, null);
 });
