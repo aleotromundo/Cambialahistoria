@@ -608,6 +608,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'blink':
           case 'burn':
           case 'brand':
+          case 'tailwind_rise':
+          case 'tailwind_end':
           case 'skill_unlocked':
           case 'chart_point':
           case 'xp':

@@ -1,3 +1,4 @@
+import { calmTailwind } from './tailwind.ts';
 import type { GlitchDef } from '../content/glitches.ts';
 import { loadGlitches } from '../content/glitches.ts';
 import type { Content, ZoneDef } from '../content/types.ts';
@@ -209,6 +210,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     escort: null,
     portal: portalFromSave(save?.portal ?? null),
     run: save === null ? emptyRun() : copyRun(save.run),
+    tailwind: calmTailwind(),
   };
   placePlayer(world);
   beginVoid(world, 'first');

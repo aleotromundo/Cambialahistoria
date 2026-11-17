@@ -1,3 +1,5 @@
+import type { TailwindShares } from './tailwind.ts';
+import { endTailwind, feedTailwind, tailwindShares } from './tailwind.ts';
 import { PLAYER_SIDE } from '../content/combat-types.ts';
 import { attacksHeld } from './glitch-hold.ts';
 import type { SkillDef } from '../content/types.ts';
@@ -113,25 +115,28 @@ function liftedFloor(world: World, reward: RunReward): string | null {
   return world.content.rarities[1]?.id ?? null;
 }
 
-function rollLoot(world: World, monster: MonsterState, reward: RunReward): void {
-  if (monster.revived) return;
-  const loot = monster.def.loot;
-  if (world.rng.chance(loot.goldChance)) {
-    const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind) * (1 + reward.gold);
-    dropOnGround(world, monster.pos, { kind: 'gold', amount: Math.max(1, Math.round(world.rng.int(loot.goldMin, loot.goldMax) * scale)) });
+function rollLoot(world: World, monster: MonsterState, reward: RunReward, loot: number): number {
+  if (monster.revived) return 0;
+  const drops = monster.def.loot;
+  let gold: number = 0;
+  if (world.rng.chance(drops.goldChance)) {
+    const scale: number = (1 + world.content.world.scaling.xpPerLevel * (monster.level - 1)) * (1 + world.player.stats.goldFind) * (1 + reward.gold) * (1 + loot);
+    gold = Math.max(1, Math.round(world.rng.int(drops.goldMin, drops.goldMax) * scale));
+    dropOnGround(world, monster.pos, { kind: 'gold', amount: gold });
   }
   const level: number = Math.max(monster.level, world.player.level);
-  if (world.rng.chance(Math.min(1, loot.itemChance * (1 + reward.items)))) {
+  if (world.rng.chance(Math.min(1, drops.itemChance * (1 + reward.items) * (1 + loot)))) {
     const item: ItemInstance | null = rollDrop(world, level, null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id }, liftedFloor(world, reward));
     if (item !== null) dropOnGround(world, monster.pos, { kind: 'item', item });
   }
   const rank: MonsterRank | null = monster.def.rank;
-  if (rank === null || rank.items === 0) return;
+  if (rank === null || rank.items === 0) return gold;
   const source: ItemSource = rank.floor === null ? { kind: 'monster', monster: monster.def.id, zone: world.zone.id } : { kind: 'leader', monster: monster.def.id, zone: world.zone.id, rank: rank.id };
   for (let dropped: number = 0; dropped < rank.items; dropped += 1) {
     const item: ItemInstance | null = makeItem(world, level, null, null, source, world.rng, rank.floor);
     if (item !== null) dropOnGround(world, monster.pos, { kind: 'item', item });
   }
+  return gold;
 }
 
 export function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
@@ -146,6 +151,7 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   if (target.kind === 'player') {
     closeDialogue(world, false);
     target.momentum = { skill: null, value: 0, quiet: 0 };
+    endTailwind(world, 'fell');
     target.intent = { type: 'idle' };
     target.path = [];
     target.queued = null;
@@ -156,8 +162,11 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   world.player.kills += 1;
   gainFlaskCharges(world.player);
   const reward: RunReward = runReward(world);
-  rollLoot(world, target, reward);
-  grantXp(world, Math.round(killXp(world, target.def.xp, target.level) * (1 + reward.xp)), killReduction(world, target.level));
+  const shares: TailwindShares = tailwindShares(world);
+  const gold: number = rollLoot(world, target, reward, shares.loot);
+  const xp: number = Math.round(killXp(world, target.def.xp, target.level) * (1 + reward.xp) * (1 + shares.xp));
+  feedTailwind(world, target, xp, gold);
+  grantXp(world, xp, killReduction(world, target.level));
   settleCleared(world);
 }
 

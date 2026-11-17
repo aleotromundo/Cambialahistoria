@@ -1,5 +1,6 @@
 import { packRanks, rankProblems } from './parse-ranks.ts';
 import { runTable, runTableProblems } from './parse-run-table.ts';
+import { tailwind, tailwindProblems } from './parse-tailwind.ts';
 import { propCache, propLid } from './parse-cache.ts';
 import { atlasProblems } from './atlas.ts';
 import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
@@ -91,6 +92,7 @@ export interface RawContent {
   readonly moments: unknown;
   readonly packRanks: unknown;
   readonly runTable: unknown;
+  readonly tailwind: unknown;
 }
 
 function delivery(value: unknown, where: string): Delivery {
@@ -421,6 +423,7 @@ export function parseContent(raw: RawContent): Content {
     moments: momentLibrary(raw.moments, 'moments'),
     packRanks: packRanks(raw.packRanks, 'packRanks'),
     runTable: runTable(raw.runTable, 'runTable'),
+    tailwind: tailwind(raw.tailwind, 'tailwind'),
   };
 }
 
@@ -523,7 +526,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...rankProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...rankProblems(content), ...tailwindProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

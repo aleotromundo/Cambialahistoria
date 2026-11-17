@@ -1,4 +1,5 @@
 import type { MonsterRank, PackRanks } from './rank-types.ts';
+import type { TailwindDef } from './tailwind-types.ts';
 import type { AffixDef, DropLean, FamilyDef, ItemBaseDef, ItemScaling, PowerTriggerDef, RarityDef } from './item-types.ts';
 export type { WeaponKind } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
@@ -432,4 +433,5 @@ export interface Content {
   readonly moments: MomentLibrary;
   readonly packRanks: PackRanks;
   readonly runTable: RunTableDef;
+  readonly tailwind: TailwindDef;
 }

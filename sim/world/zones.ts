@@ -1,3 +1,4 @@
+import { endTailwind } from './tailwind.ts';
 import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -77,6 +78,7 @@ export function placePlayer(world: World): void {
 }
 
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {
+  endTailwind(world, 'left');
   parkZone(world);
   closeDialogue(world, false);
   world.scene = null;

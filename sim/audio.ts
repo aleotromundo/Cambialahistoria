@@ -242,6 +242,8 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'beam':
     case 'blink':
     case 'soak':
+    case 'tailwind_rise':
+    case 'tailwind_end':
     case 'mend':
     case 'skill_unlocked':
     case 'chart_point':

@@ -1,3 +1,4 @@
+import type { TailwindEnd, TailwindState } from './tailwind-types.ts';
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { GlitchEvent, GlitchState, PathAct, PathLog } from './glitch-types.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, XpReduction, ZoneDef, ZonePack } from '../content/types.ts';
@@ -372,6 +373,8 @@ export type ArmedWhere = 'bag' | 'ground';
 export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss' | 'run_refused' | 'unidentified';
 
 export type WorldEvent =
+  | { readonly type: 'tailwind_rise'; readonly tier: number; readonly points: number }
+  | { readonly type: 'tailwind_end'; readonly reason: TailwindEnd; readonly best: number; readonly points: number; readonly kills: number; readonly xp: number; readonly gold: number }
   | { readonly type: 'skill_start'; readonly actorId: number; readonly skill: SkillDef; readonly direction: Vec2; readonly windup: number; readonly recovery: number }
   | { readonly type: 'skill_impact'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly origin: Vec2; readonly direction: Vec2; readonly hits: number; readonly echo: boolean }
   | { readonly type: 'revive'; readonly monsterId: number; readonly corpseId: number; readonly by: number }
@@ -531,6 +534,7 @@ export interface World {
   wards: WardState[];
   portal: PortalState | null;
   run: RunState;
+  tailwind: TailwindState;
 }
 
 export type { ShoreState };
