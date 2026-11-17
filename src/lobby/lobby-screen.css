@@ -1,5 +1,5 @@
 .lobby-screen {
-  --sheet-bg: rgba(8, 11, 17, 0.6);
+  --sheet-bg: rgba(8, 11, 17, 0.72);
   --sheet-dim: rgba(239, 230, 214, 0.48);
   --sheet-soft: rgba(239, 230, 214, 0.78);
   position: absolute;
@@ -65,7 +65,6 @@
   border-radius: 4px;
   background: var(--sheet-bg);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.36);
-  backdrop-filter: blur(6px);
 }
 
 .lobby-name {
@@ -160,7 +159,6 @@
   padding: 14px 16px;
   border-radius: 4px;
   background: var(--sheet-bg);
-  backdrop-filter: blur(6px);
 }
 
 .lobby-ladder-title {
@@ -420,9 +418,8 @@ body[data-lobby] #vignette {
   padding: 9px 14px 10px;
   border: 0;
   border-radius: 4px;
-  background: rgba(8, 11, 17, 0.42);
+  background: rgba(8, 11, 17, 0.52);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(6px);
   font-family: var(--sans);
   text-align: left;
   color: var(--sheet-soft);

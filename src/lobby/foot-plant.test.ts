@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Box3 } from 'three';
+import type { Box3, Vector3 } from 'three';
 import { Bone, BufferGeometry, Float32BufferAttribute, Group, MeshBasicMaterial, Skeleton, SkinnedMesh, Uint16BufferAttribute } from 'three';
 import { footing, lowestOf } from './foot-plant.ts';
 
@@ -71,4 +71,17 @@ void test('a figure with nothing drawn has no footing', (): void => {
   assert.equal(found.lowest, Number.POSITIVE_INFINITY);
   assert.deepEqual(found.low, []);
   assert.equal(lowestOf(empty, found.low), Number.POSITIVE_INFINITY);
+});
+
+void test('only the vertices low on the figure at rest are skinned, so the head is never posed to find the feet', (): void => {
+  const made: Figure = figure();
+  const posed: number[] = [];
+  const pose = made.mesh.getVertexPosition.bind(made.mesh);
+  made.mesh.getVertexPosition = (index: number, target: Vector3): Vector3 => {
+    posed.push(index);
+    return pose(index, target);
+  };
+  const found = footing(made.root);
+  assert.deepEqual([...new Set(posed)].toSorted((a: number, b: number): number => a - b), [0, 1, 2, 3, 4, 5, 6, 7]);
+  assert.ok(Math.abs(found.lowest - wholeLowest(made)) < 1e-6);
 });

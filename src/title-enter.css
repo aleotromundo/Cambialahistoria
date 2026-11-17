@@ -1,6 +1,6 @@
 #title-enter,
 .threshold-button {
-  --threshold-plate: linear-gradient(180deg, rgba(12, 20, 34, 0.58), rgba(4, 8, 15, 0.7));
+  --threshold-plate: linear-gradient(180deg, rgba(12, 20, 34, 0.66), rgba(4, 8, 15, 0.74));
   --threshold-plate-pressed: linear-gradient(180deg, rgba(4, 8, 15, 0.76), rgba(2, 4, 9, 0.8));
   --threshold-label: rgba(239, 230, 214, 0.8);
   --threshold-label-lit: #fbf4e6;
@@ -32,7 +32,6 @@
   border-radius: var(--threshold-radius);
   outline: none;
   box-shadow: var(--threshold-shadow);
-  backdrop-filter: blur(6px);
   transition:
     color var(--spring-smooth-ms) var(--spring-smooth),
     text-shadow var(--spring-smooth-ms) var(--spring-smooth),

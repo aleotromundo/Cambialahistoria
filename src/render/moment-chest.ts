@@ -37,7 +37,6 @@ export interface ChestView {
   readonly lid: Group;
   readonly ghost: GhostUniforms;
   readonly materials: MeshStandardMaterial[];
-  readonly geometries: BufferGeometry[];
   readonly glow: GroundLight;
   readonly rise: Spring;
   readonly swing: Spring;
@@ -67,6 +66,45 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+export interface ChestPart {
+  readonly source: MeshStandardMaterial;
+  readonly base: BufferGeometry;
+  readonly top: BufferGeometry;
+}
+
+const splitParts: WeakMap<Object3D, Map<string, readonly ChestPart[]>> = new WeakMap<Object3D, Map<string, readonly ChestPart[]>>();
+
+function seamOf(hinge: PropLid): number {
+  return Number.isFinite(hinge.seam) ? hinge.seam : 0;
+}
+
+export function chestParts(model: Object3D, hinge: PropLid): readonly ChestPart[] {
+  const key: string = `${hinge.seam}|${hinge.hinge}`;
+  const byLid: Map<string, readonly ChestPart[]> = splitParts.get(model) ?? new Map<string, readonly ChestPart[]>();
+  splitParts.set(model, byLid);
+  const known: readonly ChestPart[] | undefined = byLid.get(key);
+  if (known !== undefined) return known;
+  const toLid: Matrix4 = new Matrix4().makeTranslation(0, -seamOf(hinge), -hinge.hinge);
+  const parts: ChestPart[] = [];
+  model.updateMatrixWorld(true);
+  model.traverse((child: Object3D): void => {
+    if (!(child instanceof Mesh)) return;
+    const shape: unknown = child.geometry;
+    if (!isGeometry(shape)) return;
+    const source: unknown = child.material;
+    if (!(source instanceof MeshStandardMaterial)) return;
+    const placed: BufferGeometry = shape.clone().applyMatrix4(child.matrixWorld);
+    const base: BufferGeometry = splitAtSeam(placed, hinge.seam, false);
+    const top: BufferGeometry = splitAtSeam(placed, hinge.seam, true).applyMatrix4(toLid);
+    placed.dispose();
+    base.computeBoundingSphere();
+    top.computeBoundingSphere();
+    parts.push({ source, base, top });
+  });
+  byLid.set(key, parts);
+  return parts;
+}
+
 export function buildChest(making: ChestMaking, holder: Group, chest: MomentChest): ChestView {
   const { prop, model } = making;
   const hinge: PropLid = prop.lid ?? NO_LID;
@@ -75,43 +113,28 @@ export function buildChest(making: ChestMaking, holder: Group, chest: MomentChes
   ghost.dissolve.value = 1;
   const root: Group = new Group();
   const lid: Group = new Group();
-  const seam: number = Number.isFinite(hinge.seam) ? hinge.seam : 0;
-  lid.position.set(0, seam, hinge.hinge);
+  lid.position.set(0, seamOf(hinge), hinge.hinge);
   root.add(lid);
   const materials: MeshStandardMaterial[] = [];
-  const geometries: BufferGeometry[] = [];
-  const toLid: Matrix4 = new Matrix4().makeTranslation(0, -seam, -hinge.hinge);
-  model.scene.updateMatrixWorld(true);
-  model.scene.traverse((child: Object3D): void => {
-    if (!(child instanceof Mesh)) return;
-    const shape: unknown = child.geometry;
-    if (!isGeometry(shape)) return;
-    const source: unknown = child.material;
-    if (!(source instanceof MeshStandardMaterial)) return;
-    const dressed: Material = making.dresser(prop.surfaces, source);
-    const material: MeshStandardMaterial = dressed instanceof MeshStandardMaterial ? dressed.clone() : source.clone();
+  for (const part of chestParts(model.scene, hinge)) {
+    const dressed: Material = making.dresser(prop.surfaces, part.source);
+    const material: MeshStandardMaterial = dressed instanceof MeshStandardMaterial ? dressed.clone() : part.source.clone();
     makeGhost(material, making.flash, ghost);
     materials.push(material);
-    const placed: BufferGeometry = shape.clone().applyMatrix4(child.matrixWorld);
-    const base: BufferGeometry = splitAtSeam(placed, hinge.seam, false);
-    const top: BufferGeometry = splitAtSeam(placed, hinge.seam, true).applyMatrix4(toLid);
-    placed.dispose();
-    for (const [geometry, parent] of [[base, root], [top, lid]] as const) {
-      geometry.computeBoundingSphere();
-      geometries.push(geometry);
+    for (const [geometry, parent] of [[part.base, root], [part.top, lid]] as const) {
       const mesh: Mesh = new Mesh(geometry, material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       parent.add(mesh);
     }
-  });
+  }
   const glow: GroundLight = createGroundLight(CHEST_GLOW, { kind: 'round', radius: MOMENT_CHEST.glowRadius, inner: 0, arc: Math.PI * 2 }, { fill: MOMENT_CHEST.glowFill, band: MOMENT_CHEST.glowBand, width: MOMENT_CHEST.glowWidth, wobble: MOMENT_CHEST.glowWobble });
   glow.mesh.position.set(chest.x, GROUND_LIGHT.height, chest.z);
   root.position.set(chest.x, -MOMENT_CHEST.sink, chest.z);
   root.rotation.y = (chest.rotationDegrees * Math.PI) / 180;
   root.scale.setScalar(prop.scale * MOMENT_CHEST.startScale);
   holder.add(root, glow.mesh);
-  return { root, lid, ghost, materials, geometries, glow, rise: { value: 0, velocity: 0, target: 1 }, swing: { value: 0, velocity: 0, target: 0 }, scale: prop.scale, hinge, opened: 0 };
+  return { root, lid, ghost, materials, glow, rise: { value: 0, velocity: 0, target: 1 }, swing: { value: 0, velocity: 0, target: 0 }, scale: prop.scale, hinge, opened: 0 };
 }
 
 export function stepChest(view: ChestView, moment: ChestMoment, dt: number): void {
@@ -132,7 +155,6 @@ export function stepChest(view: ChestView, moment: ChestMoment, dt: number): voi
 
 export function disposeChest(view: ChestView): void {
   for (const material of view.materials) material.dispose();
-  for (const geometry of view.geometries) geometry.dispose();
   view.glow.dispose();
   view.root.removeFromParent();
 }

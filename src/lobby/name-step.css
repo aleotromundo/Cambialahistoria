@@ -75,12 +75,11 @@
   text-align: center;
   color: #f4ecdc;
   caret-color: #e9c98a;
-  background: rgba(8, 13, 22, 0.55);
+  background: rgba(8, 13, 22, 0.66);
   border: none;
   border-radius: 2px;
   outline: none;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(6px);
   transition: background-color var(--spring-snappy-ms) var(--spring-snappy);
 }
 

@@ -621,19 +621,24 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       warmedFigures = readyFigures();
       await loadProps(content.moments.defs.values());
       const warm: MomentEntry[] = [];
-      for (const def of content.moments.defs.values()) {
-        const moment: MomentState = { id: -1, def, combat: false, level: 1, pos: { x: 0, z: 0 }, phase: 'dormant', timeLeft: 1, phaseTime: 0, armed: false, away: 0, entered: false, bounty: 0, full: 0, reduced: null, blocks: null, outcome: null, chest: 'none', figures: def.echoes.map((echo: MomentEcho, index: number): MomentFigure => ({ echo: index, pos: { x: echo.x, z: echo.z }, facing: 0, turned: false, monsterId: null })), transit: null };
-        const entry: MomentEntry = build(moment);
-        for (const placed of def.props) placeProp(entry, placed);
-        if (def.chest !== null) entry.chest = chestOf(entry, def.chest);
-        dressFigures(entry, moment);
-        for (const figure of entry.figures) figure.rig.setOpacity(1);
-        warm.push(entry);
-      }
+      const holder: Group = new Group();
+      await workPaced(
+        [...content.moments.defs.values()],
+        (def: MomentDef): void => {
+          const moment: MomentState = { id: -1, def, combat: false, level: 1, pos: { x: 0, z: 0 }, phase: 'dormant', timeLeft: 1, phaseTime: 0, armed: false, away: 0, entered: false, bounty: 0, full: 0, reduced: null, blocks: null, outcome: null, chest: 'none', figures: def.echoes.map((echo: MomentEcho, index: number): MomentFigure => ({ echo: index, pos: { x: echo.x, z: echo.z }, facing: 0, turned: false, monsterId: null })), transit: null };
+          const entry: MomentEntry = build(moment);
+          holder.add(entry.group);
+          for (const placed of def.props) placeProp(entry, placed);
+          if (def.chest !== null) entry.chest = chestOf(entry, def.chest);
+          dressFigures(entry, moment);
+          for (const figure of entry.figures) figure.rig.setOpacity(1);
+          warm.push(entry);
+        },
+        pacer,
+        PACED_WORK.frameBudgetMs,
+      );
       const bolt: Mesh<BufferGeometry, MeshBasicMaterial> = skyBolt(STRIKE_WHITE);
       const arcs: Mesh<BufferGeometry, MeshBasicMaterial> = groundArcs(STRIKE_WHITE, 4);
-      const holder: Group = new Group();
-      for (const entry of warm) holder.add(entry.group);
       holder.add(bolt, arcs);
       await renderer.compileAsync(holder, camera, scene).catch((): undefined => undefined);
       const textures: Set<Texture> = new Set<Texture>();

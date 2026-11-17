@@ -77,10 +77,9 @@
 .title-card .title-google.title-signin,
 .title-card .title-email-open.title-signin {
   --signin-text: rgba(239, 230, 214, 0.78);
-  background: rgba(8, 13, 22, 0.55);
+  background: rgba(8, 13, 22, 0.66);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
   border-radius: 2px;
-  backdrop-filter: blur(6px);
   transition:
     background-color var(--spring-snappy-ms) var(--spring-snappy),
     color var(--spring-smooth-ms) var(--spring-smooth);
