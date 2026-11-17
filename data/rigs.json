@@ -274,6 +274,18 @@
           "clip": "Spin_Low_Out",
           "impactFraction": 0
         },
+        "spin_whirlwind_in": {
+          "clip": "Spin_Whirlwind_In",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_loop": {
+          "clip": "Spin_Whirlwind_Loop",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_out": {
+          "clip": "Spin_Whirlwind_Out",
+          "impactFraction": 0
+        },
         "roll": {
           "clip": "Roll",
           "impactFraction": 0.6
@@ -564,6 +576,18 @@
         },
         "spin_low_out": {
           "clip": "Spin_Low_Out",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_in": {
+          "clip": "Spin_Whirlwind_In",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_loop": {
+          "clip": "Spin_Whirlwind_Loop",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_out": {
+          "clip": "Spin_Whirlwind_Out",
           "impactFraction": 0
         },
         "roll": {

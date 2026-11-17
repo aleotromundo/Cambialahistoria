@@ -27,7 +27,7 @@ import { startGameServices } from './game-services.ts';
 import { createPlayOverlays } from './play-overlays.ts';
 import { startGameGlitches } from './game-glitches.ts';
 import { createGameAudio } from './game-audio.ts';
-import type { LineDef } from '../sim/content/types.ts';
+import type { HeroDef, LineDef } from '../sim/content/types.ts';
 import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
@@ -93,7 +93,10 @@ import type { GlitchSettingsStore } from './glitch/glitch-settings.ts';
 import type { Actors } from './render/actors.ts';
 import { createActors } from './render/actors.ts';
 import type { CharacterLibrary, Dresser } from './render/character-loader.ts';
-import { loadCharacters, loadNeeds, loadRemainingCharacters } from './render/character-loader.ts';
+import { loadCharacters, loadNeeds, loadRemainingCharacters, usePrivateClips } from './render/character-loader.ts';
+import type { PrivateClips } from './render/private-clips.ts';
+import { browserClipDeps, loadPrivateClips } from './render/private-clips.ts';
+import { readAssetBase } from './audio/manifest.ts';
 import { createEffects } from './render/effects.ts';
 import type { MomentEffects } from './render/moment-effects.ts';
 import { momentEffects } from './render/moment-effects.ts';
@@ -170,6 +173,7 @@ async function start(): Promise<void> {
   const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const privateClips: Promise<PrivateClips> = loadPrivateClips(browserClipDeps(readAssetBase(import.meta.env['VITE_ASSET_BASE']), loader));
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
 
   const save: SaveData | null = await loadingSave;
@@ -197,6 +201,7 @@ async function start(): Promise<void> {
   }, load: (id: string): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, id), loadGate) });
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
+  void privateClips.then((clips: PrivateClips): void => usePrivateClips(library, content.player.heroes.map((hero: HeroDef): string => hero.rig), clips));
   const loot: LootView = await createLootView(loader, stage.scene, library);
   let zoneView: ZoneView = firstView;
   let markers: PlaceMarkers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);

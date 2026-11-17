@@ -1,4 +1,4 @@
-export type SpinStyleId = 'now' | 'upright' | 'heavy' | 'stepping' | 'mocap' | 'skate' | 'twohand' | 'low';
+export type SpinStyleId = 'now' | 'upright' | 'heavy' | 'stepping' | 'mocap' | 'skate' | 'twohand' | 'low' | 'whirlwind';
 
 export type SpinPivot = 'hips' | 'foot_l' | 'foot_r';
 
@@ -33,8 +33,8 @@ export interface SpinStyle {
 
 export const SPIN_STYLE = {
   param: 'spin',
-  shipped: 'upright',
-  order: ['now', 'upright', 'heavy', 'stepping', 'mocap', 'skate', 'twohand', 'low'],
+  shipped: 'whirlwind',
+  order: ['now', 'upright', 'heavy', 'stepping', 'mocap', 'skate', 'twohand', 'low', 'whirlwind'],
 } as const satisfies { readonly param: string; readonly shipped: SpinStyleId; readonly order: readonly SpinStyleId[] };
 
 const THIN_TRAIL: SpinTrail = { fill: 0.02, arcBand: 0.22, width: 0.025, band: 0.12, length: 0.98, lag: 0.35, strength: 0.45 };
@@ -47,6 +47,7 @@ export const SPIN_STYLES: Readonly<Record<SpinStyleId, SpinStyle>> = {
   mocap: { id: 'mocap', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_mocap_in', loop: 'spin_mocap_loop', end: 'spin_mocap_out', pivot: 'hips' } },
   skate: { id: 'skate', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_skate_in', loop: 'spin_skate_loop', end: 'spin_skate_out', pivot: 'foot_l' } },
   twohand: { id: 'twohand', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_twohand_in', loop: 'spin_twohand_loop', end: 'spin_twohand_out', pivot: 'foot_l' } },
+  whirlwind: { id: 'whirlwind', cycles: 0, pace: 1.5, paceFull: 1.5, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_whirlwind_in', loop: 'spin_whirlwind_loop', end: 'spin_whirlwind_out', pivot: 'hips' } },
   low: { id: 'low', cycles: 0, pace: 1, paceFull: 1, lean: 0, leanStill: 0, beat: 0, trail: THIN_TRAIL, clips: { start: 'spin_low_in', loop: 'spin_low_loop', end: 'spin_low_out', pivot: 'foot_l' } },
 };
 

@@ -17,7 +17,7 @@ import type { CasterCache, CasterPiece, CasterRange } from './shadow-caster.ts';
 import { casterGeometry, castsTogether, createCasterCache, createShadowCaster } from './shadow-caster.ts';
 
 export type { ActionClip, CharacterLibrary, Dresser, GaitClip, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
-export { forgetModel, hasWear, loadCharacters, loadKeptModel, loadModel, loadNeeds, loadRemainingCharacters } from './character-library.ts';
+export { forgetModel, hasWear, loadCharacters, loadKeptModel, loadModel, loadNeeds, loadRemainingCharacters, usePrivateClips } from './character-library.ts';
 
 export interface RigLook {
   readonly tint: string;

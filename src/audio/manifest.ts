@@ -1,6 +1,7 @@
 export interface AssetManifest {
   readonly sfx: ReadonlyMap<string, readonly string[]>;
   readonly voice: ReadonlyMap<string, string>;
+  readonly clips: ReadonlyMap<string, string>;
 }
 
 const RELATIVE_PATH: RegExp = /^[A-Za-z0-9_\-./]+$/;
@@ -47,6 +48,14 @@ function pathsOf(value: unknown): string[] | null {
   return paths.length > 0 ? paths : null;
 }
 
+function namedPaths(source: unknown): Map<string, string> {
+  const named: Map<string, string> = new Map<string, string>();
+  for (const [id, path] of entriesOf(source) ?? []) {
+    if (typeof path === 'string') named.set(id, path);
+  }
+  return named;
+}
+
 export function parseManifest(value: unknown): AssetManifest | null {
   const sfxEntries: [string, unknown][] | null = entriesOf(fieldOf(value, 'sfx'));
   if (sfxEntries === null) return null;
@@ -55,9 +64,5 @@ export function parseManifest(value: unknown): AssetManifest | null {
     const paths: string[] | null = pathsOf(list);
     if (paths !== null) sfx.set(id, paths);
   }
-  const voice: Map<string, string> = new Map<string, string>();
-  for (const [id, path] of entriesOf(fieldOf(value, 'voice')) ?? []) {
-    if (typeof path === 'string') voice.set(id, path);
-  }
-  return { sfx, voice };
+  return { sfx, voice: namedPaths(fieldOf(value, 'voice')), clips: namedPaths(fieldOf(value, 'clips')) };
 }

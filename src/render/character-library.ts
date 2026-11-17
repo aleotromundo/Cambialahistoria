@@ -17,6 +17,8 @@ import { assetUrl } from './asset-url.ts';
 import { fitClip } from './clip-fit.ts';
 import { dressPiece } from './dress-piece.ts';
 import { mergeRigidAlike, mergeSkinnedAlike } from './merge-alike.ts';
+import type { PrivateClips, PrivateClipSource } from './private-clips.ts';
+import { addPrivateActions } from './private-clips.ts';
 import type { KeepLoadingDeps, NamedLoad } from './keep-loading.ts';
 import { loadAllKeepTrying } from './keep-loading.ts';
 import type { TurnGate } from './paced-work.ts';
@@ -44,7 +46,7 @@ export interface RigClipSet {
   readonly hit: readonly AnimationClip[];
   readonly death: readonly AnimationClip[];
   readonly rise: AnimationClip | null;
-  readonly actions: ReadonlyMap<string, ActionClip>;
+  readonly actions: Map<string, ActionClip>;
   readonly unarmed: StanceClipSet | null;
   readonly stances: ReadonlyMap<string, StanceClipSet>;
 }
@@ -79,6 +81,25 @@ export interface CharacterLibrary {
 }
 
 const pending: Map<string, Promise<GLTF>> = new Map<string, Promise<GLTF>>();
+
+interface PrivateClipUse {
+  readonly clips: PrivateClips;
+  readonly rigs: ReadonlySet<string>;
+}
+
+let privateUse: PrivateClipUse | null = null;
+
+function withPrivateClips(rig: LoadedRig): LoadedRig {
+  if (privateUse === null || !privateUse.rigs.has(rig.def.id)) return rig;
+  addPrivateActions(rig.clips.actions, privateUse.clips, (source: PrivateClipSource): AnimationClip => fitClip(source.clip, source.scene, rig.template));
+  return rig;
+}
+
+export function usePrivateClips(library: CharacterLibrary, rigIds: Iterable<string>, clips: PrivateClips): void {
+  if (clips.size === 0) return;
+  privateUse = { clips, rigs: new Set<string>(rigIds) };
+  for (const rig of library.rigs.values()) withPrivateClips(rig);
+}
 
 export function loadModel(loader: GLTFLoader, path: string, gate: TurnGate = OPEN_GATE): Promise<GLTF> {
   const cached: Promise<GLTF> | undefined = pending.get(path);
@@ -185,7 +206,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef, gate: TurnGate = OPEN_GA
   const template: Object3D = cloneSkinned(main.scene);
   await gate.turn();
   const grouping: BodyGroupings = groupBodies(skinnedMeshes(template), def.bodyParts);
-  return {
+  return withPrivateClips({
     def,
     template,
     clips: {
@@ -202,7 +223,7 @@ async function loadRig(loader: GLTFLoader, def: RigDef, gate: TurnGate = OPEN_GA
     bodyParts: grouping.names,
     bodyMasks: grouping.masks,
     fitted: new Map<string, readonly BufferGeometry[]>(),
-  };
+  });
 }
 
 function isPiece(mesh: SkinnedMesh, names: ReadonlySet<string>): boolean {

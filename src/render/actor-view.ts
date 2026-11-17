@@ -548,7 +548,7 @@ export function createActorView(rig: RigInstance, scale: number, facing: number,
         return;
       }
       spinning = true;
-      clipSpin = pose.clips === null ? null : startClipSpin(rig.root, pose.clips);
+      clipSpin = pose.clips === null || [pose.clips.start, pose.clips.loop, pose.clips.end].some((name: string): boolean => actionClip(rig, name) === undefined) ? null : startClipSpin(rig.root, pose.clips);
       pivot = clipSpin === null ? null : clipSpin.pivot;
       const opening: ActionClip | undefined = clipSpin === null ? undefined : actionClip(rig, clipSpin.clips.start);
       if (opening !== undefined) {

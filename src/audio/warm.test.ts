@@ -14,6 +14,7 @@ const MANIFEST: AssetManifest = {
     ['page_two', 'voice/book/page_two.mp3'],
     ['page_twin', 'voice/book/page_one.mp3'],
   ]),
+  clips: new Map<string, string>(),
 };
 
 void test('every variation of each wanted id is listed once, in the order of the ids', (): void => {
