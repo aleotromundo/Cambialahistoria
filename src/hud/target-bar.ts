@@ -40,12 +40,14 @@ function fillInfo(info: HTMLDivElement, lines: readonly MonsterLine[]): void {
   info.replaceChildren(body);
 }
 
-function showPhrases(summary: HTMLElement, parts: readonly string[]): void {
+function showPhrases(summary: HTMLElement, parts: readonly string[], sizes: ResizeObserver): void {
   const shown: Element[] = [...summary.children];
   const reuse: (number | null)[] = reusedPhrases(shown.map((node: Element): string => node.textContent), parts);
   const kept: Set<number> = new Set<number>(reuse.flatMap((at: number | null): number[] => (at === null ? [] : [at])));
   shown.forEach((node: Element, index: number): void => {
-    if (!kept.has(index)) node.remove();
+    if (kept.has(index)) return;
+    sizes.unobserve(node);
+    node.remove();
   });
   let before: Element | null = summary.firstElementChild;
   parts.forEach((part: string, index: number): void => {
@@ -55,8 +57,11 @@ function showPhrases(summary: HTMLElement, parts: readonly string[]): void {
       before = node.nextElementSibling;
       return;
     }
-    summary.insertBefore(label('target-summary-part', part, null), before);
+    sizes.observe(summary.insertBefore(label('target-summary-part', part, null), before));
   });
+}
+
+function fitPhrases(summary: HTMLElement): void {
   const room: number = summary.clientWidth;
   if (room === 0) return;
   for (const node of summary.children) {
@@ -79,6 +84,11 @@ export function createTargetBar(root: HTMLElement): TargetBar {
   const chip: HTMLDivElement = el('div', 'target-chip', track);
   const fill: HTMLDivElement = el('div', 'target-fill', track);
   const infoBox: HTMLDivElement = el('div', 'target-info', element);
+  const sizes: ResizeObserver = new ResizeObserver((): void => {
+    fitPhrases(summary);
+  });
+  sizes.observe(summary);
+  let unsnap: boolean = false;
   let recent: RecentHit | null = null;
   let shownId: number | null = null;
   let shownRatio: number = -1;
@@ -92,6 +102,10 @@ export function createTargetBar(root: HTMLElement): TargetBar {
       recent = { id: monsterId, age: 0 };
     },
     update(dt: number, world: World, hoveredId: number | null): void {
+      if (unsnap) {
+        unsnap = false;
+        track.classList.remove('snap');
+      }
       if (recent !== null) recent = { id: recent.id, age: recent.age + dt };
       const picked: Target | null = pickTarget(world.monsters, hoveredId, recent, TARGETING.grace);
       const target: MonsterState | null = picked !== null && picked.kind === 'monster' ? picked.monster : null;
@@ -120,7 +134,7 @@ export function createTargetBar(root: HTMLElement): TargetBar {
       }
       if (current.said !== shownSummary) {
         shownSummary = current.said;
-        showPhrases(summary, current.parts);
+        showPhrases(summary, current.parts, sizes);
       }
       setText(level, `Level ${target.level}`, false);
       const ratio: number = Math.round(clamp01(target.life / target.maxLife) / TARGET_BAR.step) * TARGET_BAR.step;
@@ -128,10 +142,7 @@ export function createTargetBar(root: HTMLElement): TargetBar {
       shownRatio = ratio;
       fill.style.transform = `scaleX(${ratio.toFixed(3)})`;
       chip.style.transform = `scaleX(${ratio.toFixed(3)})`;
-      if (track.classList.contains('snap')) {
-        track.getBoundingClientRect();
-        track.classList.remove('snap');
-      }
+      if (track.classList.contains('snap')) unsnap = true;
     },
   };
 }
