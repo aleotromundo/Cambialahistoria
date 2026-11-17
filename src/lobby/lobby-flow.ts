@@ -52,6 +52,7 @@ export interface LobbyFlowParts {
   readonly restore: () => void;
   readonly showFps: () => boolean;
   readonly qualityTier: () => string;
+  readonly bed: (shown: boolean) => void;
 }
 
 export interface LobbyFlow {
@@ -135,6 +136,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     await frames(LOBBY_FLOW.settleFrames);
     busy = false;
     screen.setBusy(false);
+    if (into) parts.bed(true);
     await veil.lift();
   };
 
@@ -150,10 +152,12 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     if (busy) return;
     busy = true;
     screen.setBusy(true);
+    parts.bed(false);
     await veil.cover(null);
     if (await go()) return;
     busy = false;
     screen.setBusy(false);
+    parts.bed(true);
     await veil.lift();
   };
 

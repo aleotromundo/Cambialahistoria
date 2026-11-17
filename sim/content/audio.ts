@@ -41,6 +41,8 @@ const LIMITS = {
   brightenMax: 0.5,
   cutMin: 0.05,
   cutMax: 10,
+  scoreMin: 10,
+  scoreMax: 900,
 } as const;
 
 export interface CueDefaults {
@@ -93,9 +95,23 @@ export interface AmbienceStinger {
   readonly near: StingerNear | null;
 }
 
+export interface ScoreNote {
+  readonly sound: string;
+  readonly at: number;
+  readonly volume: number;
+  readonly rate: number;
+  readonly pan: number;
+}
+
+export interface Score {
+  readonly length: number;
+  readonly notes: readonly ScoreNote[];
+}
+
 export interface ZoneAmbience {
   readonly loops: readonly AmbienceLoop[];
   readonly stingers: readonly AmbienceStinger[];
+  readonly score: Score | null;
 }
 
 export const SEAM_PARTS = ['buildUp', 'tear', 'tearBack', 'settle'] as const;
@@ -141,6 +157,7 @@ export interface AudioDef {
   readonly ui: CueTable;
   readonly steps: CueTable;
   readonly ambience: ReadonlyMap<string, ZoneAmbience>;
+  readonly lobby: ZoneAmbience;
 }
 
 export interface KnownIds {
@@ -260,6 +277,26 @@ function stingerNear(source: Fields, surfaces: ReadonlySet<string>, where: strin
   return { surfaces: listed, reach: required(near, 'reach', LIMITS.reachMin, LIMITS.reachMax, `${where}.near`) };
 }
 
+function score(source: Fields, where: string): Score | null {
+  if (source['score'] === undefined) return null;
+  const given: Fields = fields(source['score'], `${where}.score`);
+  const length: number = required(given, 'length', LIMITS.scoreMin, LIMITS.scoreMax, `${where}.score`);
+  const notes: readonly ScoreNote[] = each(given['notes'], `${where}.score.notes`, (entry: unknown, entryWhere: string): ScoreNote => {
+    const note: Fields = fields(entry, entryWhere);
+    const at: number = required(note, 'at', 0, length, entryWhere);
+    if (at >= length) throw new ContentError(`${entryWhere}.at`, `expected a time before the score's length of ${length}`);
+    return {
+      sound: soundId(note, 'sound', entryWhere),
+      at,
+      volume: ranged(note, 'volume', 1, 0.01, LIMITS.volumeMax, entryWhere),
+      rate: ranged(note, 'rate', 1, LIMITS.pitchMin, LIMITS.pitchMax, entryWhere),
+      pan: ranged(note, 'pan', 0, -1, 1, entryWhere),
+    };
+  });
+  if (notes.length === 0) throw new ContentError(`${where}.score.notes`, 'expected at least one note');
+  return { length, notes };
+}
+
 function zone(value: unknown, surfaces: ReadonlySet<string>, where: string): ZoneAmbience {
   const source: Fields = fields(value, where);
   return {
@@ -274,6 +311,7 @@ function zone(value: unknown, surfaces: ReadonlySet<string>, where: string): Zon
       if (maxDelay < minDelay) throw new ContentError(entryWhere, 'maxDelay is below minDelay');
       return { sound: soundId(stinger, 'sound', entryWhere), volume: ranged(stinger, 'volume', 1, 0.01, LIMITS.volumeMax, entryWhere), minDelay, maxDelay, pitch: pitchRange(stinger, entryWhere), near: stingerNear(stinger, surfaces, entryWhere) };
     }),
+    score: score(source, where),
   };
 }
 
@@ -337,6 +375,7 @@ export function parseAudio(value: unknown, known: KnownIds): AudioDef {
     ui: read('ui', new Set<string>(UI_ACTIONS)),
     steps: read('steps', known.surfaces),
     ambience,
+    lobby: zone(source['lobby'], known.surfaces, `${where}.lobby`),
   };
 }
 

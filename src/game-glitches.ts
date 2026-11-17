@@ -28,10 +28,11 @@ export interface GameGlitchesDeps {
   readonly send: (command: Command) => void;
   readonly relight: () => void;
   readonly startZoneAmbience: () => void;
+  readonly hushBeds: () => void;
 }
 
 export function startGameGlitches(deps: GameGlitchesDeps): GlitchView {
-  const { world, content, stage, audio, audioDef, actors, voice, send, startZoneAmbience } = deps;
+  const { world, content, stage, audio, audioDef, actors, voice, send, startZoneAmbience, hushBeds } = deps;
   const seamPass: SeamPass = createSeamPass();
   stage.setSeam(seamPass.pass);
   return createGlitchView({
@@ -50,7 +51,7 @@ export function startGameGlitches(deps: GameGlitchesDeps): GlitchView {
     setAmbience: (ambience): void => stage.setAmbience(ambience),
     restoreAmbience: (): void => { stage.setAmbience(world.zone.ambience); deps.relight(); },
     silence: (): void => {
-      audio.stopAmbience();
+      hushBeds();
       voice.stop();
     },
     resume: (): void => startZoneAmbience(),

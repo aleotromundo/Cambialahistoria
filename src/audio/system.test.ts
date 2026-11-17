@@ -11,8 +11,8 @@ import type { AudioSystem, StingerLocator, Trigger } from './system.ts';
 import { createAudioSystem } from './system.ts';
 
 const CUE: SoundCue = { sound: 'bone_hit', volume: 0.9, maxVoices: 2, cooldown: 0, reach: 30, holdForVoice: 0, pitch: null, volumeJitter: null, position: null };
-const ZONE: ZoneAmbience = { loops: [{ sound: 'ambience_wind_fort', volume: 0.8 }], stingers: [{ sound: 'thunder_distant', volume: 0.7, minDelay: 1, maxDelay: 2, pitch: null, near: null }] };
-const VENTS: ZoneAmbience = { loops: [], stingers: [{ sound: 'vent_hiss', volume: 0.5, minDelay: 1, maxDelay: 1, pitch: { min: 0.9, max: 1.1 }, near: { surfaces: ['vent_bed'], reach: 20 } }] };
+const ZONE: ZoneAmbience = { loops: [{ sound: 'ambience_wind_fort', volume: 0.8 }], stingers: [{ sound: 'thunder_distant', volume: 0.7, minDelay: 1, maxDelay: 2, pitch: null, near: null }], score: null };
+const VENTS: ZoneAmbience = { loops: [], stingers: [{ sound: 'vent_hiss', volume: 0.5, minDelay: 1, maxDelay: 1, pitch: { min: 0.9, max: 1.1 }, near: { surfaces: ['vent_bed'], reach: 20 } }], score: null };
 const NOWHERE: StingerLocator = (): Placement | null => null;
 
 function controls(): AudioControls {
@@ -46,10 +46,10 @@ void test('with no asset base nothing is requested, nothing throws and nothing i
     assert.equal(system.configured, false);
     system.unlock();
     system.play(CUE, CENTRE);
-    system.startAmbience(ZONE, NOWHERE);
+    system.startAmbience(ZONE, NOWHERE, 1, 1);
     system.warm(['bone_hit'], []);
     system.update(10);
-    system.stopAmbience();
+    system.stopAmbience(1);
     await system.playVoice('warden_guide', 'anything');
     system.stopVoice();
     await Promise.all([system.playVoice('warden_guide', 'one'), system.playVoice('warden_guide', 'two'), system.playVoice('warden_trader', 'three')]);
@@ -94,12 +94,12 @@ void test('stingers fire on their timer and nothing fires before it', (): void =
   system.onTrigger((trigger: Trigger): void => {
     seen.push(trigger.sound);
   });
-  system.startAmbience(ZONE, NOWHERE);
+  system.startAmbience(ZONE, NOWHERE, 1, 1);
   system.update(1);
   assert.deepEqual(seen, []);
   system.update(0.6);
   assert.deepEqual(seen, ['thunder_distant']);
-  system.stopAmbience();
+  system.stopAmbience(1);
   system.update(60);
   assert.deepEqual(seen, ['thunder_distant']);
 });
@@ -115,7 +115,7 @@ void test('a stinger tied to a surface plays where the locator places it, and st
   system.startAmbience(VENTS, (near: StingerNear): Placement | null => {
     asked.push([...near.surfaces]);
     return place;
-  });
+  }, 1, 1);
   system.update(1.1);
   assert.equal(seen.length, 0);
   assert.deepEqual(asked, [['vent_bed']]);

@@ -194,7 +194,7 @@ async function start(): Promise<void> {
   stage.setAmbience(world.zone.ambience);
   stage.setHeroLight(world.zone.heroLight);
   placeLine.show(world.zone.name);
-  const { audioDef, controls, audio, sounds, voice, playCues, playUi, startZoneAmbience }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
+  const { audioDef, controls, audio, sounds, voice, playCues, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
   const queue: Command[] = [];
   const send = (command: Command): void => {
     queue.push(command);
@@ -277,7 +277,7 @@ async function start(): Promise<void> {
       if (playing && !transition.blocking) pauseMenu.open(null);
     } });
   const opening: Opening = createOpening({ world, camera, hud: element('hud', HTMLDivElement), touch: mobile.touch, overlays: overlayManager, pageVoice: { busy: (): boolean => audio.speaking().length > 0, soundOn: (): boolean => voiceAudible(controls.get()), say: (line: LineDef): void => void voice.play(line) }, send, nameOf: (): string | null => heroName ?? readHeroName(createBrowserStore()), fetchVoice: (): Promise<SpokenName | null> => (nameVoice === null || heroName === null ? Promise.resolve(null) : nameVoice.fetch()), playVoice: (clip: ArrayBuffer): Promise<void> => audio.playEcho(clip), setAmbience: (light: ZoneLight): void => stage.setAmbience(light), setRain: (amount: number): void => rain.setWeather({ ...world.zone.weather, rain: amount }), refreshName: (): Promise<void> => (lobby === null ? Promise.resolve() : lobby.feed.refresh(true)) });
-  const glitches: GlitchView = startGameGlitches({ world, content, stage, quality: mobile.quality.tier.name, glitchSettings, audio, audioDef, actors, voice, send, relight: (): void => opening.relight(), startZoneAmbience });
+  const glitches: GlitchView = startGameGlitches({ world, content, stage, quality: mobile.quality.tier.name, glitchSettings, audio, audioDef, actors, voice, send, relight: (): void => opening.relight(), startZoneAmbience, hushBeds });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(import.meta.env.VITE_SERVER_URL);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
   const perf: PerfReports = startPerfReports({ serverUrl: import.meta.env.VITE_SERVER_URL, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
@@ -312,7 +312,7 @@ async function start(): Promise<void> {
     perf.left();
     playing = false;
     markPlaying(document.body, false);
-    audio.stopAmbience();
+    quietBeds();
     enter.textContent = 'Continue';
     titleBar.current = world.player.bar;
     drawTitleKeys();
@@ -543,7 +543,7 @@ async function start(): Promise<void> {
     playing = true;
     markPlaying(document.body, true);
     ladder?.setPlaying(true);
-    audio.unlock();
+    unlockAudio();
     playUi('title_gone');
     startZoneAmbience();
     preloadNearZones();
@@ -556,6 +556,7 @@ async function start(): Promise<void> {
     enter.disabled = true;
     createHintStore(createBrowserStore()).clear();
     launch.forgetPlayed();
+    hushBeds();
     await Promise.all([backend.reset(), fadePageOut()]);
     reloadPage();
   };
@@ -565,7 +566,7 @@ async function start(): Promise<void> {
   const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), showFps: (): boolean => gameSettings.get().graphics.showFps, qualityTier, root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => pick.look(), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: pick.choice() }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl: import.meta.env.VITE_SERVER_URL, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback });
+  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl: import.meta.env.VITE_SERVER_URL, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();

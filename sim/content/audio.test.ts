@@ -380,3 +380,42 @@ void test('the dodge roll varies its pitch and level more than the default and k
   assert.ok(whoosh !== undefined && whoosh.pitch !== null && whoosh.volumeJitter !== null);
   assert.ok(whoosh.pitch.max - whoosh.pitch.min > 0.08);
 });
+
+void test('the lobby has a bed of its own: cold wind and a low drone under a slow score of pads, with nothing sudden in it', (): void => {
+  const lobby = loadAudio(content).lobby;
+  const loops: readonly string[] = lobby.loops.map((loop): string => loop.sound);
+  assert.ok(loops.some((sound: string): boolean => sound.includes('wind')), 'no wind is heard in the lobby');
+  assert.ok(loops.some((sound: string): boolean => sound.includes('drone')), 'no drone sits under the lobby');
+  assert.equal(lobby.stingers.length, 0);
+  const score = must(lobby.score, 'the lobby score');
+  assert.ok(score.length >= 90, 'the lobby score repeats in under 90 seconds');
+  assert.ok(score.notes.every((note): boolean => note.sound.startsWith('music_')));
+  const ats: readonly number[] = score.notes.map((note): number => note.at);
+  assert.deepEqual(ats, ats.toSorted((a: number, b: number): number => a - b));
+});
+
+void test('a zone has no score unless it gives one', (): void => {
+  for (const zone of loadAudio(content).ambience.values()) assert.equal(zone.score, null);
+});
+
+void test('a score is checked: a length, notes inside it, a playback rate and a pan in range, and at least one note', (): void => {
+  const scored = (score: unknown): unknown =>
+    variant((draft): void => {
+      draft['ambience'] = { [AMBIENT_ZONE]: { loops: [], stingers: [], score } };
+    });
+  const note = { sound: 'music_pad_am', at: 4 };
+  const parsed = must(parseAudio(scored({ length: 60, notes: [{ ...note, rate: 0.5, pan: -0.3, volume: 0.8 }] }), known).ambience.get(AMBIENT_ZONE)?.score, 'a score');
+  assert.deepEqual(parsed, { length: 60, notes: [{ sound: 'music_pad_am', at: 4, rate: 0.5, pan: -0.3, volume: 0.8 }] });
+  const plain = must(parseAudio(scored({ length: 60, notes: [note] }), known).ambience.get(AMBIENT_ZONE)?.score?.notes[0], 'a plain note');
+  assert.deepEqual(plain, { sound: 'music_pad_am', at: 4, rate: 1, pan: 0, volume: 1 });
+  reject(scored({ notes: [note] }), /length/);
+  reject(scored({ length: 5, notes: [note] }), /length/);
+  reject(scored({ length: 60, notes: [] }), /notes/);
+  reject(scored({ length: 60, notes: [{ ...note, at: 60 }] }), /at/);
+  reject(scored({ length: 60, notes: [{ ...note, at: -1 }] }), /at/);
+  reject(scored({ length: 60, notes: [{ ...note, rate: 3 }] }), /rate/);
+  reject(scored({ length: 60, notes: [{ ...note, pan: 1.5 }] }), /pan/);
+  reject(variant((draft): void => {
+    delete draft['lobby'];
+  }), /lobby/);
+});

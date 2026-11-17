@@ -7,6 +7,7 @@ export interface AmbienceTracker<L> {
   start(loops: readonly L[]): void;
   stop(): void;
   current(generation: number): boolean;
+  generation(): number;
   take(): AmbienceBatch<L> | null;
   settle(batch: AmbienceBatch<L>, retry: readonly L[]): void;
 }
@@ -28,6 +29,9 @@ export function createAmbienceTracker<L>(): AmbienceTracker<L> {
     },
     current(candidate: number): boolean {
       return candidate === generation;
+    },
+    generation(): number {
+      return generation;
     },
     take(): AmbienceBatch<L> | null {
       if (inFlight || wanted.length === 0) return null;

@@ -1,13 +1,15 @@
 import { createEcho } from './echo.ts';
 import type { EchoChain } from './echo.ts';
 import type { SoundCue } from '../../sim/audio.ts';
-import type { AmbienceLoop, AmbienceStinger, StingerNear, ZoneAmbience } from '../../sim/content/audio.ts';
+import type { AmbienceLoop, AmbienceStinger, Score, StingerNear, ZoneAmbience } from '../../sim/content/audio.ts';
 import type { AmbienceTracker } from './ambience.ts';
 import { createAmbienceTracker, runBatch } from './ambience.ts';
 import type { BufferLoader, LoadOptions } from './buffers.ts';
 import { createBufferLoader, LOOP_LOAD, PLAY_LOAD, WARM_LOAD } from './buffers.ts';
 import type { BufferCache } from './cache.ts';
 import { createBufferCache } from './cache.ts';
+import type { Fade } from './fade.ts';
+import { fadeTo, heldAt } from './fade.ts';
 import type { LoadHealth } from './load-health.ts';
 import { createLoadHealth } from './load-health.ts';
 import { createManifestLoader } from './manifest-loader.ts';
@@ -16,6 +18,8 @@ import type { AssetManifest } from './manifest.ts';
 import type { Placement } from './mix.ts';
 import { CENTRE, MIX } from './mix.ts';
 import type { AudioControls, AudioSettings } from './settings.ts';
+import type { DueNote } from './score.ts';
+import { notesBetween, scoreSounds } from './score.ts';
 import type { VariantBag } from './variation.ts';
 import { createVariantBag, pitchRate, delayBetween, volumeScale } from './variation.ts';
 import type { SpokenClip, VoiceLines } from './voice-lines.ts';
@@ -55,6 +59,10 @@ const SYSTEM = {
   cutFade: 0.12,
   echoSpeaker: 'echo',
   measureIdleMs: 2000,
+  scoreLookahead: 2,
+  scoreLead: 0.1,
+  scoreLate: 0.25,
+  bedReleasePad: 0.1,
 } as const;
 
 export interface Trigger {
@@ -71,6 +79,7 @@ export interface AudioSystem {
   readonly controls: AudioControls;
   readonly configured: boolean;
   readonly health: LoadHealth;
+  readonly running: boolean;
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
   playVoice(speaker: string, clipId: string): Promise<void>;
@@ -78,8 +87,8 @@ export interface AudioSystem {
   warm(ids: readonly string[], voices: readonly string[]): void;
   stopVoice(): void;
   speaking(): readonly string[];
-  startAmbience(zone: ZoneAmbience, locate: StingerLocator): void;
-  stopAmbience(): void;
+  startAmbience(zone: ZoneAmbience, locate: StingerLocator, fadeIn: number, fadeOut: number): void;
+  stopAmbience(fadeOut: number): void;
   update(dt: number): void;
   setMuffled(on: boolean): void;
   playSeam(cue: SoundCue, cut: number | null): void;
@@ -98,6 +107,21 @@ export interface AudioOptions {
 interface Running {
   readonly source: AudioBufferSourceNode;
   readonly gain: GainNode;
+}
+
+interface BedNodes {
+  readonly generation: number;
+  readonly output: GainNode;
+  readonly running: Running[];
+  fade: Fade;
+}
+
+interface ScorePlay {
+  readonly score: Score;
+  readonly generation: number;
+  readonly buffers: Map<string, AudioBuffer>;
+  origin: number | null;
+  scheduled: number;
 }
 
 interface StingerTimer {
@@ -120,6 +144,17 @@ interface Graph {
 
 const NOWHERE: StingerLocator = (): Placement | null => null;
 
+function releaseRunning(running: Running): void {
+  running.source.disconnect();
+  running.gain.disconnect();
+}
+
+function applyFade(param: AudioParam, fade: Fade): void {
+  param.cancelScheduledValues(fade.start);
+  param.setValueAtTime(fade.from, fade.start);
+  param.linearRampToValueAtTime(fade.to, fade.end);
+}
+
 function whenIdle(work: () => void): void {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(work, { timeout: SYSTEM.measureIdleMs });
   else window.setTimeout(work, SYSTEM.measureIdleMs);
@@ -133,7 +168,8 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   const listeners: ((trigger: Trigger) => void)[] = [];
   const health: LoadHealth = createLoadHealth();
   const hold: VoiceHold = createVoiceHold();
-  const loops: Running[] = [];
+  let bed: BedNodes | null = null;
+  let scorePlay: ScorePlay | null = null;
   let timers: StingerTimer[] = [];
   let locateStinger: StingerLocator = NOWHERE;
   const loader: ManifestLoader = createManifestLoader({
@@ -268,7 +304,8 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     const path: string | undefined = manifest.sfx.get(loop.sound)?.[0];
     if (path === undefined) return true;
     const buffer: AudioBuffer | null = await load(path, LOOP_LOAD);
-    if (!zoneLoops.current(generation)) return true;
+    const target: BedNodes | null = bed;
+    if (!zoneLoops.current(generation) || target === null || target.generation !== generation) return true;
     if (buffer === null) return false;
     const source: AudioBufferSourceNode = current.context.createBufferSource();
     source.buffer = buffer;
@@ -277,10 +314,99 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     gain.gain.value = 0;
     gain.gain.setTargetAtTime(loop.volume, current.context.currentTime, SYSTEM.ambienceFade / 3);
     source.connect(gain);
-    gain.connect(current.ambience);
+    gain.connect(target.output);
     source.start(0, random() * buffer.duration);
-    loops.push({ source, gain });
+    target.running.push({ source, gain });
     return true;
+  };
+
+  const loadScore = async (play: ScorePlay): Promise<void> => {
+    await loader.ready();
+    const manifest: AssetManifest | null = loader.current();
+    if (manifest === null) return;
+    await Promise.all(
+      scoreSounds(play.score).map(async (sound: string): Promise<void> => {
+        const path: string | undefined = manifest.sfx.get(sound)?.[0];
+        if (path === undefined) return;
+        const buffer: AudioBuffer | null = await load(path, LOOP_LOAD);
+        if (buffer !== null) play.buffers.set(sound, buffer);
+      }),
+    );
+    const current: Graph | null = graph;
+    if (current === null || scorePlay !== play) return;
+    play.origin = current.context.currentTime + SYSTEM.scoreLead;
+    play.scheduled = play.origin;
+  };
+
+  const playNote = (due: DueNote, play: ScorePlay, target: BedNodes, current: Graph): void => {
+    const buffer: AudioBuffer | undefined = play.buffers.get(due.note.sound);
+    if (buffer === undefined || due.time < current.context.currentTime - SYSTEM.scoreLate) return;
+    const source: AudioBufferSourceNode = current.context.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = due.note.rate;
+    const gain: GainNode = current.context.createGain();
+    gain.gain.value = due.note.volume;
+    const panner: StereoPannerNode = current.context.createStereoPanner();
+    panner.pan.value = due.note.pan;
+    source.connect(gain);
+    gain.connect(panner);
+    panner.connect(target.output);
+    const running: Running = { source, gain };
+    target.running.push(running);
+    source.addEventListener('ended', (): void => {
+      panner.disconnect();
+      releaseRunning(running);
+      const index: number = target.running.indexOf(running);
+      if (index >= 0) target.running.splice(index, 1);
+    });
+    source.start(Math.max(due.time, current.context.currentTime));
+  };
+
+  const scheduleScore = (): void => {
+    const play: ScorePlay | null = scorePlay;
+    const current: Graph | null = graph;
+    const target: BedNodes | null = bed;
+    if (play === null || current === null || target === null || play.origin === null || target.generation !== play.generation) return;
+    const until: number = current.context.currentTime + SYSTEM.scoreLookahead;
+    for (const due of notesBetween(play.score, play.origin, play.scheduled, until)) playNote(due, play, target, current);
+    play.scheduled = Math.max(play.scheduled, until);
+  };
+
+  const releaseBed = (fadeOut: number): void => {
+    const leaving: BedNodes | null = bed;
+    bed = null;
+    scorePlay = null;
+    const current: Graph | null = graph;
+    if (leaving === null || current === null) return;
+    const now: number = current.context.currentTime;
+    leaving.fade = fadeTo(leaving.fade, now, 0, fadeOut);
+    applyFade(leaving.output.gain, leaving.fade);
+    const end: number = leaving.fade.end + SYSTEM.bedReleasePad;
+    for (const running of leaving.running) {
+      try {
+        running.source.stop(end);
+      } catch {
+        continue;
+      }
+    }
+    window.setTimeout((): void => {
+      for (const running of leaving.running.splice(0, leaving.running.length)) releaseRunning(running);
+      leaving.output.disconnect();
+    }, (end - now + SYSTEM.bedReleasePad) * SYSTEM.msPerSecond);
+  };
+
+  const openBed = (zone: ZoneAmbience, generation: number, fadeIn: number): void => {
+    const current: Graph | null = graph;
+    if (current === null) return;
+    const output: GainNode = current.context.createGain();
+    output.connect(current.ambience);
+    const fade: Fade = fadeTo(heldAt(0, current.context.currentTime), current.context.currentTime, 1, fadeIn);
+    applyFade(output.gain, fade);
+    bed = { generation, output, running: [], fade };
+    if (zone.score === null) return;
+    const play: ScorePlay = { score: zone.score, generation, buffers: new Map<string, AudioBuffer>(), origin: null, scheduled: 0 };
+    scorePlay = play;
+    loadScore(play).catch((): void => undefined);
   };
 
   const attemptLoops = (): void => {
@@ -410,8 +536,15 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     controls,
     configured: base !== null,
     health,
+    get running(): boolean {
+      return base === null || graph?.context.state === 'running';
+    },
     unlock(): void {
-      if (base === null || graph !== null) return;
+      if (base === null) return;
+      if (graph !== null) {
+        if (graph.context.state === 'suspended' && !document.hidden) graph.context.resume().catch((): void => undefined);
+        return;
+      }
       try {
         const context: AudioContext = new AudioContext();
         const master: GainNode = context.createGain();
@@ -492,26 +625,19 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     speaking(): readonly string[] {
       return echoes > 0 ? [...lines.speaking(), SYSTEM.echoSpeaker] : lines.speaking();
     },
-    startAmbience(zone: ZoneAmbience, locate: StingerLocator): void {
-      this.stopAmbience();
+    startAmbience(zone: ZoneAmbience, locate: StingerLocator, fadeIn: number, fadeOut: number): void {
+      this.stopAmbience(fadeOut);
       locateStinger = locate;
       zoneLoops.start(zone.loops);
+      openBed(zone, zoneLoops.generation(), fadeIn);
       loopRetryLeft = SYSTEM.loopRetrySeconds;
       attemptLoops();
       timers = zone.stingers.map((stinger: AmbienceStinger): StingerTimer => ({ stinger, left: delayBetween(stinger.minDelay, stinger.maxDelay, random) }));
     },
-    stopAmbience(): void {
+    stopAmbience(fadeOut: number): void {
       timers = [];
       zoneLoops.stop();
-      for (const running of loops.splice(0, loops.length)) {
-        try {
-          running.source.stop();
-        } catch {
-          continue;
-        }
-        running.source.disconnect();
-        running.gain.disconnect();
-      }
+      releaseBed(fadeOut);
     },
     setMuffled(on: boolean): void {
       if (on === muffled) return;
@@ -540,6 +666,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       if (hold.waiting() > 0) {
         for (const held of hold.release(clock(), echoes > 0 || lines.anySpeaking())) trigger('effects', held.cue, held.place);
       }
+      scheduleScore();
       loopRetryLeft -= dt;
       if (loopRetryLeft <= 0) {
         loopRetryLeft = SYSTEM.loopRetrySeconds;

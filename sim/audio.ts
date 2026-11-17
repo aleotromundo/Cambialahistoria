@@ -14,7 +14,7 @@ export interface SoundCue extends CueDef {
 
 const NONE: readonly SoundCue[] = [];
 
-type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'seam' | 'silent'>;
+type CueTableName = Exclude<keyof AudioDef, 'defaults' | 'ambience' | 'lobby' | 'seam' | 'silent'>;
 
 const NO_KEYS: readonly string[] = [];
 

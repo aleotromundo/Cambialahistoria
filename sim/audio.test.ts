@@ -227,7 +227,7 @@ void test('the warm list names every one-shot sound once, footsteps first and no
 void test('a sound only a stinger plays is left off the warm list, and one a skill also plays is warmed once', (): void => {
   const stinger: AmbienceStinger = { sound: 'stinger_only', volume: 0.3, minDelay: 2, maxDelay: 5, pitch: null, near: null };
   const shared: AmbienceStinger = { ...stinger, sound: 'sword_swing_light' };
-  const ambience: Map<string, ZoneAmbience> = new Map<string, ZoneAmbience>([...audio.ambience, ['stinger_zone', { loops: [], stingers: [stinger, shared] }]]);
+  const ambience: Map<string, ZoneAmbience> = new Map<string, ZoneAmbience>([...audio.ambience, ['stinger_zone', { loops: [], stingers: [stinger, shared], score: null }]]);
   const ids: readonly string[] = warmSoundIds({ ...audio, ambience });
   assert.equal(ids.includes('stinger_only'), false);
   assert.equal(ids.filter((id: string): boolean => id === 'sword_swing_light').length, 1);
