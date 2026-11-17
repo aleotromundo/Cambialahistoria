@@ -8,7 +8,8 @@ import type { Content, MonsterDef, RarityDef } from '../content/types.ts';
 import { createRng } from '../rng.ts';
 import type { Rng } from '../rng.ts';
 import { kill } from './combat.ts';
-import { rankChance, rankPack, ranksHere, rollRank } from './ranks.ts';
+import { rankChance, rankPack, rankSize, ranksHere, rollRank } from './ranks.ts';
+import { bodySized } from './skills.ts';
 import type { GroundItem, MonsterState, World } from './types.ts';
 
 const ranks: PackRanks = ARENA_CONTENT.packRanks;
@@ -127,3 +128,29 @@ void test('a rare leader drops its guaranteed items, none of them below its floo
     }
   }
 });
+
+void test('a ranked monster is bigger by its rank, a rare leader biggest, and its melee arc reaches as far as its body grew', (): void => {
+  const [magicOne] = rankPack(ARENA_CONTENT, createRng(3), magic, [taker]);
+  const pack: MonsterDef[] = rankPack(ARENA_CONTENT, createRng(11), rare, [taker, brute]);
+  assert.ok(Math.abs(sized(magicOne, taker) - magic.members.size) < 1e-9);
+  assert.ok(Math.abs(sized(pack[0], taker) - rare.members.size) < 1e-9);
+  assert.ok(Math.abs(sized(pack[1], brute) - must(rare.leader, 'rare leader').size) < 1e-9);
+  assert.ok(magic.members.size > 1 && rare.members.size > magic.members.size && must(rare.leader, 'rare leader').size > rare.members.size);
+  assert.equal(rankSize(taker), 1);
+  const world: World = arena(5, only(rare));
+  world.zone = { ...world.zone, ranks: true };
+  const leader: MonsterState = place(world, 'unfinished_brute', ARENA_CENTRE);
+  const swing = must(ARENA_CONTENT.skills.get(leader.def.skill), 'brute skill');
+  const grown = bodySized(leader, swing);
+  if (swing.delivery.type === 'arc' && grown.delivery.type === 'arc') assert.ok(Math.abs(grown.delivery.reach - swing.delivery.reach * rankSize(leader.def)) < 1e-9);
+  else assert.equal(grown, swing);
+  assert.equal(bodySized(world.player, swing), swing);
+});
+
+function withModsSize(def: MonsterDef): number {
+  return def.mods.reduce((size: number, id: string): number => size * must(ARENA_CONTENT.monsterMods.get(id), id).sizeScale, 1);
+}
+
+function sized(def: MonsterDef | undefined, base: MonsterDef): number {
+  return must(def, 'ranked').scale / (base.scale * withModsSize(must(def, 'ranked')));
+}

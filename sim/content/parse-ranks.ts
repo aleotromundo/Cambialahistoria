@@ -1,7 +1,7 @@
 import type { Fields } from './read.ts';
 import { colour, ContentError, each, fields, nonNegative, nullableText, positive, share, text, textList } from './read.ts';
 import type { MonsterModDef } from './combat-types.ts';
-import type { PackRankDef, PackRanks, RankChance, RankModChoice, RankScale } from './rank-types.ts';
+import type { PackRankDef, PackRanks, RankChance, RankLook, RankModChoice, RankScale } from './rank-types.ts';
 import type { Content, MonsterDef, PackMember, RarityDef, ZoneDef, ZonePack } from './types.ts';
 
 function chance(value: unknown, where: string): RankChance | null {
@@ -29,7 +29,14 @@ function scale(value: unknown, where: string): RankScale {
     items: whole(source, 'items', where),
     floor: nullableText(source, 'floor', where),
     mods: whole(source, 'mods', where),
+    size: positive(source, 'size', where),
   };
+}
+
+function look(value: unknown, where: string): RankLook | null {
+  if (value === null || value === undefined) return null;
+  const source: Fields = fields(value, where);
+  return { body: share(source, 'body', where), ground: share(source, 'ground', where), reach: positive(source, 'reach', where) };
 }
 
 function rank(value: unknown, where: string): PackRankDef {
@@ -39,6 +46,7 @@ function rank(value: unknown, where: string): PackRankDef {
     name: text(source, 'name', where),
     color: colour(source, 'color', where),
     aura: source['aura'] === null || source['aura'] === undefined ? null : colour(source, 'aura', where),
+    look: look(source['look'], `${where}.look`),
     chance: chance(source['chance'], `${where}.chance`),
     members: scale(source['members'], `${where}.members`),
     leader: source['leader'] === null || source['leader'] === undefined ? null : scale(source['leader'], `${where}.leader`),
@@ -104,6 +112,7 @@ export function rankProblems(content: Content): string[] {
     need(!seen.has(def.id), `pack rank ${def.id} is listed twice`);
     seen.add(def.id);
     floorKnown(content, `pack rank ${def.id} members`, def.members, need);
+    need(def.look === null || def.aura !== null, `pack rank ${def.id} has a look but no aura colour to light it with`);
     if (def.leader !== null) floorKnown(content, `pack rank ${def.id} leader`, def.leader, need);
     const most: number = Math.max(def.members.mods, def.leader?.mods ?? 0);
     need(most <= ranks.pool.length, `pack rank ${def.id} rolls ${most} modifiers, but the pool holds ${ranks.pool.length}`);

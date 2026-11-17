@@ -13,6 +13,13 @@ export interface RankScale {
   readonly items: number;
   readonly floor: string | null;
   readonly mods: number;
+  readonly size: number;
+}
+
+export interface RankLook {
+  readonly body: number;
+  readonly ground: number;
+  readonly reach: number;
 }
 
 export interface PackRankDef {
@@ -20,6 +27,7 @@ export interface PackRankDef {
   readonly name: string;
   readonly color: string;
   readonly aura: string | null;
+  readonly look: RankLook | null;
   readonly chance: RankChance | null;
   readonly members: RankScale;
   readonly leader: RankScale | null;
@@ -51,4 +59,6 @@ export interface MonsterRank {
   readonly xp: number;
   readonly items: number;
   readonly floor: string | null;
+  readonly size: number;
+  readonly look: RankLook | null;
 }

@@ -19,6 +19,7 @@ import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
 import { braceThrough } from './poise.ts';
+import { rankSize } from './ranks.ts';
 import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
@@ -51,6 +52,11 @@ export function comboHits(actor: Actor, skill: SkillDef): number {
 export function chainedSkill(actor: Actor, skill: SkillDef): SkillDef {
   const step: ComboStep | undefined = skill.combo?.steps[comboHits(actor, skill) - 1];
   return step === undefined ? skill : stepSkill(skill, step);
+}
+
+export function bodySized(actor: Actor, skill: SkillDef): SkillDef {
+  if (actor.kind !== 'monster' || skill.delivery.type !== 'arc') return skill;
+  return widenedSkill(skill, rankSize(actor.def));
 }
 
 export function stepSkill(skill: SkillDef, step: ComboStep): SkillDef {
@@ -145,7 +151,7 @@ function clearReach(world: World, actor: Actor, aim: ReadonlyVec2, wanted: numbe
 
 export function startSkill(world: World, actor: Actor, requested: SkillDef, direction: ReadonlyVec2, slot: number | null = null): void {
   const hits: number = comboHits(actor, requested);
-  const skill: SkillDef = chainedSkill(actor, requested);
+  const skill: SkillDef = bodySized(actor, chainedSkill(actor, requested));
   const speed: number = actor.kind === 'player' && skill.scalesWithAttackSpeed ? effectiveAttackSpeed(actor.stats) : 1;
   const aim: Vec2 = normalize(direction, directionOf(actor.facing));
   const windup: number = skill.delivery.type === 'dash' ? skill.delivery.duration : skill.windup / speed;

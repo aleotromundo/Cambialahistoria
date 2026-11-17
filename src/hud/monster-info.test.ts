@@ -130,7 +130,9 @@ void test('the plate shows a ranked monster in its rank colour and lists a rare 
   const plate: RankPlate = rankPlate(content, led);
   assert.equal(plate.color, rare.color);
   assert.deepEqual(plate.mods.split(' · '), led.mods.map((id: string): string => must(content.monsterMods.get(id), id).prefix));
-  assert.deepEqual(rankPlate(content, must(follower, 'follower')), { color: rare.color, mods: '' });
+  const followed: MonsterDef = must(follower, 'follower');
+  assert.deepEqual(rankPlate(content, followed), { color: rare.color, mods: followed.mods.map((id: string): string => must(content.monsterMods.get(id), id).prefix).join(' · ') });
+  assert.ok(rankPlate(content, followed).mods.length > 0);
 });
 
 function assertFresh(info: MonsterInfo, world: World, monster: MonsterState): void {

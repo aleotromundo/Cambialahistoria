@@ -45,10 +45,11 @@ function leaderIndex(bases: readonly MonsterDef[]): number {
 }
 
 function scaled(def: MonsterDef, rank: PackRankDef, scale: RankScale, leader: boolean, title: string | null): MonsterDef {
-  const ranked: MonsterRank = { id: rank.id, name: rank.name, color: rank.color, aura: rank.aura, leader, title, xp: scale.xp, items: scale.items, floor: scale.floor };
+  const ranked: MonsterRank = { id: rank.id, name: rank.name, color: rank.color, aura: rank.aura, leader, title, xp: scale.xp, items: scale.items, floor: scale.floor, size: scale.size, look: rank.look };
   return {
     ...def,
     name: title ?? def.name,
+    scale: def.scale * scale.size,
     life: def.life * scale.life,
     damageMin: def.damageMin * scale.damage,
     damageMax: def.damageMax * scale.damage,
@@ -79,4 +80,8 @@ export function rankPack(content: Content, rng: Rng, rank: PackRankDef | null, b
 
 export function ranksHere(bases: readonly MonsterDef[]): boolean {
   return bases.length > 0 && bases.every((base: MonsterDef): boolean => base.boss === null && base.rank === null && base.mods.length === 0);
+}
+
+export function rankSize(def: MonsterDef): number {
+  return def.rank?.size ?? 1;
 }

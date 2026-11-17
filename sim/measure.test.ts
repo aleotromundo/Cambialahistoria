@@ -73,7 +73,7 @@ void test('a fight is recorded at the highest pack rank among the foes that turn
   assert.equal(topRank(world, foes.map((foe): number => foe.id)), ranks[0]?.id);
   const lead = foes[1];
   assert.ok(lead !== undefined);
-  world.monsters[1] = { ...lead, def: { ...lead.def, rank: { id: magic.id, name: magic.name, color: magic.color, aura: magic.aura, leader: false, title: null, xp: 1, items: 0, floor: null } } };
+  world.monsters[1] = { ...lead, def: { ...lead.def, rank: { id: magic.id, name: magic.name, color: magic.color, aura: magic.aura, leader: false, title: null, xp: 1, items: 0, floor: null, size: 1, look: magic.look } } };
   assert.equal(topRank(world, foes.map((foe): number => foe.id)), magic.id);
   assert.equal(topRank(world, []), ranks[0]?.id);
 });

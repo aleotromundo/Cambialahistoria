@@ -95,7 +95,6 @@ export interface RankPlate {
 
 export function rankPlate(content: Content, def: MonsterDef): RankPlate {
   if (def.rank === null) return { color: null, mods: '' };
-  if (!def.rank.leader) return { color: def.rank.color, mods: '' };
   const prefixes: string[] = def.mods.flatMap((id: string): string[] => {
     const mod: MonsterModDef | undefined = content.monsterMods.get(id);
     return mod === undefined ? [] : [mod.prefix];

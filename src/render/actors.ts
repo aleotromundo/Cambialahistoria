@@ -39,6 +39,8 @@ import type { CountLook, CountShade } from './count-look.ts';
 import { countShadeOf, createCountLook } from './count-look.ts';
 import { createPresenceLook } from './presence-look.ts';
 import type { PresenceLook } from './presence-look.ts';
+import type { RankGlow, RankLookView } from './rank-look.ts';
+import { createRankLook } from './rank-look.ts';
 import type { VfxShadow } from '../../sim/content/vfx-types.ts';
 import type { EmpowerLook } from '../../sim/content/types.ts';
 import type { BodySwap, SwapMix } from './body-swap.ts';
@@ -177,6 +179,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const soaks: Map<number, Soaking> = new Map<number, Soaking>();
   const countLook: CountLook = createCountLook(scene);
   const presenceLook: PresenceLook = createPresenceLook(scene);
+  const rankLook: RankLookView = createRankLook(scene);
   const countShades: Map<number, { readonly motion: ShadeMotion; color: Color }> = new Map<number, { readonly motion: ShadeMotion; color: Color }>();
   const standChosen = (current: World): void => {
     const wanted: string = heroRig(content, current.player.hero);
@@ -251,6 +254,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const keep = (def: MonsterDef, view: ActorView): void => {
     view.detach();
+    view.rig.setAura(HIT_WHITE, 0);
     const kept: ActorView[] = pool.get(monsterKey(def)) ?? [];
     if (kept.length >= Math.max(ACTORS.pooledPerKind, bodies.get(monsterKey(def))?.spares ?? 0)) {
       view.dispose();
@@ -388,6 +392,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       standChosen(current);
       countLook.update(dt, current);
       presenceLook.update(dt, current);
+      rankLook.update(dt, current);
       if (librarySize() !== dressedWith) {
         dressedWith = librarySize();
         dressHero(current);
@@ -430,6 +435,8 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           if (wanted === null && counted.motion.value === 0) countShades.delete(monster.id);
           else countShades.set(monster.id, counted);
         }
+        const ranked: RankGlow | null = entry.echo === null ? rankLook.bodyGlow(monster.id) : null;
+        if (ranked !== null) entry.view.rig.setAura(ranked.color, ranked.amount);
         entry.view.setHover(monster.id === hoveredId);
         const floor: number = floorAt(monster.pos.x, monster.pos.z);
         draw(entry.view, monster.pos.x, floor, monster.pos.z);
