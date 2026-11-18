@@ -7,6 +7,7 @@ import type { Content, ItemBaseDef } from '../../sim/content/types.ts';
 import { baseOf } from '../../sim/items.ts';
 import type { GroundItem, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary } from './character-loader.ts';
+import { createCoinStacks } from './coin-stack.ts';
 import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
 import type { DropLooks } from './drop-looks.ts';
 import { createDropLooks } from './drop-looks.ts';
@@ -112,6 +113,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   coins.traverse((object: Object3D): void => {
     if (object instanceof Mesh) object.castShadow = true;
   });
+  const coinStack: () => Object3D = createCoinStacks(coins);
   const entries: Map<number, LootEntry> = new Map<number, LootEntry>();
 
   const lights: LootLights = createLootLights();
@@ -143,7 +145,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
     const group: Group = new Group();
     scene.add(group);
     if (ground.content.kind === 'gold') {
-      const stack: Object3D = coins.clone();
+      const stack: Object3D = coinStack();
       stack.scale.setScalar(LOOT.coinScale);
       group.add(stack);
       return { kind: 'gold', group };
@@ -191,7 +193,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
         const template: GroundTemplate = templateFor(world, base);
         return template.waiting ? [] : [template.model.clone(true)];
       });
-      return [coins.clone(), contactShadow(), keepsakeStandIn.group, ...finds, ...dropLooks.standIns(), ...lights.standIns()];
+      return [coinStack(), contactShadow(), keepsakeStandIn.group, ...finds, ...dropLooks.standIns(), ...lights.standIns()];
     },
     async dropStandIns(world: World, pacer: FramePacer): Promise<Object3D[]> {
       const made: Object3D[] = [];
