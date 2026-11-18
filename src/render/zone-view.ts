@@ -28,6 +28,7 @@ import { dressedProp, looseDressing, preloadSurfaces, propDressing, releaseSurfa
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import { edgeRocks } from './zone-edge.ts';
+import { tintProp } from './prop-tint.ts';
 import { browserPacer, workPaced } from './paced-work.ts';
 import { barrierPieces } from '../../sim/nav/barrier.ts';
 import { cliffRocks } from '../../sim/nav/cliff-rocks.ts';
@@ -245,8 +246,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const scattered: Set<string> = new Set<string>(zone.scatter.flatMap((rule: ZoneScatter): readonly string[] => rule.props));
   const finish = (def: PropDef | undefined, material: Material): Material => {
     if (def === undefined || def.tint === null || !(material instanceof MeshStandardMaterial)) return material;
-    const own: MeshStandardMaterial = carryLook(material, material.clone());
-    own.color.multiply(new Color(def.tint));
+    const own: MeshStandardMaterial = tintProp(carryLook(material, material.clone()), def.tint);
     tintedMaterials.push(own);
     return own;
   };
@@ -376,7 +376,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         child.castShadow = true;
         child.receiveShadow = true;
         const shared: unknown = child.material;
-        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => standardMaterials(dressedProp(content, conditional.def.surfaces, material, dressing)).map((worn: MeshStandardMaterial): MeshStandardMaterial => carryLook(worn, worn.clone()))[0] ?? material.clone());
+        const own: MeshStandardMaterial[] = standardMaterials(shared).map((material: MeshStandardMaterial): MeshStandardMaterial => standardMaterials(dressedProp(content, conditional.def.surfaces, material, dressing)).map((worn: MeshStandardMaterial): MeshStandardMaterial => tintProp(carryLook(worn, worn.clone()), conditional.def.tint))[0] ?? tintProp(material.clone(), conditional.def.tint));
         const first: MeshStandardMaterial | undefined = own[0];
         if (Array.isArray(shared)) {
           if (own.length !== shared.length) return;
