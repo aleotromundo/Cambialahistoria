@@ -30,10 +30,14 @@ export interface TransitionReport {
   readonly worstShownMs: number;
 }
 
+export interface BuiltZone {
+  readonly ready: Promise<void>;
+}
+
 export interface ZoneTransition {
   readonly blocking: boolean;
   readonly presenting: boolean;
-  begin(swap: () => Promise<void>, colour: string | null, reveal: () => void): void;
+  begin(swap: () => Promise<BuiltZone>, colour: string | null, reveal: () => void): void;
   frame(dtMs: number): void;
 }
 
@@ -107,7 +111,7 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
       };
     });
 
-  const run = async (swap: () => Promise<void>, colour: string | null, reveal: () => void): Promise<void> => {
+  const run = async (swap: () => Promise<BuiltZone>, colour: string | null, reveal: () => void): Promise<void> => {
     worstHidden = 0;
     worstShown = 0;
     limit = cleanFrameLimit(recent);
@@ -116,9 +120,10 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     await veil.cover(colour);
     const covered: number = now();
     phase = 'building';
-    await swap();
+    const zone: BuiltZone = await swap();
     const built: number = now();
     phase = 'settling';
+    await Promise.allSettled([zone.ready]);
     const settled: boolean = await settle(TRANSITION.cleanFrames, TRANSITION.settleMaxMs);
     const ready: number = now();
     phase = 'revealing';
@@ -140,7 +145,7 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     get presenting(): boolean {
       return phase === 'idle' || phase === 'settling' || phase === 'revealing' || phase === 'lifting';
     },
-    begin(swap: () => Promise<void>, colour: string | null, reveal: () => void): void {
+    begin(swap: () => Promise<BuiltZone>, colour: string | null, reveal: () => void): void {
       if (phase !== 'idle') return;
       run(swap, colour, reveal).catch((error: unknown): void => {
         settledNow = null;

@@ -139,7 +139,7 @@ import { createdOrUnsupported, probeBrowser, RETRY, UnsupportedBrowser, unsuppor
 import { runStart } from './start-failure.ts';
 import type { StatusLine } from './title-status.ts';
 import { changesSave, urgentEvents } from './save-events.ts';
-import type { TransitionReport, ZoneTransition } from './transition.ts';
+import type { BuiltZone, TransitionReport, ZoneTransition } from './transition.ts';
 import { createZoneTransition, describeTransition, veilColour } from './transition.ts';
 import { createVeil } from './veil.ts';
 import type { HurtVignette } from './vignette-hurt.ts';
@@ -367,7 +367,7 @@ async function start(): Promise<void> {
     });
   };
 
-  const showZone = async (events: readonly WorldEvent[]): Promise<void> => {
+  const showZone = async (events: readonly WorldEvent[]): Promise<BuiltZone> => {
     presentScene(events);
     effects.clear();
     particles.clear();
@@ -376,6 +376,7 @@ async function start(): Promise<void> {
     const bodies: Promise<void> = loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate).catch((error: unknown): void => {
       warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
     });
+    const bodiesIn: Promise<void> = waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     preloadNearZones();
@@ -387,7 +388,6 @@ async function start(): Promise<void> {
     zoneView.setGraphics(gameSettings.preset());
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
-    await waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
     await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
     startZoneAmbience();
     glitches.refresh();
@@ -400,6 +400,7 @@ async function start(): Promise<void> {
     hitStop = 0;
     saveHeld = false;
     persist();
+    return { ready: bodiesIn };
   };
 
   const transition: ZoneTransition = createZoneTransition({
@@ -454,7 +455,7 @@ async function start(): Promise<void> {
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
       const held: WorldEvent[] = events;
       saveHeld = true;
-      transition.begin((): Promise<void> => showZone(held), veilColour(content.zones, held), (): void => hud.handleEvents(held));
+      transition.begin((): Promise<BuiltZone> => showZone(held), veilColour(content.zones, held), (): void => hud.handleEvents(held));
     } else {
       present(events);
       if (events.some((event: WorldEvent): boolean => event.type === 'waypoint_unlocked')) markers.use({ type: 'waypoint' });

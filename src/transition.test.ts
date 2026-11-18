@@ -4,10 +4,11 @@ import { Color, Fog, Scene } from 'three';
 import type { Content, ZoneAmbience } from '../sim/content/types.ts';
 import { loadContent } from '../sim/content/content.ts';
 import type { Timers } from './backend/backend.ts';
-import type { TransitionReport, Veil, ZoneTransition } from './transition.ts';
+import type { BuiltZone, TransitionReport, Veil, ZoneTransition } from './transition.ts';
 import { cleanFrameLimit, createZoneTransition, isLight, TRANSITION, veilColour } from './transition.ts';
 
 const content: Content = loadContent();
+const BUILT: BuiltZone = { ready: Promise.resolve() };
 
 void test('entering the Hall from the white In-Between fades through the Hall night, never through white', (): void => {
   assert.equal(veilColour(content.zones, [{ type: 'zone_changed', from: 'between', to: 'hall_of_time' }]), '#0a0e16');
@@ -145,9 +146,9 @@ function cleanFrames(run: Harness, count: number): void {
 void test('the new zone is built only once the veil fully covers the old one', async (): Promise<void> => {
   const run: Harness = harness();
   const built: string[] = [];
-  run.transition.begin((): Promise<void> => {
+  run.transition.begin((): Promise<BuiltZone> => {
     built.push('built');
-    return Promise.resolve();
+    return Promise.resolve(BUILT);
   }, '#0a0e16', revealOf(run));
   await settle();
   assert.deepEqual(run.veil.log, ['cover #0a0e16']);
@@ -187,9 +188,9 @@ void test('while the veil is still coming down the scene keeps the old zone back
     if (run.transition.presenting) dress(scene, ambienceOf(world.zone));
   };
   world.zone = 'hall_of_time';
-  run.transition.begin((): Promise<void> => {
+  run.transition.begin((): Promise<BuiltZone> => {
     dress(scene, ambienceOf('hall_of_time'));
-    return Promise.resolve();
+    return Promise.resolve(BUILT);
   }, veilColour(content.zones, [{ type: 'zone_changed', from: 'between', to: 'hall_of_time' }]), revealOf(run));
   const seen: string[] = [];
   for (let index: number = 0; index < 20; index += 1) {
@@ -213,7 +214,7 @@ void test('while the veil is still coming down the scene keeps the old zone back
 
 void test('the veil lifts, and the HUD hears of the new zone, only after the new zone has drawn several clean frames in a row', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   assert.equal(run.transition.presenting, true);
@@ -245,7 +246,7 @@ void test('the veil lifts, and the HUD hears of the new zone, only after the new
 
 void test('a zone that never draws clean frames still lifts the veil after the cap', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   run.advance(TRANSITION.cleanFrameMs * 3);
@@ -265,7 +266,7 @@ void test('a zone that never draws clean frames still lifts the veil after the c
 
 void test('frames while the veil comes and goes count as seen, frames behind it as hidden', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), null, revealOf(run));
   run.advance(17);
   run.veil.finishCover();
   await settle();
@@ -284,20 +285,20 @@ void test('frames while the veil comes and goes count as seen, frames behind it 
 
 void test('a failed build lifts the veil, reports the error and leaves the transition ready again', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.reject(new Error('no models')), null, revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.reject(new Error('no models')), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   assert.equal(run.errors.length, 1);
   assert.deepEqual(run.veil.log.slice(1), ['lift']);
   assert.equal(run.transition.blocking, false);
-  run.transition.begin((): Promise<void> => Promise.resolve(), '#d9dcdf', revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), '#d9dcdf', revealOf(run));
   assert.equal(run.veil.log.at(-1), 'cover #d9dcdf');
 });
 
 void test('a second zone change while one is under way is ignored', async (): Promise<void> => {
   const run: Harness = harness();
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
-  run.transition.begin((): Promise<void> => Promise.resolve(), '#d9dcdf', revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), null, revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), '#d9dcdf', revealOf(run));
   await settle();
   assert.deepEqual(run.veil.log, ['cover none']);
 });
@@ -317,7 +318,7 @@ void test('a clean frame is judged against how the game was running before the c
 
 void test('the veil lifts only when the loading mark lets it go, at the end of a cycle', async (): Promise<void> => {
   const run: Harness = harness(true);
-  run.transition.begin((): Promise<void> => Promise.resolve(), null, revealOf(run));
+  run.transition.begin((): Promise<BuiltZone> => Promise.resolve(BUILT), null, revealOf(run));
   run.veil.finishCover();
   await settle();
   cleanFrames(run, TRANSITION.cleanFrames);
