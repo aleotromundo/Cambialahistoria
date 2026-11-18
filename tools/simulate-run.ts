@@ -9,6 +9,7 @@ import { distance, normalize } from '../sim/math.ts';
 import type { BossOutcome, Measurement, Meter } from '../sim/measure.ts';
 import { closeMeter, createMeter, readMeter, sessionHeader } from '../sim/measure.ts';
 import { isWalkable, lineWalkable, nearestWalkable } from '../sim/nav/grid.ts';
+import { toSave } from '../sim/save.ts';
 import { xpToNextLevel } from '../sim/progression.ts';
 import { allHold } from '../sim/world/conditions.ts';
 import { grantXp } from '../sim/world/character.ts';
@@ -379,6 +380,14 @@ function fightBosses(bot: Bot, recorder: Recorder, scenario: Extract<Scenario, {
   return null;
 }
 
+function atFixedLevel(opened: Bot, scenario: Extract<Scenario, { readonly kind: 'over' }>, job: Job, skill: SkillPolicy, plan: BotPlan, recorder: Recorder): Bot {
+  raiseTo(opened.world, scenario.hero);
+  const content: Content = harder(fixedLevel(CONTENT, scenario.zone), job.danger, job.toughness);
+  const world: World = createWorld(content, { seed: job.seed, save: toSave(opened.world), hero: opened.world.player.hero });
+  const bot: Bot = createBot(world, skill.habits, (events: readonly WorldEvent[]): void => record(bot, recorder, events), plan);
+  return bot;
+}
+
 export function runJob(job: Job, policies: Policies): Measurement[] {
   return runRivals(job, policies, []).stream;
 }
@@ -394,16 +403,17 @@ export function runRivals(job: Job, policies: Policies, rivalSkills: readonly st
   });
   if (build.hero !== null && !CONTENT.player.heroes.some((hero): boolean => hero.id === build.hero)) throw new Error(`build ${build.name} names the unknown hero ${build.hero}`);
   const scenario: Scenario = job.scenario;
-  const content: Content = harder(scenario.kind === 'over' ? fixedLevel(CONTENT, scenario.zone) : CONTENT, job.danger, job.toughness);
-  const world: World = createWorld(content, build.hero === null ? { seed: job.seed, save: null, opening: true } : { seed: job.seed, save: null, opening: true, hero: build.hero });
+  const content: Content = harder(CONTENT, job.danger, job.toughness);
+  const begun: World = createWorld(content, build.hero === null ? { seed: job.seed, save: null, opening: true } : { seed: job.seed, save: null, opening: true, hero: build.hero });
   const recorder: Recorder = { meter: null, out: [sessionHeader('sim', `${scenarioName(job.scenario)}${job.danger === 1 ? '' : ` danger ${job.danger}`}${job.toughness === 1 ? '' : ` toughness ${job.toughness}`}`, `${job.skill}/${job.build}`, job.seed)] };
-  const bot: Bot = createBot(world, skill.habits, (events: readonly WorldEvent[]): void => record(bot, recorder, events), planFor(skill, build));
+  const first: Bot = createBot(begun, skill.habits, (events: readonly WorldEvent[]): void => record(first, recorder, events), planFor(skill, build));
   const fromStart: boolean = scenario.kind === 'slice' || scenario.kind === 'level' || scenario.kind === 'boss' || scenario.kind === 'pack';
-  if (fromStart) startRecording(world, recorder, policies);
-  const opened: boolean = playOpening(bot, skill);
-  const played = opened ? botPlay(bot) : null;
+  if (fromStart) startRecording(begun, recorder, policies);
+  const opened: boolean = playOpening(first, skill);
+  const played = opened ? botPlay(first) : null;
   let reason: string = !opened ? 'stuck in the opening' : played !== null && played.stuck !== null ? `stuck at ${played.stuck}` : 'done';
-  if (opened && scenario.kind === 'over') raiseTo(world, scenario.hero);
+  const bot: Bot = opened && scenario.kind === 'over' ? atFixedLevel(first, scenario, job, skill, planFor(skill, build), recorder) : first;
+  const world: World = bot.world;
   if (!fromStart) startRecording(world, recorder, policies);
   const meter: Meter | null = recorder.meter;
   switch (scenario.kind) {
