@@ -259,7 +259,9 @@ void test('the cave zone has its own ambience loops, quieter than the Hall of Ti
   const storm = must(hall.loops.find((loop): boolean => loop.sound === 'ambience_hall_storm'), 'the Hall storm');
   const air = must(cave.loops.find((loop): boolean => loop.sound === 'ambience_cave_air'), 'the cave air');
   assert.ok(air.volume < storm.volume);
-  assert.equal(cave.stingers.length, 0);
+  assert.ok(cave.stingers.length > 0);
+  for (const stinger of cave.stingers) assert.ok(!hall.stingers.some((weather): boolean => weather.sound === stinger.sound), stinger.sound);
+  for (const level of ['under_hall_2', 'under_hall_3']) assert.deepEqual(audio.ambience.get(level), cave, level);
 });
 
 void test('a cue may be filtered to weapon kinds, and an unknown kind is rejected', (): void => {

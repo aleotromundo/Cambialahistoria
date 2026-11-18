@@ -91,7 +91,7 @@ void test('a hit plays what the skill and the target sound like, and a crit the 
   const base = { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, killed: false, pos: thrall.pos, direction: AWAY, burn: false } as const;
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('cleave') })), ['bone_hit']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: true, skill: skill('cleave') })), ['bone_hit', 'crit_hit']);
-  assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('storm_bolt') })), ['bolt_impact', 'bone_hit']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('storm_bolt') })), ['storm_bolt_hit', 'bolt_impact', 'bone_hit']);
   const hurt: readonly SoundCue[] = cuesForEvent(audio, world, { ...base, targetId: world.player.id, targetTeam: 'player', crit: false, skill: skill('mender_needle') });
   assert.deepEqual(sounds(hurt), ['hex_impact', 'hero_hurt']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('storm_bolt'), burn: true })), []);
@@ -100,7 +100,7 @@ void test('a hit plays what the skill and the target sound like, and a crit the 
 void test('a hit on a monster that is already gone still plays the skill sound only', (): void => {
   const world: World = fresh();
   const cues: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'damage', targetId: 99999, sourceId: world.player.id, targetTeam: 'monster', amount: 1, crit: false, killed: true, pos: AWAY, direction: AWAY, skill: skill('storm_bolt'), burn: false });
-  assert.deepEqual(sounds(cues), ['bolt_impact']);
+  assert.deepEqual(sounds(cues), ['storm_bolt_hit', 'bolt_impact']);
 });
 
 void test('deaths play by who died', (): void => {
@@ -336,9 +336,9 @@ void test('a swing adds a heavy layer only for heavy weapons, and an empty hand 
   armed(world, 'woodsman_hatchet');
   assert.deepEqual(swung(world, 'cleave'), ['sword_swing_light']);
   armed(world, 'flanged_mace');
-  assert.deepEqual(swung(world, 'cleave'), ['sword_swing_light', 'sword_swing_heavy']);
+  assert.deepEqual(swung(world, 'cleave'), ['sword_swing_light', 'heavy_whoosh']);
   armed(world, 'tempest_greatsword');
-  assert.deepEqual(swung(world, 'cleave'), ['sword_swing_light', 'sword_swing_heavy']);
+  assert.deepEqual(swung(world, 'cleave'), ['sword_swing_light', 'heavy_whoosh']);
 });
 
 void test('a cue filtered by weapon kind plays only for that kind, for the shot and for the hit', (): void => {
@@ -450,7 +450,7 @@ void test('the shadow, water and fire skills each have their own sound, and the 
   const starts = (id: string): string[] => sounds(cuesForEvent(audio, world, { type: 'skill_start', actorId: world.player.id, skill: skill(id), direction: AWAY, windup: 0.1, recovery: 0.1 }));
   assert.deepEqual(starts('umbra'), ['shadow_cast']);
   const formed = (id: string, form: string): string[] => sounds(cuesForEvent(audio, world, { type: 'skill_start', actorId: world.player.id, skill: { ...skill(id), form }, direction: AWAY, windup: 0.1, recovery: 0.1 }));
-  assert.deepEqual(formed('cleave', 'cleave_millwheel'), ['water_sweep', 'sword_swing_light']);
+  assert.deepEqual(formed('cleave', 'cleave_millwheel'), ['millwheel_whoosh', 'water_sweep']);
   assert.deepEqual(formed('dodge_roll', 'dodge_roll_riptide'), ['water_cast', 'dodge_whoosh']);
   assert.deepEqual(formed('cleave', 'cleave_whirl'), starts('cleave'));
   assert.deepEqual(formed('dodge_roll', 'dodge_roll'), starts('dodge_roll'));
@@ -483,7 +483,7 @@ void test('Standing Storm crackles and rumbles when it starts, crackles quietly 
   stepAreas(world, 0.5);
   assert.deepEqual(names(), [['spark_tick', 'spark_snap']]);
   stepAreas(world, 5);
-  assert.deepEqual(names().at(-1), ['storm_hum']);
+  assert.deepEqual(names().at(-1), ['storm_fade']);
 });
 
 void test('a lasting area sounds from its own form, a crackle sounds on its pulse, and a flare adds its strike sound', (): void => {
@@ -522,7 +522,7 @@ void test('a brand sounds when it lands and when it bursts, and the Timekeeper c
   const thrall: MonsterState = monster(world, 'mended');
   const brand = (id: string, burst: boolean): string[] => sounds(cuesForEvent(audio, world, { type: 'brand', targetId: thrall.id, skill: skill(id), pos: thrall.pos, burst }));
   assert.deepEqual(brand('static_brand', false), ['spell_flick']);
-  assert.deepEqual(brand('static_brand_burst', true), ['bolt_impact', 'electric_crackle']);
+  assert.deepEqual(brand('static_brand_burst', true), ['bolt_impact', 'brand_burst']);
   assert.deepEqual(brand('tally_due', true), ['tally_due']);
 });
 
