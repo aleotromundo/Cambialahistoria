@@ -8,6 +8,8 @@ import { baseOf } from '../../sim/items.ts';
 import type { GroundItem, World } from '../../sim/world/types.ts';
 import type { CharacterLibrary } from './character-loader.ts';
 import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
+import type { DropLooks } from './drop-looks.ts';
+import { createDropLooks } from './drop-looks.ts';
 import type { GroundTemplate } from './ground-models.ts';
 import { groundModelReady, groundTemplate } from './ground-models.ts';
 import { loadKeptModel } from './character-loader.ts';
@@ -117,6 +119,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
   let lastTime: number | null = null;
   let lastZone: string | null = null;
   const templates: Map<string, GroundTemplate> = new Map<string, GroundTemplate>();
+  const dropLooks: DropLooks = createDropLooks();
   const keepsakeStandIn: Keepsake = createKeepsake();
 
   const templateFor = (world: World, base: ItemBaseDef): GroundTemplate => {
@@ -188,7 +191,7 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
         const template: GroundTemplate = templateFor(world, base);
         return template.waiting ? [] : [template.model.clone(true)];
       });
-      return [coins.clone(), contactShadow(), keepsakeStandIn.group, ...finds, ...lights.standIns()];
+      return [coins.clone(), contactShadow(), keepsakeStandIn.group, ...finds, ...dropLooks.standIns(), ...lights.standIns()];
     },
     async dropStandIns(world: World, pacer: FramePacer): Promise<Object3D[]> {
       const made: Object3D[] = [];
@@ -200,7 +203,9 @@ export async function createLootView(loader: GLTFLoader, scene: Scene, library: 
         },
         pacer,
       );
-      return newLooks(made).map((model: Object3D): Object3D => model.clone(true));
+      const fresh: Object3D[] = newLooks(made);
+      dropLooks.remember(fresh);
+      return fresh.map((model: Object3D): Object3D => model.clone(true));
     },
     sync(world: World): void {
       const dt: number = lastTime === null ? 0 : Math.min(LOOT.longestFrame, Math.max(0, world.time - lastTime));
