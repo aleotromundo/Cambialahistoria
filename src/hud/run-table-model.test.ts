@@ -68,7 +68,7 @@ void test('not enough gold keeps the button but sends nothing and says why', ():
   const view: TableView = tableView(world, pick);
   assert.equal(view.setOut.command, null);
   assert.equal(view.setOut.short, true);
-  assert.equal(view.setOut.note, 'Not enough gold');
+  assert.equal(view.setOut.note, `${view.price - 5} gold short`);
 });
 
 void test('one kind asks for a kind the level holds, and a level change drops a kind it does not hold', (): void => {

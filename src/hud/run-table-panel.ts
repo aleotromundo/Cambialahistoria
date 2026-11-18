@@ -1,6 +1,7 @@
 import type { World } from '../../sim/world/types.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setClass, setText } from './dom.ts';
+import { isShort } from './gold-short.ts';
 import { iconSvg } from './icons.ts';
 import type { ConditionRow, KindChip, LevelRow, TableAction, TablePick, TableView } from './run-table-model.ts';
 import { choosePick, chooseLevel, firstPick, tableView, togglePin } from './run-table-model.ts';
@@ -177,7 +178,7 @@ export function createRunTablePanel(parent: HTMLElement, context: HudContext): P
       setClass(entry.row, 'closed', !row.open);
       setText(entry.price, `${row.price} gold`, true);
       setText(entry.danger, row.danger, true);
-      setClass(entry.price, 'short', !row.pinned && row.price > context.api.world.player.gold);
+      setClass(entry.price, 'short', !row.pinned && isShort(row.price, context.api.world.player.gold));
       showKinds(entry, row.id, row.kinds);
     }
     setText(totalDanger, shown.danger, true);

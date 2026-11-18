@@ -7,6 +7,7 @@ import { clashIn, conditionFrom, dangerOf, pinned, rewardOf, tooEarly } from '..
 import type { PinnedCondition } from '../../sim/world/run-state.ts';
 import type { RunPin, RunSetup } from '../../sim/world/run-types.ts';
 import type { Command, World } from '../../sim/world/types.ts';
+import { goldShortText, isShort } from './gold-short.ts';
 
 export interface TablePick {
   readonly zone: string | null;
@@ -62,7 +63,6 @@ const TABLE_WORDS = {
   pickFor: 'Pick one for',
   nothingHere: 'Nothing to pick on this level',
   from: 'From level',
-  short: 'Not enough gold',
   plain: 'No conditions: an ordinary descent',
   noLast: 'Nothing set out from here yet',
   clash: 'Cannot be pinned with',
@@ -148,11 +148,11 @@ function unready(content: Content, pins: readonly RunPin[]): PinnedCondition | u
 function setOutAction(world: World, zone: ZoneDef | null, pins: readonly RunPin[]): TableAction {
   if (zone === null) return { command: null, label: 'Set out', note: TABLE_WORDS.noLevels, short: false };
   const price: number = runPrice(world.content, zone, pins);
-  const short: boolean = price > world.player.gold;
+  const short: boolean = isShort(price, world.player.gold);
   const label: string = price > 0 ? `Set out · ${price} gold` : 'Set out';
   const waiting: PinnedCondition | undefined = unready(world.content, pins);
   if (waiting !== undefined) return { command: null, label, note: `${TABLE_WORDS.pickFor} ${waiting.condition.name}`, short: false };
-  const note: string = short ? TABLE_WORDS.short : pins.length === 0 ? TABLE_WORDS.plain : '';
+  const note: string = short ? goldShortText(price, world.player.gold) : pins.length === 0 ? TABLE_WORDS.plain : '';
   return { command: short ? null : { type: 'set_out', setup: { zone: zone.id, pins } }, label, note, short };
 }
 
@@ -162,9 +162,9 @@ function againAction(world: World): TableAction {
   const zone: ZoneDef | undefined = reachedLevels(world).find((entry: ZoneDef): boolean => entry.id === last.zone);
   if (zone === undefined) return { command: null, label: 'Again', note: TABLE_WORDS.lastGone, short: false };
   const price: number = runPrice(world.content, zone, last.pins);
-  const short: boolean = price > world.player.gold;
+  const short: boolean = isShort(price, world.player.gold);
   const names: string = pinned(world.content, last.pins).map((entry: PinnedCondition): string => entry.condition.name).join(', ');
-  const note: string = short ? TABLE_WORDS.short : names === '' ? zone.name : `${zone.name}: ${names}`;
+  const note: string = short ? goldShortText(price, world.player.gold) : names === '' ? zone.name : `${zone.name}: ${names}`;
   return { command: short ? null : { type: 'set_out', setup: last }, label: price > 0 ? `Again · ${price} gold` : 'Again', note, short };
 }
 
