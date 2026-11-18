@@ -1,8 +1,8 @@
 import type { TerrainBlend, ZoneTerrain } from '../../sim/content/terrain-types.ts';
 import type { ZoneDef } from '../../sim/content/types.ts';
 import { isFloorCell, tileAtCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
-import type { TerrainCell } from '../../sim/nav/terrain.ts';
-import { rampAt, terrainCell, terrainNoise, tileHeight } from '../../sim/nav/terrain.ts';
+import type { NoiseLattice, TerrainCell } from '../../sim/nav/terrain.ts';
+import { latticeNoise, noiseLattice, rampAt, terrainCell, terrainNoise, tileHeight } from '../../sim/nav/terrain.ts';
 import type { Batch } from './ground.ts';
 
 export const GROUND_TERRAIN = {
@@ -18,6 +18,7 @@ export const GROUND_TERRAIN = {
   jitterScale: 0.7,
   overhang: 0.05,
   blendSoft: 0.34,
+  latticeFrom: 3,
   blendLift: 0.012,
   shadeScale: 0.09,
   shadeDepth: 0.3,
@@ -117,8 +118,13 @@ function nearTile(zone: ZoneDef, mark: string, x: number, z: number, reach: numb
   return best;
 }
 
-export function blendShare(zone: ZoneDef, blend: TerrainBlend, salt: number, x: number, z: number): number {
-  const field: number = (terrainNoise(x / blend.scale, z / blend.scale, 11 + salt) + 1) / 2;
+export function blendLattice(zone: ZoneDef, blend: TerrainBlend, salt: number): NoiseLattice | null {
+  if (blend.scale < GROUND_TERRAIN.latticeFrom) return null;
+  return noiseLattice(zoneColumns(zone) * zone.cellSize, zoneRows(zone) * zone.cellSize, blend.scale, 11 + salt);
+}
+
+export function blendShare(zone: ZoneDef, blend: TerrainBlend, salt: number, x: number, z: number, lattice: NoiseLattice | null = null): number {
+  const field: number = ((lattice === null ? terrainNoise(x / blend.scale, z / blend.scale, 11 + salt) : latticeNoise(lattice, x, z)) + 1) / 2;
   const mask: number = smooth((field - (1 - blend.cover)) / GROUND_TERRAIN.blendSoft + 0.5);
   if (blend.near === null) return mask;
   return mask * smooth(1 - nearTile(zone, blend.near, x, z, blend.reach) / blend.reach);
@@ -206,6 +212,7 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches): void
   const step: number = GROUND_TERRAIN.step;
   const perTile: number = zone.cellSize / step;
   const bed: string = zone.outside?.surface ?? terrain.cliff;
+  const lattices: (NoiseLattice | null)[] = terrain.blends.map((blend: TerrainBlend, salt: number): NoiseLattice | null => blendLattice(zone, blend, salt));
   const vertices: Map<number, Vertex> = new Map<number, Vertex>();
   const vertex = (column: number, row: number): Vertex => {
     const key: number = row * field.columns + column;
@@ -242,7 +249,7 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches): void
       const surface: string = [index, index + 1, index + field.columns, index + field.columns + 1].map((at: number): string => field.surfaces[at] ?? '').find((id: string): boolean => id !== '') ?? bed;
       quad(batches.batchFor(surface, false), corners, uvs, shades, [1, 1, 1, 1], 0);
       terrain.blends.forEach((blend: TerrainBlend, salt: number): void => {
-        const alphas: number[] = corners.map((entry: Vertex): number => blendShare(zone, blend, salt, entry.x, entry.z));
+        const alphas: number[] = corners.map((entry: Vertex): number => blendShare(zone, blend, salt, entry.x, entry.z, lattices[salt] ?? null));
         if (alphas.every((alpha: number): boolean => alpha <= 0.01)) return;
         quad(batches.batchFor(blend.surface, true), corners, uvs, shades, alphas, GROUND_TERRAIN.blendLift * (salt + 1));
       });

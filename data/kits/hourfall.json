@@ -388,24 +388,14 @@
           "cover": 0.25
         },
         {
-          "surface": "mud",
+          "surface": "cave_wet_floor",
           "scale": 6,
-          "cover": 0.18
+          "cover": 0.22
         },
         {
           "surface": "black_rock",
           "scale": 11,
           "cover": 0.22
-        },
-        {
-          "surface": "cave_wet_floor",
-          "scale": 6,
-          "cover": 0.2
-        },
-        {
-          "surface": "cave_moss_floor",
-          "scale": 9,
-          "cover": 0.2
         },
         {
           "surface": "cave_cracked",

@@ -972,12 +972,7 @@
         {
           "surface": "ash",
           "scale": 6,
-          "cover": 0.3
-        },
-        {
-          "surface": "ash_field",
-          "scale": 9,
-          "cover": 0.22
+          "cover": 0.36
         },
         {
           "surface": "cracked_basalt",
@@ -985,7 +980,7 @@
           "cover": 0.2
         },
         {
-          "surface": "ember_ash",
+          "surface": "cooled_crust",
           "scale": 4,
           "cover": 0.17
         },

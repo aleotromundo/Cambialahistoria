@@ -27,6 +27,10 @@ export function zoneModels(content: Content, zone: ZoneDef): Set<string> {
 export function zoneSurfaces(content: Content, zone: ZoneDef): Set<string> {
   const ids: Set<string> = new Set<string>(Object.values(zone.floors));
   if (zone.outside !== null) ids.add(zone.outside.surface);
+  if (zone.terrain !== null) {
+    ids.add(zone.terrain.cliff);
+    for (const blend of zone.terrain.blends) ids.add(blend.surface);
+  }
   const shoreSurface: string | null = zone.void?.shore?.surface ?? null;
   if (shoreSurface !== null) ids.add(shoreSurface);
   const pathSurface: string | null = zone.void?.shore?.path?.surface ?? null;

@@ -28,6 +28,7 @@ import { dressedProp, looseDressing, preloadSurfaces, propDressing, releaseSurfa
 import type { PropLook } from './prop-surface.ts';
 import { lookOf, withPropLook } from './prop-surface.ts';
 import { edgeRocks } from './zone-edge.ts';
+import { browserPacer, workPaced } from './paced-work.ts';
 import { barrierPieces } from '../../sim/nav/barrier.ts';
 import { cliffRocks } from '../../sim/nav/cliff-rocks.ts';
 import { scatterStones } from './zone-scatter.ts';
@@ -109,6 +110,10 @@ export interface ZoneView {
 }
 
 const DEGREES: number = Math.PI / 180;
+
+function loosePlacement(def: PropDef): boolean {
+  return def.footprints.length === 0 && def.blockRadius === 0 && !def.shadow && def.light === null && !isTall(def.height);
+}
 
 function isGeometry(value: unknown): value is BufferGeometry {
   return value instanceof BufferGeometry;
@@ -220,6 +225,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     };
   }
   const placements: Map<string, Batch> = new Map<string, Batch>();
+  const latePlacements: Map<string, Batch> = new Map<string, Batch>();
   const group: Group = new Group();
   const sources: Source[] = [];
   const instances: InstancedMesh[] = [];
@@ -249,11 +255,12 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     const def: PropDef | undefined = content.props.get(propId);
     if (def === undefined) return;
     const casts: boolean = castShadow && def.shadow;
+    const target: Map<string, Batch> = loosePlacement(def) ? latePlacements : placements;
     const key: string = `${propId}:${String(casts)}:${propCell(x, z)}`;
-    const batch: Batch = placements.get(key) ?? { prop: propId, castShadow: casts, list: [] };
+    const batch: Batch = target.get(key) ?? { prop: propId, castShadow: casts, list: [] };
     const lifted: number = y + liftAt(zone, x, z);
     batch.list.push({ matrix: transform(x, lifted, z, yaw, def.scale * size) });
-    placements.set(key, batch);
+    target.set(key, batch);
     if (def.light === null) return;
     sources.push(lightSource(def.light, x, lifted, z, yaw, null));
   };
@@ -316,7 +323,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   );
 
   const looks: Map<string, Material> = new Map<string, Material>();
-  for (const [batch, gltf] of loaded) {
+  const addBatch = (batch: Batch, gltf: GLTF): void => {
     const propId: string = batch.prop;
     const list: Placement[] = batch.list;
     const dress: Readonly<Record<string, string>> = content.props.get(propId)?.surfaces ?? {};
@@ -341,7 +348,21 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       instances.push(instanced);
       group.add(instanced);
     });
-  }
+  };
+  for (const [batch, gltf] of loaded) addBatch(batch, gltf);
+  let live: boolean = true;
+  const dressLate = async (): Promise<void> => {
+    const batches: Batch[] = [...latePlacements.values()];
+    const surfaceIds: Set<string> = new Set<string>(batches.flatMap((batch: Batch): string[] => Object.values(content.props.get(batch.prop)?.surfaces ?? {})));
+    const [models]: [[Batch, GLTF][], void] = await Promise.all([
+      Promise.all(
+        batches.map(async (batch: Batch): Promise<[Batch, GLTF]> => [batch, await loadModel(loader, content.props.get(batch.prop)?.model ?? '')]),
+      ),
+      preloadSurfaces(content, surfaceIds),
+    ]);
+    if (!live) return;
+    await workPaced(models, ([batch, gltf]: [Batch, GLTF]): void => (live ? addBatch(batch, gltf) : undefined), browserPacer());
+  };
 
   await Promise.all(
     conditionals.map(async (conditional: Conditional): Promise<void> => {
@@ -398,6 +419,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const embers: Embers = createEmbers(zone.weather.embers);
   if (embers.points !== null) group.add(embers.points);
   scene.add(group);
+  void dressLate().catch((): void => undefined);
 
   const cutaway: symbol = claimCutaway(occluders, terrainSight);
   const life: LifeView = createLifeView(LIFE, placesFor(LIFE, zone.id, 'zone'), lifeDensity(1, quality === 'mobile'));
@@ -422,6 +444,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       return [...life.takeEvents(), ...lids.takeEvents()];
     },
     dispose(): void {
+      live = false;
       resetCutaway(cutaway);
       lids.dispose();
       roofs.dispose();

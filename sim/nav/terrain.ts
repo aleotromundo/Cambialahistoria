@@ -139,6 +139,44 @@ export function terrainNoise(x: number, z: number, salt: number): number {
   return (top + (bottom - top) * fz) * 2 - 1;
 }
 
+export interface NoiseLattice {
+  readonly scale: number;
+  readonly salt: number;
+  readonly columns: number;
+  readonly rows: number;
+  readonly values: Float64Array;
+}
+
+const LATTICE_MARGIN = 1;
+
+export function noiseLattice(width: number, depth: number, scale: number, salt: number): NoiseLattice {
+  const columns: number = Math.ceil(width / scale) + 2 * LATTICE_MARGIN + 1;
+  const rows: number = Math.ceil(depth / scale) + 2 * LATTICE_MARGIN + 1;
+  const values: Float64Array = new Float64Array(columns * rows);
+  for (let row: number = 0; row < rows; row += 1) {
+    for (let column: number = 0; column < columns; column += 1) values[row * columns + column] = terrainHash(column - LATTICE_MARGIN, row - LATTICE_MARGIN, salt);
+  }
+  return { scale, salt, columns, rows, values };
+}
+
+export function latticeNoise(lattice: NoiseLattice, x: number, z: number): number {
+  const sx: number = x / lattice.scale;
+  const sz: number = z / lattice.scale;
+  const ix: number = Math.floor(sx);
+  const iz: number = Math.floor(sz);
+  const column: number = ix + LATTICE_MARGIN;
+  const row: number = iz + LATTICE_MARGIN;
+  if (column < 0 || row < 0 || column + 1 >= lattice.columns || row + 1 >= lattice.rows) return terrainNoise(sx, sz, lattice.salt);
+  const fx: number = eased(sx - ix);
+  const fz: number = eased(sz - iz);
+  const at: number = row * lattice.columns + column;
+  const northWest: number = lattice.values[at] ?? 0;
+  const southWest: number = lattice.values[at + lattice.columns] ?? 0;
+  const top: number = northWest + ((lattice.values[at + 1] ?? 0) - northWest) * fx;
+  const bottom: number = southWest + ((lattice.values[at + lattice.columns + 1] ?? 0) - southWest) * fx;
+  return (top + (bottom - top) * fz) * 2 - 1;
+}
+
 interface CalmTiles {
   readonly ramps: Uint8Array;
   readonly rampColumns: number;
