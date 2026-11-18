@@ -45,11 +45,15 @@ export interface RigContact {
   readonly radius: number;
 }
 
+export const PICTURE_VIEWS = ['side', 'above'] as const;
+export type PictureView = (typeof PICTURE_VIEWS)[number];
+
 export interface AttachmentDef {
   readonly id: string;
   readonly model: string;
   readonly socket: string;
   readonly stance: string | null;
+  readonly view: PictureView;
   readonly surfaces: Readonly<Record<string, string>>;
 }
 

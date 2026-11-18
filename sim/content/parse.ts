@@ -26,6 +26,7 @@ import { chartDef, chartProblems, treeNode } from './parse-chart.ts';
 import { skillEmpowerment, statMod } from './parse-mods.ts';
 import { bookProblems, shapeDelivery, shapeProblems, SHAPE_TYPES, skillPress, skillUnlock } from './parse-shapes.ts';
 import type { Fields } from './read.ts';
+import { PICTURE_VIEWS } from './rig-types.ts';
 import { surface } from './parse-surface.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { skillVfx } from './parse-vfx.ts';
@@ -228,7 +229,7 @@ function monster(value: unknown, where: string): MonsterDef {
 
 function attachment(value: unknown, where: string): AttachmentDef {
   const source: Fields = fields(value, where);
-  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), stance: source['stance'] === undefined ? null : nullableText(source, 'stance', where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
+  return { id: text(source, 'id', where), model: text(source, 'model', where), socket: text(source, 'socket', where), stance: source['stance'] === undefined ? null : nullableText(source, 'stance', where), view: source['view'] === undefined ? 'side' : choice(source, 'view', PICTURE_VIEWS, where), surfaces: dressing(source['surfaces'], `${where}.surfaces`) };
 }
 
 function wearable(value: unknown, where: string): WearableDef {

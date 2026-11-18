@@ -5,6 +5,7 @@ import type { Timers } from '../backend/backend.ts';
 import { GPU } from '../gpu-release.ts';
 import { wearKey } from '../../sim/wear.ts';
 import type { Picture } from '../../sim/pictures.ts';
+import type { PictureView } from '../../sim/content/types.ts';
 import type { Look } from '../../sim/wear.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, RigInstance } from './character-loader.ts';
 import { instantiateRig } from './character-loader.ts';
@@ -20,6 +21,8 @@ export const THUMBNAIL = {
   padding: 0.1,
   diagonal: -Math.PI / 4,
   turn: 0.45,
+  aboveLie: Math.PI / 2 - 0.35,
+  aboveRoll: Math.PI / 4,
   exposure: 1.1,
   environment: 0.55,
   environmentBlur: 0.04,
@@ -111,13 +114,21 @@ function encode(canvas: HTMLCanvasElement): Promise<string | null> {
   });
 }
 
-function pose(template: Object3D): Group {
+function pose(template: Object3D, view: PictureView): Group {
   const model: Object3D = template.clone(true);
   const turned: Group = new Group();
-  turned.rotation.y = THUMBNAIL.turn;
-  turned.add(model);
   const diagonal: Group = new Group();
-  diagonal.rotation.z = THUMBNAIL.diagonal;
+  switch (view) {
+    case 'side':
+      turned.rotation.y = THUMBNAIL.turn;
+      diagonal.rotation.z = THUMBNAIL.diagonal;
+      break;
+    case 'above':
+      turned.rotation.x = THUMBNAIL.aboveLie;
+      diagonal.rotation.z = THUMBNAIL.aboveRoll;
+      break;
+  }
+  turned.add(model);
   diagonal.add(turned);
   return diagonal;
 }
@@ -456,7 +467,7 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
     switch (source.kind) {
       case 'held': {
         const attachment: LoadedAttachment | undefined = library.attachments.get(source.attachment);
-        if (attachment !== undefined) shot = { name: picture.key, posed: pose(attachment.template), frame: boundsOf };
+        if (attachment !== undefined) shot = { name: picture.key, posed: pose(attachment.template, attachment.def.view), frame: boundsOf };
         break;
       }
       case 'worn': {
