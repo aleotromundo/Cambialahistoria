@@ -36,10 +36,12 @@ import type { TagBound } from './overlay-place.ts';
 import { createFloatingNumbers } from './floating-numbers.ts';
 import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
 import type { FloatingNumbers } from './floating-numbers.ts';
+import type { NumberKind } from './number-crowd.ts';
 
 export const OVERLAYS = {
   pinGlyph: '!',
   chestHeight: 1.6,
+  goldHeight: 1.2,
   labelLift: 1.35,
   findLift: 3.15,
   labelExit: 0.52,
@@ -417,8 +419,8 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             if (event.targetTeam !== 'player') targetBar.hit(event.targetId);
             if (event.amount === 0 && event.targetTeam === 'monster') break;
             const y: number = floorUp(event.pos.x, hooks.heightOf(event.targetId) * OVERLAYS.numberHeight, event.pos.z);
-            const kind: string = event.burn ? 'burn' : event.targetTeam === 'player' ? 'hurt' : event.crit ? 'crit' : '';
-            floating.float(event.crit ? `${event.amount}!` : `${event.amount}`, kind, event.pos.x, y, event.pos.z);
+            const kind: NumberKind = event.burn ? 'burn' : event.targetTeam === 'player' ? 'hurt' : event.crit ? 'crit' : 'plain';
+            floating.show({ amount: event.amount, kind, key: event.targetId, x: event.pos.x, y, z: event.pos.z });
             break;
           }
           case 'drop':
@@ -426,7 +428,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             break;
           case 'chest_opened':
           case 'cache_opened':
-            if (event.gold > 0) floating.float(`+${event.gold} gold`, 'gold', event.pos.x, OVERLAYS.chestHeight, event.pos.z);
+            if (event.gold > 0) floating.show({ amount: event.gold, kind: 'gold', key: null, x: event.pos.x, y: OVERLAYS.chestHeight, z: event.pos.z });
             break;
           case 'pickup': {
             const label: LootLabel | undefined = labels.get(event.ground.id);
@@ -434,7 +436,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
               label.leaving = OVERLAYS.labelExit;
               label.element.classList.add('taken');
             }
-            if (event.ground.content.kind === 'gold') floating.float(`+${event.ground.content.amount} gold`, 'gold', event.ground.pos.x, 1.2, event.ground.pos.z);
+            if (event.ground.content.kind === 'gold') floating.show({ amount: event.ground.content.amount, kind: 'gold', key: null, x: event.ground.pos.x, y: OVERLAYS.goldHeight, z: event.ground.pos.z });
             break;
           }
           case 'area':

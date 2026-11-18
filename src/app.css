@@ -372,6 +372,28 @@ body.still .pause-card {
   font-family: var(--sans);
   font-weight: 600;
 }
+.damage-number.quiet {
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+.damage-number.retiring {
+  opacity: 0;
+  transition: opacity var(--spring-exit-ms) var(--spring-exit);
+}
+
+.damage-number b {
+  display: inline-block;
+  font-weight: inherit;
+}
+
+.damage-number b.grew-a {
+  animation: damage-grew-a var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.damage-number b.grew-b {
+  animation: damage-grew-b var(--spring-snappy-ms) var(--spring-snappy);
+}
 
 @keyframes damage-float {
   0% {
@@ -388,6 +410,24 @@ body.still .pause-card {
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--drift)), -260%) scale(0.9);
+  }
+}
+
+@keyframes damage-grew-a {
+  0% {
+    scale: 1.28;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes damage-grew-b {
+  0% {
+    scale: 1.28;
+  }
+  100% {
+    scale: 1;
   }
 }
 
