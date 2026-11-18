@@ -16,6 +16,7 @@ export interface ItemPicturesDeps {
   readonly load: (needs: CharacterNeeds) => Promise<void>;
   readonly frame: () => string;
   readonly schedule: (task: () => void) => void;
+  readonly busy: () => boolean;
   readonly painted: () => void;
   readonly failed: (error: unknown) => void;
 }
@@ -49,6 +50,7 @@ export function pictureNeeds(frame: string, pictures: readonly Picture[]): Chara
 export function createItemPictures(deps: ItemPicturesDeps): ItemPictures {
   const images: Map<string, string> = new Map<string, string>();
   const known: Set<string> = new Set<string>();
+  const shown: Set<string> = new Set<string>();
   const urgent: Queued[] = [];
   const lazy: Queued[] = [];
   let working: Promise<void> | null = null;
@@ -62,7 +64,16 @@ export function createItemPictures(deps: ItemPicturesDeps): ItemPictures {
     return chosen;
   };
 
+  const looked = (entry: Queued): boolean => shown.has(pictureCacheKey(entry.frame, entry.picture));
+  const turn = (): Promise<void> => new Promise<void>((resolve: () => void): void => deps.schedule(resolve));
+  const waitForCalm = async (): Promise<void> => {
+    await turn();
+    if (deps.busy() && !urgent.some(looked) && !lazy.some(looked)) await waitForCalm();
+  };
+
   const round = async (): Promise<void> => {
+    if (urgent.length + lazy.length === 0) return;
+    await waitForCalm();
     const batch: Queued[] = take();
     const frame: string | undefined = batch[0]?.frame;
     if (frame === undefined) return;
@@ -83,7 +94,6 @@ export function createItemPictures(deps: ItemPicturesDeps): ItemPictures {
   };
 
   const run = async (): Promise<void> => {
-    await new Promise<void>((resolve: () => void): void => deps.schedule(resolve));
     try {
       await round();
     } catch (error: unknown) {
@@ -115,10 +125,9 @@ export function createItemPictures(deps: ItemPicturesDeps): ItemPictures {
     const key: string = pictureCacheKey(frame, picture);
     const found: string | undefined = images.get(key);
     if (found !== undefined) return found;
-    if (!known.has(key)) {
-      enqueue(frame, picture, lazy);
-      start();
-    }
+    shown.add(key);
+    if (!known.has(key)) enqueue(frame, picture, lazy);
+    start();
     return null;
   };
 

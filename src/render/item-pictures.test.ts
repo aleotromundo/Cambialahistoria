@@ -50,6 +50,7 @@ function rig(): Rig {
     },
     frame: (): string => state.frame,
     schedule: (task: () => void): void => task(),
+    busy: (): boolean => false,
     painted: (): void => void refreshes.push(refreshes.length),
     failed: (error: unknown): void => void failures.push(error),
   });

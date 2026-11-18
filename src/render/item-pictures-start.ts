@@ -23,6 +23,7 @@ export interface ItemPicturesStart {
   readonly dresser: Dresser;
   readonly hero: () => string | null;
   readonly refresh: () => void;
+  readonly busy: () => boolean;
 }
 
 export interface PortraitFigure {
@@ -62,6 +63,7 @@ export function startItemPictures(start: ItemPicturesStart): Pictures {
     load: (needs: CharacterNeeds): Promise<void> => loadNeeds(start.loader, content, start.dresser, library, needs),
     frame: (): string => frameOf(content, heroRig(content, start.hero())),
     schedule: (task: () => void): void => void window.setTimeout(task, PICTURES.startMs),
+    busy: start.busy,
     painted: start.refresh,
     failed: (error: unknown): void => warnInConsole(`An item picture failed: ${String(error)}`),
   });

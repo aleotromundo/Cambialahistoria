@@ -107,6 +107,7 @@ import { createIsoCamera, liftAt } from './render/iso-camera.ts';
 import { cutawayCompany, setCutawayCompany } from './render/prop-cutaway.ts';
 import { cameraSight } from './render/sight.ts';
 import { startItemPictures } from './render/item-pictures-start.ts';
+import { fightNear } from './render/fight-near.ts';
 import type { LootView } from './render/loot-view.ts';
 import { createLootView } from './render/loot-view.ts';
 import type { Overlays } from './render/overlays.ts';
@@ -230,7 +231,7 @@ async function start(): Promise<void> {
   const ward: Ward = createWard(stage.scene);
   const actors: Actors = createActors(stage.scene, library, world, mobile.quality.tier.msaaSamples > 0, cameraSight(stage.camera), particles);
   const figureGauge: FigureGauge = createFigureGauge(figureJoints(content.rigs.get(heroRig(content, world.player.hero))?.bodyParts ?? {}));
-  const pictures = startItemPictures({ content, library, loader, dresser, hero: (): string | null => pick.chosen ?? world.player.hero, refresh: (): void => { hud.refreshItems(); profilePanel?.refreshItems(); } });
+  const pictures = startItemPictures({ content, library, loader, dresser, hero: (): string | null => pick.chosen ?? world.player.hero, refresh: (): void => { hud.refreshItems(); profilePanel?.refreshItems(); }, busy: (): boolean => fightNear(world) });
   const wantCarried = (): void => pictures.items.want([...carriedPictures(content, world.player), ...goodsPictures(content)]);
   const glitchSettings: GlitchSettingsStore = createGlitchSettings(createBrowserStore());
   const pauseMenu: PauseMenu = createPauseMenu(element('hud', HTMLDivElement), {
