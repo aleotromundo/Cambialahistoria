@@ -31,6 +31,7 @@ export const PHONE = {
   hintHeight: 48,
   toastMaxWidth: 340,
   toastHeight: 64,
+  barkHeight: 56,
   dialogueMaxHeight: 220,
   cardWidth: 320,
   cardInset: 16,
@@ -87,6 +88,7 @@ export interface PhoneLayout {
   readonly quests: Rect | null;
   readonly hint: Rect;
   readonly toast: Rect;
+  readonly bark: Rect;
   readonly dialogue: Rect;
   readonly card: Rect;
   readonly banner: Rect;
@@ -257,8 +259,11 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const roomy: boolean = tall.w >= PHONE.targetMinWidth && tallMeter.w >= PHONE.meterMinWidth && !open.some((rect: Rect): boolean => overlaps(rect, tall) || overlaps(rect, tallMeter)) && !overlaps(tall, tallMeter);
   const target: Rect = roomy ? tall : targetOf(PHONE.targetHeight);
   const meter: Rect = roomy ? tallMeter : meterBeside(target);
+  const aboveToast: Rect = { x: toast.x, y: toast.y - PHONE.gap - PHONE.barkHeight, w: toast.w, h: PHONE.barkHeight };
+  const standing: readonly Rect[] = [...open, target, meter];
+  const bark: Rect = aboveToast.y >= top && !standing.some((rect: Rect): boolean => overlaps(rect, aboveToast)) ? aboveToast : toast;
 
-  return { life, mana, menu, zone, minimap, quests, hint, toast, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
+  return { life, mana, menu, zone, minimap, quests, hint, toast, bark, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {

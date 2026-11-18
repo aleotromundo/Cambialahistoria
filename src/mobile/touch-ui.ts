@@ -125,6 +125,10 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-toast-x', layout.toast.x);
   set('--ph-toast-y', layout.toast.y);
   set('--ph-toast-w', layout.toast.w);
+  set('--ph-bark-x', layout.bark.x);
+  set('--ph-bark-bottom', height - layout.bark.y - layout.bark.h);
+  set('--ph-bark-w', layout.bark.w);
+  set('--ph-bark-talk-bottom', height - layout.dialogue.y + PHONE.gap);
   set('--ph-meter-x', layout.meter.x);
   set('--ph-meter-y', layout.meter.y);
   set('--ph-meter-w', layout.meter.w);

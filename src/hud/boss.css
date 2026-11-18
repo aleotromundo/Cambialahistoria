@@ -149,3 +149,27 @@ body.touch .hud-boss .boss-name {
 body.touch .hud-boss .boss-title {
   font-size: 11px;
 }
+
+body.touch .hud-bark {
+  left: var(--ph-bark-x);
+  bottom: var(--ph-bark-bottom);
+  width: var(--ph-bark-w);
+  transform: translateY(12px);
+}
+
+body.touch .hud-bark.visible {
+  transform: none;
+}
+
+body.touch .hud-dialogue.open ~ .hud-bark {
+  bottom: var(--ph-bark-talk-bottom);
+}
+
+body.touch .hud-bark .bark-name {
+  font-size: 12px;
+}
+
+body.touch .hud-bark .bark-text {
+  font-size: 15px;
+  line-height: 1.3;
+}
