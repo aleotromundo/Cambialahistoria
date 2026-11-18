@@ -8,6 +8,7 @@ import type { ItemInstance, RolledAffix, World } from './types.ts';
 export type ItemSource =
   | { readonly kind: 'monster'; readonly monster: string; readonly zone: string }
   | { readonly kind: 'leader'; readonly monster: string; readonly zone: string; readonly rank: string }
+  | { readonly kind: 'lifted'; readonly monster: string; readonly zone: string; readonly floor: string }
   | { readonly kind: 'boss'; readonly monster: string; readonly zone: string }
   | { readonly kind: 'moment'; readonly moment: string; readonly zone: string }
   | { readonly kind: 'find'; readonly find: string; readonly zone: string }
@@ -86,6 +87,7 @@ export function sourceZone(source: ItemSource): string | null {
       return null;
     case 'monster':
     case 'leader':
+    case 'lifted':
     case 'boss':
     case 'moment':
     case 'find':

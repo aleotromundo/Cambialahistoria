@@ -128,7 +128,9 @@ function rollLoot(world: World, monster: MonsterState, reward: RunReward, loot: 
   }
   const level: number = Math.max(monster.level, world.player.level);
   if (world.rng.chance(Math.min(1, drops.itemChance * (1 + reward.items) * (1 + loot)))) {
-    const item: ItemInstance | null = rollDrop(world, level, null, { kind: 'monster', monster: monster.def.id, zone: world.zone.id }, liftedFloor(world, reward));
+    const floor: string | null = liftedFloor(world, reward);
+    const source: ItemSource = floor === null ? { kind: 'monster', monster: monster.def.id, zone: world.zone.id } : { kind: 'lifted', monster: monster.def.id, zone: world.zone.id, floor };
+    const item: ItemInstance | null = rollDrop(world, level, null, source, floor);
     if (item !== null) dropOnGround(world, monster.pos, { kind: 'item', item });
   }
   const rank: MonsterRank | null = monster.def.rank;
