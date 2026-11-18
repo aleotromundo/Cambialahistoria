@@ -2,7 +2,7 @@ import type { Box3, Material, Vector2 } from 'three';
 import { Raycaster } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { cuesForEvent, cuesForLife, uiActionForCommand } from '../sim/audio.ts';
+import { cuesForLife, uiActionForCommand } from '../sim/audio.ts';
 import { zoneCharacterNeeds } from '../sim/wear.ts';
 import { carriedPictures, goodsPictures } from '../sim/pictures.ts';
 import { heroRig } from '../sim/hero.ts';
@@ -211,7 +211,7 @@ async function start(): Promise<void> {
   stage.setAmbience(world.zone.ambience);
   stage.setHeroLight(world.zone.heroLight);
   placeLine.show(world.zone.name);
-  const { audioDef, controls, audio, sounds, voice, playCues, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
+  const { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
   const queue: Command[] = [];
   const send = (command: Command): void => {
     queue.push(command);
@@ -339,6 +339,7 @@ async function start(): Promise<void> {
     playing = false;
     markPlaying(document.body, false);
     quietBeds();
+    releaseHeld();
     enter.textContent = 'Continue';
     titleBar.current = world.player.bar;
     drawTitleKeys();
@@ -349,7 +350,7 @@ async function start(): Promise<void> {
     effects.handle(events, world);
     overlays.handle(events, world);
     glitches.handle(events);
-    for (const event of events) playCues(cuesForEvent(audioDef, world, event));
+    for (const event of events) playEvent(event);
     hitStop = Math.max(hitStop, effects.takeHitStop());
     if (changesSave(events)) {
       dirty = true;

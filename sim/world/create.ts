@@ -180,6 +180,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     shots: [],
     hazards: [],
     echoes: [],
+    channels: [],
     areas: [],
     ground: [],
     nextId: PLAYER_ID + 1,

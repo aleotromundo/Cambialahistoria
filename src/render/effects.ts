@@ -553,6 +553,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
           case 'soak':
           case 'stun':
           case 'mend':
+          case 'channel_end':
           case 'chain':
           case 'beam':
           case 'blink':

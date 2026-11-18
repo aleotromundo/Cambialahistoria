@@ -34,6 +34,7 @@ import { refreshPlayer } from './character.ts';
 import { stepTally } from '../tally.ts';
 import { stepTailwind } from './tailwind.ts';
 import { announceArming } from './arming.ts';
+import { endChannels } from './channels.ts';
 
 export const MAX_STEP: number = 1 / 30;
 
@@ -95,5 +96,6 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   stepGlitch(world, dt);
   recordPath(world, dt);
   stepTally(world, dt);
+  endChannels(world);
   return world.events;
 }

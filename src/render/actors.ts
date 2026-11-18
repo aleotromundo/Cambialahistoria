@@ -581,6 +581,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             for (const echo of leaving.splice(0, leaving.length)) retire(echo.entry);
             break;
           case 'skill_impact':
+          case 'channel_end':
           case 'hazard':
           case 'checkpoint':
           case 'dialogue_line':

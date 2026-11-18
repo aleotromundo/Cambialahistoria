@@ -249,6 +249,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       found = worldCues(audio, 'monster_stunned', event.pos);
       break;
     case 'skill_interrupt':
+    case 'channel_end':
     case 'chain':
     case 'beam':
     case 'blink':
@@ -297,6 +298,14 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
       break;
   }
   return found;
+}
+
+export type ChannelSound = { readonly type: 'hold'; readonly actorId: number } | { readonly type: 'release'; readonly actorId: number };
+
+export function channelSound(event: WorldEvent): ChannelSound | null {
+  if (event.type === 'skill_start') return event.skill.press?.type === 'channel' ? { type: 'hold', actorId: event.actorId } : null;
+  if (event.type === 'channel_end') return { type: 'release', actorId: event.actorId };
+  return null;
 }
 
 export function warmSoundIds(audio: AudioDef): readonly string[] {

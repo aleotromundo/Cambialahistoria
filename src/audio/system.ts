@@ -8,6 +8,8 @@ import type { BufferLoader, LoadOptions } from './buffers.ts';
 import { createBufferLoader, LOOP_LOAD, PLAY_LOAD, WARM_LOAD } from './buffers.ts';
 import type { BufferCache } from './cache.ts';
 import { createBufferCache } from './cache.ts';
+import type { SoundTicket } from './held.ts';
+import { createTicket } from './held.ts';
 import type { Fade } from './fade.ts';
 import { fadeTo, heldAt } from './fade.ts';
 import type { LoadHealth } from './load-health.ts';
@@ -80,6 +82,7 @@ export interface AudioSystem {
   readonly running: boolean;
   unlock(): void;
   play(cue: SoundCue, place: Placement): void;
+  playHeld(cue: SoundCue, place: Placement): SoundTicket;
   playVoice(speaker: string, clipId: string): Promise<void>;
   playEcho(audio: ArrayBuffer): Promise<void>;
   warm(ids: readonly string[], voices: readonly string[]): void;
@@ -146,6 +149,18 @@ function applyFade(param: AudioParam, fade: Fade): void {
   param.cancelScheduledValues(fade.start);
   param.setValueAtTime(fade.from, fade.start);
   param.linearRampToValueAtTime(fade.to, fade.end);
+}
+
+function fadeHeld(context: AudioContext, source: AudioBufferSourceNode, gain: GainNode, seconds: number): void {
+  const now: number = context.currentTime;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.linearRampToValueAtTime(0, now + seconds);
+  try {
+    source.stop(now + seconds);
+  } catch {
+    return;
+  }
 }
 
 function whenIdle(work: () => void): void {
@@ -224,7 +239,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   });
   const load = (path: string, how: LoadOptions = PLAY_LOAD): Promise<AudioBuffer | null> => buffers.load(path, how);
 
-  const connect = (source: AudioBufferSourceNode, volume: number, pan: number, bus: GainNode, current: Graph, onEnd: () => void): void => {
+  const connect = (source: AudioBufferSourceNode, volume: number, pan: number, bus: GainNode, current: Graph, onEnd: () => void): GainNode => {
     const gain: GainNode = current.context.createGain();
     gain.gain.value = volume;
     const panner: StereoPannerNode = current.context.createStereoPanner();
@@ -238,41 +253,53 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       panner.disconnect();
       onEnd();
     });
+    return gain;
   };
 
-  const playOn = async (bus: Bus, cue: SoundCue, place: Placement): Promise<void> => {
+  const playOn = async (bus: Bus, cue: SoundCue, place: Placement, ticket: SoundTicket | null): Promise<void> => {
+    const drop = (): void => {
+      limiter.end(cue.sound);
+      ticket?.finish();
+    };
     const current: Graph | null = graph;
     if (current === null) {
-      limiter.end(cue.sound);
+      drop();
       return;
     }
     const asked: number = clock();
     if (loader.current() === null) await loader.ready();
     const paths: readonly string[] | undefined = loader.current()?.sfx.get(cue.sound);
     if (paths === undefined) {
-      limiter.end(cue.sound);
+      drop();
       return;
     }
     const variant: number = variants.next(cue.sound, paths.length);
     const path: string | undefined = paths[variant];
     const buffer: AudioBuffer | null = path === undefined ? null : await load(path);
-    if (buffer === null || clock() - asked > SYSTEM.latePlaySeconds) {
-      limiter.end(cue.sound);
+    if (buffer === null || clock() - asked > SYSTEM.latePlaySeconds || ticket?.stopped === true) {
+      drop();
       return;
     }
     const source: AudioBufferSourceNode = current.context.createBufferSource();
     source.buffer = buffer;
     source.playbackRate.value = pitchRate(random, cue.pitch);
     const level: number = cue.volume * place.gain * volumeScale(random, cue.volumeJitter);
-    connect(source, level, place.pan, current[bus], current, (): void => limiter.end(cue.sound));
+    const gain: GainNode = connect(source, level, place.pan, current[bus], current, drop);
     source.start();
+    ticket?.begin((seconds: number): void => fadeHeld(current.context, source, gain, seconds));
   };
 
-  const trigger = (bus: Bus, cue: SoundCue, place: Placement): void => {
+  const trigger = (bus: Bus, cue: SoundCue, place: Placement, ticket: SoundTicket | null = null): void => {
     ensureManifest();
-    if (!limiter.tryStart(cue.sound, cue.maxVoices, cue.cooldown)) return;
+    if (!limiter.tryStart(cue.sound, cue.maxVoices, cue.cooldown)) {
+      ticket?.finish();
+      return;
+    }
     report(cue, place);
-    playOn(bus, cue, place).catch((): void => limiter.end(cue.sound));
+    playOn(bus, cue, place, ticket).catch((): void => {
+      limiter.end(cue.sound);
+      ticket?.finish();
+    });
   };
 
   const duck = (delta: number): void => {
@@ -557,6 +584,11 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     },
     play(cue: SoundCue, place: Placement): void {
       if (hold.offer(cue, place, clock(), echoes > 0 || lines.anySpeaking())) trigger('effects', cue, place);
+    },
+    playHeld(cue: SoundCue, place: Placement): SoundTicket {
+      const ticket: SoundTicket = createTicket();
+      trigger('effects', cue, place, ticket);
+      return ticket;
     },
     playVoice(speaker: string, clipId: string): Promise<void> {
       return lines.say(speaker, clipId);

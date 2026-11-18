@@ -11,6 +11,7 @@ import { spawnPacks } from './monsters.ts';
 import { clearAreas } from './areas.ts';
 import { clearHazards } from './hazards.ts';
 import { clearProjectiles } from './skills.ts';
+import { dropChannel } from './channels.ts';
 import type { GroundItem, ItemInstance, PlayerState, RespawnPoint, World } from './types.ts';
 import type { VoidArrival } from './wake.ts';
 import { beginVoid } from './wake.ts';
@@ -77,6 +78,7 @@ export function placePlayer(world: World): void {
   player.path = [];
   player.buffered = EMPTY_BUFFER;
   player.moving = false;
+  dropChannel(player);
 }
 
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {

@@ -18,3 +18,8 @@ export interface ActionState {
   goal: Vec2 | null;
   turned: number;
 }
+
+export interface ChannelState {
+  readonly actorId: number;
+  readonly action: ActionState;
+}

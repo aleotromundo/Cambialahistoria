@@ -4,9 +4,9 @@ import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
 import type { GlitchEvent, GlitchState, PathAct, PathLog } from './glitch-types.ts';
 import type { Content, ItemSlot, LineDef, MonsterDef, NpcDef, SkillDef, StatBlock, TalkDef, XpReduction, ZoneDef, ZonePack } from '../content/types.ts';
 import type { PowerState } from './power-types.ts';
-import type { ActionState } from './action-types.ts';
+import type { ActionState, ChannelState } from './action-types.ts';
 import type { PressBuffer } from './press-buffer.ts';
-export type { ActionPhase, ActionState } from './action-types.ts';
+export type { ActionPhase, ActionState, ChannelState } from './action-types.ts';
 export type { BuffState, EmpowerState, PowerState } from './power-types.ts';
 import type { ItemPlace, OpenService } from './service-types.ts';
 import type { UnisonEvent, UnisonState } from './unison-types.ts';
@@ -383,6 +383,7 @@ export type WorldEvent =
   | { readonly type: 'skill_impact'; readonly actorId: number; readonly team: Team; readonly skill: SkillDef; readonly origin: Vec2; readonly direction: Vec2; readonly hits: number; readonly echo: boolean }
   | { readonly type: 'revive'; readonly monsterId: number; readonly corpseId: number; readonly by: number }
   | { readonly type: 'skill_interrupt'; readonly actorId: number }
+  | { readonly type: 'channel_end'; readonly actorId: number; readonly skill: SkillDef }
   | { readonly type: 'projectile_spawn'; readonly projectile: ProjectileState }
   | { readonly type: 'projectile_end'; readonly id: number; readonly pos: Vec2; readonly hit: boolean; readonly skill: SkillDef }
   | { readonly type: 'damage'; readonly targetId: number; readonly sourceId: number; readonly targetTeam: Team; readonly amount: number; readonly crit: boolean; readonly killed: boolean; readonly pos: Vec2; readonly direction: Vec2; readonly skill: SkillDef; readonly burn: boolean }
@@ -508,6 +509,7 @@ export interface World {
   shots: QueuedShot[];
   hazards: HazardState[];
   echoes: EchoState[];
+  channels: ChannelState[];
   areas: AreaState[];
   ground: GroundItem[];
   nextId: number;

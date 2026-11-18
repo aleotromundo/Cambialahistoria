@@ -456,6 +456,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           case 'hazard':
           case 'guarded':
           case 'skill_interrupt':
+          case 'channel_end':
           case 'projectile_spawn':
           case 'projectile_end':
           case 'death':

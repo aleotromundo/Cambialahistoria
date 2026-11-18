@@ -1,12 +1,14 @@
-import { cuesForUi, warmSoundIds } from '../sim/audio.ts';
+import { channelSound, cuesForEvent, cuesForUi, warmSoundIds } from '../sim/audio.ts';
 import type { SoundCue } from '../sim/audio.ts';
 import type { AudioDef, UiAction, ZoneAmbience } from '../sim/content/audio.ts';
 import { loadAudio } from '../sim/content/audio.ts';
 import type { Content, LineDef } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
-import type { World } from '../sim/world/types.ts';
+import type { World, WorldEvent } from '../sim/world/types.ts';
 import type { Bed, BedChange, Beds } from './audio/beds.ts';
 import { createBeds, LOBBY_BED, playBedChange } from './audio/beds.ts';
+import type { CuePlayer, HeldSounds, SoundTicket } from './audio/held.ts';
+import { createHeldSounds, playChannelled } from './audio/held.ts';
 import type { Listener } from './audio/listener.ts';
 import { createListener, locateNear } from './audio/listener.ts';
 import { readAssetBase } from './audio/manifest.ts';
@@ -42,6 +44,8 @@ export interface GameAudio {
   readonly sounds: Trigger[];
   readonly voice: VoicePlayer;
   readonly playCues: (cues: readonly SoundCue[]) => void;
+  readonly playEvent: (event: WorldEvent) => void;
+  readonly releaseHeld: () => void;
   readonly playUi: (action: UiAction) => void;
   readonly startZoneAmbience: () => void;
   readonly lobbyBed: (shown: boolean) => void;
@@ -62,12 +66,23 @@ export function createGameAudio(deps: GameAudioDeps): GameAudio {
   });
   audio.warm(warmSoundIds(audioDef), bookVoiceIds(content.books.values(), content.lines));
   const listener: Listener = createListener(camera, canvas, (): Vec2 => world.player.pos);
-  const playCues = (cues: readonly SoundCue[]): void => {
-    for (const cue of cues) {
-      const place: Placement | null = cue.position === null ? CENTRE : listener(cue.position, cue.reach);
+  const placed = (cue: SoundCue): Placement | null => (cue.position === null ? CENTRE : listener(cue.position, cue.reach));
+  const cuePlayer: CuePlayer = {
+    play(cue: SoundCue): void {
+      const place: Placement | null = placed(cue);
       if (place !== null) audio.play(cue, place);
-    }
+    },
+    hold(cue: SoundCue): SoundTicket | null {
+      const place: Placement | null = placed(cue);
+      return place === null ? null : audio.playHeld(cue, place);
+    },
   };
+  const playCues = (cues: readonly SoundCue[]): void => {
+    for (const cue of cues) cuePlayer.play(cue);
+  };
+  const held: HeldSounds = createHeldSounds();
+  const playEvent = (event: WorldEvent): void => playChannelled(held, channelSound(event), cuesForEvent(audioDef, world, event), cuePlayer);
+  const releaseHeld = (): void => held.releaseAll();
   const playUi = (action: UiAction): void => playCues(cuesForUi(audioDef, action));
   const beds: Beds = createBeds((): number => performance.now() / GAME_AUDIO.millisecondsPerSecond);
   const locate: StingerLocator = locateNear(listener, (): World => world);
@@ -97,5 +112,5 @@ export function createGameAudio(deps: GameAudioDeps): GameAudio {
       audio.stopVoice();
     },
   };
-  return { audioDef, controls, audio, sounds, voice, playCues, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio };
+  return { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio };
 }

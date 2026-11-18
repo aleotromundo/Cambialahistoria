@@ -23,6 +23,7 @@ import { rankSize } from './ranks.ts';
 import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
+import { beginChannel, endChannels } from './channels.ts';
 import type { ActionState, Actor, EchoState, NoticeReason, PlayerState, ProjectileState, QueuedShot, Team, World } from './types.ts';
 
 export const SKILLS = {
@@ -166,9 +167,12 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const travelSpeed: number = skill.leap === null ? 0 : reach / Math.min(windup, skill.leap.airTime);
   const goal: Vec2 | null = glidesWith(skill.press) ? { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z } : null;
   if (actor.kind === 'monster') braceThrough(actor, windup);
-  actor.action = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0 };
+  const action: ActionState = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0 };
+  actor.action = action;
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
+  endChannels(world);
   world.events.push({ type: 'skill_start', actorId: actor.id, skill, direction: aim, windup, recovery });
+  beginChannel(world, actor, action);
 }
 
 const VOLLEY_SCATTER: number = (Math.sqrt(5) - 1) / 2;
