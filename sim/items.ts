@@ -134,6 +134,16 @@ function favoured(content: Content, base: ItemBaseDef, lean: DropLean): boolean 
   return kind !== null && content.chart.weaponGroups.some((group): boolean => lean.weapons.includes(group.id) && group.kinds.some((held: string): boolean => held === kind));
 }
 
+export function boostedLean(lean: DropLean, boost: number): DropLean {
+  if (boost === 1) return lean;
+  return { ...lean, share: lean.share > 1 ? lean.share * boost : lean.share, legendary: lean.legendary > 1 ? lean.legendary * boost : lean.legendary };
+}
+
+function leanFor(content: Content, zone: string | null, boost: number): DropLean | null {
+  const lean: DropLean | null = leanOf(content, zone);
+  return lean === null ? null : boostedLean(lean, boost);
+}
+
 export function leanedWeight(content: Content, base: ItemBaseDef, lean: DropLean | null): number {
   return lean !== null && favoured(content, base, lean) ? base.dropWeight * lean.share : base.dropWeight;
 }
@@ -183,14 +193,14 @@ export function raritiesFrom(content: Content, floor: string): readonly RarityDe
   return start < 0 ? content.rarities : content.rarities.slice(start);
 }
 
-export function generateAtLeast(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, floor: string, zone: string | null = null): ItemInstance | null {
-  const lean: DropLean | null = leanOf(content, zone);
+export function generateAtLeast(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, floor: string, zone: string | null = null, boost: number = 1): ItemInstance | null {
+  const lean: DropLean | null = leanFor(content, zone, boost);
   const rarity: RarityDef | null = pickRarity(content, rng, raritiesFrom(content, floor), lean);
-  return rarity === null ? null : generateItem(content, rng, uid, level, forcedBase, rarity.id, zone);
+  return rarity === null ? null : generateItem(content, rng, uid, level, forcedBase, rarity.id, zone, boost);
 }
 
-export function generateItem(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, forcedRarity: string | null, zone: string | null = null): ItemInstance | null {
-  const lean: DropLean | null = leanOf(content, zone);
+export function generateItem(content: Content, rng: Rng, uid: number, level: number, forcedBase: string | null, forcedRarity: string | null, zone: string | null = null, boost: number = 1): ItemInstance | null {
+  const lean: DropLean | null = leanFor(content, zone, boost);
   const pickedBase: ItemBaseDef | null = pickBase(content, rng, [...content.itemBases.values()].filter(droppable(level, false)), lean);
   const base: ItemBaseDef | null = forcedBase === null ? pickedBase : (content.itemBases.get(forcedBase) ?? null);
   const rarity: RarityDef | null = forcedRarity === null ? pickRarity(content, rng, content.rarities, lean) : (content.rarities.find((candidate: RarityDef): boolean => candidate.id === forcedRarity) ?? null);
@@ -207,7 +217,11 @@ export interface ItemPlan {
   readonly zone: string | null;
 }
 
+export function rollLeaned(content: Content, rng: Rng, uid: number, level: number, plan: ItemPlan, boost: number): ItemInstance | null {
+  if (plan.rarity === null && plan.floor !== null) return generateAtLeast(content, rng, uid, level, plan.base, plan.floor, plan.zone, boost);
+  return generateItem(content, rng, uid, level, plan.base, plan.rarity, plan.zone, boost);
+}
+
 export function rollItem(content: Content, rng: Rng, uid: number, level: number, plan: ItemPlan): ItemInstance | null {
-  if (plan.rarity === null && plan.floor !== null) return generateAtLeast(content, rng, uid, level, plan.base, plan.floor, plan.zone);
-  return generateItem(content, rng, uid, level, plan.base, plan.rarity, plan.zone);
+  return rollLeaned(content, rng, uid, level, plan, 1);
 }

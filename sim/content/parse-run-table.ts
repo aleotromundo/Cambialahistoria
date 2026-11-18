@@ -20,6 +20,7 @@ function shape(value: unknown, where: string): RunShape {
     life: optional(source, 'life', where),
     damage: optional(source, 'damage', where),
     fill: fill === true,
+    lean: optional(source, 'lean', where),
   };
 }
 

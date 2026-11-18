@@ -83,6 +83,15 @@ export function rewardOf(content: Content, pins: readonly RunPin[]): RunReward {
   );
 }
 
+export function leanBoostOf(content: Content, pins: readonly RunPin[]): number {
+  return pinned(content, pins).reduce((total: number, entry: PinnedCondition): number => total + entry.condition.shape.lean, 1);
+}
+
+export function runLeanBoost(world: World): number {
+  const setup: RunSetup | null = shapedHere(world);
+  return setup === null ? 1 : leanBoostOf(world.content, setup.pins);
+}
+
 export function dangerOf(content: Content, pins: readonly RunPin[]): number {
   return pinned(content, pins).reduce((total: number, entry: PinnedCondition): number => total + entry.condition.danger, 0);
 }

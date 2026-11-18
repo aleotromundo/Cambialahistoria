@@ -78,7 +78,7 @@ export function createLedgerApi(baseUrl: string, fetchFn: FetchFn, content: Cont
       return hand === null ? { kind: 'failed' } : { kind: 'ok', hand };
     },
     mint: async (token: string, claim: MintClaim, signal: AbortSignal): Promise<MintAnswer> => {
-      const body: string = JSON.stringify({ ticket: claim.ticket, source: sourceBody(claim.source), level: claim.level });
+      const body: string = JSON.stringify({ ticket: claim.ticket, source: sourceBody(claim.source), level: claim.level, boost: claim.boost });
       const answer: Answer | null = await exchange(fetchFn, `${baseUrl}${LEDGER_API.mintPath}`, { method: 'POST', headers: headers(token), body, signal });
       if (answer === null || (answer.status !== 200 && answer.status !== 201)) return { kind: settledKind(answer) };
       const item: LedgerItem | null = isFields(answer.body) ? readLedgerItem(content, answer.body['item']) : null;

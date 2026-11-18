@@ -91,5 +91,5 @@ void test('the first drop is chosen for the hero and spends no ticket, and a lat
   assert.deepEqual(takeClaims(world), []);
   const later: ItemInstance = must(rollDrop(world, 2, null, MONSTER), 'later');
   assert.deepEqual(world.ledger.tickets, []);
-  assert.deepEqual(takeClaims(world), [{ uid: later.uid, ticket: 1, source: MONSTER, level: 2 }]);
+  assert.deepEqual(takeClaims(world), [{ uid: later.uid, ticket: 1, source: MONSTER, level: 2, boost: 1 }]);
 });

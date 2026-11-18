@@ -1,8 +1,9 @@
 import { veiled } from '../identify.ts';
-import { rollItem } from '../items.ts';
+import { rollLeaned } from '../items.ts';
 import { createRng } from '../rng.ts';
 import type { Rng } from '../rng.ts';
 import { ITEM_SLOTS } from '../content/types.ts';
+import { runLeanBoost } from './run-state.ts';
 import type { ItemInstance, RolledAffix, World } from './types.ts';
 
 export type ItemSource =
@@ -26,6 +27,7 @@ export interface MintClaim {
   readonly ticket: number;
   readonly source: ItemSource;
   readonly level: number;
+  readonly boost: number;
 }
 
 export interface LedgerItem {
@@ -113,7 +115,9 @@ export function sourceZone(source: ItemSource): string | null {
 export function makeItem(world: World, level: number, base: string | null, rarity: string | null, source: ItemSource, fallback: Rng = world.rng, floor: string | null = null): ItemInstance | null {
   const ticket: LootTicket | undefined = world.ledger.tickets.shift();
   const rng: Rng = ticket === undefined ? fallback : createRng(ticket.seed);
-  const rolled: ItemInstance | null = rollItem(world.content, rng, world.nextItemUid, level, { base, rarity, floor, zone: sourceZone(source) });
+  const zone: string | null = sourceZone(source);
+  const boost: number = zone === null ? 1 : runLeanBoost(world);
+  const rolled: ItemInstance | null = rollLeaned(world.content, rng, world.nextItemUid, level, { base, rarity, floor, zone }, boost);
   if (rolled === null) {
     if (ticket !== undefined) world.ledger.tickets.unshift(ticket);
     return null;
@@ -125,7 +129,7 @@ export function makeItem(world: World, level: number, base: string | null, rarit
   if (ticket === undefined && seedless(world, base, rarity)) world.ledger.waiting.push({ uid: item.uid, source, level });
   if (ticket !== undefined) {
     world.ledger.spent.add(ticket.id);
-    world.ledger.claims.push({ uid: item.uid, ticket: ticket.id, source, level });
+    world.ledger.claims.push({ uid: item.uid, ticket: ticket.id, source, level, boost });
   }
   return item;
 }
@@ -146,7 +150,7 @@ export function giveTickets(world: World, tickets: readonly LootTicket[]): void 
       continue;
     }
     world.ledger.spent.add(ticket.id);
-    world.ledger.claims.push({ uid: late.uid, ticket: ticket.id, source: late.source, level: late.level });
+    world.ledger.claims.push({ uid: late.uid, ticket: ticket.id, source: late.source, level: late.level, boost: 1 });
   }
 }
 

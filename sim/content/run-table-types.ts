@@ -8,6 +8,7 @@ export interface RunShape {
   readonly life: number;
   readonly damage: number;
   readonly fill: boolean;
+  readonly lean: number;
 }
 
 export interface RunReward {

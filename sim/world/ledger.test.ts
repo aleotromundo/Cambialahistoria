@@ -46,7 +46,7 @@ void test('with a ticket the item is the roll of its seed, the world roll is unt
   assert.equal(held.rng.state(), rngBefore);
   assert.deepEqual(held.ledger.tickets, [{ id: 42, seed: 9002 }]);
   const claims: readonly MintClaim[] = takeClaims(held);
-  assert.deepEqual(claims, [{ uid, ticket: 41, source: MONSTER, level: 4 }]);
+  assert.deepEqual(claims, [{ uid, ticket: 41, source: MONSTER, level: 4, boost: 1 }]);
   assert.deepEqual(takeClaims(held), []);
 });
 

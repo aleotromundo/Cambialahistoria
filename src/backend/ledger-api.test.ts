@@ -65,11 +65,11 @@ void test('tickets and a mint go to the server with the token, and the minted it
   assert.equal(hand.kind, 'ok');
   const ticket = hand.hand.tickets[0];
   assert.ok(ticket !== undefined);
-  const claim: MintClaim = { uid: 4, ticket: ticket.id, source: { kind: 'start', base: content.player.startingItems[0] ?? '' }, level: 1 };
+  const claim: MintClaim = { uid: 4, ticket: ticket.id, source: { kind: 'start', base: content.player.startingItems[0] ?? '' }, level: 1, boost: 1 };
   const minted = await api.mint(token, claim, signal());
   assert.equal(minted.kind, 'minted');
   const request = must(fake.requests.find((entry) => entry.path === LEDGER_API.mintPath), 'mint request');
-  assert.deepEqual(request.body, { ticket: ticket.id, source: claim.source, level: 1 });
+  assert.deepEqual(request.body, { ticket: ticket.id, source: claim.source, level: 1, boost: 1 });
   assert.equal(request.token, token);
   assert.deepEqual(await api.mint(token, claim, signal()), minted);
 });
@@ -77,7 +77,7 @@ void test('tickets and a mint go to the server with the token, and the minted it
 void test('a refused mint is refused, and a network or server failure is a failure the client may retry', async (): Promise<void> => {
   const fake: FakeServer = createFakeServer(createFakeClock());
   const token: string = await guest(fake);
-  const claim: MintClaim = { uid: 4, ticket: 999, source: { kind: 'start', base: 'x' }, level: 1 };
+  const claim: MintClaim = { uid: 4, ticket: 999, source: { kind: 'start', base: 'x' }, level: 1, boost: 1 };
   assert.deepEqual(await createLedgerApi(SERVER, fake.fetch, content).mint(token, claim, signal()), { kind: 'refused' });
   assert.deepEqual(await createLedgerApi(SERVER, fake.fetch, content).mint('wrong-token', claim, signal()), { kind: 'refused' });
   assert.deepEqual(await createLedgerApi(SERVER, offline, content).mint(token, claim, signal()), { kind: 'failed' });
@@ -89,7 +89,7 @@ void test('a refused mint is refused, and a network or server failure is a failu
 });
 
 void test('a 429 from the general request limit is a failure to retry, while a drop or ticket limit is a refusal', async (): Promise<void> => {
-  const claim: MintClaim = { uid: 4, ticket: 1, source: { kind: 'start', base: 'x' }, level: 1 };
+  const claim: MintClaim = { uid: 4, ticket: 1, source: { kind: 'start', base: 'x' }, level: 1, boost: 1 };
   assert.deepEqual(await createLedgerApi(SERVER, answering(LEDGER_API.busyCode), content).mint('token', claim, signal()), { kind: 'failed' });
   assert.deepEqual(await createLedgerApi(SERVER, answering(LEDGER_API.busyCode), content).tickets('token', signal()), { kind: 'failed' });
   assert.deepEqual(await createLedgerApi(SERVER, answering('mint_limit'), content).mint('token', claim, signal()), { kind: 'refused' });
