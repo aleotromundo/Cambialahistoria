@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, zoneOf } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
-import type { AffixDef, Content, ItemStat, StatMod } from './content/types.ts';
+import type { Content, ItemStat, StatMod } from './content/types.ts';
 import { ITEM_STATS } from './content/types.ts';
 import { emptyEquipment } from './items.ts';
 import { buildOf, compareBuilds, itemVerdict, OUTSIDE_VERDICT, verdictNote, verdictParts, VERDICT } from './item-verdict.ts';
@@ -57,7 +57,7 @@ void test('the owner case: looking ahead through the Act I route the rare token 
     assert.ok(verdict.here < -VERDICT.clear && (verdict.ahead ?? 0) < -VERDICT.clear, `toughness at ${level}`);
     assert.ok((verdict.ahead ?? 0) > verdict.here);
     assert.deepEqual(verdict.absent, []);
-    assert.equal(verdictNote(verdict), 'Storm and frost hit hardest in the Inner Hall');
+    assert.match(verdictNote(verdict) ?? '', /^Storm and frost hit hardest in the Inner Hall: \+\d+% toughness there$/);
   }
   const threat: Threat = threatNear(content, ['under_hall_2'], hideout, 14);
   assert.deepEqual(verdictParts(verdictOf(blade(14, quickToken), threat, groundedToken)), ['−3% toughness', '−4% damage']);
@@ -76,7 +76,7 @@ void test('toughness down against what is near and up against what is ahead is a
   assert.equal(verdict.kind, 'trade');
   assert.ok(verdict.here < 0 && (verdict.ahead ?? 0) > 0);
   assert.deepEqual(verdictParts(verdict), [`toughness +${Math.round((verdict.ahead ?? 0) * 100)}% ahead, −${Math.round(-verdict.here * 100)}% here`]);
-  assert.equal(verdictNote(verdict), 'Storm hits hardest in the hall');
+  assert.equal(verdictNote(verdict), `Storm hits hardest in the hall: +${Math.round((verdict.ahead ?? 0) * 100)}% toughness there`);
   const lost: Verdict = compareBuilds(content, before, withStats(before, [{ stat: 'maxLife', op: 'add', value: -life * 0.3 }, { stat: 'stormResist', op: 'add', value: 0.05 }], subject), threat);
   assert.equal(lost.kind, 'worse');
 });
@@ -161,24 +161,21 @@ void test('one side clearly up and the other clearly down with power about level
   assert.equal(lopsided.kind, 'worse');
 });
 
-void test('every stat an item can roll moves damage or toughness for some build, unless it is named as outside the verdict', (): void => {
+void test('every stat an item can roll moves damage, toughness or movement speed for some build, unless it is named as outside the verdict', (): void => {
   const subjects: VerdictSubject[] = [blade(10, null), { ...blade(10, null), bar: ['storm_bolt', null, null, null, null, 'dodge_roll'] }];
   const sizes: Map<ItemStat, number> = new Map<ItemStat, number>();
-  for (const affix of content.affixes.values()) sizes.set(affix.stat, Math.max(sizes.get(affix.stat) ?? 0, affixSize(affix)));
+  for (const affix of content.affixes.values()) if (affix.op === 'add') sizes.set(affix.stat, Math.max(sizes.get(affix.stat) ?? 0, affix.max));
   for (const stat of ITEM_STATS) {
     if (OUTSIDE_VERDICT.includes(stat)) continue;
     const size: number = sizes.get(stat) ?? 1;
     const moved: boolean = subjects.some((subject: VerdictSubject): boolean => {
       const before: Build = buildOf(content, subject, subject.equipped);
-      return Math.abs(compareBuilds(content, before, withStats(before, [{ stat, op: 'add', value: size }], subject), even).power) > VERDICT.absent;
+      const verdict: Verdict = compareBuilds(content, before, withStats(before, [{ stat, op: 'add', value: size }], subject), even);
+      return Math.abs(verdict.power) > VERDICT.absent || Math.abs(verdict.move) > VERDICT.absent;
     });
-    assert.ok(moved, `${stat} changes neither damage nor toughness`);
+    assert.ok(moved, `${stat} changes neither damage, toughness nor movement speed`);
   }
 });
-
-function affixSize(affix: AffixDef): number {
-  return affix.op === 'add' ? affix.max : 0;
-}
 
 void test('an unidentified item cannot be judged; once identified it can', (): void => {
   const hidden: ItemInstance = { ...groundedToken, unidentified: true };

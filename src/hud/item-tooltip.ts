@@ -58,6 +58,7 @@ const VERDICT_WORDS: Readonly<Record<VerdictKind, string>> = {
   worse: 'Worse',
   trade: 'Trade',
   same: 'Same',
+  switch: 'Other weapon',
 };
 
 function deltaClass(delta: number | null): string {
@@ -77,7 +78,7 @@ function appendHeadline(parent: HTMLElement, headline: Headline): void {
   if (headline.kind === 'damage') {
     label('tip-headline-value', `${Math.round(headline.min)}–${Math.round(headline.max)}`, block);
     label('tip-headline-name', 'Damage', block);
-    if (headline.delta !== null && headline.delta !== 0) label(`tip-delta${deltaClass(headline.delta)}`, `${headline.delta > 0 ? '+' : '−'}${Math.abs(headline.delta)} average hit`, block);
+    if (headline.delta !== null && headline.delta !== 0) label(`tip-delta${deltaClass(headline.delta)}`, `${headline.delta > 0 ? '+' : '−'}${Math.abs(headline.delta)} base hit`, block);
     return;
   }
   label('tip-headline-value', headline.row.text, block);
