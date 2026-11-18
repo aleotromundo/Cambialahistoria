@@ -32,6 +32,7 @@ import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
 import { insideAwakeMoment } from '../sim/world/moments.ts';
+import { prepareZone } from '../sim/world/zones.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { DebugHooks } from './debug-handle.ts';
 import { attachDebug } from './debug-handle.ts';
@@ -368,6 +369,10 @@ async function start(): Promise<void> {
     });
   };
 
+  const prepareNearZones = (): void => {
+    for (const near of neighbourZones(content, world.zone)) prepareZone(content, near);
+  };
+
   const showZone = async (events: readonly WorldEvent[]): Promise<BuiltZone> => {
     presentScene(events);
     effects.clear();
@@ -390,6 +395,7 @@ async function start(): Promise<void> {
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
     await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
+    prepareNearZones();
     startZoneAmbience();
     glitches.refresh();
     camera.snap(world.player.pos.x, world.player.pos.z, liftAt(world.zone, world.player.pos.x, world.player.pos.z));
@@ -462,7 +468,8 @@ async function start(): Promise<void> {
       if (events.some((event: WorldEvent): boolean => event.type === 'waypoint_unlocked')) markers.use({ type: 'waypoint' });
     }
 
-    if (gate.present) {
+    const presentNow: boolean = gate.present && transition.presenting;
+    if (presentNow) {
       const simDt: number = gate.step && hitStop <= 0 ? dt : 0;
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
@@ -495,7 +502,7 @@ async function start(): Promise<void> {
     ladder?.noteLevel(world.player.level);
     launch.update(world, dt, gate.queue);
     hurtVignette.show(effects.hurt);
-    if (gate.present) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
+    if (presentNow) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
     perf.frame(now);
     if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);
@@ -539,6 +546,7 @@ async function start(): Promise<void> {
   else if (backend.setAside()) statusLine.show(TITLE_NOTICES.setAside);
   else status.classList.add('quiet');
   const titleLoader: HTMLDivElement = element('title-loader', HTMLDivElement);
+  prepareNearZones();
   await untilCycleEnds(titleLoader);
   titleLoader.classList.add('done');
   followSync(backend, showSync, readServerUrl(import.meta.env.VITE_SERVER_URL).kind === 'ok');

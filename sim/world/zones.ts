@@ -4,7 +4,7 @@ import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { buildNavGrid } from '../nav/grid.ts';
+import { buildNavGrid, navGridPrepared, prepareNavGrid } from '../nav/grid.ts';
 import { closeDialogue, spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
@@ -114,6 +114,14 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   world.escort = null;
   if (!restoreKept(world)) spawnPacks(world);
   startMoments(world);
+}
+
+export function prepareZone(content: Content, zone: ZoneDef): void {
+  prepareNavGrid(zone, content.props, content.surfaces, content.player.radius);
+}
+
+export function zonePrepared(content: Content, zone: ZoneDef): boolean {
+  return navGridPrepared(zone, content.props, content.surfaces, content.player.radius);
 }
 
 export function travelThrough(world: World, exit: ZoneExit): void {

@@ -222,12 +222,25 @@ function copyGrid(grid: NavGrid): NavGrid {
   return { ...grid, walkable: grid.walkable.slice(), solid: grid.solid.slice(), ground: grid.ground.slice(), drifts: grid.drifts.map((drift: DriftCells): DriftCells => ({ ...drift })) };
 }
 
-export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
+function templateFor(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
   const template: GridTemplate | undefined = TEMPLATES.get(zone);
-  if (template !== undefined && template.props === props && template.surfaces === surfaces && template.radius === agentRadius) return copyGrid(template.grid);
+  if (template !== undefined && template.props === props && template.surfaces === surfaces && template.radius === agentRadius) return template.grid;
   const grid: NavGrid = freshNavGrid(zone, props, surfaces, agentRadius);
   TEMPLATES.set(zone, { props, surfaces, radius: agentRadius, grid });
-  return copyGrid(grid);
+  return grid;
+}
+
+export function buildNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
+  return copyGrid(templateFor(zone, props, surfaces, agentRadius));
+}
+
+export function prepareNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): void {
+  templateFor(zone, props, surfaces, agentRadius);
+}
+
+export function navGridPrepared(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): boolean {
+  const template: GridTemplate | undefined = TEMPLATES.get(zone);
+  return template !== undefined && template.props === props && template.surfaces === surfaces && template.radius === agentRadius;
 }
 
 function freshNavGrid(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, surfaces: ReadonlyMap<string, SurfaceDef>, agentRadius: number): NavGrid {
