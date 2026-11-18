@@ -70,6 +70,19 @@ export interface LedgerState {
 
 export const LEDGER_ID: RegExp = /^itm_[A-Za-z0-9_-]{22}$/;
 
+export const LIFT: { readonly salt: number } = {
+  salt: 0x5f3759df,
+};
+
+export function liftedBySeed(seed: number, chance: number): boolean {
+  return createRng((seed ^ LIFT.salt) >>> 0).chance(chance);
+}
+
+export function liftsNext(world: World, chance: number): boolean {
+  const ticket: LootTicket | undefined = world.ledger.tickets[0];
+  return ticket === undefined ? world.rng.chance(chance) : liftedBySeed(ticket.seed, chance);
+}
+
 export function emptyLedger(): LedgerState {
   return { tickets: [], claims: [], waiting: [], spent: new Set<number>() };
 }

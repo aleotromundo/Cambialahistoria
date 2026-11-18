@@ -8,7 +8,7 @@ import type { RecoveryDef } from '../content/combat-types.ts';
 import { rollDrop } from './loot.ts';
 import type { RunReward } from '../content/run-table-types.ts';
 import { runReward, settleCleared } from './run-state.ts';
-import { makeItem } from './ledger.ts';
+import { liftsNext, makeItem } from './ledger.ts';
 import type { ItemSource } from './ledger.ts';
 import type { MonsterRank } from '../content/rank-types.ts';
 import type { ReadonlyVec2 } from '../math.ts';
@@ -113,7 +113,7 @@ export function aggroPack(world: World, monster: MonsterState): void {
 }
 
 function liftedFloor(world: World, reward: RunReward): string | null {
-  if (reward.rarity <= 0 || !world.rng.chance(reward.rarity)) return null;
+  if (reward.rarity <= 0 || !liftsNext(world, reward.rarity)) return null;
   return world.content.rarities[1]?.id ?? null;
 }
 
