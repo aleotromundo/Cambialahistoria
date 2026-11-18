@@ -277,6 +277,9 @@ function prop(value: unknown, where: string): PropDef {
   if (blockRadius < 0 || blockLength < 0) throw new ContentError(`${where}.blockRadius`, 'a collider cannot be negative');
   if (blockLength > 0 && blockRadius === 0) throw new ContentError(`${where}.blockRadius`, 'a collider with a length needs a radius above zero to block anything');
   const model: string = text(source, 'model', where);
+  const walkOn: boolean = source['walkOn'] === undefined ? false : flag(source, 'walkOn', where);
+  const solid: boolean | null = source['solid'] === undefined ? null : flag(source, 'solid', where);
+  if (walkOn && solid !== null) throw new ContentError(`${where}.walkOn`, 'a prop the hero walks on never blocks, so it cannot also say whether it is solid');
   return {
     id: text(source, 'id', where),
     model,
@@ -284,7 +287,8 @@ function prop(value: unknown, where: string): PropDef {
     scale: numeric(source, 'scale', where),
     blockRadius,
     blockLength,
-    solid: source['solid'] === undefined ? null : flag(source, 'solid', where),
+    solid,
+    walkOn,
     shadow: source['shadow'] === undefined ? true : flag(source, 'shadow', where),
     footprints: [],
     height: 0,

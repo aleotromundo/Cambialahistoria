@@ -1014,7 +1014,7 @@
             "lava_chunk_a",
             "lava_boulder",
             "lava_rock_face_a",
-            "lava_scree"
+            "lava_chunk_a"
           ],
           "side": "foot",
           "step": 2.5,
@@ -1031,7 +1031,7 @@
             "lava_chunk_a",
             "lava_chunk_b",
             "lava_shards",
-            "basalt_spires",
+            "lava_shards",
             "lava_chunk_b"
           ],
           "side": "rim",
@@ -1046,11 +1046,11 @@
         },
         {
           "props": [
-            "lava_stalagmite_mass_a",
-            "lava_stalagmite_mass_b",
-            "lava_slag_heap",
-            "lava_stalagmite_mass_a",
-            "lava_bone_pile"
+            "lava_rubble_heap",
+            "lava_chunk_vent",
+            "lava_rubble_heap",
+            "lava_chunk_b",
+            "lava_chunk_vent"
           ],
           "side": "foot",
           "step": 3.2,
@@ -1064,12 +1064,12 @@
         },
         {
           "props": [
-            "lava_mine_support",
-            "lava_cart_wreck",
-            "lava_rubble_mound",
-            "lava_gibbet_tall",
-            "lava_column_fallen",
-            "lava_ribs_big"
+            "lava_plank_pile",
+            "lava_rubble_heap",
+            "lava_shield_broken",
+            "lava_plank_pile",
+            "lava_rubble_heap",
+            "lava_chain_coil"
           ],
           "side": "foot",
           "step": 5,

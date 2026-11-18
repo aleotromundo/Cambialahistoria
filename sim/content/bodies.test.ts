@@ -207,7 +207,7 @@ void test('every zone prop a metre or more across blocks over its ground outline
       if (placed.when.length > 0) continue;
       const prop = must(content.props.get(placed.prop), placed.prop);
       const wide: number = footprint(`public/${prop.model}`, prop.scale);
-      if (wide < FOOTPRINT.solid || prop.solid === false) continue;
+      if (wide < FOOTPRINT.solid || prop.solid === false || prop.walkOn) continue;
       assert.ok(prop.footprints.length >= 1, `${zone.id} places ${placed.prop}, ${wide.toFixed(1)} m across, with no ground outline`);
     }
   }

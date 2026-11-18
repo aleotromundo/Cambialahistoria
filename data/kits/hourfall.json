@@ -418,7 +418,7 @@
             "cave_rock_chunk_a",
             "cave_boulder_moss_b",
             "cave_rock_face_a",
-            "cave_scree"
+            "cave_rock_chunk_a"
           ],
           "side": "foot",
           "step": 2.5,
@@ -435,7 +435,7 @@
             "cave_rock_chunk_a",
             "cave_rock_chunk_b",
             "cave_shards",
-            "cave_stalagmites",
+            "cave_shards",
             "cave_boulder_moss_c"
           ],
           "side": "rim",
@@ -450,12 +450,12 @@
         },
         {
           "props": [
-            "cave_stalagmite_mass_a",
-            "cave_stalagmite_mass_b",
-            "cave_root_mass_a",
-            "cave_stalagmite_mass_moss",
-            "cave_root_mass_b",
-            "cave_bone_pile"
+            "cave_roots_dark",
+            "cave_rubble_heap",
+            "cave_roots_patch",
+            "cave_chunk_wet",
+            "cave_roots_dark",
+            "cave_debris"
           ],
           "side": "foot",
           "step": 3.2,
@@ -469,12 +469,12 @@
         },
         {
           "props": [
-            "cave_mine_support",
-            "cave_cart_wreck",
-            "cave_rubble_mound",
-            "cave_gibbet_tall",
-            "cave_column_fallen",
-            "cave_ribs_big"
+            "cave_plank_pile",
+            "cave_slab_pile",
+            "cave_rubble_heap",
+            "cave_shield_broken",
+            "cave_slab_pile",
+            "cave_plank_pile"
           ],
           "side": "foot",
           "step": 5,
