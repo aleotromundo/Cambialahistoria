@@ -1,12 +1,47 @@
 import type { BufferGeometry, Material, Object3D } from 'three';
 import { Mesh, SkinnedMesh, Texture } from 'three';
 
-const TEXTURE_SLOTS: readonly string[] = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap', 'alphaMap', 'bumpMap', 'lightMap', 'displacementMap', 'envMap', 'specularMap'];
+const TEXTURE_SLOTS: readonly string[] = [
+  'map',
+  'normalMap',
+  'roughnessMap',
+  'metalnessMap',
+  'emissiveMap',
+  'aoMap',
+  'alphaMap',
+  'bumpMap',
+  'lightMap',
+  'displacementMap',
+  'envMap',
+  'specularMap',
+  'matcap',
+  'gradientMap',
+  'specularColorMap',
+  'specularIntensityMap',
+  'anisotropyMap',
+  'clearcoatMap',
+  'clearcoatNormalMap',
+  'clearcoatRoughnessMap',
+  'iridescenceMap',
+  'iridescenceThicknessMap',
+  'sheenColorMap',
+  'sheenRoughnessMap',
+  'transmissionMap',
+  'thicknessMap',
+];
+
+const PHYSICAL_FEATURES: readonly string[] = ['anisotropy', 'clearcoat', 'dispersion', 'retroreflectivity', 'iridescence', 'sheen', 'transmission'];
+
+function featureOn(material: Material, feature: string): boolean {
+  const value: unknown = Reflect.get(material, feature);
+  return typeof value === 'number' && value > 0;
+}
 
 function materialLook(material: Material): string {
   const slots: string = TEXTURE_SLOTS.map((slot: string): string => (Reflect.get(material, slot) instanceof Texture ? '1' : '0')).join('');
+  const features: string = PHYSICAL_FEATURES.map((feature: string): string => (featureOn(material, feature) ? '1' : '0')).join('');
   const flat: unknown = Reflect.get(material, 'flatShading');
-  return [material.type, material.side, material.transparent, material.alphaTest > 0, material.vertexColors, flat === true, material.customProgramCacheKey(), slots].join('/');
+  return [material.type, material.side, material.transparent, material.alphaTest > 0, material.alphaHash, material.vertexColors, flat === true, material.customProgramCacheKey(), slots, features].join('/');
 }
 
 function geometryLook(geometry: BufferGeometry): string {
