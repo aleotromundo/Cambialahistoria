@@ -65,6 +65,15 @@ export function chasePath(world: World, target: Actor): Vec2[] {
   return out === null || route.length === 0 ? route : [out, ...route];
 }
 
+export function walkPath(world: World, from: Vec2, dest: Vec2): Vec2[] {
+  const fixed: Blocker[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.def.behaviour.type === 'fixed').map((monster: MonsterState): Blocker => ({ kind: 'capsule', from: { x: monster.pos.x, z: monster.pos.z }, to: { x: monster.pos.x, z: monster.pos.z }, radius: monster.radius }));
+  if (fixed.length === 0) return findPath(world.grid, from, dest);
+  const stamp: GridStamp = stampBlockers(world.grid, fixed, world.content.player.radius);
+  const around: Vec2[] = findPath(world.grid, from, dest);
+  liftStamp(world.grid, stamp);
+  return around.length > 0 ? around : findPath(world.grid, from, dest);
+}
+
 export function chaseStalled(player: PlayerState, dt: number): boolean {
   if (distance(player.pos, player.chase.mark) > CHASE.moveOut) {
     player.chase = freshChase(player.pos);

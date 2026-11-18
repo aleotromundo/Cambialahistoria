@@ -8,8 +8,8 @@ import type { Cache } from './caches.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { isWalkable, lineWalkable } from '../nav/grid.ts';
-import { directPath, findPath, nearFace } from '../nav/path.ts';
-import { blockerInReach, chasePath, chaseStalled, freshChase } from './chase.ts';
+import { directPath, nearFace } from '../nav/path.ts';
+import { blockerInReach, chasePath, chaseStalled, freshChase, walkPath } from './chase.ts';
 import { pastBlocks, roundPast, stillRound } from './stick.ts';
 import { allocateNode, chooseChange, dropFromInventory, equipFromInventory, refundNode, respecChart, slotSkill, unequip } from './character.ts';
 import { findActor } from './combat.ts';
@@ -69,7 +69,7 @@ const STEERING: Steering = {
 };
 
 function setDestination(world: World, dest: Vec2): void {
-  world.player.path = findPath(world.grid, world.player.pos, dest);
+  world.player.path = walkPath(world, world.player.pos, dest);
   world.player.repathTimer = PLAYER.repathInterval;
 }
 
@@ -106,12 +106,12 @@ function heldWay(world: World, dest: Vec2, around: boolean): HeldWay {
   if (direct !== null) return { path: direct, pressing };
   if (player.repathTimer > 0) return { path: player.path.length > 0 ? player.path : null, pressing };
   player.repathTimer = PLAYER.repathInterval;
-  return { path: findPath(world.grid, player.pos, aim), pressing };
+  return { path: walkPath(world, player.pos, aim), pressing };
 }
 
 function startMove(world: World, dest: Vec2, held: boolean, around: boolean): void {
   const player: PlayerState = world.player;
-  const way: HeldWay = held || around ? heldWay(world, dest, around) : { path: findPath(world.grid, player.pos, dest), pressing: false };
+  const way: HeldWay = held || around ? heldWay(world, dest, around) : { path: walkPath(world, player.pos, dest), pressing: false };
   const path: Vec2[] | null = way.path;
   if (path === null) return;
   const goal: Vec2 = path.at(-1) ?? player.pos;
