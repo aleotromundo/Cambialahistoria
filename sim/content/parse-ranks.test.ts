@@ -27,7 +27,7 @@ void test('a rank reader refuses a plain rank with a chance, a later rank withou
 void test('rank problems name an unknown floor, an unknown or summoning pool modifier, a pool too small for the rolls and an unknown pair kept apart', (): void => {
   const broken: PackRanks = {
     ...RANKS,
-    ranks: RANKS.ranks.map((rank: PackRankDef): PackRankDef => (rank.leader === null ? rank : { ...rank, leader: { ...rank.leader, floor: 'mythic', mods: 9 } })),
+    ranks: RANKS.ranks.map((rank: PackRankDef): PackRankDef => (rank.leader === null ? rank : { ...rank, leader: { ...rank.leader, floor: 'mythic', mods: 99 } })),
     pool: [...RANKS.pool, { mod: 'nothing', weight: 1, leader: false, from: 1 }, { mod: 'gravecalling', weight: 1, leader: true, from: 1 }],
     apart: [...RANKS.apart, ['swift', 'nowhere']],
   };

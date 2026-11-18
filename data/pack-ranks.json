@@ -42,7 +42,7 @@
     { "mod": "volatile", "weight": 2 },
     { "mod": "unyielding", "weight": 2 },
     { "mod": "mending", "weight": 2 },
-    { "mod": "kincalling", "weight": 1, "from": 14, "leader": true }
+    { "mod": "kincalling", "weight": 3, "from": 14, "leader": true }
   ],
   "stretch": 4,
   "stretchFrom": 9,

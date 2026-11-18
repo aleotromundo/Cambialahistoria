@@ -133,9 +133,9 @@ export function rankProblems(content: Content): string[] {
     need(def.look === null || def.aura !== null, `pack rank ${def.id} has a look but no aura colour for its rim`);
     if (def.leader !== null) floorKnown(content, `pack rank ${def.id} leader`, def.leader, need);
     const shared: number = ranks.pool.filter((entry: RankModChoice): boolean => !entry.leader).length;
-    const led: number = ranks.pool.length - shared;
+    const led: number = ranks.pool.length - def.members.mods;
     need(def.members.mods <= shared, `pack rank ${def.id} rolls ${def.members.mods} shared modifiers, but the pool holds ${shared}`);
-    if (def.leader !== null) need(def.leader.mods - def.members.mods <= led, `pack rank ${def.id} gives its leader ${def.leader.mods - def.members.mods} modifiers of its own, but the pool holds ${led} for leaders`);
+    if (def.leader !== null) need(def.leader.mods - def.members.mods <= led, `pack rank ${def.id} gives its leader ${def.leader.mods - def.members.mods} modifiers of its own, but the pool leaves ${led} once its followers' are drawn`);
     if (def.leader !== null) need(def.leader.mods >= def.members.mods, `pack rank ${def.id} gives its followers more modifiers than its leader`);
   }
   for (const entry of ranks.pool) {

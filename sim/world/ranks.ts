@@ -29,7 +29,7 @@ export function keptApart(apart: readonly ModPair[], one: string, other: string)
 }
 
 export function modAvailable(entry: RankModChoice, leader: boolean, level: number): boolean {
-  return entry.leader === leader && entry.from <= level;
+  return (leader || !entry.leader) && entry.from <= level;
 }
 
 export function rollMods(content: Content, rng: Rng, count: number, leader: boolean, held: readonly MonsterModDef[], level: number): MonsterModDef[] {

@@ -167,7 +167,7 @@ void test('over many packs no pack ever carries two modifiers kept apart, and on
     for (const def of pack) {
       for (const one of def.mods) for (const other of def.mods) assert.ok(one === other || !keptApart(apart, one, other), `${one} and ${other} together`);
       const calls: boolean = def.mods.includes('kincalling');
-      assert.equal(calls, def.rank?.leader === true && def.rank.id === 'rare');
+      assert.ok(!calls || (def.rank?.leader === true && def.rank.id === 'rare'));
     }
   }
 });
@@ -179,7 +179,8 @@ void test('a modifier roll skips what is held and what is kept apart from it, an
     assert.equal(rolled.length, 3);
     for (const mod of rolled) assert.ok(mod.id !== 'swift' && !keptApart(ARENA_CONTENT.packRanks.apart, 'swift', mod.id));
   }
-  assert.equal(rollMods(ARENA_CONTENT, createRng(2), 5, true, [], 20).length, 1);
+  const led: MonsterModDef[] = rollMods(ARENA_CONTENT, createRng(2), 30, true, [], 20);
+  assert.ok(led.length < 30 && led.some((mod: MonsterModDef): boolean => mod.id === 'kincalling'));
 });
 
 void test('a pack with more modifiers is worth more: experience and item chance grow with every modifier', (): void => {
@@ -204,4 +205,22 @@ void test('before a modifier is due, no pack carries it: the early levels draw o
   assert.equal(modAvailable({ mod: 'brutal', weight: 1, leader: false, from: 14 }, false, 13), false);
   assert.equal(modAvailable({ mod: 'brutal', weight: 1, leader: false, from: 14 }, false, 14), true);
   assert.equal(modAvailable({ mod: 'kincalling', weight: 1, leader: true, from: 1 }, false, 20), false);
+  assert.equal(modAvailable({ mod: 'kincalling', weight: 1, leader: true, from: 1 }, true, 20), true);
+  assert.equal(modAvailable({ mod: 'brutal', weight: 1, leader: false, from: 14 }, true, 14), true);
+});
+
+void test('a rare leader draws its own modifier from the whole pool, so only some rare leaders call their kind', (): void => {
+  const own: Set<string> = new Set<string>();
+  let calling: number = 0;
+  let leaders: number = 0;
+  for (let seed: number = 1; seed <= 200; seed += 1) {
+    const pack: MonsterDef[] = rankPack(ARENA_CONTENT, createRng(seed), rare, [taker, brute, taker], 20);
+    const lead: MonsterDef = must(pack[1], 'the brute leads');
+    const follower: MonsterDef = must(pack[0], 'a follower');
+    for (const id of lead.mods) if (!follower.mods.includes(id)) own.add(id);
+    leaders += 1;
+    if (lead.mods.includes('kincalling')) calling += 1;
+  }
+  assert.ok(own.size >= 5, [...own].join(','));
+  assert.ok(calling > 0 && calling < leaders / 2, `${calling} of ${leaders} leaders call`);
 });
