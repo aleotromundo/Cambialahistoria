@@ -935,7 +935,7 @@
     "description": "Hold to charge, release to strike. The longer you hold, the harder and wider it lands.",
     "icon": "thunderhead",
     "animation": "slam_charged",
-    "empowered": {"weapon": "blade", "mods": [{"field": "damagePercent", "value": 0.25}]},
+    "empowered": {"weapon": "blade", "mods": [{"field": "areaPercent", "value": 0.25}]},
     "manaCost": 8,
     "cooldown": 2.6,
     "windup": 0.2,
