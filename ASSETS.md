@@ -37,6 +37,29 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | Poly Pizza models by Quaternius | Quaternius (quaternius.com) | https://poly.pizza/u/Quaternius | CC0 1.0 | [licenses/Poly-Pizza-Quaternius-CC0.txt](licenses/Poly-Pizza-Quaternius-CC0.txt) |
 | Poly Pizza models by Kay Lousberg | Kay Lousberg (kaylousberg.com) | https://poly.pizza/u/Kay%20Lousberg | CC0 1.0 | [licenses/Poly-Pizza-Kay-Lousberg-CC0.txt](licenses/Poly-Pizza-Kay-Lousberg-CC0.txt) |
 | Graveyard Kit (5.0) | Kenney (kenney.nl) | https://kenney.nl/assets/graveyard-kit | CC0 1.0 | [licenses/Kenney-Graveyard-Kit.txt](licenses/Kenney-Graveyard-Kit.txt) |
+| Medieval Crossbow | Zbrojmistrz (zbrojmistrz) | https://sketchfab.com/3d-models/medieval-crossbow-a6f552629f53470f86be97deaddbd129 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Medieval crossbow 01 | Chellew (chellewwxy) | https://sketchfab.com/3d-models/medieval-crossbow-01-3a2010edc90346448017be61940eedfc | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Medieval Crossbow (Game Model) | Michael Makivic (makivic) | https://sketchfab.com/3d-models/medieval-crossbow-game-model-697aa7fee7894ad2aa0e87ebc1b9d631 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Medieval crossbow 02 | Chellew (chellewwxy) | https://sketchfab.com/3d-models/medieval-crossbow-02-5126230f8e7e4def9bc573c6c5ba24cc | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Crossbow | Charlie Tinley (Tnkii) | https://sketchfab.com/3d-models/crossbow-34cba117b05e4fed992f5700de9bb627 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Medieval crosbow | Cyril43 | https://sketchfab.com/3d-models/medieval-crosbow-0368b8111f5e4731beb025cd625b48a2 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Heavy Crossbow (Free) | wolfgar74 | https://sketchfab.com/3d-models/heavy-crossbow-free-1dc0b1e982a749c6a2fd595372b094c4 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Wooden staff | Mikhail Antonov (xeofox) | https://sketchfab.com/3d-models/wooden-staff-8ea51227d8d54b75882e856fe0bd4db7 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Snakehead Staff | headfinger (greattug) | https://sketchfab.com/3d-models/snakehead-staff-0556e75d9d4143c59835d78280a544d6 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Crescent Moon Staff | magiccc | https://sketchfab.com/3d-models/crescent-moon-staff-af4383e459654518b866d0d3e90bc928 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Dark Druid Staff | hellotaia | https://sketchfab.com/3d-models/dark-druid-staff-b927868476034a619f4476d06417dc97 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Fantasy Dark Magic Wand with Green Orb | Aldraz | https://sketchfab.com/3d-models/fantasy-dark-magic-wand-with-green-orb-e2c5a4676ef9408a8cb2ed9aa7454ffa | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Stylized Necromancer Staff | RoyArcane (RoyzArcane) | https://sketchfab.com/3d-models/stylized-necromancer-staff-a461e28a3c3745b9b9908aff5fef0753 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Staff - Low Poly Medieval, CC0 | Avramania | https://sketchfab.com/3d-models/staff-low-poly-medieval-cc0-3b71fc881aaf4602ad53605474baf0ff | CC0 1.0 | [licenses/Avramania-Staff-CC0.txt](licenses/Avramania-Staff-CC0.txt) |
+| Wizard Staff Model | danepaulson | https://sketchfab.com/3d-models/wizard-staff-model-80c720a6388846848065d91c7f4a74a3 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| sword | Vanuartw (sketh) | https://sketchfab.com/3d-models/sword-f58b4cf0bb1943c3a6a059cec7c40c4f | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Silver Bladed weapons - Fantasy weapon set | Peter Nox (Peter.Nox) | https://sketchfab.com/3d-models/silver-bladed-weapons-fantasy-weapon-set-d5189211a1d348b0a9d7ddc052a22989 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Katana Messer | Joan LP (joanlahots) | https://sketchfab.com/3d-models/katana-messer-b8324d6de28345f6a8010d7d495cef8b | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Chevalier Sword | rubenve | https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| medieval sword | LowSeb (lowseb) | https://sketchfab.com/3d-models/medieval-sword-da574cba504e4b83a3293f3d3bd067fb | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| High Templar Fantasy Greatsword | Joan LP (joanlahots) | https://sketchfab.com/3d-models/high-templar-fantasy-greatsword-6daa63f4ab654b16877fab3527c0fd4b | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Zweihander | Siesta (siesta) | https://sketchfab.com/3d-models/zweihander-bde0f0351bf443f6bed68aeff84b4129 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Damascus Longsword (game ready asset) | Aparicio Silva 3D (apariciosilva3D) | https://sketchfab.com/3d-models/damascus-longsword-game-ready-asset-32bbfe5bbad74d8f9640a60251ec31e9 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
 
 ## Landing page images
 
@@ -238,11 +261,43 @@ The worn pieces were thinned once with `tools/simplify-models.ts <ratio> <error>
 | `public/models/weapons/sword_1h.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/tower_shield.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
 | `public/models/weapons/war_maul.glb` | Built by `blender/build_weapons.py` | Made for this project | MIT |
+| `public/models/weapons/plain_crossbow.glb` | "Medieval Crossbow" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Zbrojmistrz | CC BY 4.0 |
+| `public/models/weapons/light_crossbow.glb` | "Medieval crossbow 01" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Chellew | CC BY 4.0 |
+| `public/models/weapons/pale_crossbow.glb` | "Medieval Crossbow (Game Model)" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Michael Makivic | CC BY 4.0 |
+| `public/models/weapons/banded_crossbow.glb` | "Medieval crossbow 02" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Chellew | CC BY 4.0 |
+| `public/models/weapons/stocked_crossbow.glb` | "Crossbow" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Charlie Tinley | CC BY 4.0 |
+| `public/models/weapons/windlass_crossbow.glb` | "Medieval crosbow" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Cyril43 | CC BY 4.0 |
+| `public/models/weapons/heavy_crossbow.glb` | "Heavy Crossbow (Free)" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | wolfgar74 | CC BY 4.0 |
+| `public/models/weapons/walking_staff.glb` | "Wooden staff" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Mikhail Antonov | CC BY 4.0 |
+| `public/models/weapons/serpent_staff.glb` | "Snakehead Staff" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | headfinger | CC BY 4.0 |
+| `public/models/weapons/crescent_staff.glb` | "Crescent Moon Staff" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | magiccc | CC BY 4.0 |
+| `public/models/weapons/antler_staff.glb` | "Dark Druid Staff" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | hellotaia | CC BY 4.0 |
+| `public/models/weapons/orb_staff.glb` | "Fantasy Dark Magic Wand with Green Orb" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Aldraz | CC BY 4.0 |
+| `public/models/weapons/skull_staff.glb` | "Stylized Necromancer Staff" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | RoyArcane | CC BY 4.0 |
+| `public/models/weapons/crystal_staff.glb` | "Staff - Low Poly Medieval, CC0" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Avramania | CC0 1.0 |
+| `public/models/weapons/rootwood_rod.glb` | "Wizard Staff Model" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | danepaulson | CC BY 4.0 |
+| `public/models/weapons/arming_sword.glb` | "sword" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Vanuartw | CC BY 4.0 |
+| `public/models/weapons/short_sword.glb` | "Silver Bladed weapons - Fantasy weapon set" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Peter Nox | CC BY 4.0 |
+| `public/models/weapons/side_sword.glb` | "Silver Bladed weapons - Fantasy weapon set" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Peter Nox | CC BY 4.0 |
+| `public/models/weapons/silver_dagger.glb` | "Silver Bladed weapons - Fantasy weapon set" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Peter Nox | CC BY 4.0 |
+| `public/models/weapons/messer.glb` | "Katana Messer" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Joan LP | CC BY 4.0 |
+| `public/models/weapons/gilded_sword.glb` | "Chevalier Sword" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | rubenve | CC BY 4.0 |
+| `public/models/weapons/longsword.glb` | "medieval sword" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | LowSeb | CC BY 4.0 |
+| `public/models/weapons/broad_greatsword.glb` | "High Templar Fantasy Greatsword" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Joan LP | CC BY 4.0 |
+| `public/models/weapons/flamberge.glb` | "Zweihander" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Siesta | CC BY 4.0 |
+| `public/models/weapons/black_longsword.glb` | "Damascus Longsword (game ready asset)" on Sketchfab, turned, scaled and placed with its grip at the hand by `tools/build-weapons.ts` (plan in `tools/weapons.json`), textures resized to 512 px | Aparicio Silva 3D | CC BY 4.0 |
 
 Rebuild with:
 
 ```bash
 /Applications/Blender.app/Contents/MacOS/Blender -b --python blender/build_weapons.py -- "$PWD/public/models/weapons"
+```
+
+Build the modelled weapons from the Sketchfab sources in Sources, saved as glb files in one folder outside this repository under the names in `tools/weapons.json` (a source offered only as a zipped glTF is read and written once as glb by gltf-transform):
+
+```bash
+node tools/build-weapons.ts <sources-folder>
+node tools/compress-models.ts public/models/weapons/plain_crossbow.glb public/models/weapons/light_crossbow.glb public/models/weapons/pale_crossbow.glb public/models/weapons/banded_crossbow.glb public/models/weapons/stocked_crossbow.glb public/models/weapons/windlass_crossbow.glb public/models/weapons/heavy_crossbow.glb public/models/weapons/walking_staff.glb public/models/weapons/serpent_staff.glb public/models/weapons/crescent_staff.glb public/models/weapons/antler_staff.glb public/models/weapons/orb_staff.glb public/models/weapons/skull_staff.glb public/models/weapons/crystal_staff.glb public/models/weapons/rootwood_rod.glb public/models/weapons/arming_sword.glb public/models/weapons/short_sword.glb public/models/weapons/side_sword.glb public/models/weapons/silver_dagger.glb public/models/weapons/messer.glb public/models/weapons/gilded_sword.glb public/models/weapons/longsword.glb public/models/weapons/broad_greatsword.glb public/models/weapons/flamberge.glb public/models/weapons/black_longsword.glb
 ```
 
 ## Clothing and armour
