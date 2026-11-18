@@ -358,6 +358,71 @@
           "clip": "Spin_Upright_Out",
           "impactFraction": 0
         },
+        "slam_thunderclap": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
+        },
+        "slam_charged_thunderclap_gathered": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
+        },
+        "slam_charged_thunderhead": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_power_slash", "impactFraction": 0.368 }
+        },
+        "slam_charged_thunderhead_leap": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_jump_attack", "impactFraction": 0.45 }
+        },
+        "slam_charged_cleave_heave": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_low_slash", "impactFraction": 0.368 }
+        },
+        "attack_cleave_whirl": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18,
+          "private": { "clip": "mixamo_gs_high_spin", "impactFraction": 0.524 }
+        },
+        "slam_millrace": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_crouching_slash", "impactFraction": 0.467 }
+        },
+        "slam_standing_storm": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_power_up", "impactFraction": 0.333 }
+        },
+        "slam_banked_fire": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_spell_cast", "impactFraction": 0.303 }
+        },
+        "roll_dodge_roll_shoulder": {
+          "clip": "Roll",
+          "impactFraction": 0.6,
+          "private": { "clip": "mixamo_gs_slide_attack", "impactFraction": 0.381 }
+        },
+        "slam_umbra": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_two_hand_casting", "impactFraction": 0.361 }
+        },
+        "cast_fire_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
+        },
+        "cast_dodge_roll_slip": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_01", "impactFraction": 0.294 }
+        },
         "roll": {
           "clip": "Roll",
           "impactFraction": 0.6
@@ -742,6 +807,71 @@
           "clip": "Spin_Upright_Out",
           "impactFraction": 0
         },
+        "slam_thunderclap": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
+        },
+        "slam_charged_thunderclap_gathered": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
+        },
+        "slam_charged_thunderhead": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_power_slash", "impactFraction": 0.368 }
+        },
+        "slam_charged_thunderhead_leap": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_jump_attack", "impactFraction": 0.45 }
+        },
+        "slam_charged_cleave_heave": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_low_slash", "impactFraction": 0.368 }
+        },
+        "attack_cleave_whirl": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18,
+          "private": { "clip": "mixamo_gs_high_spin", "impactFraction": 0.524 }
+        },
+        "slam_millrace": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_crouching_slash", "impactFraction": 0.467 }
+        },
+        "slam_standing_storm": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_power_up", "impactFraction": 0.333 }
+        },
+        "slam_banked_fire": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_spell_cast", "impactFraction": 0.303 }
+        },
+        "roll_dodge_roll_shoulder": {
+          "clip": "Roll",
+          "impactFraction": 0.6,
+          "private": { "clip": "mixamo_gs_slide_attack", "impactFraction": 0.381 }
+        },
+        "slam_umbra": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_two_hand_casting", "impactFraction": 0.361 }
+        },
+        "cast_fire_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
+        },
+        "cast_dodge_roll_slip": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_01", "impactFraction": 0.294 }
+        },
         "roll": {
           "clip": "Roll",
           "impactFraction": 0.6
@@ -1123,6 +1253,71 @@
         "spin_upright_out": {
           "clip": "Spin_Upright_Out",
           "impactFraction": 0
+        },
+        "slam_thunderclap": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
+        },
+        "slam_charged_thunderclap_gathered": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
+        },
+        "slam_charged_thunderhead": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_power_slash", "impactFraction": 0.368 }
+        },
+        "slam_charged_thunderhead_leap": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_jump_attack", "impactFraction": 0.45 }
+        },
+        "slam_charged_cleave_heave": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_low_slash", "impactFraction": 0.368 }
+        },
+        "attack_cleave_whirl": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18,
+          "private": { "clip": "mixamo_gs_high_spin", "impactFraction": 0.524 }
+        },
+        "slam_millrace": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_crouching_slash", "impactFraction": 0.467 }
+        },
+        "slam_standing_storm": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_power_up", "impactFraction": 0.333 }
+        },
+        "slam_banked_fire": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_spell_cast", "impactFraction": 0.303 }
+        },
+        "roll_dodge_roll_shoulder": {
+          "clip": "Roll",
+          "impactFraction": 0.6,
+          "private": { "clip": "mixamo_gs_slide_attack", "impactFraction": 0.381 }
+        },
+        "slam_umbra": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_two_hand_casting", "impactFraction": 0.361 }
+        },
+        "cast_fire_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
+        },
+        "cast_dodge_roll_slip": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_01", "impactFraction": 0.294 }
         },
         "roll": {
           "clip": "Roll",
@@ -1508,6 +1703,71 @@
         "spin_upright_out": {
           "clip": "Spin_Upright_Out",
           "impactFraction": 0
+        },
+        "slam_thunderclap": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_casting", "impactFraction": 0.318 }
+        },
+        "slam_charged_thunderclap_gathered": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
+        },
+        "slam_charged_thunderhead": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_power_slash", "impactFraction": 0.368 }
+        },
+        "slam_charged_thunderhead_leap": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_jump_attack", "impactFraction": 0.45 }
+        },
+        "slam_charged_cleave_heave": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38,
+          "private": { "clip": "mixamo_gs_low_slash", "impactFraction": 0.368 }
+        },
+        "attack_cleave_whirl": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18,
+          "private": { "clip": "mixamo_gs_high_spin", "impactFraction": 0.524 }
+        },
+        "slam_millrace": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_crouching_slash", "impactFraction": 0.467 }
+        },
+        "slam_standing_storm": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_power_up", "impactFraction": 0.333 }
+        },
+        "slam_banked_fire": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_spell_cast", "impactFraction": 0.303 }
+        },
+        "roll_dodge_roll_shoulder": {
+          "clip": "Roll",
+          "impactFraction": 0.6,
+          "private": { "clip": "mixamo_gs_slide_attack", "impactFraction": 0.381 }
+        },
+        "slam_umbra": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_two_hand_casting", "impactFraction": 0.361 }
+        },
+        "cast_fire_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
+        },
+        "cast_dodge_roll_slip": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_01", "impactFraction": 0.294 }
         },
         "roll": {
           "clip": "Roll",
