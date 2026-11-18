@@ -17,6 +17,7 @@ const MOVEMENT = {
   turnOut: [0.35, -0.35, 0.7, -0.7],
   headOut: [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.5, -1.5],
   strideCos: 0.76,
+  glance: 0.5,
   closeShare: 0.25,
   contact: 0.001,
 } as const;
@@ -277,6 +278,12 @@ function yieldTo(grid: NavGrid, budget: Yield, actor: ActorState, wanted: number
   const into: number = -(step.x * awayX + step.z * awayZ) / length;
   if (into <= 0) return;
   const left: number = budget.left.get(actor) ?? length;
+  if (into <= MOVEMENT.glance) {
+    const shed: number = Math.min(wanted, into * left);
+    budget.left.set(actor, left - shed / into);
+    moveWithCollision(grid, actor.pos, awayX * shed, awayZ * shed);
+    return;
+  }
   const back: number = Math.min(wanted / into, left);
   budget.left.set(actor, left - back);
   moveWithCollision(grid, actor.pos, (-step.x / length) * back, (-step.z / length) * back);
