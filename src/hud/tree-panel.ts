@@ -28,6 +28,7 @@ import type { SkillChanges } from './skill-changes.ts';
 import type { Drag } from './chart-parts.ts';
 import type { NameView } from './chart-label.ts';
 import { captionFoot, CHART_VIEW, clampChart, easeFoot, frameChart, panChart, reopenChart, sameFrame, zoomChart } from './chart-view.ts';
+import type { LabelBox } from './chart-view.ts';
 import type { ChartBounds, ChartPoint, PathLabel } from './chart-model.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, retrigger, setText } from './dom.ts';
@@ -327,6 +328,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const corner: ScreenPoint = toScreen(motion.view, frame, { x: 0, y: 0 });
     sky?.draw({ cornerX: corner.x, cornerY: corner.y, scale: motion.view.scale }, performance.now() / 1000);
   };
+  let shownLabels: readonly LabelBox[] = [];
   const placeCard = (): void => {
     const view: NodeView | null = cardView();
     if (view === null || !presence.visible) return;
@@ -334,7 +336,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (own === undefined) return;
     const reach: number = TREE_NODES.neighbourReach * CHART.unit;
     const near: readonly NodeSpot[] = spots.filter((spot: NodeSpot): boolean => spot !== own && Math.hypot(spot.x - own.x, spot.y - own.y) <= reach).map(onScreen);
-    const at: CardSpot = cardSpot(onScreen(own), cardSize, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap });
+    const at: CardSpot = cardSpot(onScreen(own), cardSize, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap }, shownLabels);
     card.style.translate = `${Math.round(at.x)}px ${Math.round(at.y)}px`;
   };
   let wantedFoot: number = CHART_VIEW.labelFoot;
@@ -343,8 +345,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   };
   const frameTargets: FrameTargets = createFrameTargets(board, names);
   const apply = (): void => {
+    shownLabels = writeView(frameTargets, motion.view, frame, foot);
     placeCard();
-    writeView(frameTargets, motion.view, frame, foot);
     drawSky();
   };
   const local = (event: MouseEvent): ScreenPoint => {

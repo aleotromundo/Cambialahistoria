@@ -1,4 +1,5 @@
 import type { SkillTreeNodeDef } from '../../sim/content/types.ts';
+import type { LabelBox } from './chart-view.ts';
 
 export const TREE_NODES = {
   unit: 46,
@@ -73,7 +74,11 @@ function inside(value: number, size: number, room: number, edge: number): number
   return Math.max(edge, Math.min(value, room - size - edge));
 }
 
-export function cardSpot(node: NodeSpot, size: CardSize, keep: readonly NodeSpot[], room: CardRoom): CardSpot {
+function coversLabel(spot: CardSpot, size: CardSize, label: LabelBox): boolean {
+  return spot.x < label.x + label.halfWidth && spot.x + size.width > label.x - label.halfWidth && spot.y < label.y + label.halfHeight && spot.y + size.height > label.y - label.halfHeight;
+}
+
+export function cardSpot(node: NodeSpot, size: CardSize, keep: readonly NodeSpot[], room: CardRoom, labels: readonly LabelBox[] = []): CardSpot {
   const reach: number = node.radius + room.gap;
   const wanted: readonly CardSpot[] = [
     { x: node.x + reach, y: node.y - size.height / 2 },
@@ -83,13 +88,15 @@ export function cardSpot(node: NodeSpot, size: CardSize, keep: readonly NodeSpot
   ];
   const placed: CardSpot[] = wanted.map((spot: CardSpot): CardSpot => ({ x: inside(spot.x, size.width, room.width, room.edge), y: inside(spot.y, size.height, room.height, room.edge) }));
   const hits = (spot: CardSpot): number => [node, ...keep].filter((circle: NodeSpot): boolean => covers(spot, size, circle, room.gap)).length;
+  const hidden = (spot: CardSpot): number => labels.filter((label: LabelBox): boolean => coversLabel(spot, size, label)).length;
+  const cost = (spot: CardSpot): number => hits(spot) * (labels.length + 1) + hidden(spot);
   let best: CardSpot = placed[0] ?? { x: room.edge, y: room.edge };
-  let fewest: number = hits(best);
+  let lowest: number = cost(best);
   for (const spot of placed) {
-    const count: number = hits(spot);
-    if (count < fewest) {
+    const count: number = cost(spot);
+    if (count < lowest) {
       best = spot;
-      fewest = count;
+      lowest = count;
     }
   }
   return best;

@@ -104,7 +104,7 @@ export function pinLabel(at: ScreenPoint, halfWidth: number, halfHeight: number,
   return { x, y, pinned: x !== at.x || y !== at.y };
 }
 
-function overlaps(a: LabelBox, b: LabelBox): boolean {
+export function labelsOverlap(a: LabelBox, b: LabelBox): boolean {
   return Math.abs(a.x - b.x) < a.halfWidth + b.halfWidth + CHART_VIEW.labelGap && Math.abs(a.y - b.y) < a.halfHeight + b.halfHeight + CHART_VIEW.labelGap;
 }
 
@@ -114,7 +114,7 @@ export function spreadLabels(boxes: readonly LabelBox[], frame: AtlasFrame): Lab
     const toward: number = box.y < frame.height / 2 ? 1 : -1;
     let y: number = box.y;
     for (let tries: number = 0; tries <= placed.length; tries += 1) {
-      const hit: LabelBox | undefined = placed.find((other: LabelBox): boolean => overlaps({ x: box.x, y, halfWidth: box.halfWidth, halfHeight: box.halfHeight }, other));
+      const hit: LabelBox | undefined = placed.find((other: LabelBox): boolean => labelsOverlap({ x: box.x, y, halfWidth: box.halfWidth, halfHeight: box.halfHeight }, other));
       if (hit === undefined) break;
       y = hit.y + toward * (hit.halfHeight + box.halfHeight + CHART_VIEW.labelGap);
     }
