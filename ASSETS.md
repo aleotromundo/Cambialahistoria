@@ -567,6 +567,12 @@ Flat patches, piles, wrecks and chains for the caves and the lava levels, made f
 | `public/models/cave/pickaxe_head_pile.glb` | Pick shaft and loose heads | Built by `blender/build_cave_dressing.py` | MIT |
 | `public/models/cave/chain_coil.glb` | Chain lying in a loose coil | Built by `blender/build_cave_dressing.py` | MIT |
 | `public/models/cave/chain_gibbet.glb` | Timber post and arm with a hanging chain and shackle | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/bone_pile.glb` | Mound of loose bones, skulls and two rib arcs | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/root_mass_a.glb` | Thick roots arching out of a knot | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/root_mass_b.glb` | Larger knot of arching roots | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/stalagmite_cluster_a.glb` | Six stone spires on one base, the tallest 3.4 m | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/stalagmite_cluster_b.glb` | Eight lower stone spires on one base | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/mine_support.glb` | Collapsed timber props and a fallen cross beam | Built by `blender/build_cave_dressing.py` | MIT |
 
 ```
 blender -b --factory-startup --python blender/build_cave_dressing.py -- <scratch>

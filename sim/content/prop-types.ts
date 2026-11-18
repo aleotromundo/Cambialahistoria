@@ -76,6 +76,7 @@ export interface PropDef {
   readonly blockRadius: number;
   readonly blockLength: number;
   readonly solid: boolean | null;
+  readonly shadow: boolean;
   readonly footprints: readonly (readonly ReadonlyVec2[])[];
   readonly height: number;
   readonly light: PropLight | null;

@@ -284,6 +284,7 @@ function prop(value: unknown, where: string): PropDef {
     blockRadius,
     blockLength,
     solid: source['solid'] === undefined ? null : flag(source, 'solid', where),
+    shadow: source['shadow'] === undefined ? true : flag(source, 'shadow', where),
     footprints: [],
     height: 0,
     light: propLight(source['light'], `${where}.light`),

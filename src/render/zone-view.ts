@@ -248,8 +248,9 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   const place = (propId: string, x: number, y: number, z: number, yaw: number, castShadow: boolean, size: number = 1): void => {
     const def: PropDef | undefined = content.props.get(propId);
     if (def === undefined) return;
-    const key: string = `${propId}:${String(castShadow)}:${propCell(x, z)}`;
-    const batch: Batch = placements.get(key) ?? { prop: propId, castShadow, list: [] };
+    const casts: boolean = castShadow && def.shadow;
+    const key: string = `${propId}:${String(casts)}:${propCell(x, z)}`;
+    const batch: Batch = placements.get(key) ?? { prop: propId, castShadow: casts, list: [] };
     const lifted: number = y + liftAt(zone, x, z);
     batch.list.push({ matrix: transform(x, lifted, z, yaw, def.scale * size) });
     placements.set(key, batch);

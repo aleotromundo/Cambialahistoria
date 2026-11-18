@@ -11,6 +11,7 @@ import environment_kit
 from environment_kit import Kit, export
 
 environment_kit.PALETTE["patch"] = ((0.34, 0.33, 0.31), 0.0, 0.9, False)
+environment_kit.PALETTE["bone"] = ((0.72, 0.68, 0.58), 0.0, 0.9, False)
 environment_kit.PALETTE["moss"] = ((0.17, 0.23, 0.1), 0.0, 1.0, False)
 
 LINK_LENGTH: float = 0.17
@@ -188,6 +189,83 @@ def pickaxe_head_pile(kit: Kit) -> None:
     kit.box("iron", -0.45, -0.1, 0.0, 0.12, 0.1, 0.08, yaw=0.3)
 
 
+BONE_PILE_COUNT: int = 30
+
+
+def bone_pile(kit: Kit) -> None:
+    radius: float = 1.35
+    for _ in range(BONE_PILE_COUNT):
+        angle: float = kit.rng.random() * math.tau
+        reach: float = math.sqrt(kit.rng.random()) * radius
+        rise: float = (1.0 - reach / radius) * 0.7 + kit.rng.random() * 0.18 + 0.04
+        heading: float = kit.rng.random() * math.tau
+        tilt: float = kit.spread(0.5)
+        length: float = 0.45 + kit.rng.random() * 0.7
+        start: Vector = Vector((math.cos(angle) * reach, math.sin(angle) * reach * 0.85, rise))
+        end: Vector = start + Vector((math.cos(heading) * length, math.sin(heading) * length, tilt * length))
+        end.z = max(0.03, end.z)
+        kit.rod("bone", (start.x, start.y, start.z), (end.x, end.y, end.z), 0.032 + kit.rng.random() * 0.02, segments=4)
+    for index in range(4):
+        angle = index * 1.7 + 0.4
+        reach = 0.25 + kit.rng.random() * 0.55
+        kit.blob("bone", math.cos(angle) * reach, math.sin(angle) * reach, 0.5 - reach * 0.3, 0.17, 0.2, 0.15, 0.03, detail=1, yaw=angle)
+    for index in range(2):
+        yaw: float = index * 2.2 + 0.5
+        for rib in range(5):
+            share: float = rib / 4.0
+            along: float = -0.4 + share * 0.8
+            base: Vector = Vector((math.cos(yaw) * along, math.sin(yaw) * along, 0.55))
+            side: Vector = Vector((-math.sin(yaw), math.cos(yaw), 0.0))
+            top: Vector = base + side * 0.5 + Vector((0.0, 0.0, 0.55))
+            far: Vector = base + side * 0.95 + Vector((0.0, 0.0, 0.18))
+            kit.rod("bone", (base.x, base.y, base.z), (top.x, top.y, top.z), 0.035, segments=4)
+            kit.rod("bone", (top.x, top.y, top.z), (far.x, far.y, far.z), 0.03, segments=4)
+
+
+def root_mass(kit: Kit, limbs: int, reach: float) -> None:
+    kit.blob("bark", 0.0, 0.0, 0.0, 0.8, 0.7, 0.4, 0.12, detail=1)
+    for index in range(limbs):
+        angle: float = index * math.tau / limbs + kit.spread(0.4)
+        start: Vector = Vector((math.cos(angle) * 0.25, math.sin(angle) * 0.25, 0.12))
+        heading: Vector = Vector((math.cos(angle) * 0.7, math.sin(angle) * 0.7, 0.55))
+        kit.limb("bark", start, heading, reach * (0.8 + kit.rng.random() * 0.5), 0.24 + kit.rng.random() * 0.06, 0)
+
+
+def root_mass_a(kit: Kit) -> None:
+    root_mass(kit, 6, 2.2)
+
+
+def root_mass_b(kit: Kit) -> None:
+    root_mass(kit, 8, 2.8)
+
+
+def stalagmite_cluster(kit: Kit, spires: int, tallest: float) -> None:
+    kit.blob("stone", 0.0, 0.0, 0.0, 1.1, 0.95, 0.35, 0.12, detail=1)
+    for index in range(spires):
+        angle: float = index * math.tau / spires + kit.spread(0.5)
+        reach: float = 0.0 if index == 0 else 0.45 + kit.rng.random() * 0.6
+        height: float = tallest * (1.0 if index == 0 else 0.35 + kit.rng.random() * 0.5)
+        radius: float = 0.18 + height * 0.1
+        kit.cylinder("stone", math.cos(angle) * reach, math.sin(angle) * reach, 0.0, radius, height, segments=7, top=0.03, tilt_x=kit.spread(0.1), tilt_y=kit.spread(0.1))
+
+
+def stalagmite_cluster_a(kit: Kit) -> None:
+    stalagmite_cluster(kit, 6, 3.4)
+
+
+def stalagmite_cluster_b(kit: Kit) -> None:
+    stalagmite_cluster(kit, 8, 2.6)
+
+
+def mine_support(kit: Kit) -> None:
+    kit.box("wood", -1.5, 0.0, 0.0, 0.32, 0.32, 2.5, tilt_y=0.05, jitter=0.01)
+    kit.box("wood", 1.4, 0.1, 0.0, 0.32, 0.32, 1.2, tilt_y=-0.35, jitter=0.01)
+    kit.beam("wood", (-1.55, 0.0, 2.35), (0.9, 0.2, 1.75), 0.34, 0.28)
+    kit.box("wood", 0.2, -0.3, 0.0, 1.7, 0.16, 0.12, yaw=0.5, tilt_x=0.1)
+    kit.box("wood", 0.9, 0.5, 0.0, 1.2, 0.14, 0.1, yaw=-0.7)
+    kit.beam("wood", (-1.5, 0.1, 1.3), (-0.5, 0.35, 0.18), 0.1, 0.1)
+
+
 MODELS: dict[str, Callable[[Kit], None]] = {
     "chain_coil": chain_coil,
     "chain_gibbet": chain_gibbet,
@@ -205,6 +283,12 @@ MODELS: dict[str, Callable[[Kit], None]] = {
     "shield_broken": shield_broken,
     "spear_down": spear_down,
     "pickaxe_head_pile": pickaxe_head_pile,
+    "bone_pile": bone_pile,
+    "root_mass_a": root_mass_a,
+    "root_mass_b": root_mass_b,
+    "stalagmite_cluster_a": stalagmite_cluster_a,
+    "stalagmite_cluster_b": stalagmite_cluster_b,
+    "mine_support": mine_support,
 }
 
 

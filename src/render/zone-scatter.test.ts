@@ -48,5 +48,5 @@ void test('every scattered prop is loose ground cover: no collider, no light, ne
 });
 
 void test('a zone with no scatter rules scatters nothing', (): void => {
-  assert.deepEqual(scatterStones(content, must(content.zones.get('hideout'), 'hideout')), []);
+  assert.deepEqual(scatterStones(content, must(content.zones.get('ledger_court'), 'ledger_court')), []);
 });
