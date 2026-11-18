@@ -14,7 +14,7 @@ This applies to TypeScript, GLSL, CSS, and shell. It does not apply to Markdown,
 
 ## Types
 
-All code is TypeScript with `strict` on and every extra strictness flag in `tsconfig.json`. Do not add `.js` files.
+All game and tool code is TypeScript with `strict` on and every extra strictness flag in `tsconfig.json`. Do not add `.js` files. The one exception is the model trainer in `rl/`, which is Python (see Training a model).
 
 - Give every function an explicit return type and every parameter a type. Give every exported value and every state object a named `interface` or type.
 - Do not use `any`, `@ts-ignore`, `@ts-expect-error` or `@ts-nocheck`. Do not use the non-null `!`; check the value instead.
@@ -46,6 +46,14 @@ Run `npm run typecheck`, `npm run lint` and `npm run test:affected` through the 
 - `src/` draws the game and reads input. It reads the world state and the events `stepWorld` returns, and sends commands back. It never changes world state directly.
 
 A change to how damage is rolled, how a skill hits, how a monster decides, what drops or how a level is gained goes in `sim/` with a test, never in `src/`.
+
+## Training a model
+
+The game trains its own model to play it. The game side is TypeScript in `sim/rl/` (the arena, what the model sees, what its actions do, the reward, replays) and `tools/rl/` (the process the trainer talks to over stdin and stdout). The trainer is Python in `rl/`, managed by `uv`, and is the only Python in the repository. Python there follows the same spirit: no comments, type hints on every function. See [rl/README.md](rl/README.md).
+
+- `sim/rl/contract.ts` is the contract between the game and the model, and `sim/rl/contract.test.ts` pins its fingerprint. Describe a skill, a monster or anything else the model sees by its numbers, never by its id, so a balance change or a new skill needs no new input. A change to the layout raises `RL.version` and updates the pinned fingerprint in the same pull request.
+- A change to how the arena, the reward or the observation works goes in `sim/rl/` with a test, like any other sim change.
+- Training runs, checkpoints and replays live in `rl/runs/`, which is ignored. Never commit a checkpoint.
 
 ## Persistence and the optional backend
 

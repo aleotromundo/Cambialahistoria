@@ -15,3 +15,5 @@ public/audio/local
 .env.*.local
 spec/*_TTrace_*
 simulate-out
+rl/.venv
+rl/runs

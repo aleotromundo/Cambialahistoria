@@ -70,6 +70,8 @@ export const CAREFUL: BotHabits = { dodges: true, reaction: 0 };
 
 export type BotWatch = (events: readonly WorldEvent[]) => void;
 
+export type BotOrders = (commands: readonly Command[]) => void;
+
 export interface Bot {
   readonly world: World;
   readonly events: WorldEvent[];
@@ -86,10 +88,11 @@ export interface Bot {
   progressPos: Vec2;
   readonly ignored: Map<number, number>;
   readonly discarded: Set<number>;
+  orders: BotOrders | null;
 }
 
 export function createBot(world: World, habits: BotHabits = CAREFUL, watch: BotWatch | null = null, plan: BotPlan | null = null): Bot {
-  return { world, events: [], habits, watch, plan, deaths: 0, bagChanged: false, retreatUntil: 0, retreatReady: 0, progressAt: world.time, fightAt: -Infinity, focus: -1, progressPos: { x: world.player.pos.x, z: world.player.pos.z }, ignored: new Map<number, number>(), discarded: new Set<number>() };
+  return { world, events: [], habits, watch, plan, deaths: 0, bagChanged: false, retreatUntil: 0, retreatReady: 0, progressAt: world.time, fightAt: -Infinity, focus: -1, progressPos: { x: world.player.pos.x, z: world.player.pos.z }, ignored: new Map<number, number>(), discarded: new Set<number>(), orders: null };
 }
 
 function planned(bot: Bot, commands: readonly Command[]): Command[] {
@@ -140,6 +143,7 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
   const reading: number = bot.plan?.lineSeconds ?? 0;
   if (reading > 0 && commands.some((command: Command): boolean => command.type === 'advance')) pause(bot, reading);
   const chosen: readonly Command[] = planned(bot, commands);
+  bot.orders?.(chosen);
   const events: WorldEvent[] = stepWorld(bot.world, choicesOpen(bot.world) ? [...chosen, { type: 'respawn', choice: 'checkpoint' }] : chosen, BOT.step);
   const player = bot.world.player;
   if (distance(player.pos, bot.progressPos) > BOT.stallMove) {
