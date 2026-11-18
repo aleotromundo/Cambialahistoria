@@ -12,6 +12,7 @@ import type { CreateCheck } from './character-desk.ts';
 import { createCharacterControls } from './character-controls.ts';
 import type { CharacterControls, CharacterHooks } from './character-controls.ts';
 import type { Lobby } from './compact.ts';
+import { choiceCounts } from './hero-choice.ts';
 import { createLobbyFps } from './lobby-fps.ts';
 import type { LobbyFps } from './lobby-fps.ts';
 import { createLobbyScreen, LOBBY_SCREEN } from './lobby-screen.ts';
@@ -104,6 +105,11 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
   const veil: Veil = createVeil(parts.veil);
   let active: boolean = false;
   let busy: boolean = false;
+  let held: boolean = false;
+  const holdControls = (next: boolean): void => {
+    held = next;
+    screen.setBusy(next);
+  };
   let warming: Promise<void> | null = null;
   const warmStage = (): Promise<void> => {
     stage.dress(parts.look());
@@ -115,7 +121,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
   const swap = async (into: boolean, middle: () => void, colour: string | null, hold: () => Promise<void> = (): Promise<void> => Promise.resolve(), covered: boolean = false): Promise<void> => {
     if (busy) return;
     busy = true;
-    screen.setBusy(true);
+    holdControls(true);
     if (!into) screen.hide();
     if (!covered) await veil.cover(colour);
     await within(hold(), createBrowserTimers(), BOUNDED_WAIT.readyMs);
@@ -129,13 +135,13 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     if (into) {
       await within(warmStage(), createBrowserTimers(), BOUNDED_WAIT.readyMs);
       active = true;
-      screen.setBusy(false);
+      holdControls(false);
       screen.show(view());
       void refresh();
     }
     await frames(LOBBY_FLOW.settleFrames);
     busy = false;
-    screen.setBusy(false);
+    holdControls(false);
     if (into) parts.bed(true);
     await veil.lift();
   };
@@ -151,12 +157,12 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
   const leave = async (go: () => Promise<boolean>): Promise<void> => {
     if (busy) return;
     busy = true;
-    screen.setBusy(true);
+    holdControls(true);
     parts.bed(false);
     await veil.cover(null);
     if (await go()) return;
     busy = false;
-    screen.setBusy(false);
+    holdControls(false);
     parts.bed(true);
     await veil.lift();
   };
@@ -171,7 +177,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       void swap(false, parts.begin, parts.enterColour(), parts.ready);
     },
     startOver: (): void => {
-      screen.setBusy(true);
+      holdControls(true);
       if (characters.only()) parts.startOver();
       else void remove();
     },
@@ -186,10 +192,10 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       void toTitle();
     },
     chooseHero: (id: string): void => {
-      if (!busy) parts.chooseHero(id);
+      if (choiceCounts({ shown: screen.shown, held })) parts.chooseHero(id);
     },
     previewHero: (id: string | null): void => {
-      if (!busy) parts.previewHero(id);
+      if (choiceCounts({ shown: screen.shown, held })) parts.previewHero(id);
     },
     pick: (key: string): void => {
       void leave((): Promise<boolean> => characters.pick(key));
@@ -208,7 +214,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     const refusal: string | null = await characters.remove(view().name ?? LOBBY_SCREEN.unnamed);
     if (refusal !== null) {
       screen.refuse(refusal);
-      screen.setBusy(false);
+      holdControls(false);
       return;
     }
     await leave((): Promise<boolean> => {

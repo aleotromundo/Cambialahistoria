@@ -75,6 +75,15 @@ export function sameHeroChoice(left: HeroChoice | null, right: HeroChoice | null
   return false;
 }
 
+export interface LobbyControls {
+  readonly shown: boolean;
+  readonly held: boolean;
+}
+
+export function choiceCounts(controls: LobbyControls): boolean {
+  return controls.shown && !controls.held;
+}
+
 export function canEnter(choice: HeroChoice | null): boolean {
   return choice === null || choice.kind === 'fixed' || choice.chosen !== null;
 }
