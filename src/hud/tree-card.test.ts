@@ -19,6 +19,10 @@ function pin(node: string): CardEvent {
   return { type: 'pin', node };
 }
 
+function settle(node: string | null): CardEvent {
+  return { type: 'settle', node };
+}
+
 void test('the tree opens with no card', (): void => {
   assert.equal(cardNode(run([OPEN])), null);
 });
@@ -36,16 +40,32 @@ void test('moving from one place to the next shows the next card at once', (): v
   assert.equal(cardNode(run([OPEN, at('a'), at(null), at('b')])), 'b');
 });
 
-void test('a clicked card stays while the pointer crosses empty ground to reach it', (): void => {
-  const clicked: CardState = run([OPEN, at('thick_skin'), pin('thick_skin'), at(null)]);
+void test('a clicked card goes the moment the pointer leaves its place', (): void => {
+  const clicked: CardState = run([OPEN, at('thick_skin'), pin('thick_skin')]);
   assert.equal(cardNode(clicked), 'thick_skin');
-  assert.equal(cardNode(run([at('thick_skin'), at(null)], clicked)), 'thick_skin');
+  assert.equal(cardNode(run([at('thick_skin')], clicked)), 'thick_skin');
+  assert.equal(cardNode(run([at(null)], clicked)), null);
+  assert.equal(cardNode(run([at('thick_skin'), at(null)], clicked)), null);
+});
+
+void test('a place already taken and clicked again lets its card go on leaving', (): void => {
+  const twice: CardState = run([OPEN, at('a'), pin('a'), pin('a'), at('a'), at(null)]);
+  assert.equal(cardNode(twice), null);
+  assert.equal(twice.pinned, null);
 });
 
 void test('pointing at another place drops a clicked card for that place', (): void => {
   const moved: CardState = run([OPEN, pin('a'), at('b')]);
   assert.equal(cardNode(moved), 'b');
   assert.equal(cardNode(run([at(null)], moved)), null);
+});
+
+void test('the view settling with the pointer on empty ground keeps a card pinned by a search', (): void => {
+  const found: CardState = run([OPEN, pin('thick_skin'), settle(null)]);
+  assert.equal(cardNode(found), 'thick_skin');
+  assert.equal(cardNode(run([settle('a')], found)), 'a');
+  assert.equal(cardNode(run([at(null)], found)), null);
+  assert.equal(cardNode(run([CLOSE, settle('a')], found)), null);
 });
 
 void test('a click on empty ground or a drag drops a clicked card at once', (): void => {

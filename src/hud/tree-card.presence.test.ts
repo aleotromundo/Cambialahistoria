@@ -119,42 +119,35 @@ void test('a card never glides while the view moves', (): void => {
   assert.equal(glidesFrom(shown, Number.NEGATIVE_INFINITY, world.clock.read(), world.movedAt), true);
 });
 
-void test('leaving a node keeps the card through the grace period, then hides it with its content', (): void => {
+void test('leaving a node hides the card on the same step and keeps its content to fade', (): void => {
   const world: Scene = scene();
   world.tick('a');
-  assert.equal(world.tick(null).visible, true);
-  world.wait(CARD_PRESENCE.graceMs - 1);
-  assert.equal(world.tick(null).visible, true);
-  world.wait(1);
   const gone: CardPresence = world.tick(null);
   assert.equal(gone.visible, false);
   assert.equal(gone.node, 'a');
 });
 
-void test('a pointer crossing a gap to a close node never hides the card', (): void => {
-  const world: Scene = scene();
-  world.tick('a');
-  world.wait(CARD_PRESENCE.graceMs / 2);
-  assert.equal(world.tick(null).visible, true);
-  world.wait(CARD_PRESENCE.graceMs / 2 - 1);
-  assert.equal(world.tick(null).visible, true);
-  world.wait(1);
-  const arrived: CardPresence = world.tick('b');
-  assert.equal(arrived.visible, true);
-  assert.equal(arrived.node, 'b');
-  assert.equal(arrived.leftAt, null);
-});
-
-void test('the grace period starts again after returning to a node', (): void => {
+void test('a card hidden by leaving a node stays hidden however long the pointer is away', (): void => {
   const world: Scene = scene();
   world.tick('a');
   world.tick(null);
-  world.wait(CARD_PRESENCE.graceMs - 1);
+  world.wait(1);
+  assert.equal(world.tick(null).visible, false);
+  world.wait(CARD_PRESENCE.stillMs * 4);
+  assert.equal(world.tick(null).visible, false);
+});
+
+void test('crossing a gap to a close node hides the card in the gap and glides it in at the next node', (): void => {
+  const world: Scene = scene();
   world.tick('a');
-  world.wait(CARD_PRESENCE.graceMs - 1);
-  assert.equal(world.tick(null).visible, true);
-  world.wait(CARD_PRESENCE.graceMs - 1);
-  assert.equal(world.tick(null).visible, true);
+  const hiddenAt: number = world.clock.read();
+  const gap: CardPresence = world.tick(null);
+  assert.equal(gap.visible, false);
+  world.wait(CARD_PRESENCE.fadeMs - 1);
+  const arrived: CardPresence = world.tick('b');
+  assert.equal(arrived.visible, true);
+  assert.equal(arrived.node, 'b');
+  assert.equal(glidesFrom(gap, hiddenAt, world.clock.read(), world.movedAt), true);
 });
 
 void test('a hidden card does not come back on its own when nothing is wanted', (): void => {
@@ -163,14 +156,6 @@ void test('a hidden card does not come back on its own when nothing is wanted', 
   world.move();
   world.tick('a');
   world.wait(CARD_PRESENCE.stillMs * 4);
-  assert.equal(world.tick(null).visible, false);
-});
-
-void test('a card waiting out its grace is hidden at once when the view moves', (): void => {
-  const world: Scene = scene();
-  world.tick('a');
-  world.tick(null);
-  world.move();
   assert.equal(world.tick(null).visible, false);
 });
 

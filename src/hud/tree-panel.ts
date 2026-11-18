@@ -38,8 +38,8 @@ import { cardSpot, nodeAt, nodeDiameter, TREE_NODES } from './tree-nodes.ts';
 import type { CardSize, CardSpot, NodeSpot } from './tree-nodes.ts';
 import { lockedLine, pointsPrompt, statusLine, takenLine, TREE_NODE_COST, treeNodeStatus } from './tree-status.ts';
 import type { TreeNodeStatus } from './tree-status.ts';
-import { cardNode, CLOSED_CARD, glidesFrom, HIDDEN_PRESENCE, stepCard, stepPresence, viewIsMoving } from './tree-card.ts';
-import type { CardEvent, CardPresence, CardState, CardWish } from './tree-card.ts';
+import { cardNode, CLOSED_CARD, glidesFrom, headingInto, HIDDEN_PRESENCE, stepCard, stepPresence, viewIsMoving } from './tree-card.ts';
+import type { CardBox, CardEvent, CardPresence, CardState, CardWish } from './tree-card.ts';
 import { createTreeHead } from './tree-head.ts';
 import type { TreeHead } from './tree-head.ts';
 
@@ -318,6 +318,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     return { id: spot.id, x: at.x, y: at.y, radius: spot.radius * motion.view.scale };
   };
   let cardSize: CardSize = { width: 0, height: 0 };
+  let cardBox: CardBox = { x: 0, y: 0, width: 0, height: 0 };
   const measureCard = (): void => {
     cardSize = { width: card.offsetWidth, height: card.offsetHeight };
   };
@@ -337,7 +338,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const reach: number = TREE_NODES.neighbourReach * CHART.unit;
     const near: readonly NodeSpot[] = spots.filter((spot: NodeSpot): boolean => spot !== own && Math.hypot(spot.x - own.x, spot.y - own.y) <= reach).map(onScreen);
     const at: CardSpot = cardSpot(onScreen(own), cardSize, near, { width: frame.width, height: frame.height, edge: CHART.cardEdge, gap: CHART.cardGap }, shownLabels);
-    card.style.translate = `${Math.round(at.x)}px ${Math.round(at.y)}px`;
+    cardBox = { x: Math.round(at.x), y: Math.round(at.y), width: cardSize.width, height: cardSize.height };
+    card.style.translate = `${cardBox.x}px ${cardBox.y}px`;
   };
   let wantedFoot: number = CHART_VIEW.labelFoot;
   const measureFoot = (): void => {
@@ -495,14 +497,16 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const rehit = (): void => {
     if (pointerAt === null || viewport.classList.contains('dragging')) return;
     const at: ScreenPoint = toMap(motion.view, frame, pointerAt);
-    sendCard({ type: 'point', node: nodeAt(spots, at.x, at.y) });
+    sendCard({ type: 'settle', node: nodeAt(spots, at.x, at.y) });
   };
   viewport.addEventListener('pointermove', (event: PointerEvent): void => {
+    const from: ScreenPoint | null = pointerAt;
     pointerAt = event.pointerType === 'touch' ? null : local(event);
-    if (event.pointerType === 'touch' || viewport.classList.contains('dragging')) return;
-    if (card.contains(event.target instanceof Node ? event.target : null)) return;
-    const at: ScreenPoint = toMap(motion.view, frame, local(event));
-    sendCard({ type: 'point', node: nodeAt(spots, at.x, at.y) });
+    if (pointerAt === null || viewport.classList.contains('dragging') || card.contains(event.target instanceof Node ? event.target : null)) return;
+    const at: ScreenPoint = toMap(motion.view, frame, pointerAt);
+    const node: string | null = nodeAt(spots, at.x, at.y);
+    if (node === null && presence.visible && from !== null && headingInto(from, pointerAt, cardBox)) return;
+    sendCard({ type: 'point', node });
   });
   viewport.addEventListener('click', (event: MouseEvent): void => {
     const clicked: EventTarget | null = event.target;
