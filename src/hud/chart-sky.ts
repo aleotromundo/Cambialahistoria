@@ -204,24 +204,43 @@ void main() {
 }
 `;
 
-function compile(gl: WebGL2RenderingContext, kind: number, source: string): WebGLShader | null {
+function shaderOf(gl: WebGL2RenderingContext, kind: number, source: string): WebGLShader | null {
   const shader: WebGLShader | null = gl.createShader(kind);
   if (shader === null) return null;
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
-  return gl.getShaderParameter(shader, gl.COMPILE_STATUS) === true ? shader : null;
+  return shader;
 }
 
-function link(gl: WebGL2RenderingContext): WebGLProgram | null {
-  const vertex: WebGLShader | null = compile(gl, gl.VERTEX_SHADER, VERTEX);
-  const fragment: WebGLShader | null = compile(gl, gl.FRAGMENT_SHADER, SKY_FRAGMENT);
+function startLink(gl: WebGL2RenderingContext): WebGLProgram | null {
+  const vertex: WebGLShader | null = shaderOf(gl, gl.VERTEX_SHADER, VERTEX);
+  const fragment: WebGLShader | null = shaderOf(gl, gl.FRAGMENT_SHADER, SKY_FRAGMENT);
   if (vertex === null || fragment === null) return null;
   const program: WebGLProgram = gl.createProgram();
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
   gl.linkProgram(program);
-  return gl.getProgramParameter(program, gl.LINK_STATUS) === true ? program : null;
+  return program;
 }
+
+interface SkyRequest {
+  readonly view: SkyView;
+  readonly seconds: number;
+}
+
+export interface LinkProbe {
+  readonly complete: () => boolean;
+  readonly linked: () => boolean;
+}
+
+export type LinkPhase = 'linking' | 'ready' | 'broken';
+
+export function linkPhase(probe: LinkProbe): LinkPhase {
+  if (!probe.complete()) return 'linking';
+  return probe.linked() ? 'ready' : 'broken';
+}
+
+type SkyLink = { readonly kind: 'linking' } | { readonly kind: 'ready'; readonly at: (name: string) => WebGLUniformLocation | null } | { readonly kind: 'broken' };
 
 export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | null {
   const canvas: HTMLCanvasElement = document.createElement('canvas');
@@ -229,25 +248,49 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
   const gl: WebGL2RenderingContext | null = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: false, alpha: true });
   if (gl === null) return null;
   GPU.hold(loseContextOf(gl));
-  const program: WebGLProgram | null = link(gl);
+  const parallel: KHR_parallel_shader_compile | null = gl.getExtension('KHR_parallel_shader_compile');
+  const program: WebGLProgram | null = startLink(gl);
   if (program === null) return null;
+  const probe: LinkProbe = {
+    complete: (): boolean => parallel === null || gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR) === true,
+    linked: (): boolean => gl.getProgramParameter(program, gl.LINK_STATUS) === true,
+  };
   host.prepend(canvas);
-  const buffer: WebGLBuffer | null = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  const position: number = gl.getAttribLocation(program, 'corner');
-  gl.enableVertexAttribArray(position);
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  gl.useProgram(program);
-  const at = (name: string): WebGLUniformLocation | null => gl.getUniformLocation(program, name);
   const arms: readonly SkyArm[] = shape.arms.slice(0, CHART_SKY.maxArms);
-  gl.uniform1i(at('count'), arms.length);
-  gl.uniform2fv(at('arms'), arms.flatMap((arm: SkyArm): number[] => [arm.shape.base, arm.shape.reach]));
-  gl.uniform3fv(at('tints'), arms.flatMap((arm: SkyArm): number[] => Array.from(arm.tint)));
-  gl.uniform2f(at('eye'), shape.eyeX, shape.eyeY);
-  gl.uniform1f(at('unit'), shape.unit);
-  gl.uniform1f(at('twist'), shape.twist);
-  const drift: number = driftSeconds(host);
+  const settle = (): SkyLink => {
+    const buffer: WebGLBuffer | null = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const position: number = gl.getAttribLocation(program, 'corner');
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+    gl.useProgram(program);
+    const at = (name: string): WebGLUniformLocation | null => gl.getUniformLocation(program, name);
+    gl.uniform1i(at('count'), arms.length);
+    gl.uniform2fv(at('arms'), arms.flatMap((arm: SkyArm): number[] => [arm.shape.base, arm.shape.reach]));
+    gl.uniform3fv(at('tints'), arms.flatMap((arm: SkyArm): number[] => Array.from(arm.tint)));
+    gl.uniform2f(at('eye'), shape.eyeX, shape.eyeY);
+    gl.uniform1f(at('unit'), shape.unit);
+    gl.uniform1f(at('twist'), shape.twist);
+    return { kind: 'ready', at };
+  };
+  let linked: SkyLink = { kind: 'linking' };
+  const progress = (): SkyLink => {
+    if (linked.kind !== 'linking') return linked;
+    switch (linkPhase(probe)) {
+      case 'linking':
+        break;
+      case 'broken':
+        canvas.remove();
+        linked = { kind: 'broken' };
+        break;
+      case 'ready':
+        linked = settle();
+        break;
+    }
+    return linked;
+  };
+  let drift: number | null = null;
   const still: MediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
   let drawn: string = '';
   let box: { readonly width: number; readonly height: number } = { width: 0, height: 0 };
@@ -256,32 +299,54 @@ export function createChartSky(host: HTMLElement, shape: SkyShape): ChartSky | n
     boxStale = true;
   });
   watcher.observe(host);
-  return {
-    draw(view: SkyView, seconds: number): void {
-      if (boxStale) {
-        const measured: DOMRect = host.getBoundingClientRect();
-        box = { width: measured.width, height: measured.height };
-        boxStale = false;
-      }
-      const density: number = pixelRatioFor(renderBudget(), window.devicePixelRatio, box.width, box.height) * CHART_SKY.resolution;
-      const width: number = Math.max(1, Math.round(box.width * density));
-      const height: number = Math.max(1, Math.round(box.height * density));
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-        gl.viewport(0, 0, width, height);
-      }
-      const time: number = still.matches ? 0 : seconds;
-      const frame: string = `${width}x${height} ${view.cornerX} ${view.cornerY} ${view.scale} ${time}`;
-      if (frame === drawn) return;
-      drawn = frame;
-      gl.uniform2f(at('size'), width, height);
-      gl.uniform1f(at('density'), density);
-      gl.uniform2f(at('origin'), view.cornerX, view.cornerY);
-      gl.uniform1f(at('zoom'), view.scale);
-      const motion: SkyMotion = skyMotion(time, drift);
-      gl.uniform1f(at('phase'), motion.phase);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-    },
+  let waiting: SkyRequest | null = null;
+  let polling: boolean = false;
+  const paint = (view: SkyView, seconds: number): void => {
+    const pace: number = drift ?? driftSeconds(host);
+    drift = pace;
+    const state: SkyLink = progress();
+    if (state.kind === 'linking') {
+      waiting = { view, seconds };
+      poll();
+      return;
+    }
+    if (state.kind === 'broken') return;
+    const at = state.at;
+    if (boxStale) {
+      const measured: DOMRect = host.getBoundingClientRect();
+      box = { width: measured.width, height: measured.height };
+      boxStale = false;
+    }
+    const density: number = pixelRatioFor(renderBudget(), window.devicePixelRatio, box.width, box.height) * CHART_SKY.resolution;
+    const width: number = Math.max(1, Math.round(box.width * density));
+    const height: number = Math.max(1, Math.round(box.height * density));
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+      gl.viewport(0, 0, width, height);
+    }
+    const time: number = still.matches ? 0 : seconds;
+    const frame: string = `${width}x${height} ${view.cornerX} ${view.cornerY} ${view.scale} ${time}`;
+    if (frame === drawn) return;
+    drawn = frame;
+    gl.uniform2f(at('size'), width, height);
+    gl.uniform1f(at('density'), density);
+    gl.uniform2f(at('origin'), view.cornerX, view.cornerY);
+    gl.uniform1f(at('zoom'), view.scale);
+    const motion: SkyMotion = skyMotion(time, pace);
+    gl.uniform1f(at('phase'), motion.phase);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
+  const retry = (): void => {
+    polling = false;
+    const asked: SkyRequest | null = waiting;
+    waiting = null;
+    if (asked !== null) paint(asked.view, asked.seconds);
+  };
+  function poll(): void {
+    if (polling) return;
+    polling = true;
+    requestAnimationFrame(retry);
+  }
+  return { draw: paint };
 }
