@@ -121,8 +121,23 @@ function byKeys(a: readonly number[], b: readonly number[]): number {
   return 0;
 }
 
+function placeOf(content: Content, id: string): SkillTreeNodeDef | undefined {
+  return content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === id);
+}
+
+function sideBranch(node: SkillTreeNodeDef): boolean {
+  return node.common !== null || node.specialty !== null;
+}
+
+function passable(node: SkillTreeNodeDef | undefined, goal: SkillTreeNodeDef | undefined): boolean {
+  if (node === undefined || goal === undefined) return true;
+  if (node.common !== null && goal.common === null) return false;
+  return node.specialty === null || node.specialty === goal.specialty;
+}
+
 function stepToward(content: Content, allocated: readonly string[], points: number, target: string): string | null {
   const links: ReadonlyMap<string, readonly string[]> = placeLinks(content);
+  const goal: SkillTreeNodeDef | undefined = placeOf(content, target);
   const sources: readonly string[] = allocated.length > 0 ? allocated : startingPlaces(content);
   const before: Map<string, string | null> = new Map<string, string | null>(sources.map((id: string): [string, string | null] => [id, null]));
   const queue: string[] = [...sources];
@@ -130,7 +145,7 @@ function stepToward(content: Content, allocated: readonly string[], points: numb
     const at: string | undefined = queue[index];
     if (at === undefined) continue;
     for (const next of links.get(at) ?? []) {
-      if (before.has(next)) continue;
+      if (before.has(next) || !passable(placeOf(content, next), goal)) continue;
       before.set(next, at);
       queue.push(next);
     }
@@ -167,7 +182,7 @@ export function nextPlace(content: Content, plan: BotPlan, allocated: readonly s
     const node: SkillTreeNodeDef | undefined = content.skillTree.find((candidate: SkillTreeNodeDef): boolean => candidate.id === id);
     if (node !== undefined && counts.has(node.path)) counts.set(node.path, (counts.get(node.path) ?? 0) + 1);
   }
-  const open: SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => counts.has(node.path) && (node.kind !== 'keystone' || plan.route.includes(node.id)) && canAllocate(content, allocated, points, node.id));
+  const open: SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => counts.has(node.path) && !sideBranch(node) && (node.kind !== 'keystone' || plan.route.includes(node.id)) && canAllocate(content, allocated, points, node.id));
   const key = (node: SkillTreeNodeDef): number[] => [abilityRank(plan, node), counts.get(node.path) ?? 0, paths.indexOf(node.path), depthOf(content, node), weightOf(node)];
   const ranked: SkillTreeNodeDef[] = open.toSorted((a: SkillTreeNodeDef, b: SkillTreeNodeDef): number => byKeys([...key(a), a.id.localeCompare(b.id)], [...key(b), 0]));
   return ranked[0]?.id ?? null;

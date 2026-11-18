@@ -1,4 +1,5 @@
 import type { Content, SkillTreeNodeDef } from '../../sim/content/types.ts';
+import { armBody } from '../../sim/specialty.ts';
 import type { ChartPoint } from './chart-model.ts';
 
 export const CHART_STORM = {
@@ -52,7 +53,7 @@ export function boltPoints(from: ChartPoint, to: ChartPoint, eye: ChartPoint, ke
 
 export function armShape(content: Content, path: string): ArmShape {
   const twist: number = content.chart.twist;
-  const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path);
+  const own: readonly SkillTreeNodeDef[] = armBody(content, path);
   let cos: number = 0;
   let sin: number = 0;
   let reach: number = 0;

@@ -1,4 +1,5 @@
 import type { Content, SkillTreeNodeDef, SkillVariant, XpAfter, XpCurve, XpGap, XpReduction } from './content/types.ts';
+import { specialtyClosed, withOneSpecialty } from './specialty.ts';
 
 export interface XpResult {
   readonly level: number;
@@ -152,7 +153,7 @@ export function heldChanges(content: Content, allocated: readonly string[], chan
 export function canAllocate(content: Content, allocated: readonly string[], skillPoints: number, nodeId: string): boolean {
   const node: SkillTreeNodeDef | null = findNode(content, nodeId);
   if (node === null || skillPoints <= 0 || allocated.includes(nodeId)) return false;
-  return joinBlock(content, allocated, node) === null;
+  return joinBlock(content, allocated, node) === null && !specialtyClosed(content, allocated, node);
 }
 
 export type RefundBlock = 'not_held' | 'root' | 'split';
@@ -210,7 +211,8 @@ export function bankedReset(revision: number, seen: unknown, banked: unknown): b
   return banked === true || typeof seen !== 'number' || seen < revision;
 }
 
-export function reachablePlaces(content: Content, allocated: readonly string[]): string[] {
+export function reachablePlaces(content: Content, listed: readonly string[]): string[] {
+  const allocated: readonly string[] = withOneSpecialty(content, listed);
   const kept: ReadonlySet<string> = new Set<string>(holdingParts(content, allocated).filter((part: readonly string[]): boolean => rooted(content, part)).flat());
   return allocated.filter((id: string): boolean => kept.has(id));
 }

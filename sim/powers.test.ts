@@ -230,6 +230,8 @@ const VEIL: SkillTreeNodeDef = {
   variants: [],
   unlock: null,
   weapon: 'staff',
+  common: null,
+  specialty: null,
   triggers: [{ on: 'use', skill: { type: 'group', group: 'motion' }, target: 'any', every: 1, cooldown: 0, effect: { type: 'empower', skillMods: [{ target: { type: 'skill', skill: 'storm_bolt' }, field: 'damagePercent', value: 0.5 }, { target: { type: 'skill', skill: 'storm_bolt' }, field: 'pierce', value: 1 }], duration: 2, look: null } }],
 };
 

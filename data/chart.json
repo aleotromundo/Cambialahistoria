@@ -39,6 +39,32 @@
       "description": "What happened once happens again: echoes, held moments and long storms."
     }
   ],
+  "common": {
+    "name": "Common",
+    "tint": "#c9ccd1",
+    "places": [
+      {"id": "hardy", "name": "Hardy", "description": "+10 Maximum Life.", "icon": "common_life", "statMods": [{"stat": "maxLife", "op": "add", "value": 10}]},
+      {"id": "clear_head", "name": "Clear Head", "description": "+8 Maximum Mana.", "icon": "common_mana", "statMods": [{"stat": "maxMana", "op": "add", "value": 8}]},
+      {"id": "even_keel", "name": "Even Keel", "description": "+6 Maximum Life, +5 Maximum Mana.", "icon": "common_both", "statMods": [{"stat": "maxLife", "op": "add", "value": 6}, {"stat": "maxMana", "op": "add", "value": 5}]},
+      {"id": "weathered", "name": "Weathered", "description": "+12 Armour.", "icon": "common_armour", "statMods": [{"stat": "armour", "op": "add", "value": 12}]},
+      {"id": "sheltered", "name": "Sheltered", "description": "+6% Storm Resistance, +6% Frost Resistance.", "icon": "common_shelter", "statMods": [{"stat": "stormResist", "op": "add", "value": 0.06}, {"stat": "frostResist", "op": "add", "value": 0.06}]},
+      {"id": "light_step", "name": "Light Step", "description": "+3% Movement Speed.", "icon": "common_step", "statMods": [{"stat": "moveSpeed", "op": "percent", "value": 0.03}]}
+    ]
+  },
+  "specialties": [
+    {"id": "hearth", "name": "The Hearth", "path": "stone", "description": "Stand in the fire and outlast it: life, armour, and a hearth that flares back at every blow."},
+    {"id": "kiln", "name": "The Kiln", "path": "stone", "description": "Everything you strike keeps burning: fire that lands harder and leaves the ground alight under them."},
+    {"id": "rockfall", "name": "The Rockfall", "path": "stone", "description": "Heavy blows that bring the hillside down: slower swings that land harder and throw them far."},
+    {"id": "maelstrom", "name": "The Maelstrom", "path": "blade", "description": "The spin that drags the room into it: the Millwheel pulls them in, widens and holds them close."},
+    {"id": "spring_tide", "name": "The Spring Tide", "path": "blade", "description": "Drink from the fight: every blow gives back, and the flasks never run dry."},
+    {"id": "tidal_bore", "name": "The Tidal Bore", "path": "blade", "description": "Ride the wave in: every roll throws water ahead of you, and the Millrace runs far and fast."},
+    {"id": "squall_line", "name": "The Squall Line", "path": "storm", "description": "A storm that walks with you: storms that stay close, follow you and heal you."},
+    {"id": "forked_sky", "name": "The Forked Sky", "path": "storm", "description": "Lightning that never stops at one: more jumps, more bolts, and every kill forks again."},
+    {"id": "static_front", "name": "The Static Front", "path": "storm", "description": "The charge in the air before it breaks: deep mana, heavy brands, and lightning that answers when you are struck."},
+    {"id": "hailfall", "name": "The Hailfall", "path": "wind", "description": "Volleys that break across a crowd: more bolts, wider fans, and shots that leap on."},
+    {"id": "penumbra", "name": "The Penumbra", "path": "wind", "description": "Carry the dark with you: an Umbra that grows, lasts, and rises again on every kill."},
+    {"id": "far_dark", "name": "The Far Dark", "path": "wind", "description": "The long shot from deep cover: bolts that drive through everything, and a veil after every roll."}
+  ],
   "groups": [
     {
       "id": "lightning",

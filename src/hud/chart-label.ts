@@ -6,10 +6,11 @@ import { familyRow } from './weapon-family.ts';
 
 export interface NameView extends FrameLabel {
   measure(): void;
+  mark(state: string, on: boolean): void;
 }
 
-export function createNameView(host: HTMLElement, text: string, tint: string, at: ChartPoint, family: WeaponGroup | null): NameView {
-  const name: HTMLDivElement = el('div', 'chart-path-name', host);
+export function createNameView(host: HTMLElement, text: string, tint: string, at: ChartPoint, family: WeaponGroup | null, className: string = 'chart-path-name', pins: boolean = true): NameView {
+  const name: HTMLDivElement = el('div', className, host);
   label('chart-path-title', text, name);
   if (family !== null) familyRow(family, 'chart-path-family', family.name, name);
   name.style.setProperty('--tint', tint);
@@ -18,6 +19,7 @@ export function createNameView(host: HTMLElement, text: string, tint: string, at
   let transformNow: string = '';
   return {
     at,
+    pins,
     get halfWidth(): number {
       return half.x;
     },
@@ -26,6 +28,9 @@ export function createNameView(host: HTMLElement, text: string, tint: string, at
     },
     measure(): void {
       half = { x: name.offsetWidth / 2, y: name.offsetHeight / 2 };
+    },
+    mark(state: string, on: boolean): void {
+      name.classList.toggle(state, on);
     },
     place(transform: string, pinned: boolean): void {
       if (transform !== transformNow) {

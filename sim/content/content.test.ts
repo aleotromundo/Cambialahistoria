@@ -7,6 +7,7 @@ import { buildNavGrid, isWalkable, setDriftOpen } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { inRegion, walkRegion } from '../nav/region.ts';
 import { placeLinks, startingPlaces } from '../progression.ts';
+import { armPlaces } from '../specialty.ts';
 import { loadContent } from './content.ts';
 import { contentProblems } from './parse.ts';
 import { objectivePaths } from './road.ts';
@@ -94,7 +95,7 @@ void test('the Skill Tree has five paths of a hundred places or more, every plac
   assert.ok(content.skillTree.length >= 100);
   const pathOf: ReadonlyMap<string, string> = new Map<string, string>(content.skillTree.map((node: SkillTreeNodeDef): [string, string] => [node.id, node.path]));
   for (const path of content.chart.paths) {
-    const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path.id);
+    const own: readonly SkillTreeNodeDef[] = armPlaces(content, path.id);
     assert.ok(own.some((node: SkillTreeNodeDef): boolean => node.requires.length === 0), `${path.id} has an entrance`);
     assert.ok(own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'notable').length >= 3, `${path.id} has named places`);
     assert.equal(own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'keystone').length, 1, `${path.id} ends in one keystone`);

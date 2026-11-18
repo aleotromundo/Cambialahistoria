@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
+import { armBody } from '../../sim/specialty.ts';
 import type { Content } from '../../sim/content/types.ts';
 import type { ChartPoint } from './chart-model.ts';
 import { armShape, boltPoints, CHART_STORM, hexColour, polyline, spiralOffset } from './chart-storm.ts';
@@ -32,7 +33,7 @@ void test('a lightning link out of the eye runs straight outward', (): void => {
 void test('each arm band lies along its places, and reaches as far as its farthest place', (): void => {
   for (const path of content.chart.paths) {
     const shape: ArmShape = armShape(content, path.id);
-    const own = content.skillTree.filter((node): boolean => node.path === path.id);
+    const own = armBody(content, path.id);
     assert.equal(shape.reach, Math.max(...own.map((node): number => Math.hypot(node.column, node.row))));
     const offsets: number[] = own.filter((node): boolean => Math.hypot(node.column, node.row) > 1).map((node): number => Math.abs(spiralOffset(shape, content.chart.twist, { x: node.column, y: node.row })));
     const inside: number = offsets.filter((offset: number): boolean => offset < Math.PI / content.chart.paths.length).length;

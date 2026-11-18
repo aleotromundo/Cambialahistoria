@@ -9,12 +9,14 @@ import { createChartSky } from './chart-sky.ts';
 import type { ChartSky, SkyArm } from './chart-sky.ts';
 import { armShape, boltPoints, hexColour } from './chart-storm.ts';
 import type { AbilityCard } from './chart-ability.ts';
-import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint } from './chart-model.ts';
+import { chartBounds, chartHere, chartMatches, chartRoute, pathLabels, pathTint, placeTint } from './chart-model.ts';
 import { FRESH_RASTER, stepRaster } from './chart-raster.ts';
 import type { RasterState, RasterStep } from './chart-raster.ts';
 import { writeView } from './chart-frame.ts';
 import type { FrameTargets } from './chart-frame.ts';
 import { createFrameTargets, createNameView } from './chart-label.ts';
+import { createSpecialtyNames, markSpecialtyNames, placeHome, specialtyLine } from './tree-specialty.ts';
+import type { SpecialtyName } from './tree-specialty.ts';
 import { kindWord, line, reachable } from './chart-parts.ts';
 import { createChangeSegment } from './change-segment.ts';
 import type { ChangeSegment } from './change-segment.ts';
@@ -56,7 +58,7 @@ const CHART = {
   emptyLine: 'No points yet. Moments in the storm and each new level bring them.',
 } as const;
 
-const STATUS_CLASSES: readonly TreeNodeStatus['kind'][] = ['allocated', 'available', 'no_points', 'locked'];
+const STATUS_CLASSES: readonly TreeNodeStatus['kind'][] = ['allocated', 'available', 'no_points', 'locked', 'closed'];
 
 export interface ChartPanel extends PanelView {
   update(dt: number): void;
@@ -114,16 +116,18 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     for (const requiredId of node.requires) {
       const from: SkillTreeNodeDef | undefined = byId.get(requiredId);
       if (from === undefined) continue;
-      const tint: string = pathTint(content, node.path === from.path ? node.path : from.path);
+      const shared: boolean = from.common !== null || node.common !== null;
+      const tint: string = shared ? content.chart.common.tint : pathTint(content, node.path === from.path ? node.path : from.path);
       const bolt: ChartPoint[] = boltPoints(centreOf(from), centreOf(node), eye, `${requiredId}>${node.id}`, CHART.unit);
-      const ring: string = from.path === node.path ? '' : ' ring';
+      const ring: string = from.path === node.path && !shared ? '' : ' ring';
       line(shades, bolt, `tree-shade${ring}`, tint);
       const track: SVGPolylineElement = line(svg, bolt, `tree-track${ring}`, tint);
       links.push({ track, path: line(svg, bolt, `tree-flow${ring}`, tint), from: requiredId, to: node.id });
     }
   }
 
-  const names: NameView[] = pathLabels(content).map((entry: PathLabel): NameView => createNameView(viewport, entry.path.name, entry.path.tint, place(entry.at), pathFamily(content, entry.path.id)));
+  const specialtyNames: readonly SpecialtyName[] = createSpecialtyNames(content, viewport, place);
+  const names: NameView[] = [...pathLabels(content).map((entry: PathLabel): NameView => createNameView(viewport, entry.path.name, entry.path.tint, place(entry.at), pathFamily(content, entry.path.id))), ...specialtyNames.map((entry: SpecialtyName): NameView => entry.view)];
   const prompt: HTMLDivElement = el('div', 'chart-prompt', viewport);
   const card: HTMLDivElement = el('div', 'chart-card', viewport);
   const cardBody: HTMLDivElement = el('div', 'chart-card-body', card);
@@ -187,7 +191,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     const changes: readonly SkillChanges[] = placeChanges(content, player(), node);
     const key: string = `${node.id}:${status.kind}:${refundable ? goldFor(1) : -1}:${player().skillPoints}:${ability?.slot ?? -1}:${off?.holding ?? ''}:${changesShape(changes)}`;
     showRoute(node.id);
-    card.style.setProperty('--tint', pathTint(content, node.path));
+    card.style.setProperty('--tint', placeTint(content, node));
     action.classList.toggle('shown', refundable);
     if (refundable) setText(action, `Give back · ${goldFor(1)} gold`, false);
     action.classList.toggle('short', refundable && refund === 'no_gold');
@@ -199,8 +203,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     }
     shownCard = key;
     const body: HTMLDivElement = el('div', before.visible ? 'chart-card-inner refill' : 'chart-card-inner', null);
-    const path: ChartPath | undefined = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path);
-    label('chart-card-path', path === undefined ? node.kind : `${path.name} · ${kindWord(node)}`, body);
+    label('chart-card-path', `${placeHome(content, node)} · ${kindWord(node)}`, body);
+    const specialtyNote: string | null = specialtyLine(content, node);
+    if (specialtyNote !== null) label('tree-tip-specialty', specialtyNote, body);
     const family: WeaponGroup | null = placeFamily(content, node);
     if (family !== null) familyRow(family, off === null ? 'chart-card-family' : 'chart-card-family unheld', needLine(family), body);
     else if (node.weapon !== null) label('chart-card-family', placeWeaponLine(content, node), body);
@@ -450,7 +455,9 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     button.setAttribute('aria-label', node.name);
     button.style.left = `${centre.x}px`;
     button.style.top = `${centre.y}px`;
-    button.style.setProperty('--tint', pathTint(content, node.path));
+    button.style.setProperty('--tint', placeTint(content, node));
+    if (node.common !== null) button.classList.add('common');
+    if (node.specialty !== null) button.classList.add('specialty');
     if (node.variants.length > 0) button.classList.add('variant');
     if (node.unlock !== null) button.classList.add('ability');
     el('span', 'tree-socket-rim', button);
@@ -470,6 +477,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
           break;
         case 'no_points':
         case 'locked':
+        case 'closed':
           retrigger(button, 'deny');
           retrigger(card, 'deny');
           break;
@@ -581,16 +589,22 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     restart.classList.toggle('free', you.freeReset);
     if (performance.now() >= confirmUntil) restart.classList.remove('confirm');
     setText(restart, restartLabel(), true);
+    const closed: Set<string> = new Set<string>();
     for (const view of views) {
       const status: TreeNodeStatus = statusOf(view.def);
+      if (status.kind === 'closed') closed.add(view.def.id);
       for (const name of STATUS_CLASSES) view.button.classList.toggle(name, name === status.kind);
       view.button.classList.toggle('unheld', placeOff(content, view.def, you.equipped) !== null);
     }
+    markSpecialtyNames(content, specialtyNames, you.allocated);
     for (const link of links) {
       const fromTaken: boolean = you.allocated.includes(link.from);
       const toTaken: boolean = you.allocated.includes(link.to);
+      const shut: boolean = closed.has(link.from) || closed.has(link.to);
       link.path.classList.toggle('lit', fromTaken && toTaken);
       link.path.classList.toggle('open', fromTaken !== toTaken);
+      link.path.classList.toggle('closed', shut);
+      link.track.classList.toggle('closed', shut);
     }
     measureFoot();
     fillCard();

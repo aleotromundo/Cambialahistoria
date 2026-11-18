@@ -7,6 +7,7 @@ export interface FrameLabel {
   readonly at: ScreenPoint;
   readonly halfWidth: number;
   readonly halfHeight: number;
+  readonly pins: boolean;
   place(transform: string, pinned: boolean): void;
 }
 
@@ -26,14 +27,21 @@ export function labelTransform(box: LabelBox): string {
 
 export function writeView(targets: FrameTargets, view: AtlasView, frame: AtlasFrame, foot: number): void {
   targets.moveBoard(boardTransform(view, frame));
-  const pins: readonly PinnedLabel[] = targets.labels.map((label: FrameLabel): PinnedLabel => pinLabel(toScreen(view, frame, label.at), label.halfWidth, label.halfHeight, frame, foot));
+  const pinning: readonly FrameLabel[] = targets.labels.filter((label: FrameLabel): boolean => label.pins);
+  const pins: readonly PinnedLabel[] = pinning.map((label: FrameLabel): PinnedLabel => pinLabel(toScreen(view, frame, label.at), label.halfWidth, label.halfHeight, frame, foot));
   const boxes: readonly LabelBox[] = spreadLabels(
-    pins.map((pin: PinnedLabel, index: number): LabelBox => ({ x: pin.x, y: pin.y, halfWidth: targets.labels[index]?.halfWidth ?? 0, halfHeight: targets.labels[index]?.halfHeight ?? 0 })),
+    pins.map((pin: PinnedLabel, index: number): LabelBox => ({ x: pin.x, y: pin.y, halfWidth: pinning[index]?.halfWidth ?? 0, halfHeight: pinning[index]?.halfHeight ?? 0 })),
     frame,
   );
-  targets.labels.forEach((label: FrameLabel, index: number): void => {
+  pinning.forEach((label: FrameLabel, index: number): void => {
     const box: LabelBox | undefined = boxes[index];
     if (box === undefined) return;
     label.place(labelTransform(box), pins[index]?.pinned ?? false);
   });
+  for (const label of targets.labels) {
+    if (label.pins) continue;
+    const at: ScreenPoint = toScreen(view, frame, label.at);
+    const kept: PinnedLabel = pinLabel(at, label.halfWidth, label.halfHeight, frame, foot);
+    label.place(labelTransform({ x: at.x, y: at.y, halfWidth: label.halfWidth, halfHeight: label.halfHeight }), kept.pinned);
+  }
 }

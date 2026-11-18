@@ -35,6 +35,8 @@ import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fra
 import type {
   ActDef,
   AttachmentDef,
+  ChartDef,
+  SkillTreeNodeDef,
   BossPhase,
   BossSkill,
   ComboStep,
@@ -388,6 +390,7 @@ function xpGap(value: unknown, where: string): XpGap {
 export function parseContent(raw: RawContent): Content {
   const itemFields: Fields = fields(raw.items, 'items');
   const scaling: Fields = fields(itemFields['scaling'], 'items.scaling');
+  const chart: ChartDef = chartDef(raw.chart, 'chart');
   return {
     skills: byId(each(raw.skills, 'skills', skill), 'skills'),
     monsters: byId(each(raw.monsters, 'monsters', monster), 'monsters'),
@@ -400,8 +403,8 @@ export function parseContent(raw: RawContent): Content {
     leans: [...byId(each(itemFields['leans'] ?? [], 'items.leans', dropLean), 'items.leans').values()],
     affixes: byId(each(itemFields['affixes'], 'items.affixes', affix), 'items.affixes'),
     itemScaling: { implicitPerLevel: numeric(scaling, 'implicitPerLevel', 'items.scaling') },
-    skillTree: each(raw.skillTree, 'skillTree', treeNode),
-    chart: chartDef(raw.chart, 'chart'),
+    skillTree: each(raw.skillTree, 'skillTree', (value: unknown, where: string): SkillTreeNodeDef => treeNode(value, where, chart.common.places)),
+    chart,
     rigs: byId(each(raw.rigs, 'rigs', rig), 'rigs'),
     attachments: byId(each(raw.attachments, 'attachments', attachment), 'attachments'),
     wearables: byId(each(raw.wearables, 'wearables', wearable), 'wearables'),

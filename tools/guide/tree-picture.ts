@@ -1,6 +1,7 @@
 import type { Content, SkillTreeNodeDef, TreeNodeKind } from '../../sim/content/types.ts';
 import type { ChartPath } from '../../sim/content/chart-types.ts';
 import { placeLinks } from '../../sim/progression.ts';
+import { armTip } from '../../sim/specialty.ts';
 import { esc } from './html.ts';
 
 export const PICTURE = {
@@ -29,6 +30,7 @@ function round(value: number): number {
 }
 
 function tintOf(content: Content, node: SkillTreeNodeDef): string {
+  if (node.common !== null) return content.chart.common.tint;
   return content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path)?.tint ?? PICTURE.fallback;
 }
 
@@ -45,9 +47,8 @@ interface Label {
 
 function labelsOf(content: Content): Label[] {
   return content.chart.paths.flatMap((entry: ChartPath): Label[] => {
-    const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === entry.id);
-    const far: SkillTreeNodeDef | undefined = own.reduce<SkillTreeNodeDef | undefined>((best: SkillTreeNodeDef | undefined, node: SkillTreeNodeDef): SkillTreeNodeDef => (best === undefined || Math.hypot(node.column, node.row) > Math.hypot(best.column, best.row) ? node : best), undefined);
-    if (far === undefined) return [];
+    const far: SkillTreeNodeDef | null = armTip(content, entry.id);
+    if (far === null) return [];
     const point: PicturePoint = at(far);
     const length: number = Math.hypot(point.x, point.y);
     const push: number = length === 0 ? 0 : (radiusOf('keystone', true) + PICTURE.labelGap) / length;

@@ -14,8 +14,8 @@ interface Writes {
 function recording(): { readonly targets: FrameTargets; readonly writes: Writes } {
   const writes: Writes = { board: [], labels: [[], []] };
   const labels: FrameLabel[] = [
-    { at: { x: 300, y: 300 }, halfWidth: 60, halfHeight: 10, place: (transform: string, pinned: boolean): void => void writes.labels[0]?.push({ transform, pinned }) },
-    { at: { x: 1200, y: 1100 }, halfWidth: 60, halfHeight: 10, place: (transform: string, pinned: boolean): void => void writes.labels[1]?.push({ transform, pinned }) },
+    { at: { x: 300, y: 300 }, halfWidth: 60, halfHeight: 10, pins: true, place: (transform: string, pinned: boolean): void => void writes.labels[0]?.push({ transform, pinned }) },
+    { at: { x: 1200, y: 1100 }, halfWidth: 60, halfHeight: 10, pins: true, place: (transform: string, pinned: boolean): void => void writes.labels[1]?.push({ transform, pinned }) },
   ];
   return {
     writes,

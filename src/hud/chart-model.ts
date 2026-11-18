@@ -1,8 +1,10 @@
-import type { ChartPath, Content, SkillTreeNodeDef, SkillVariant } from '../../sim/content/types.ts';
+import type { ChartPath, Content, SkillTreeNodeDef, SkillVariant, SpecialtyDef } from '../../sim/content/types.ts';
 import { holdingTrunk, placeLinks, startingPlaces } from '../../sim/progression.ts';
+import { armTip, farthestPlace, specialtyOf, specialtyPlaces } from '../../sim/specialty.ts';
 
 export const CHART_MODEL = {
   labelReach: 1.13,
+  specialtyReach: 1.6,
   minQuery: 2,
 } as const;
 
@@ -23,6 +25,12 @@ export interface PathLabel {
   readonly at: ChartPoint;
 }
 
+export interface SpecialtyLabel {
+  readonly specialty: SpecialtyDef;
+  readonly tint: string;
+  readonly at: ChartPoint;
+}
+
 function words(text: string): string[] {
   return text.toLowerCase().split(/[^a-z0-9']+/).filter((word: string): boolean => word.length > 0);
 }
@@ -30,7 +38,9 @@ function words(text: string): string[] {
 function searchText(content: Content, node: SkillTreeNodeDef): string {
   const path: string = content.chart.paths.find((entry: ChartPath): boolean => entry.id === node.path)?.name ?? '';
   const varied: readonly string[] = node.variants.map((variant: SkillVariant): string => content.skills.get(variant.skill)?.name ?? '');
-  return [node.name, node.description, path, ...varied].join(' ').toLowerCase();
+  const specialty: string = node.specialty === null ? '' : (specialtyOf(content, node.specialty)?.name ?? '');
+  const common: string = node.common === null ? '' : content.chart.common.name;
+  return [node.name, node.description, path, specialty, common, ...varied].join(' ').toLowerCase();
 }
 
 export function chartMatches(content: Content, query: string): ReadonlySet<string> | null {
@@ -64,16 +74,31 @@ export function chartFocus(content: Content, allocated: readonly string[]): Char
 export function pathLabels(content: Content): PathLabel[] {
   const labels: PathLabel[] = [];
   for (const path of content.chart.paths) {
-    const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path.id);
-    const far: SkillTreeNodeDef | undefined = own.reduce<SkillTreeNodeDef | undefined>((best: SkillTreeNodeDef | undefined, node: SkillTreeNodeDef): SkillTreeNodeDef => (best === undefined || Math.hypot(node.column, node.row) > Math.hypot(best.column, best.row) ? node : best), undefined);
-    if (far === undefined) continue;
+    const far: SkillTreeNodeDef | null = armTip(content, path.id);
+    if (far === null) continue;
     labels.push({ path, at: { x: far.column * CHART_MODEL.labelReach, y: far.row * CHART_MODEL.labelReach } });
+  }
+  return labels;
+}
+
+export function specialtyLabels(content: Content): SpecialtyLabel[] {
+  const labels: SpecialtyLabel[] = [];
+  for (const specialty of content.chart.specialties) {
+    const far: SkillTreeNodeDef | null = farthestPlace(specialtyPlaces(content, specialty.id));
+    if (far === null) continue;
+    const length: number = Math.hypot(far.column, far.row);
+    const push: number = length === 0 ? 0 : CHART_MODEL.specialtyReach / length;
+    labels.push({ specialty, tint: pathTint(content, specialty.path), at: { x: far.column * (1 + push), y: far.row * (1 + push) } });
   }
   return labels;
 }
 
 export function pathTint(content: Content, pathId: string): string {
   return content.chart.paths.find((path: ChartPath): boolean => path.id === pathId)?.tint ?? '#8fd8ff';
+}
+
+export function placeTint(content: Content, node: SkillTreeNodeDef): string {
+  return node.common === null ? pathTint(content, node.path) : content.chart.common.tint;
 }
 
 function walk(links: ReadonlyMap<string, readonly string[]>, starts: readonly string[], allocated: readonly string[], target: string): string[] {

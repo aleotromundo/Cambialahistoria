@@ -1,5 +1,6 @@
-import type { Content, SkillTreeNodeDef } from '../../sim/content/types.ts';
+import type { Content, SkillTreeNodeDef, SpecialtyDef } from '../../sim/content/types.ts';
 import { canAllocate, joinBlock } from '../../sim/progression.ts';
+import { closingSpecialty } from '../../sim/specialty.ts';
 import type { JoinBlock, RefundBlock } from '../../sim/progression.ts';
 import { promptText, use } from './prompts.ts';
 
@@ -9,10 +10,13 @@ export type TreeNodeStatus =
   | { readonly kind: 'allocated' }
   | { readonly kind: 'available' }
   | { readonly kind: 'no_points' }
-  | { readonly kind: 'locked'; readonly needs: JoinBlock };
+  | { readonly kind: 'locked'; readonly needs: JoinBlock }
+  | { readonly kind: 'closed'; readonly chosen: string };
 
 export function treeNodeStatus(content: Content, allocated: readonly string[], skillPoints: number, node: SkillTreeNodeDef): TreeNodeStatus {
   if (allocated.includes(node.id)) return { kind: 'allocated' };
+  const closing: SpecialtyDef | null = closingSpecialty(content, allocated, node);
+  if (closing !== null) return { kind: 'closed', chosen: closing.name };
   const needs: JoinBlock | null = joinBlock(content, allocated, node);
   if (needs !== null) return { kind: 'locked', needs };
   return canAllocate(content, allocated, skillPoints, node.id) ? { kind: 'available' } : { kind: 'no_points' };
@@ -22,7 +26,7 @@ export function costLine(): string {
   return `Cost ${TREE_NODE_COST} skill point`;
 }
 
-const SETTLED_LINES: Readonly<Record<Exclude<TreeNodeStatus['kind'], 'locked'>, string>> = {
+const SETTLED_LINES: Readonly<Record<Exclude<TreeNodeStatus['kind'], 'locked' | 'closed'>, string>> = {
   allocated: 'Allocated',
   available: 'allocate',
   no_points: 'No skill points to spend',
@@ -34,8 +38,13 @@ const LOCKED_LINES: Readonly<Record<JoinBlock, string>> = {
   branch: 'Only your largest group of places can grow',
 };
 
+export function closedLine(chosen: string): string {
+  return `Closed · you chose ${chosen} · start over to choose again`;
+}
+
 export function statusLine(status: TreeNodeStatus, touch: boolean): string {
   if (status.kind === 'locked') return LOCKED_LINES[status.needs];
+  if (status.kind === 'closed') return closedLine(status.chosen);
   if (status.kind === 'available') return promptText(touch, use(SETTLED_LINES.available));
   return SETTLED_LINES[status.kind];
 }
@@ -52,7 +61,7 @@ export function takenLine(block: RefundBlock | null): string {
 
 export function lockedLine(status: TreeNodeStatus, steps: number, touch: boolean): string {
   const line: string = statusLine(status, touch);
-  return steps > 0 ? `${line} · ${steps * TREE_NODE_COST} points along the lit route` : line;
+  return steps > 0 && status.kind !== 'closed' ? `${line} · ${steps * TREE_NODE_COST} points along the lit route` : line;
 }
 
 export function pointsPrompt(points: number, held: number): string {

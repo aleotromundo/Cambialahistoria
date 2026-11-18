@@ -6,7 +6,19 @@ const CLOSE: string = '</svg>';
 
 const LIGHTNING: string = '<path d="M14.2 2.2 6 13h4.6L8.8 21.8 18 10.6h-4.8z" fill="currentColor" stroke="none"/>';
 
+const COMMON_FRAME: string = '<circle cx="12" cy="12" r="9.4" opacity="0.45"/>';
+
+const COMMON_GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
+  ['common_life', '<path d="M12 6.6c2.6 3 4 5 4 6.8a4 4 0 0 1-8 0c0-1.8 1.4-3.8 4-6.8z" fill="currentColor" stroke="none"/>'],
+  ['common_mana', '<path d="M12 6.8 15.4 12 12 17.2 8.6 12z"/>'],
+  ['common_both', '<path d="M9.4 8.4c1.7 2 2.6 3.3 2.6 4.5a2.6 2.6 0 0 1-5.2 0c0-1.2.9-2.5 2.6-4.5z" fill="currentColor" stroke="none"/><path d="M14.8 9.2 17 12.6 14.8 16 12.6 12.6z"/>'],
+  ['common_armour', '<path d="M12 6.8 16 8.4v3.2c0 2.5-1.7 4.5-4 5.5-2.3-1-4-3-4-5.5V8.4z"/>'],
+  ['common_shelter', '<path d="M7 13.2a5 5 0 0 1 10 0z"/><path d="M12 13.2v3.6"/>'],
+  ['common_step', '<path d="M8.4 8.8 11.6 12 8.4 15.2"/><path d="M12.6 8.8 15.8 12 12.6 15.2"/>'],
+]);
+
 const GLYPHS: ReadonlyMap<string, string> = new Map<string, string>([
+  ...[...COMMON_GLYPHS].map(([id, body]: [string, string]): [string, string] => [id, `${COMMON_FRAME}${body}`]),
   ['lightning', LIGHTNING],
   ['thunder_ring', '<path d="M13.4 5.6 8.8 12.4h3l-1.2 6 4.6-7.2h-3z" fill="currentColor" stroke="none"/><path d="M6.2 5.4A9 9 0 0 0 3.6 15"/><path d="M17.8 5.4a9 9 0 0 1 2.6 9.6"/><path d="M7.4 20a9 9 0 0 0 9.2 0" opacity="0.55"/>'],
   ['forked_bolt', '<path d="M12 21.6 13.2 16.4 10.8 15 12 10.6"/><path d="M12 10.6 8.4 8.6 9.4 5.6 6.4 2.6"/><path d="M12 10.6 13 6.6 11.6 5 12.4 2.4" opacity="0.55"/><path d="M12 10.6 15.8 8.8 15 5.6 17.8 2.6"/>'],
@@ -26,6 +38,10 @@ export function treeGlyph(id: string): string {
 
 export function hasTreeGlyph(id: string): boolean {
   return GLYPHS.has(id);
+}
+
+export function isCommonGlyph(id: string): boolean {
+  return COMMON_GLYPHS.has(id);
 }
 
 export function placeGlyph(content: Content, node: SkillTreeNodeDef): string {

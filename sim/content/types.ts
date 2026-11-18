@@ -288,9 +288,11 @@ export interface SkillTreeNodeDef {
   readonly unlock: string | null;
   readonly weapon: string | null;
   readonly triggers: readonly PowerTriggerDef[];
+  readonly common: string | null;
+  readonly specialty: string | null;
 }
 
-export type { ChartDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
+export type { ChartCommon, ChartDef, CommonPlace, SpecialtyDef, ChartGroup, ChartPath, ChartRespec, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
 
 export type { FlameLight, GlowLight, PropCache, PropDef, PropLid, PropLight, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
 

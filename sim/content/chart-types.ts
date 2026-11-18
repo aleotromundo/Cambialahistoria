@@ -25,6 +25,7 @@ export interface ChartRespec {
 
 import type { Condition } from './condition-types.ts';
 import type { WeaponKind } from './item-types.ts';
+import type { StatMod } from './types.ts';
 
 export interface WeaponGroup {
   readonly id: string;
@@ -43,6 +44,27 @@ export interface PointGrant {
   readonly points: number;
 }
 
+export interface CommonPlace {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly icon: string;
+  readonly statMods: readonly StatMod[];
+}
+
+export interface ChartCommon {
+  readonly name: string;
+  readonly tint: string;
+  readonly places: readonly CommonPlace[];
+}
+
+export interface SpecialtyDef {
+  readonly id: string;
+  readonly name: string;
+  readonly path: string;
+  readonly description: string;
+}
+
 export interface ChartRetired {
   readonly places: ReadonlyMap<string, string>;
   readonly skills: ReadonlyMap<string, string>;
@@ -59,4 +81,6 @@ export interface ChartDef {
   readonly grants: readonly PointGrant[];
   readonly twist: number;
   readonly retired: ChartRetired;
+  readonly common: ChartCommon;
+  readonly specialties: readonly SpecialtyDef[];
 }

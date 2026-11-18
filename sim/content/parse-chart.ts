@@ -1,4 +1,4 @@
-import type { ChartDef, ChartGroup, ChartPath, ChartRetired, PointGrant, SkillTarget, SkillVariant, WeaponGroup } from './chart-types.ts';
+import type { ChartCommon, ChartDef, ChartGroup, ChartPath, ChartRetired, CommonPlace, PointGrant, SkillTarget, SkillVariant, SpecialtyDef, WeaponGroup } from './chart-types.ts';
 import { skillMod, statMod } from './parse-mods.ts';
 import { powerTrigger } from './parse-powers.ts';
 import { conditions } from './parse-conditions.ts';
@@ -14,25 +14,53 @@ function variant(value: unknown, where: string): SkillVariant {
   return { skill: text(source, 'skill', where), becomes: text(source, 'becomes', where) };
 }
 
-export function treeNode(value: unknown, where: string): SkillTreeNodeDef {
+function nodeFields(source: Fields, where: string): Pick<SkillTreeNodeDef, 'id' | 'path' | 'column' | 'row' | 'requires'> {
+  return { id: text(source, 'id', where), path: text(source, 'path', where), column: numeric(source, 'column', where), row: numeric(source, 'row', where), requires: textList(source, 'requires', where) };
+}
+
+function commonNode(source: Fields, where: string, places: readonly CommonPlace[]): SkillTreeNodeDef {
+  const common: string = text(source, 'common', where);
+  const place: CommonPlace | undefined = places.find((entry: CommonPlace): boolean => entry.id === common);
+  if (place === undefined) throw new ContentError(`${where}.common`, `unknown common place ${common}`);
+  return { ...nodeFields(source, where), name: place.name, description: place.description, icon: place.icon, kind: 'minor', statMods: place.statMods, skillMods: [], variants: [], unlock: null, weapon: null, triggers: [], common, specialty: null };
+}
+
+export function treeNode(value: unknown, where: string, places: readonly CommonPlace[] = []): SkillTreeNodeDef {
   const source: Fields = fields(value, where);
+  if (source['common'] !== undefined) return commonNode(source, where, places);
   return {
-    id: text(source, 'id', where),
+    ...nodeFields(source, where),
     name: text(source, 'name', where),
     description: text(source, 'description', where),
     icon: text(source, 'icon', where),
     kind: choice(source, 'kind', TREE_NODE_KINDS, where),
-    path: text(source, 'path', where),
-    column: numeric(source, 'column', where),
-    row: numeric(source, 'row', where),
-    requires: textList(source, 'requires', where),
     statMods: each(source['statMods'], `${where}.statMods`, statMod),
     skillMods: each(source['skillMods'], `${where}.skillMods`, skillMod),
     variants: source['variants'] === undefined ? [] : each(source['variants'], `${where}.variants`, variant),
     unlock: source['unlock'] === undefined ? null : text(source, 'unlock', where),
     weapon: source['weapon'] === undefined ? null : text(source, 'weapon', where),
     triggers: source['triggers'] === undefined ? [] : each(source['triggers'], `${where}.triggers`, powerTrigger),
+    common: null,
+    specialty: source['specialty'] === undefined ? null : text(source, 'specialty', where),
   };
+}
+
+function commonPlace(value: unknown, where: string): CommonPlace {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), name: text(source, 'name', where), description: text(source, 'description', where), icon: text(source, 'icon', where), statMods: each(source['statMods'], `${where}.statMods`, statMod) };
+}
+
+function chartCommon(value: unknown, where: string): ChartCommon {
+  if (value === undefined) return { name: 'Common', tint: '#c8ccd2', places: [] };
+  const source: Fields = fields(value, where);
+  const tint: string = text(source, 'tint', where);
+  if (!TINT.test(tint)) throw new ContentError(`${where}.tint`, 'expected a colour like #a1b2c3');
+  return { name: text(source, 'name', where), tint, places: each(source['places'], `${where}.places`, commonPlace) };
+}
+
+function specialtyDef(value: unknown, where: string): SpecialtyDef {
+  const source: Fields = fields(value, where);
+  return { id: text(source, 'id', where), name: text(source, 'name', where), path: text(source, 'path', where), description: text(source, 'description', where) };
 }
 
 function chartPath(value: unknown, where: string): ChartPath {
@@ -90,6 +118,8 @@ export function chartDef(value: unknown, where: string): ChartDef {
     grants: each(source['grants'], `${where}.grants`, pointGrant),
     twist: nonNegative(source, 'twist', where),
     retired: retired(source['retired'], `${where}.retired`),
+    common: chartCommon(source['common'], `${where}.common`),
+    specialties: source['specialties'] === undefined ? [] : each(source['specialties'], `${where}.specialties`, specialtyDef),
   };
 }
 
@@ -147,6 +177,27 @@ export function chartProblems(content: Content): string[] {
   }
   problems.push(...rivalProblems(nodes));
   problems.push(...weaponProblems(content));
+  problems.push(...specialtyProblems(content));
+  return problems;
+}
+
+function specialtyProblems(content: Content): string[] {
+  const problems: string[] = [];
+  const specialties: readonly SpecialtyDef[] = content.chart.specialties;
+  if (!unique(specialties.map((entry: SpecialtyDef): string => entry.id))) problems.push('chart has duplicate specialty ids');
+  if (!unique(content.chart.common.places.map((place: CommonPlace): string => place.id))) problems.push('chart has duplicate common place ids');
+  for (const specialty of specialties) {
+    if (!content.chart.paths.some((path: ChartPath): boolean => path.id === specialty.path)) problems.push(`specialty ${specialty.id} belongs to unknown path ${specialty.path}`);
+    const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.specialty === specialty.id);
+    if (own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'keystone').length !== 1) problems.push(`specialty ${specialty.id} has no single keystone`);
+    for (const node of own) {
+      if (node.path !== specialty.path) problems.push(`tree node ${node.id} of specialty ${specialty.id} is on path ${node.path}`);
+      if (node.requires.length === 0) problems.push(`tree node ${node.id} of specialty ${specialty.id} is a starting place`);
+    }
+  }
+  for (const node of content.skillTree) {
+    if (node.specialty !== null && !specialties.some((entry: SpecialtyDef): boolean => entry.id === node.specialty)) problems.push(`tree node ${node.id} belongs to unknown specialty ${node.specialty}`);
+  }
   return problems;
 }
 
