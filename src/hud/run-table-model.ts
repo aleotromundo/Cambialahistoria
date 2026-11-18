@@ -3,7 +3,7 @@ import type { Content, MonsterDef, ZoneDef } from '../../sim/content/types.ts';
 import { pinPrices, reachedLevels, runPrice } from '../../sim/world/run-table.ts';
 import { levelKinds, pickChoices, pickName } from '../../sim/world/run-picks.ts';
 import type { PickChoice } from '../../sim/world/run-picks.ts';
-import { clashIn, conditionFrom, dangerOf, pinned, rewardOf, tooEarly } from '../../sim/world/run-state.ts';
+import { clashIn, conditionFrom, dangerOf, leanBoostOf, pinned, rewardOf, tooEarly } from '../../sim/world/run-state.ts';
 import type { PinnedCondition } from '../../sim/world/run-state.ts';
 import type { RunPin, RunSetup } from '../../sim/world/run-types.ts';
 import type { Command, World } from '../../sim/world/types.ts';
@@ -66,6 +66,7 @@ const TABLE_WORDS = {
   plain: 'No conditions: an ordinary descent',
   noLast: 'Nothing set out from here yet',
   clash: 'Cannot be pinned with',
+  lean: "lean toward this level's gear",
   lastGone: 'That level cannot be reached',
 } as const;
 
@@ -73,11 +74,17 @@ function percent(share: number): string {
   return `+${Math.round(share * 100)}%`;
 }
 
-export function rewardText(reward: RunReward): string {
-  if (reward.xp === 0 && reward.gold === 0 && reward.items === 0 && reward.rarity === 0) return '';
+function gainsText(reward: RunReward): string | null {
+  if (reward.xp === 0 && reward.gold === 0 && reward.items === 0 && reward.rarity === 0) return null;
   const same: boolean = reward.xp === reward.gold && reward.gold === reward.items;
   const gains: string = same ? `${percent(reward.xp)} experience, gold and items` : `${percent(reward.xp)} experience, ${percent(reward.gold)} gold, ${percent(reward.items)} items`;
   return reward.rarity > 0 ? `${gains}, ${Math.round(reward.rarity * 100)}% of drops at least magic` : gains;
+}
+
+export function rewardText(reward: RunReward, lean: number = 0): string {
+  const gains: string | null = gainsText(reward);
+  const leaning: string | null = lean > 0 ? `${percent(lean)} ${TABLE_WORDS.lean}` : null;
+  return [gains, leaning].filter((part: string | null): part is string => part !== null).join(', ');
 }
 
 export function dangerText(danger: number): string {
@@ -190,7 +197,7 @@ export function tableView(world: World, pick: TablePick): TableView {
       name: condition.name,
       text: condition.text,
       price,
-      reward: rewardText(condition.reward),
+      reward: rewardText(condition.reward, condition.shape.lean),
       danger: clash !== null ? `${TABLE_WORDS.clash} ${clashName}` : early ? `${TABLE_WORDS.from} ${from}` : empty ? TABLE_WORDS.nothingHere : dangerText(condition.danger),
       pinned: at >= 0,
       open: at >= 0 || (!full && zone !== null && clash === null && !empty && !early),
@@ -203,7 +210,7 @@ export function tableView(world: World, pick: TablePick): TableView {
     pinsLeft: content.runTable.pins - pick.pins.length,
     price: zone === null ? 0 : runPrice(content, zone, pick.pins),
     danger: dangerText(dangerOf(content, pick.pins)),
-    reward: rewardText(rewardOf(content, pick.pins)),
+    reward: rewardText(rewardOf(content, pick.pins), leanBoostOf(content, pick.pins) - 1),
     setOut: setOutAction(world, zone, pick.pins),
     again: againAction(world),
   };

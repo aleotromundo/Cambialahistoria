@@ -33,6 +33,15 @@
       "excludes": ["hardened"]
     },
     {
+      "id": "favoured",
+      "name": "Favoured spoils",
+      "text": "Drops lean twice as hard toward the gear this level favours.",
+      "price": 1,
+      "danger": 0,
+      "shape": { "lean": 1 },
+      "reward": { "xp": 0, "gold": 0, "items": 0, "rarity": 0 }
+    },
+    {
       "id": "one_kind",
       "name": "One kind",
       "text": "Every pack is made of the kind you pick.",

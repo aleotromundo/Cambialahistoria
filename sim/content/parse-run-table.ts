@@ -3,6 +3,7 @@ import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, nonNegative, positive, share, text, textList } from './read.ts';
 import type { RunCondition, RunFamily, RunPricing, RunReward, RunShape, RunTableDef } from './run-table-types.ts';
 import { RUN_PICKS } from './run-table-types.ts';
+import { leanOf } from './lean-rules.ts';
 import type { Content, MonsterDef, ZoneDef } from './types.ts';
 
 function optional(source: Fields, key: string, where: string): number {
@@ -95,6 +96,7 @@ export function runTableProblems(content: Content): string[] {
   for (const id of table.levels) levelProblems(content, id, need);
   need(new Set<string>(table.levels).size === table.levels.length, 'run table lists a level twice');
   need(table.pricing.steps.length >= table.pins, `run table allows ${table.pins} pins but prices only ${table.pricing.steps.length}`);
+  const unleaned: readonly string[] = table.levels.filter((level: string): boolean => leanOf(content, level) === null);
   const seen: Set<string> = new Set<string>();
   for (const entry of table.conditions) {
     const owner: string = `run condition ${entry.id}`;
@@ -104,7 +106,8 @@ export function runTableProblems(content: Content): string[] {
     need(entry.shape.fill === (entry.pick !== 'none'), `${owner} fills the level exactly when the player picks a monster or a family`);
     if (entry.pick === 'family') need(table.families.length > 0, `${owner} picks a family, but the run table lists none`);
     const total: number = entry.reward.xp + entry.reward.gold + entry.reward.items + entry.reward.rarity;
-    need(total > 0, `${owner} raises danger but adds no reward`);
+    need(total > 0 || entry.shape.lean > 0, `${owner} adds no reward and no lean`);
+    if (entry.shape.lean > 0) problems.push(...unleaned.map((level: string): string => `${owner} leans drops, but run table level ${level} has no drop lean`));
     for (const other of entry.excludes) need(other !== entry.id && table.conditions.some((known: RunCondition): boolean => known.id === other), `${owner} excludes ${other}, which is not another run condition`);
   }
   const families: Set<string> = new Set<string>();
