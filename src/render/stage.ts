@@ -23,6 +23,8 @@ import { installDarkLightSkip } from './dark-lights.ts';
 import type { GpuQueue } from './gpu-fence.ts';
 import { createGpuQueue } from './gpu-fence.ts';
 import { nextPoseTick } from './skeletons.ts';
+import type { SteadyShadows } from './steady-shadows.ts';
+import { createSteadyShadows } from './steady-shadows.ts';
 
 export const STAGE = {
   exposure: 1.22,
@@ -129,6 +131,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   let tier: QualityTier = initial;
   const renderer: WebGLRenderer = new WebGLRenderer({ canvas, antialias: tier.antialias, powerPreference: 'high-performance' });
   GPU.hold((): void => renderer.forceContextLoss());
+  const steadyShadows: SteadyShadows = createSteadyShadows();
   renderer.setPixelRatio(pixelRatioFor(tier, window.devicePixelRatio, canvas.clientWidth, canvas.clientHeight));
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = CustomToneMapping;
@@ -358,6 +361,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       const now: number = performance.now();
       aimCutaway(camera, { x: heroAt.x, z: heroAt.y, floor: heroFloor }, drawing.x, drawing.y, drawnAt === null ? 0 : (now - drawnAt) / 1000);
       drawnAt = now;
+      if (renderer.shadowMap.enabled) steadyShadows.steady(scene);
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
       gpu.mark();
@@ -368,6 +372,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
     compileAsync(target: Object3D, viewer: Camera): Promise<Object3D> {
       const previous: WebGLRenderTarget | null = renderer.getRenderTarget();
       renderer.setRenderTarget(composer === null ? null : composer.readBuffer);
+      steadyShadows.steady(target);
       try {
         return renderer.compileAsync(target, viewer, target instanceof Scene ? target : scene);
       } finally {
@@ -381,6 +386,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
         primer.samples = msaaSamples();
       }
       renderer.setRenderTarget(primer);
+      steadyShadows.steady(target);
       try {
         unsorted(renderer, (): void => renderer.render(target, viewer));
       } finally {
