@@ -1,4 +1,4 @@
-import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial, Uint16BufferAttribute, Uint32BufferAttribute } from 'three';
 import type { ZoneDrift } from '../../sim/content/road-types.ts';
 import { driftShown } from '../../sim/nav/drift.ts';
 import type { Content, SurfaceDef, ZoneDef, ZoneProp } from '../../sim/content/types.ts';
@@ -35,6 +35,8 @@ export const GROUND = {
 
 const GROUND_GRID = { spillMargin: 2 } as const;
 
+const GROUND_INDEX = { narrowLimit: 65535 } as const;
+
 export interface Occluder {
   readonly x: number;
   readonly z: number;
@@ -61,6 +63,33 @@ export interface Batch {
   readonly uvs: number[];
   readonly colors: number[];
   readonly indices: number[];
+}
+
+export interface ShapedBatch {
+  readonly positions: Float32Array;
+  readonly normals: Float32Array;
+  readonly uvs: Float32Array;
+  readonly colors: Float32Array;
+  readonly indices: Uint32Array;
+  readonly wideIndices: boolean;
+}
+
+export function shapedBatch(batch: Batch): ShapedBatch {
+  const indices: Uint32Array = Uint32Array.from(batch.indices);
+  let widest: number = 0;
+  for (const index of indices) widest = Math.max(widest, index);
+  return {
+    positions: Float32Array.from(batch.positions),
+    normals: Float32Array.from(batch.normals),
+    uvs: Float32Array.from(batch.uvs),
+    colors: Float32Array.from(batch.colors),
+    indices,
+    wideIndices: widest >= GROUND_INDEX.narrowLimit,
+  };
+}
+
+function shapedBatches(batches: ReadonlyMap<string, Batch>): ReadonlyMap<string, ShapedBatch> {
+  return new Map<string, ShapedBatch>([...batches].map(([surface, batch]: [string, Batch]): [string, ShapedBatch] => [surface, shapedBatch(batch)]));
 }
 
 export interface Grow {
@@ -104,7 +133,7 @@ function driftAt(zone: ZoneDef, column: number, row: number): ZoneDrift | null {
   return zone.drifts.find((drift: ZoneDrift): boolean => column >= drift.column && column < drift.column + drift.columns && row >= drift.row && row < drift.row + drift.rows) ?? null;
 }
 
-function driftGround(content: Content, drift: ZoneDrift, batches: ReadonlyMap<string, Batch>, wet: number): DriftGround {
+function driftGround(content: Content, drift: ZoneDrift, batches: ReadonlyMap<string, ShapedBatch>, wet: number): DriftGround {
   const meshes: Mesh[] = [];
   const materials: MeshStandardMaterial[] = [];
   for (const [surfaceId, batch] of batches) {
@@ -281,7 +310,7 @@ function fringes(spills: SpillGrid, cell: FloorCell, own: SurfaceDef): SurfaceDe
   return [...found.values()];
 }
 
-function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Batch, wet: number): Mesh | null {
+function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: ShapedBatch, wet: number): Mesh | null {
   const def: SurfaceDef | undefined = content.surfaces.get(surfaceId);
   if (def === undefined || batch.indices.length === 0) return null;
   const geometry: BufferGeometry = new BufferGeometry();
@@ -289,7 +318,7 @@ function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Bat
   geometry.setAttribute('uv', new Float32BufferAttribute(batch.uvs, 2));
   geometry.setAttribute('color', new Float32BufferAttribute(batch.colors, 4));
   geometry.setAttribute('normal', new Float32BufferAttribute(batch.normals, 3));
-  geometry.setIndex(batch.indices);
+  geometry.setIndex(batch.wideIndices ? new Uint32BufferAttribute(batch.indices, 1) : new Uint16BufferAttribute(batch.indices, 1));
   const mesh: Mesh = new Mesh(geometry, surfaceMaterial(def, use, wet));
   mesh.receiveShadow = true;
   mesh.renderOrder = use === 'overlay' ? 1 : 0;
@@ -297,9 +326,9 @@ function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Bat
 }
 
 export interface GroundBatches {
-  readonly solid: ReadonlyMap<string, Batch>;
-  readonly overlay: ReadonlyMap<string, Batch>;
-  readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, Batch>>;
+  readonly solid: ReadonlyMap<string, ShapedBatch>;
+  readonly overlay: ReadonlyMap<string, ShapedBatch>;
+  readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, ShapedBatch>>;
 }
 
 const builtBatches: WeakMap<Content, WeakMap<ZoneDef, GroundBatches>> = new WeakMap<Content, WeakMap<ZoneDef, GroundBatches>>();
@@ -315,6 +344,21 @@ export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
 }
 
 function shapeGround(content: Content, zone: ZoneDef): GroundBatches {
+  const { solid, overlay, drifting } = rawGround(content, zone);
+  return {
+    solid: shapedBatches(solid),
+    overlay: shapedBatches(overlay),
+    drifting: new Map<ZoneDrift, ReadonlyMap<string, ShapedBatch>>([...drifting].map(([drift, batches]: [ZoneDrift, ReadonlyMap<string, Batch>]): [ZoneDrift, ReadonlyMap<string, ShapedBatch>] => [drift, shapedBatches(batches)])),
+  };
+}
+
+interface RawGround {
+  readonly solid: ReadonlyMap<string, Batch>;
+  readonly overlay: ReadonlyMap<string, Batch>;
+  readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, Batch>>;
+}
+
+function rawGround(content: Content, zone: ZoneDef): RawGround {
   const solid: Map<string, Batch> = new Map<string, Batch>();
   const overlay: Map<string, Batch> = new Map<string, Batch>();
   const floorY: number = zone.floorHeight;
@@ -383,7 +427,7 @@ export function buildGround(content: Content, zone: ZoneDef): Ground {
     const mesh: Mesh | null = toMesh(content, surfaceId, 'overlay', batch, zoneWet);
     if (mesh !== null) meshes.push(mesh);
   }
-  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, ReadonlyMap<string, Batch>]): DriftGround => driftGround(content, drift, batches, zoneWet));
+  const drifts: DriftGround[] = [...drifting].map(([drift, batches]: [ZoneDrift, ReadonlyMap<string, ShapedBatch>]): DriftGround => driftGround(content, drift, batches, zoneWet));
   return {
     meshes: [...meshes, ...drifts.flatMap((entry: DriftGround): readonly Mesh[] => entry.meshes)],
     drifts,

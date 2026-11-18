@@ -8,7 +8,7 @@ function count(text: string, part: string): number {
 }
 
 void test('every direct light call in the lights chunk runs only for a light that reaches the pixel', (): void => {
-  const original: string = ShaderChunk.lights_fragment_begin;
+  const original: string = ShaderChunk.lights_fragment_begin.replaceAll(GUARDED_CALL, DIRECT_CALL);
   const calls: number = count(original, DIRECT_CALL);
   assert.ok(calls >= 3);
   const guarded: string = skipDarkLights(original);

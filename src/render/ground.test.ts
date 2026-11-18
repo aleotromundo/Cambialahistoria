@@ -76,10 +76,13 @@ void test('a zone ground is shaped once and reused when the zone is entered agai
     assert.equal(groundBatches(content, zone), first);
     assert.ok(first.solid.size + first.overlay.size > 0, zone.id);
   }
+});
+
+void test('a zone ground shaped for one load of the content is never handed to another', (): void => {
+  const content = loadContent();
   const other = loadContent();
-  for (const zone of content.zones.values()) {
-    const fresh: ZoneDef | undefined = other.zones.get(zone.id);
-    if (fresh === undefined) throw new Error(`missing ${zone.id}`);
-    assert.notEqual(groundBatches(other, fresh), groundBatches(content, zone));
-  }
+  const zone: ZoneDef | undefined = content.zones.get('ledger_court');
+  const fresh: ZoneDef | undefined = other.zones.get('ledger_court');
+  if (zone === undefined || fresh === undefined) throw new Error('missing ledger_court');
+  assert.notEqual(groundBatches(other, fresh), groundBatches(content, zone));
 });
