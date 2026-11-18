@@ -490,6 +490,34 @@ Poly Pizza (https://poly.pizza) lists each model below with the licence CC0 1.0 
 | `public/models/cave/urn_round.glb` | `urn-round` of Graveyard Kit (5.0) | Kenney | CC0 1.0 | Scaled and set on the ground |
 | `public/models/cave/urn_square.glb` | `urn-square` of Graveyard Kit (5.0) | Kenney | CC0 1.0 | Scaled and set on the ground |
 
+### Detail built for this game
+
+Flat patches, piles, wrecks and chains for the caves and the lava levels, made from boxes, rods and noise by `blender/build_cave_dressing.py` (helpers in `blender/environment_kit.py`) and compressed by `tools/compress-models.ts`. They carry no textures of their own: each material has a plain name (`patch`, `moss`, `stone`, `wood`, `iron`) and `data/props.json` dresses it in a surface from `data/surfaces.json`, so one patch is a puddle, a pebble bed, an ash drift or a crust patch.
+
+| File | What it is | Source | Licence |
+|---|---|---|---|
+| `public/models/cave/puddle_a.glb` | Thin irregular patch, two lobes | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/puddle_b.glb` | Wide thin irregular patch, three lobes | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/puddle_c.glb` | Small thin patch | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/moss_bank_a.glb` | Low mound with tufts | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/moss_bank_b.glb` | Small low mound with tufts | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/rubble_heap_a.glb` | Small heap of broken blocks | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/rubble_heap_b.glb` | Large heap of broken blocks | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/slab_pile_a.glb` | Four fallen slabs | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/slab_pile_b.glb` | Six fallen slabs | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/plank_pile.glb` | Broken planks and a beam | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/barrel_wreck.glb` | Barrel with fallen staves | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/shield_broken.glb` | Split round shield | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/spear_down.glb` | Spear lying on the ground | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/pickaxe_head_pile.glb` | Pick shaft and loose heads | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/chain_coil.glb` | Chain lying in a loose coil | Built by `blender/build_cave_dressing.py` | MIT |
+| `public/models/cave/chain_gibbet.glb` | Timber post and arm with a hanging chain and shackle | Built by `blender/build_cave_dressing.py` | MIT |
+
+```
+blender -b --factory-startup --python blender/build_cave_dressing.py -- <scratch>
+node tools/compress-models.ts <scratch>/*.glb
+```
+
 ### Cave surface textures
 
 Ground and rock textures from polyhaven.com, all CC0, made like the surface textures above: the 1k JPEG download of the diffuse, normal (OpenGL) and ARM maps written as `cwebp` WebP at 1024 pixels, and half-size copies in `public/textures/half/`. The ARM map (occlusion, roughness, metalness) is the `orm` file.

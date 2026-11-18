@@ -1,4 +1,4 @@
-import type { AroundScatter, CliffScatter, Content, OpenScatter, PropDef, ScatterSize, ZoneDef, ZoneExit, ZoneProp, ZoneScatter } from '../../sim/content/types.ts';
+import type { AroundScatter, CliffScatter, Content, OpenScatter, PropDef, ScatterSize, ZoneCheckpoint, ZoneDef, ZoneExit, ZoneProp, ZoneScatter } from '../../sim/content/types.ts';
 import { cliffRocks, cliffSpots } from '../../sim/nav/cliff-rocks.ts';
 import type { CliffSpot } from '../../sim/nav/cliff-rocks.ts';
 import type { ReadonlyVec2 } from '../../sim/math.ts';
@@ -16,6 +16,7 @@ export const ZONE_SCATTER = {
   turn: Math.PI * 2,
   saltStep: 13,
   ankle: 0.15,
+  placeMargin: 1.5,
 } as const;
 
 export interface ScatterStone {
@@ -34,6 +35,13 @@ function floorAt(zone: ZoneDef, x: number, z: number): boolean {
 
 function nearExit(exits: readonly ZoneExit[], x: number, z: number): boolean {
   return exits.some((exit: ZoneExit): boolean => Math.hypot(exit.x - x, exit.z - z) < exit.radius);
+}
+
+function nearPlace(zone: ZoneDef, x: number, z: number): boolean {
+  if (nearExit(zone.exits, x, z)) return true;
+  const margin: number = ZONE_SCATTER.placeMargin;
+  const waypoint: boolean = zone.waypoint !== null && Math.hypot(zone.waypoint.x - x, zone.waypoint.z - z) < zone.waypoint.radius + margin;
+  return waypoint || zone.checkpoints.some((checkpoint: ZoneCheckpoint): boolean => Math.hypot(checkpoint.x - x, checkpoint.z - z) < checkpoint.radius + margin);
 }
 
 function clearOf(blockers: readonly Blocker[], x: number, z: number, clear: number): boolean {
@@ -77,13 +85,13 @@ function openStones(zone: ZoneDef, rule: OpenScatter, blockers: readonly Blocker
     for (let attempt: number = 0; attempt < ZONE_SCATTER.tries; attempt += 1) {
       const centreX: number = edgeNoise(index, attempt, salt) * width;
       const centreZ: number = edgeNoise(attempt + 31, index, salt + 1) * depth;
-      if (!floorAt(zone, centreX, centreZ) || nearExit(zone.exits, centreX, centreZ) || !clearOf(blockers, centreX, centreZ, rule.clear)) continue;
+      if (!floorAt(zone, centreX, centreZ) || nearPlace(zone, centreX, centreZ) || !clearOf(blockers, centreX, centreZ, rule.clear)) continue;
       for (let member: number = 0; member < rule.clump; member += 1) {
         const angle: number = edgeNoise(index + member, attempt + 41, salt + 5) * ZONE_SCATTER.turn;
         const reach: number = member === 0 ? 0 : Math.sqrt(edgeNoise(member, index + 43, salt + 6)) * rule.spread;
         const x: number = centreX + Math.cos(angle) * reach;
         const z: number = centreZ + Math.sin(angle) * reach;
-        if (!floorAt(zone, x, z) || nearExit(zone.exits, x, z) || !clearOf(blockers, x, z, rule.clear)) continue;
+        if (!floorAt(zone, x, z) || nearPlace(zone, x, z) || !clearOf(blockers, x, z, rule.clear)) continue;
         const prop: string | undefined = picked(rule.props, edgeNoise(index + member * 3, attempt + 7, salt + 2));
         if (prop !== undefined) stones.push({ prop, x, z, yaw: edgeNoise(index + 5, member, salt + 3) * ZONE_SCATTER.turn, size: sized(rule.size, edgeNoise(member + attempt, index + 9, salt + 4)) });
       }
@@ -125,7 +133,7 @@ function aroundStones(content: Content, zone: ZoneDef, rule: AroundScatter, bloc
       const out: number = spill * spill * rule.spread - ZONE_SCATTER.tuck;
       const x: number = edgeX + (awayX / length) * out;
       const z: number = edgeZ + (awayZ / length) * out;
-      if (!floorAt(zone, x, z) || nearExit(zone.exits, x, z) || !clearOf(blockers, x, z, -ZONE_SCATTER.tuck * 2)) continue;
+      if (!floorAt(zone, x, z) || nearPlace(zone, x, z) || !clearOf(blockers, x, z, -ZONE_SCATTER.tuck * 2)) continue;
       const prop: string | undefined = picked(rule.props, edgeNoise(anchor + 11, index, salt + 2));
       if (prop !== undefined) stones.push({ prop, x, z, yaw: edgeNoise(index, anchor + 17, salt + 3) * ZONE_SCATTER.turn, size: sized(rule.size, edgeNoise(anchor, index + 23, salt + 4)) });
     }
@@ -136,7 +144,7 @@ function aroundStones(content: Content, zone: ZoneDef, rule: AroundScatter, bloc
 function cliffStones(zone: ZoneDef, rule: CliffScatter, blockers: readonly Blocker[], salt: number): ScatterStone[] {
   return cliffSpots(zone, rule, salt).flatMap((spot: CliffSpot): ScatterStone[] => {
     const prop: string | undefined = picked(rule.props, spot.pick);
-    if (prop === undefined || !clearOf(blockers, spot.x, spot.z, 0)) return [];
+    if (prop === undefined || nearPlace(zone, spot.x, spot.z) || !clearOf(blockers, spot.x, spot.z, 0)) return [];
     return [{ prop, x: spot.x, z: spot.z, yaw: (spot.rotationDegrees * Math.PI) / 180, size: sized(rule.size, spot.grow) }];
   });
 }
