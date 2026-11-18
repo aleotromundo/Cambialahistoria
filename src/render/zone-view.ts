@@ -46,14 +46,11 @@ import { createEmbers } from './embers.ts';
 import type { Hero } from './life-motion.ts';
 import type { LiddedPlacement, LiddedProps } from './lidded-props.ts';
 import { createLiddedProps } from './lidded-props.ts';
+import { flamePoint, lightLevel, lightPoint } from './prop-lights.ts';
 
 export const ZONE_VIEW = {
   abyssDepth: -1.06,
   abyssMargin: 160,
-  flickerSpeed: 9,
-  flickerDepth: 0.22,
-  lightDecay: 1.7,
-  torchReach: 0.8,
   lightBudget: 6,
   lightFadeBand: 7,
   appearRate: 2.4,
@@ -74,7 +71,6 @@ interface Conditional {
   readonly placed: ZoneProp;
   readonly wanted: (world: World) => boolean;
   readonly def: PropDef;
-  readonly point: Vector3 | null;
   readonly materials: MeshStandardMaterial[];
   object: Object3D | null;
   shown: number;
@@ -83,9 +79,12 @@ interface Conditional {
 
 interface Source {
   readonly point: Vector3;
+  readonly flame: Vector3 | null;
   readonly color: Color;
   readonly intensity: number;
   readonly distance: number;
+  readonly decay: number;
+  readonly form: PropLight['form'];
   readonly phase: number;
   readonly conditional: Conditional | null;
   score: number;
@@ -151,8 +150,8 @@ export function releaseOtherZones(content: Content, kept: ZoneDef): void {
   }
 }
 
-function lightPoint(light: PropLight, x: number, y: number, z: number, yaw: number): Vector3 {
-  return new Vector3(x + Math.sin(yaw) * ZONE_VIEW.torchReach, y + light.height, z + Math.cos(yaw) * ZONE_VIEW.torchReach);
+function lightSource(light: PropLight, x: number, y: number, z: number, yaw: number, conditional: Conditional | null): Source {
+  return { point: lightPoint(light, x, y, z, yaw), flame: flamePoint(light, x, y, z, yaw), color: new Color(light.color), intensity: light.intensity, distance: light.distance, decay: light.decay, form: light.form, phase: hash(x, z, 1) * 40, conditional, score: 0 };
 }
 
 function standardMaterials(value: unknown): MeshStandardMaterial[] {
@@ -255,7 +254,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     batch.list.push({ matrix: transform(x, lifted, z, yaw, def.scale * size) });
     placements.set(key, batch);
     if (def.light === null) return;
-    sources.push({ point: lightPoint(def.light, x, lifted, z, yaw), color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(x, z, 1) * 40, conditional: null, score: 0 });
+    sources.push(lightSource(def.light, x, lifted, z, yaw, null));
   };
 
   useTerrain(zone);
@@ -275,10 +274,9 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   for (const rock of cliffRocks(zone, content.props)) place(rock.prop, rock.x, 0, rock.z, rock.rotationDegrees * DEGREES, true, rock.size);
   for (const stone of scatterStones(content, zone)) place(stone.prop, stone.x, 0, stone.z, stone.yaw, false, stone.size);
   const showWhen = (prop: ZoneProp, def: PropDef, wanted: (world: World) => boolean): void => {
-    const point: Vector3 | null = def.light === null ? null : lightPoint(def.light, prop.x, prop.y + liftAt(zone, prop.x, prop.z), prop.z, prop.rotationDegrees * DEGREES);
-    const conditional: Conditional = { placed: prop, wanted, def, point, materials: [], object: null, shown: 0, on: null };
+    const conditional: Conditional = { placed: prop, wanted, def, materials: [], object: null, shown: 0, on: null };
     conditionals.push(conditional);
-    if (def.light !== null && point !== null) sources.push({ point, color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(prop.x, prop.z, 1) * 40, conditional, score: 0 });
+    if (def.light !== null) sources.push(lightSource(def.light, prop.x, prop.y + liftAt(zone, prop.x, prop.z), prop.z, prop.rotationDegrees * DEGREES, conditional));
   };
   const lidded: LiddedPlacement[] = [];
   zone.props.forEach((prop: ZoneProp, index: number): void => {
@@ -288,7 +286,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     if (prop.when.length === 0 && cache === null && def.lid !== null) {
       const lifted: number = prop.y + liftAt(zone, prop.x, prop.z);
       lidded.push({ def, lid: def.lid, x: prop.x, y: lifted, z: prop.z, yaw: prop.rotationDegrees * DEGREES });
-      if (def.light !== null) sources.push({ point: lightPoint(def.light, prop.x, lifted, prop.z, prop.rotationDegrees * DEGREES), color: new Color(def.light.color), intensity: def.light.intensity, distance: def.light.distance, phase: hash(prop.x, prop.z, 1) * 40, conditional: null, score: 0 });
+      if (def.light !== null) sources.push(lightSource(def.light, prop.x, lifted, prop.z, prop.rotationDegrees * DEGREES, null));
       return;
     }
     if (prop.when.length === 0 && cache === null) {
@@ -302,7 +300,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
 
   const pool: PointLight[] = [];
   for (let index: number = 0; index < Math.min(ZONE_VIEW.lightBudget, renderBudget().zoneLights, sources.length); index += 1) {
-    const light: PointLight = new PointLight(0xffffff, 0, 1, ZONE_VIEW.lightDecay);
+    const light: PointLight = new PointLight(0xffffff, 0, 1);
     pool.push(light);
     group.add(light);
   }
@@ -387,11 +385,6 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   await roofs.ready;
   group.add(roofs.group);
 
-  const flicker = (time: number, phase: number): number => {
-    const wobble: number = Math.sin(time * ZONE_VIEW.flickerSpeed + phase) * 0.6 + Math.sin(time * ZONE_VIEW.flickerSpeed * 2.7 + phase * 1.7) * 0.4;
-    return 1 - ZONE_VIEW.flickerDepth * 0.5 + wobble * ZONE_VIEW.flickerDepth * 0.5;
-  };
-
   const width: number = zoneColumns(zone) * zone.cellSize;
   const depth: number = zoneRows(zone) * zone.cellSize;
   const abyss: Mesh = new Mesh(new PlaneGeometry(width + ZONE_VIEW.abyssMargin, depth + ZONE_VIEW.abyssMargin), new MeshStandardMaterial({ color: new Color(zone.ambience.abyss), roughness: 1, metalness: 0 }));
@@ -419,7 +412,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       life.setDensity(lifeDensity(preset.effectsDensity, quality === 'mobile'));
     },
     get torches(): readonly Vector3[] {
-      return sources.flatMap((source: Source): Vector3[] => (source.conditional === null || source.conditional.on === true ? [source.point] : []));
+      return sources.flatMap((source: Source): Vector3[] => (source.flame !== null && (source.conditional === null || source.conditional.on === true) ? [source.flame] : []));
     },
     get lightsVersion(): number {
       return lightsVersion;
@@ -485,7 +478,8 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
         light.position.copy(source.point);
         light.color.copy(source.color);
         light.distance = source.distance;
-        light.intensity = source.intensity * fade * shown * flicker(time, source.phase);
+        light.decay = source.decay;
+        light.intensity = source.intensity * fade * shown * lightLevel(source.form, time, source.phase);
       });
     },
   };

@@ -1,12 +1,27 @@
 import type { ReadonlyVec2 } from '../math.ts';
 import type { ServiceKind } from './trade-types.ts';
 
-export interface PropLight {
+export const PROP_LIGHT_FORMS = ['flame', 'glow'] as const;
+
+interface PropLightBase {
   readonly color: string;
   readonly intensity: number;
   readonly distance: number;
   readonly height: number;
+  readonly decay: number;
 }
+
+export interface FlameLight extends PropLightBase {
+  readonly form: 'flame';
+  readonly reach: number;
+  readonly lift: number;
+}
+
+export interface GlowLight extends PropLightBase {
+  readonly form: 'glow';
+}
+
+export type PropLight = FlameLight | GlowLight;
 
 export interface SurfaceGlow {
   readonly color: string;

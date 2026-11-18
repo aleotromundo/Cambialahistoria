@@ -13,7 +13,7 @@
   ],
   "packReturn": {"after":90,"away":30},
   "surge": null,
-  "ambience": {"background":"#050506","abyss":"#020203","fogNear":40,"fogFar":88,"skyColor":"#5a6676","groundColor":"#2e2620","skyIntensity":4.4,"keyColor":"#c4b49e","keyIntensity":3.4},
+  "ambience": {"background":"#050506","abyss":"#020203","fogNear":40,"fogFar":88,"skyColor":"#5a6676","groundColor":"#2e2620","skyIntensity":5.8,"keyColor":"#c4b49e","keyIntensity":3.4},
   "weather": {"lightning":null,"rain":0,"wet":0.25,"mistWall":null},
   "heroLight": {"strength":15,"radius":22,"height":7,"falloff":1,"rim":0.35},
   "terrain": {"rise":1.84,"groundStep":0.6,"cliff":"cave_rock","rough":{"reach":1.2,"scale":3,"calm":[]},"blends":[{"surface":"lichen_stone","scale":8,"cover":0.24},{"surface":"cave_water","scale":5,"cover":0.1},{"surface":"cave_gravel","scale":4,"cover":0.25},{"surface":"mud","scale":6,"cover":0.18},{"surface":"black_rock","scale":11,"cover":0.22},{"surface":"pale_flagstone","scale":3,"cover":0.75,"near":"/","reach":6}],"cliffs":[{"props":["cave_rock_face_b","cave_boulder_large","cave_rock_chunk_a","cave_boulder_moss_b","cave_rock_face_a","cave_scree"],"side":"foot","step":2.5,"drop":2.5,"cover":0.8,"tuck":0.6,"size":{"least":0.7,"most":1.2}},{"props":["cave_rock_chunk_a","cave_rock_chunk_b","cave_shards","cave_stalagmites","cave_boulder_moss_c"],"side":"rim","step":2.6,"drop":2.5,"cover":0.7,"tuck":0.4,"size":{"least":0.6,"most":1.1}}], "levels": [

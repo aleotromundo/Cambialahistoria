@@ -4,6 +4,7 @@ import { packRanks, rankProblems } from './parse-ranks.ts';
 import { runTable, runTableProblems } from './parse-run-table.ts';
 import { tailwind, tailwindProblems } from './parse-tailwind.ts';
 import { propCache, propLid } from './parse-cache.ts';
+import { propLight } from './parse-light.ts';
 import { atlasProblems } from './atlas.ts';
 import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
 import { itemProblems } from './item-rules.ts';
@@ -49,7 +50,6 @@ import type {
   FirstDropDef,
   HeroDef, PlayerDef,
   PropDef,
-  PropLight,
   RarityDef,
   ResistanceRules,
   StatCap,
@@ -257,12 +257,6 @@ function baseLayers(value: unknown, where: string): ReadonlyMap<string, readonly
     return null;
   });
   return layers;
-}
-
-function propLight(value: unknown, where: string): PropLight | null {
-  if (value === null || value === undefined) return null;
-  const source: Fields = fields(value, where);
-  return { color: text(source, 'color', where), intensity: numeric(source, 'intensity', where), distance: numeric(source, 'distance', where), height: numeric(source, 'height', where) };
 }
 
 function dressing(value: unknown, where: string): Record<string, string> {
