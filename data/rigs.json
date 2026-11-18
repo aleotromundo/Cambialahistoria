@@ -226,6 +226,66 @@
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35
         },
+        "cast_storm_bolt": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_01", "impactFraction": 0.31 }
+        },
+        "cast_storm_bolt_echo": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_02", "impactFraction": 0.225 }
+        },
+        "cast_storm_bolt_lance": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_03", "impactFraction": 0.3 }
+        },
+        "cast_forkline": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_03", "impactFraction": 0.25 }
+        },
+        "cast_static_brand": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_casting_spell", "impactFraction": 0.326 }
+        },
+        "cast_static_brand_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_05", "impactFraction": 0.378 }
+        },
+        "cast_downdraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_01", "impactFraction": 0.348 }
+        },
+        "cast_downdraught_updraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_02", "impactFraction": 0.378 }
+        },
+        "cast_squall": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_cast_01", "impactFraction": 0.278 }
+        },
+        "cast_held_breath": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_cast_01", "impactFraction": 0.323 }
+        },
+        "cast_living_wire": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_04", "impactFraction": 0.314 }
+        },
+        "cast_ghost_wave": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_wide_arm_casting", "impactFraction": 0.361 }
+        },
         "spin_mocap_in": {
           "clip": "Spin_Mocap_In",
           "impactFraction": 0
@@ -549,6 +609,66 @@
         "cast": {
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35
+        },
+        "cast_storm_bolt": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_01", "impactFraction": 0.31 }
+        },
+        "cast_storm_bolt_echo": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_02", "impactFraction": 0.225 }
+        },
+        "cast_storm_bolt_lance": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_03", "impactFraction": 0.3 }
+        },
+        "cast_forkline": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_03", "impactFraction": 0.25 }
+        },
+        "cast_static_brand": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_casting_spell", "impactFraction": 0.326 }
+        },
+        "cast_static_brand_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_05", "impactFraction": 0.378 }
+        },
+        "cast_downdraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_01", "impactFraction": 0.348 }
+        },
+        "cast_downdraught_updraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_02", "impactFraction": 0.378 }
+        },
+        "cast_squall": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_cast_01", "impactFraction": 0.278 }
+        },
+        "cast_held_breath": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_cast_01", "impactFraction": 0.323 }
+        },
+        "cast_living_wire": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_04", "impactFraction": 0.314 }
+        },
+        "cast_ghost_wave": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_wide_arm_casting", "impactFraction": 0.361 }
         },
         "spin_mocap_in": {
           "clip": "Spin_Mocap_In",
