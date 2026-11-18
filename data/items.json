@@ -662,6 +662,463 @@
       }
     },
     {
+      "id": "spangenhelm",
+      "name": "Spangenhelm",
+      "slot": "head",
+      "material": "mail",
+      "icon": "helm",
+      "dropWeight": 4,
+      "minLevel": 5,
+      "visual": null,
+      "wear": [
+        "spangenhelm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 10
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 10
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.01
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "norman_helm",
+      "name": "Norman Helm",
+      "slot": "head",
+      "material": "mail",
+      "icon": "helm",
+      "dropWeight": 4,
+      "minLevel": 6,
+      "visual": null,
+      "wear": [
+        "norman_helm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 12
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 12
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.01
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "sallet",
+      "name": "Sallet",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 3,
+      "minLevel": 8,
+      "visual": null,
+      "wear": [
+        "sallet"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 14
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.02
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.01
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "barbute",
+      "name": "Barbute",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 3,
+      "minLevel": 9,
+      "visual": null,
+      "wear": [
+        "barbute"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 18
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 16
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.02
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.01
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "visored_barbute",
+      "name": "Visored Barbute",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 3,
+      "minLevel": 11,
+      "visual": null,
+      "wear": [
+        "visored_barbute"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 24
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 22
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.08
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.02
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "great_helm",
+      "name": "Great Helm",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 3,
+      "minLevel": 12,
+      "visual": null,
+      "wear": [
+        "great_helm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 26
+        },
+        {
+          "stat": "stormResist",
+          "op": "add",
+          "value": 0.06
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.04
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "visored_bascinet",
+      "name": "Visored Bascinet",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 3,
+      "minLevel": 14,
+      "visual": null,
+      "wear": [
+        "visored_bascinet"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 32
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 28
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.1
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "hundsgugel",
+      "name": "Hundsgugel",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 3,
+      "minLevel": 15,
+      "visual": null,
+      "wear": [
+        "hundsgugel"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 34
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 30
+        },
+        {
+          "stat": "frostResist",
+          "op": "add",
+          "value": 0.06
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "gothic_bascinet",
+      "name": "Gothic Bascinet",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 2,
+      "minLevel": 17,
+      "visual": null,
+      "wear": [
+        "gothic_bascinet"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 38
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 32
+        },
+        {
+          "stat": "critChance",
+          "op": "add",
+          "value": 0.03
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "horned_helm",
+      "name": "Horned Helm",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 2,
+      "minLevel": 19,
+      "visual": null,
+      "wear": [
+        "horned_helm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 40
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 34
+        },
+        {
+          "stat": "attackSpeed",
+          "op": "add",
+          "value": 0.04
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.03
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
+      "id": "spiked_war_helm",
+      "name": "Spiked War-Helm",
+      "slot": "head",
+      "material": "plate",
+      "icon": "helm",
+      "dropWeight": 2,
+      "minLevel": 21,
+      "visual": null,
+      "wear": [
+        "spiked_war_helm"
+      ],
+      "implicit": [
+        {
+          "stat": "armour",
+          "op": "add",
+          "value": 44
+        },
+        {
+          "stat": "maxLife",
+          "op": "add",
+          "value": 38
+        },
+        {
+          "stat": "frostResist",
+          "op": "add",
+          "value": 0.08
+        },
+        {
+          "stat": "critMultiplier",
+          "op": "add",
+          "value": 0.1
+        },
+        {
+          "stat": "moveSpeed",
+          "op": "percent",
+          "value": -0.04
+        }
+      ],
+      "ground": {
+        "model": "worn",
+        "scale": 1.6,
+        "pitch": 0,
+        "roll": 0,
+        "yawJitter": 180
+      }
+    },
+    {
       "id": "saltworn_shirt",
       "name": "Saltworn Shirt",
       "slot": "chest",
@@ -3333,7 +3790,11 @@
       "implicit": [],
       "unsellable": true,
       "stack": 20,
-      "use": {"type": "portal", "channel": 1.2, "reach": 1.6}
+      "use": {
+        "type": "portal",
+        "channel": 1.2,
+        "reach": 1.6
+      }
     },
     {
       "id": "wirethread_gloves",
@@ -3952,7 +4413,7 @@
       "minLevel": 6,
       "visual": null,
       "wear": [
-        "iron_helm"
+        "ornamented_great_helm"
       ],
       "implicit": [
         {

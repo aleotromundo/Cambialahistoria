@@ -904,6 +904,174 @@
     "hides": []
   },
   {
+    "id": "spangenhelm",
+    "model": "models/wear/{frame}/helms/spangenhelm.glb",
+    "pieces": [
+      "Spangenhelm"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "norman_helm",
+    "model": "models/wear/{frame}/helms/norman_helm.glb",
+    "pieces": [
+      "Norman_Helm"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "sallet",
+    "model": "models/wear/{frame}/helms/sallet.glb",
+    "pieces": [
+      "Sallet"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "barbute",
+    "model": "models/wear/{frame}/helms/barbute.glb",
+    "pieces": [
+      "Barbute"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "visored_barbute",
+    "model": "models/wear/{frame}/helms/visored_barbute.glb",
+    "pieces": [
+      "Visored_Barbute"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "great_helm",
+    "model": "models/wear/{frame}/helms/great_helm.glb",
+    "pieces": [
+      "Great_Helm"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "visored_bascinet",
+    "model": "models/wear/{frame}/helms/bascinet.glb",
+    "pieces": [
+      "Bascinet"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "hundsgugel",
+    "model": "models/wear/{frame}/helms/hundsgugel.glb",
+    "pieces": [
+      "Hundsgugel"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "gothic_bascinet",
+    "model": "models/wear/{frame}/helms/gothic_bascinet.glb",
+    "pieces": [
+      "Gothic_Bascinet"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "horned_helm",
+    "model": "models/wear/{frame}/helms/horned_helm.glb",
+    "pieces": [
+      "Horned_Helm"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "spiked_war_helm",
+    "model": "models/wear/{frame}/helms/war_helm.glb",
+    "pieces": [
+      "War_Helm"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
+    "id": "ornamented_great_helm",
+    "model": "models/wear/{frame}/helms/ornamented_great_helm.glb",
+    "pieces": [
+      "Ornamented_Great_Helm"
+    ],
+    "region": "head",
+    "covers": [
+      "hair"
+    ],
+    "surfaces": {},
+    "tint": "#ffffff",
+    "hides": []
+  },
+  {
     "id": "circlet",
     "model": "models/wear/{frame}/headgear.glb",
     "pieces": [
