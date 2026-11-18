@@ -30,8 +30,11 @@ export const LOBBY_SCREEN = {
   seenLabel: 'Last seen',
   levelLabel: 'Level',
   findsLabel: 'Finds the',
-  chosenProperty: '--chosen',
-  countProperty: '--heroes',
+  chosenColumnProperty: '--chosen-column',
+  chosenRowProperty: '--chosen-row',
+  columnsProperty: '--hero-columns',
+  rowsProperty: '--hero-rows',
+  heroColumns: 2,
 } as const;
 
 export interface SheetView {
@@ -188,8 +191,13 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
       for (const option of choice.options) heroButtons.set(option.id, heroButton(option));
     }
     const at: number = choice.options.findIndex((option: HeroOption): boolean => option.id === choice.chosen);
-    setVar(heroes, LOBBY_SCREEN.countProperty, String(choice.options.length));
-    if (at >= 0) setVar(heroes, LOBBY_SCREEN.chosenProperty, String(at));
+    const columns: number = Math.max(1, Math.min(choice.options.length, LOBBY_SCREEN.heroColumns));
+    setVar(heroes, LOBBY_SCREEN.columnsProperty, String(columns));
+    setVar(heroes, LOBBY_SCREEN.rowsProperty, String(Math.max(1, Math.ceil(choice.options.length / columns))));
+    if (at >= 0) {
+      setVar(heroes, LOBBY_SCREEN.chosenColumnProperty, String(at % columns));
+      setVar(heroes, LOBBY_SCREEN.chosenRowProperty, String(Math.floor(at / columns)));
+    }
     if (at >= 0 && heroes.dataset['chosen'] !== 'true') heroes.getBoundingClientRect();
     setData(heroes, 'chosen', String(at >= 0));
     for (const [id, made] of heroButtons) setAttr(made, 'aria-checked', String(id === choice.chosen));

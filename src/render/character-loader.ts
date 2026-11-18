@@ -142,12 +142,16 @@ function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: numb
   return cloned;
 }
 
-function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandardMaterial[]): void {
+export function skinOf(tint: string, skin: string): string {
+  return `#${new Color(tint).multiply(new Color(skin)).getHexString()}`;
+}
+
+function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandardMaterial[], skinTint: string): void {
   if (!(object instanceof Mesh)) return;
   object.castShadow = true;
   object.receiveShadow = false;
   object.frustumCulled = false;
-  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1, look.tint);
+  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1, skinTint);
   sink.push(...cloned);
   const first: MeshStandardMaterial | undefined = cloned[0];
   if (first !== undefined) object.material = cloned.length === 1 ? first : cloned;
@@ -200,7 +204,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   let faded: number = 1;
   let shadeSees: boolean = false;
   const materials: MeshStandardMaterial[] = [];
-  model.traverse((object: Object3D): void => dress(object, look, glow, materials));
+  const skinTint: string = skinOf(look.tint, def.skin);
+  model.traverse((object: Object3D): void => dress(object, look, glow, materials, skinTint));
   for (const name of def.hiddenNodes) {
     const node: Object3D | undefined = findNode(model, name);
     if (node !== undefined) node.visible = false;
@@ -272,7 +277,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     const fitted: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.drawn.forEach((source: SkinnedMesh, index: number): void => {
       const geometry: BufferGeometry | undefined = fitted[index];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps, look.tint);
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps, skinTint);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
@@ -350,7 +355,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
         holder.scale.setScalar(socket.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
-        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials));
+        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials, skinTint));
         else shadeHeld(copy, glow, piece.materials);
         holder.add(copy);
         bone.add(holder);

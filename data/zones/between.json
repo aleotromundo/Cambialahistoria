@@ -105,8 +105,22 @@
         "find": {"type": "item", "item": "rusted_blade", "marker": "bolt", "sets": {"first_blade": "found"}, "equip": true}
       },
       {
+        "id": "wight_blade",
+        "when": [{"type": "hero", "is": "wight_man"}, {"type": "flag", "flag": "first_blade", "not": true}, {"type": "flag", "flag": "opening", "is": "read"}],
+        "after": 34,
+        "ahead": 9,
+        "find": {"type": "item", "item": "rusted_blade", "marker": "bolt", "sets": {"first_blade": "found"}, "equip": true}
+      },
+      {
         "id": "crossbow",
         "when": [{"type": "hero", "is": "woman"}, {"type": "flag", "flag": "first_blade", "not": true}, {"type": "flag", "flag": "opening", "is": "read"}],
+        "after": 34,
+        "ahead": 9,
+        "find": {"type": "item", "item": "worn_crossbow", "marker": "bolt", "sets": {"first_blade": "found"}, "equip": true}
+      },
+      {
+        "id": "wight_crossbow",
+        "when": [{"type": "hero", "is": "wight_woman"}, {"type": "flag", "flag": "first_blade", "not": true}, {"type": "flag", "flag": "opening", "is": "read"}],
         "after": 34,
         "ahead": 9,
         "find": {"type": "item", "item": "worn_crossbow", "marker": "bolt", "sets": {"first_blade": "found"}, "equip": true}

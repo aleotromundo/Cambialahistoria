@@ -1,7 +1,9 @@
 {
   "heroes": [
     {"id": "man", "name": "Man", "rig": "hero_man", "names": "man"},
-    {"id": "woman", "name": "Woman", "rig": "hero_woman", "names": "woman"}
+    {"id": "woman", "name": "Woman", "rig": "hero_woman", "names": "woman"},
+    {"id": "wight_man", "name": "Wight man", "rig": "hero_wight_man", "names": "man"},
+    {"id": "wight_woman", "name": "Wight woman", "rig": "hero_wight_woman", "names": "woman"}
   ],
   "radius": 0.5,
   "baseStats": {

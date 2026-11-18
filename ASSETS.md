@@ -9,6 +9,7 @@ Shipped models are CC0 (public domain), CC BY 4.0 with the credit below, or made
 | Source | Author | Link | Licence | Licence text |
 |---|---|---|---|---|
 | Free Pack - Human Skeleton | PolyOne Studio | https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
+| Skull downloadable | martinjario (https://www.artstation.com/artist/martinjario) | https://sketchfab.com/3d-models/skull-downloadable-1a9db900738d44298b0bc59f68123393 | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
 | Universal Animation Library (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library.txt](licenses/Quaternius-Universal-Animation-Library.txt) |
 | Universal Animation Library 2 (Standard) | Quaternius (quaternius.com) | https://quaternius.com/packs/universalanimationlibrary2.html | CC0 1.0 | [licenses/Quaternius-Universal-Animation-Library-2.txt](licenses/Quaternius-Universal-Animation-Library-2.txt) |
 | The 100STYLE Dataset (SpinAntiClock_ID.bvh) | Ian Mason, Sebastian Starke, Taku Komura | https://www.ianxmason.com/100style/ | CC BY 4.0 | [licenses/CC-BY-4.0.txt](licenses/CC-BY-4.0.txt) |
@@ -73,6 +74,8 @@ The Discord, GitHub and X marks in the footers of the title screen (`play/index.
 
 "Free Pack - Human Skeleton" by PolyOne Studio, https://sketchfab.com/3d-models/free-pack-human-skeleton-950d0a46531f492ab8715777e312a5bf, licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: posed onto the Quaternius rig, decimated and repainted; lower-detail copies removed. The same credit is shown on the game's title screen.
 
+"Skull downloadable" by martinjario, https://sketchfab.com/3d-models/skull-downloadable-1a9db900738d44298b0bc59f68123393, licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: simplified from 31,016 to 3,600 triangles, its textures halved to 1024 pixels, scaled and set into the head of the man's and the woman's bodies, bound to the head joint and given two small glowing eyes, in `public/models/characters/wight_man.glb` and `wight_woman.glb`. The same credit is shown on the game's title screen.
+
 "The 100STYLE Dataset" by Ian Mason, Sebastian Starke and Taku Komura, https://www.ianxmason.com/100style/ (https://zenodo.org/records/8127870), licensed under Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: the SpinAntiClock_ID take retargeted onto the Quaternius universal skeleton, its heading removed, played at twice its speed, its arms replaced by authored Quaternius sword poses, and cut into `public/models/animations/universal/Spin_Mocap_In.glb`, `Spin_Mocap_Loop.glb` and `Spin_Mocap_Out.glb`. The same credit is shown on the game's title screen.
 
 ## Characters and animations
@@ -83,6 +86,7 @@ Humans (the hero, the townsfolk and the unfinished) stand on the Quaternius univ
 |---|---|---|---|
 | `public/models/characters/skeleton.glb` | The skeleton body of the skeleton monsters | "Free Pack - Human Skeleton" by PolyOne Studio, fitted to the rig, decimated and repainted in an earlier prototype; lower-detail copies stripped here by `tools/build-characters.ts` | CC BY 4.0 |
 | `public/models/characters/man.glb`, `public/models/characters/woman.glb` | The man's and the woman's bodies: head, neck, eyes and brows on the universal skeleton; the woman's neck reaches down to her collarbones so it runs under every neckline | Head, neck, eyes and brows of `Superhero_Male_FullBody.gltf` and `Superhero_Female_FullBody.gltf` with their own Superhero skin material and texture, from Universal Base Characters [Standard] by Quaternius; joint proportions from the Ranger outfits of Modular Character Outfits - Fantasy [Standard] by Quaternius; assembled by `tools/assemble-body.ts` from `tools/universal-bodies.json` | CC0 1.0 |
+| `public/models/characters/wight_man.glb`, `public/models/characters/wight_woman.glb` | The wights' bodies: a bare skull with a glowing eye in each socket and the bones of the neck, on the man's and the woman's skeletons, so every clip, outfit and head piece of those frames fits them | The skull is "Skull downloadable" by martinjario (CC BY 4.0), simplified and set into the head of `man.glb` and `woman.glb`, all of it bound to the head joint; the neck bones are the neck of `skeleton.glb` ("Free Pack - Human Skeleton" by PolyOne Studio, CC BY 4.0); the eyes are spheres made for this project; built by `tools/build-skull-body.ts` from `tools/skull-bodies.json` | CC BY 4.0 |
 | `public/models/wear/man/hair.glb`, `public/models/wear/woman/hair.glb` | The hairstyles and the beard, one mesh per style | The head-bone hairstyles of Universal Base Characters [Standard] by Quaternius, assembled by `tools/assemble-body.ts` | CC0 1.0 |
 | `public/models/wear/man/peasant.glb`, `public/models/wear/woman/peasant.glb` | The Peasant outfit, one mesh per part | Male and Female Peasant parts of Modular Character Outfits - Fantasy [Standard] by Quaternius, assembled by `tools/assemble-body.ts`, which fits the collar out over the body's neck in one smooth piece and flattens the normal map's baked relief where the fit reshapes the cloth | CC0 1.0 |
 | `public/models/wear/man/ranger.glb`, `public/models/wear/woman/ranger.glb` | The Ranger outfit, one mesh per part | Male and Female Ranger parts of Modular Character Outfits - Fantasy [Standard] by Quaternius, assembled by `tools/assemble-body.ts`, which fits the collar and hood out over the body's neck in one smooth piece and flattens the normal map's baked relief where the fit reshapes the cloth | CC0 1.0 |
@@ -111,6 +115,14 @@ Build the bodies and the clothes with both Quaternius packs unpacked in one sour
 ```bash
 node tools/assemble-body.ts tools/universal-bodies.json <sources-folder>
 node tools/compress-models.ts public/models/characters/man.glb public/models/characters/woman.glb public/models/wear/man/*.glb public/models/wear/woman/*.glb
+```
+
+Build the wights' bodies from the man's and the woman's bodies, the skeleton monster's neck and the skull from Sketchfab (`skull_downloadable.glb`, the GLB with 2k textures, in `2026-11-18-sketchfab-skull/` under the sources folder):
+
+```bash
+node tools/build-skull-body.ts tools/skull-bodies.json <sources-folder>
+node tools/shrink-textures.ts 1024 public/models/characters/wight_man.glb public/models/characters/wight_woman.glb
+node tools/compress-models.ts public/models/characters/wight_man.glb public/models/characters/wight_woman.glb
 ```
 
 Build the head pieces from the two bodies already in this repository (no outside sources):

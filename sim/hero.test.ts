@@ -86,7 +86,7 @@ void test('a hero condition holds for the chosen hero only, and each hero is lai
   assert.equal(holds(world, { type: 'hero', is: first.id, not: false }), false);
   assert.equal(holds(world, { type: 'hero', is: first.id, not: true }), true);
   const finds: (string | null)[] = content.player.heroes.map((hero: HeroDef): string | null => heroFind(content, hero.id));
-  assert.deepEqual(finds, ['rusted_blade', 'worn_crossbow']);
+  assert.deepEqual(finds, ['rusted_blade', 'worn_crossbow', 'rusted_blade', 'worn_crossbow']);
   assert.equal(heroFind(content, 'nobody'), null);
 });
 

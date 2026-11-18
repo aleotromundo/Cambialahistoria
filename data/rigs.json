@@ -930,6 +930,774 @@
     ]
   },
   {
+    "id": "hero_wight_man",
+    "base": [],
+    "url": "models/characters/wight_man.glb",
+    "clipFolder": "models/animations/universal",
+    "frame": "man",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14,
+        "stride": 0.76
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08,
+        "stride": 3.304
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Loop",
+      "run": "Jog_Fwd_Loop",
+      "hit": [
+        "Hit_Chest",
+        "Hit_Head"
+      ],
+      "death": [
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "rise": "Death_Collapse",
+      "actions": {
+        "attack": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18
+        },
+        "attack_b": {
+          "clip": "Sword_Combo_B",
+          "impactFraction": 0.17
+        },
+        "attack_c": {
+          "clip": "Sword_Combo_C",
+          "impactFraction": 0.325
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "sweep": {
+          "clip": "Sword_Sweep",
+          "impactFraction": 0.64
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "cast_storm_bolt": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_01", "impactFraction": 0.31 }
+        },
+        "cast_storm_bolt_echo": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_02", "impactFraction": 0.225 }
+        },
+        "cast_storm_bolt_lance": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_03", "impactFraction": 0.3 }
+        },
+        "cast_forkline": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_03", "impactFraction": 0.25 }
+        },
+        "cast_static_brand": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_casting_spell", "impactFraction": 0.326 }
+        },
+        "cast_static_brand_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_05", "impactFraction": 0.378 }
+        },
+        "cast_downdraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_01", "impactFraction": 0.348 }
+        },
+        "cast_downdraught_updraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_02", "impactFraction": 0.378 }
+        },
+        "cast_squall": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_cast_01", "impactFraction": 0.278 }
+        },
+        "cast_held_breath": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_cast_01", "impactFraction": 0.323 }
+        },
+        "cast_living_wire": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_04", "impactFraction": 0.314 }
+        },
+        "cast_ghost_wave": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_wide_arm_casting", "impactFraction": 0.361 }
+        },
+        "spin_mocap_in": {
+          "clip": "Spin_Mocap_In",
+          "impactFraction": 0
+        },
+        "spin_mocap_loop": {
+          "clip": "Spin_Mocap_Loop",
+          "impactFraction": 0
+        },
+        "spin_mocap_out": {
+          "clip": "Spin_Mocap_Out",
+          "impactFraction": 0
+        },
+        "spin_skate_in": {
+          "clip": "Spin_Skate_In",
+          "impactFraction": 0
+        },
+        "spin_skate_loop": {
+          "clip": "Spin_Skate_Loop",
+          "impactFraction": 0
+        },
+        "spin_skate_out": {
+          "clip": "Spin_Skate_Out",
+          "impactFraction": 0
+        },
+        "spin_twohand_in": {
+          "clip": "Spin_Twohand_In",
+          "impactFraction": 0
+        },
+        "spin_twohand_loop": {
+          "clip": "Spin_Twohand_Loop",
+          "impactFraction": 0
+        },
+        "spin_twohand_out": {
+          "clip": "Spin_Twohand_Out",
+          "impactFraction": 0
+        },
+        "spin_low_in": {
+          "clip": "Spin_Low_In",
+          "impactFraction": 0
+        },
+        "spin_low_loop": {
+          "clip": "Spin_Low_Loop",
+          "impactFraction": 0
+        },
+        "spin_low_out": {
+          "clip": "Spin_Low_Out",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_in": {
+          "clip": "Spin_Whirlwind_In",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_loop": {
+          "clip": "Spin_Whirlwind_Loop",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_out": {
+          "clip": "Spin_Whirlwind_Out",
+          "impactFraction": 0
+        },
+        "spin_upright_in": {
+          "clip": "Spin_Upright_In",
+          "impactFraction": 0
+        },
+        "spin_upright_loop": {
+          "clip": "Spin_Upright_Loop",
+          "impactFraction": 0
+        },
+        "spin_upright_out": {
+          "clip": "Spin_Upright_Out",
+          "impactFraction": 0
+        },
+        "roll": {
+          "clip": "Roll",
+          "impactFraction": 0.6
+        },
+        "hit_reel": {
+          "clip": "Shield_Break",
+          "impactFraction": 0.25
+        }
+      },
+      "unarmed": {
+        "idle": "Idle_Loop",
+        "actions": {
+          "attack": {
+            "clip": "Punch_Jab",
+            "impactFraction": 0.3
+          },
+          "attack_b": {
+            "clip": "Punch_Cross",
+            "impactFraction": 0.35
+          },
+          "attack_c": {
+            "clip": "Punch_Jab",
+            "impactFraction": 0.3
+          }
+        }
+      },
+      "stances": {
+        "crossbow": {
+          "idle": "Pistol_Idle_Loop",
+          "actions": {
+            "shoot": {
+              "clip": "Pistol_Shoot",
+              "impactFraction": 0.1
+            },
+            "shoot_fan": {
+              "clip": "Quarrel_Fan",
+              "impactFraction": 0.46
+            },
+            "shoot_heave": {
+              "clip": "Quarrel_Heave",
+              "impactFraction": 0.21
+            }
+          }
+        },
+        "heavy": {
+          "idle": "Sword_Idle",
+          "actions": {
+            "attack_b": {
+              "clip": "Sword_Slam",
+              "impactFraction": 0.245
+            },
+            "attack_c": {
+              "clip": "Sword_Slam_Charged",
+              "impactFraction": 0.38
+            }
+          }
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "hand_r",
+        "position": [
+          -0.031,
+          0.104,
+          -0.004
+        ],
+        "rotationDegrees": [
+          80.5,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "hand_l",
+        "position": [
+          0.031,
+          0.104,
+          -0.004
+        ],
+        "rotationDegrees": [
+          80.5,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "Head",
+        "neck_01"
+      ],
+      "torso": [
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "clavicle_l",
+        "clavicle_r"
+      ],
+      "arms": [
+        "upperarm_l",
+        "lowerarm_l",
+        "upperarm_r",
+        "lowerarm_r"
+      ],
+      "hands": [
+        "hand_l",
+        "index_01_l",
+        "index_02_l",
+        "index_03_l",
+        "middle_01_l",
+        "middle_02_l",
+        "middle_03_l",
+        "ring_01_l",
+        "ring_02_l",
+        "ring_03_l",
+        "pinky_01_l",
+        "pinky_02_l",
+        "pinky_03_l",
+        "thumb_01_l",
+        "thumb_02_l",
+        "thumb_03_l",
+        "hand_r",
+        "index_01_r",
+        "index_02_r",
+        "index_03_r",
+        "middle_01_r",
+        "middle_02_r",
+        "middle_03_r",
+        "ring_01_r",
+        "ring_02_r",
+        "ring_03_r",
+        "pinky_01_r",
+        "pinky_02_r",
+        "pinky_03_r",
+        "thumb_01_r",
+        "thumb_02_r",
+        "thumb_03_r"
+      ],
+      "legs": [
+        "pelvis",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "feet": [
+        "foot_l",
+        "ball_l",
+        "foot_r",
+        "ball_r"
+      ]
+    },
+    "contacts": [
+      {
+        "bone": "pelvis",
+        "radius": 0.12
+      },
+      {
+        "bone": "spine_03",
+        "radius": 0.12
+      },
+      {
+        "bone": "Head",
+        "radius": 0.11
+      },
+      {
+        "bone": "foot_l",
+        "radius": 0.07
+      },
+      {
+        "bone": "foot_r",
+        "radius": 0.07
+      },
+      {
+        "bone": "hand_l",
+        "radius": 0.03
+      },
+      {
+        "bone": "hand_r",
+        "radius": 0.03
+      }
+    ],
+    "skin": "#8f9aa0"
+  },
+  {
+    "id": "hero_wight_woman",
+    "base": [
+      "hair_ponytail"
+    ],
+    "url": "models/characters/wight_woman.glb",
+    "clipFolder": "models/animations/universal",
+    "frame": "woman",
+    "scale": 1.2,
+    "yawOffsetDegrees": 0,
+    "height": 1.85,
+    "rootMotionBone": null,
+    "gaits": [
+      {
+        "clip": "Walk_Loop",
+        "groundSpeed": 1.14,
+        "stride": 0.76
+      },
+      {
+        "clip": "Jog_Fwd_Loop",
+        "groundSpeed": 7.08,
+        "stride": 3.304
+      }
+    ],
+    "clips": {
+      "idle": "Idle_Loop",
+      "run": "Jog_Fwd_Loop",
+      "hit": [
+        "Hit_Chest",
+        "Hit_Head"
+      ],
+      "death": [
+        "Death_Knockback",
+        "Death_Collapse"
+      ],
+      "rise": "Death_Collapse",
+      "actions": {
+        "attack": {
+          "clip": "Sword_Combo_A",
+          "impactFraction": 0.18
+        },
+        "attack_b": {
+          "clip": "Sword_Combo_B",
+          "impactFraction": 0.17
+        },
+        "attack_c": {
+          "clip": "Sword_Combo_C",
+          "impactFraction": 0.325
+        },
+        "slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245
+        },
+        "slam_charged": {
+          "clip": "Sword_Slam_Charged",
+          "impactFraction": 0.38
+        },
+        "sweep": {
+          "clip": "Sword_Sweep",
+          "impactFraction": 0.64
+        },
+        "cast": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35
+        },
+        "cast_storm_bolt": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_01", "impactFraction": 0.31 }
+        },
+        "cast_storm_bolt_echo": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_02", "impactFraction": 0.225 }
+        },
+        "cast_storm_bolt_lance": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_03", "impactFraction": 0.3 }
+        },
+        "cast_forkline": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_attack_03", "impactFraction": 0.25 }
+        },
+        "cast_static_brand": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_casting_spell", "impactFraction": 0.326 }
+        },
+        "cast_static_brand_burst": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_05", "impactFraction": 0.378 }
+        },
+        "cast_downdraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_01", "impactFraction": 0.348 }
+        },
+        "cast_downdraught_updraught": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_area_02", "impactFraction": 0.378 }
+        },
+        "cast_squall": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_1h_cast_01", "impactFraction": 0.278 }
+        },
+        "cast_held_breath": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_cast_01", "impactFraction": 0.323 }
+        },
+        "cast_living_wire": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_2h_attack_04", "impactFraction": 0.314 }
+        },
+        "cast_ghost_wave": {
+          "clip": "Spell_Simple_Shoot",
+          "impactFraction": 0.35,
+          "private": { "clip": "mixamo_wide_arm_casting", "impactFraction": 0.361 }
+        },
+        "spin_mocap_in": {
+          "clip": "Spin_Mocap_In",
+          "impactFraction": 0
+        },
+        "spin_mocap_loop": {
+          "clip": "Spin_Mocap_Loop",
+          "impactFraction": 0
+        },
+        "spin_mocap_out": {
+          "clip": "Spin_Mocap_Out",
+          "impactFraction": 0
+        },
+        "spin_skate_in": {
+          "clip": "Spin_Skate_In",
+          "impactFraction": 0
+        },
+        "spin_skate_loop": {
+          "clip": "Spin_Skate_Loop",
+          "impactFraction": 0
+        },
+        "spin_skate_out": {
+          "clip": "Spin_Skate_Out",
+          "impactFraction": 0
+        },
+        "spin_twohand_in": {
+          "clip": "Spin_Twohand_In",
+          "impactFraction": 0
+        },
+        "spin_twohand_loop": {
+          "clip": "Spin_Twohand_Loop",
+          "impactFraction": 0
+        },
+        "spin_twohand_out": {
+          "clip": "Spin_Twohand_Out",
+          "impactFraction": 0
+        },
+        "spin_low_in": {
+          "clip": "Spin_Low_In",
+          "impactFraction": 0
+        },
+        "spin_low_loop": {
+          "clip": "Spin_Low_Loop",
+          "impactFraction": 0
+        },
+        "spin_low_out": {
+          "clip": "Spin_Low_Out",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_in": {
+          "clip": "Spin_Whirlwind_In",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_loop": {
+          "clip": "Spin_Whirlwind_Loop",
+          "impactFraction": 0
+        },
+        "spin_whirlwind_out": {
+          "clip": "Spin_Whirlwind_Out",
+          "impactFraction": 0
+        },
+        "spin_upright_in": {
+          "clip": "Spin_Upright_In",
+          "impactFraction": 0
+        },
+        "spin_upright_loop": {
+          "clip": "Spin_Upright_Loop",
+          "impactFraction": 0
+        },
+        "spin_upright_out": {
+          "clip": "Spin_Upright_Out",
+          "impactFraction": 0
+        },
+        "roll": {
+          "clip": "Roll",
+          "impactFraction": 0.6
+        },
+        "hit_reel": {
+          "clip": "Shield_Break",
+          "impactFraction": 0.25
+        }
+      },
+      "unarmed": {
+        "idle": "Idle_Loop",
+        "actions": {
+          "attack": {
+            "clip": "Punch_Jab",
+            "impactFraction": 0.3
+          },
+          "attack_b": {
+            "clip": "Punch_Cross",
+            "impactFraction": 0.35
+          },
+          "attack_c": {
+            "clip": "Punch_Jab",
+            "impactFraction": 0.3
+          }
+        }
+      },
+      "stances": {
+        "crossbow": {
+          "idle": "Pistol_Idle_Loop",
+          "actions": {
+            "shoot": {
+              "clip": "Pistol_Shoot",
+              "impactFraction": 0.1
+            },
+            "shoot_fan": {
+              "clip": "Quarrel_Fan",
+              "impactFraction": 0.46
+            },
+            "shoot_heave": {
+              "clip": "Quarrel_Heave",
+              "impactFraction": 0.21
+            }
+          }
+        },
+        "heavy": {
+          "idle": "Sword_Idle",
+          "actions": {
+            "attack_b": {
+              "clip": "Sword_Slam",
+              "impactFraction": 0.245
+            },
+            "attack_c": {
+              "clip": "Sword_Slam_Charged",
+              "impactFraction": 0.38
+            }
+          }
+        }
+      }
+    },
+    "sockets": {
+      "hand_r": {
+        "bone": "hand_r",
+        "position": [
+          -0.025,
+          0.077,
+          0.0005
+        ],
+        "rotationDegrees": [
+          80.5,
+          90,
+          0
+        ],
+        "scale": 1
+      },
+      "hand_l": {
+        "bone": "hand_l",
+        "position": [
+          0.025,
+          0.077,
+          0.0005
+        ],
+        "rotationDegrees": [
+          80.5,
+          -90,
+          0
+        ],
+        "scale": 1
+      }
+    },
+    "hiddenNodes": [],
+    "bodyParts": {
+      "head": [
+        "Head",
+        "neck_01"
+      ],
+      "torso": [
+        "spine_01",
+        "spine_02",
+        "spine_03",
+        "clavicle_l",
+        "clavicle_r"
+      ],
+      "arms": [
+        "upperarm_l",
+        "lowerarm_l",
+        "upperarm_r",
+        "lowerarm_r"
+      ],
+      "hands": [
+        "hand_l",
+        "index_01_l",
+        "index_02_l",
+        "index_03_l",
+        "middle_01_l",
+        "middle_02_l",
+        "middle_03_l",
+        "ring_01_l",
+        "ring_02_l",
+        "ring_03_l",
+        "pinky_01_l",
+        "pinky_02_l",
+        "pinky_03_l",
+        "thumb_01_l",
+        "thumb_02_l",
+        "thumb_03_l",
+        "hand_r",
+        "index_01_r",
+        "index_02_r",
+        "index_03_r",
+        "middle_01_r",
+        "middle_02_r",
+        "middle_03_r",
+        "ring_01_r",
+        "ring_02_r",
+        "ring_03_r",
+        "pinky_01_r",
+        "pinky_02_r",
+        "pinky_03_r",
+        "thumb_01_r",
+        "thumb_02_r",
+        "thumb_03_r"
+      ],
+      "legs": [
+        "pelvis",
+        "thigh_l",
+        "calf_l",
+        "thigh_r",
+        "calf_r"
+      ],
+      "feet": [
+        "foot_l",
+        "ball_l",
+        "foot_r",
+        "ball_r"
+      ]
+    },
+    "contacts": [
+      {
+        "bone": "pelvis",
+        "radius": 0.12
+      },
+      {
+        "bone": "spine_03",
+        "radius": 0.12
+      },
+      {
+        "bone": "Head",
+        "radius": 0.11
+      },
+      {
+        "bone": "foot_l",
+        "radius": 0.07
+      },
+      {
+        "bone": "foot_r",
+        "radius": 0.07
+      },
+      {
+        "bone": "hand_l",
+        "radius": 0.03
+      },
+      {
+        "bone": "hand_r",
+        "radius": 0.03
+      }
+    ],
+    "skin": "#8f9aa0"
+  },
+  {
     "id": "human_man",
     "url": "models/characters/man.glb",
     "clipFolder": "models/animations/universal",

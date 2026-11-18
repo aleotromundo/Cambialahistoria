@@ -1,7 +1,9 @@
 import type { RigActionClip, RigClips, RigPrivateClip, RigContact, RigDef, RigSocket, RigStanceClips, Triple } from './types.ts';
 import type { Fields } from './read.ts';
-import { ContentError, each, fields, nullableText, numeric, positive, text, textList } from './read.ts';
+import { colour, ContentError, each, fields, nullableText, numeric, positive, text, textList } from './read.ts';
 import { rigGaits } from './parse-gaits.ts';
+
+export const RIG_DEFAULTS = { skin: '#ffffff' } as const;
 
 function impactOf(entry: Fields, where: string): number {
   const impactFraction: number = numeric(entry, 'impactFraction', where);
@@ -102,5 +104,6 @@ export function rig(value: unknown, where: string): RigDef {
     base: source['base'] === undefined ? [] : textList(source, 'base', where),
     contacts: source['contacts'] === undefined ? [] : each(source['contacts'], `${where}.contacts`, rigContact),
     lift: source['lift'] === undefined ? 0 : lift(source, where),
+    skin: source['skin'] === undefined ? RIG_DEFAULTS.skin : colour(source, 'skin', where),
   };
 }

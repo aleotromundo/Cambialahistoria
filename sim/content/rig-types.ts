@@ -71,4 +71,5 @@ export interface RigDef {
   readonly base: readonly string[];
   readonly contacts: readonly RigContact[];
   readonly lift: number;
+  readonly skin: string;
 }

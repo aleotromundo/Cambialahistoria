@@ -41,9 +41,11 @@ const OPEN: HeroStanding = { level: 1, xp: 0, equipped: emptyEquipment() };
 const OPTIONS: readonly HeroOption[] = [
   { id: 'man', name: 'Man', finds: 'Rusted Blade' },
   { id: 'woman', name: 'Woman', finds: 'Worn Crossbow' },
+  { id: 'wight_man', name: 'Wight man', finds: 'Rusted Blade' },
+  { id: 'wight_woman', name: 'Wight woman', finds: 'Worn Crossbow' },
 ];
 
-void test('a new character starts with no hero picked, both offered with the weapon each finds, and Enter waits for a pick', (): void => {
+void test('a new character starts with no hero picked, every hero offered with the weapon each finds, and Enter waits for a pick', (): void => {
   const fresh: HeroChoice | null = heroChoice(content, { standing: OPEN, chosen: null, entered: false });
   assert.deepEqual(fresh, { kind: 'choose', options: OPTIONS, chosen: null });
   assert.equal(canEnter(fresh), false);
