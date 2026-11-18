@@ -51,6 +51,12 @@ export interface TransitionDeps {
 
 type Phase = 'idle' | 'covering' | 'building' | 'settling' | 'revealing' | 'lifting';
 
+interface WaitingChange {
+  readonly swap: () => Promise<BuiltZone>;
+  readonly colour: string | null;
+  readonly reveal: () => void;
+}
+
 export function veilColour(zones: ReadonlyMap<string, ZoneDef>, events: readonly WorldEvent[]): string | null {
   for (const event of events) {
     if (event.type !== 'zone_changed') continue;
@@ -95,6 +101,7 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
   let worstHidden: number = 0;
   let worstShown: number = 0;
   let settledNow: (() => void) | null = null;
+  let waiting: WaitingChange | null = null;
 
   const settle = (frames: number, maxMs: number): Promise<boolean> =>
     new Promise<boolean>((resolve: (settled: boolean) => void): void => {
@@ -138,6 +145,21 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
     deps.onReport({ coverMs: covered - started, buildMs: built - covered, settleMs: ready - built, settled, revealMs: revealed - ready, holdMs: held - revealed, worstHiddenMs: worstHidden, worstShownMs: worstShown });
   };
 
+  const start = (swap: () => Promise<BuiltZone>, colour: string | null, reveal: () => void): void => {
+    run(swap, colour, reveal)
+      .catch((error: unknown): void => {
+        settledNow = null;
+        phase = 'idle';
+        veil.lift().catch((): void => undefined);
+        deps.onError(error);
+      })
+      .finally((): void => {
+        const next: WaitingChange | null = waiting;
+        waiting = null;
+        if (next !== null) start(next.swap, next.colour, next.reveal);
+      });
+  };
+
   return {
     get blocking(): boolean {
       return phase !== 'idle' && phase !== 'lifting';
@@ -146,13 +168,11 @@ export function createZoneTransition(deps: TransitionDeps): ZoneTransition {
       return phase === 'idle' || phase === 'settling' || phase === 'revealing' || phase === 'lifting';
     },
     begin(swap: () => Promise<BuiltZone>, colour: string | null, reveal: () => void): void {
-      if (phase !== 'idle') return;
-      run(swap, colour, reveal).catch((error: unknown): void => {
-        settledNow = null;
-        phase = 'idle';
-        veil.lift().catch((): void => undefined);
-        deps.onError(error);
-      });
+      if (phase !== 'idle') {
+        waiting = { swap, colour, reveal };
+        return;
+      }
+      start(swap, colour, reveal);
     },
     frame(dtMs: number): void {
       switch (phase) {
