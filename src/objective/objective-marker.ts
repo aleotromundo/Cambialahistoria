@@ -28,7 +28,7 @@ export const OBJECTIVE = {
   hudGap: 14,
   hudReadSeconds: 0.25,
   routeSeconds: 0.25,
-  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top', '.tc-btn', '.tc-stick', '.tc-rotate', '.npc-label > span'],
+  hudBlockers: ['.hud-bottom', '.hud-globe-group', '.minimap', '.hud-quests', '.hud-top', '.hud-boss.visible', '.tc-btn', '.tc-stick', '.tc-rotate', '.npc-label > span'],
   hintBoxes: ['.hud-hint.visible'],
 } as const;
 
