@@ -18,7 +18,7 @@ import { stepQuests } from './quests.ts';
 import { stepVoices } from './voices.ts';
 import { stepEchoes, stepProjectiles } from './skills.ts';
 import { stepTrade } from './trade.ts';
-import type { ActorState, Command, MomentState, World, WorldEvent } from './types.ts';
+import type { ActorState, Command, MomentState, PlayerState, World, WorldEvent } from './types.ts';
 import type { Vec2 } from '../math.ts';
 import { bindEchoes, heldIn, holdHero } from './bubble.ts';
 import { keepOut } from './leash.ts';
@@ -31,6 +31,7 @@ import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand, hurryWake } from './wake.ts';
 import { stepPowerState } from '../powers.ts';
 import { refreshHero } from './character.ts';
+import { heroFor, isPrimary } from './heroes.ts';
 import { stepTally } from '../tally.ts';
 import { stepTailwind } from './tailwind.ts';
 import { announceArming } from './arming.ts';
@@ -44,8 +45,10 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   world.time += dt;
   stepDrifts(world);
   for (const command of commands) {
-    if (acceptsCommand(world, command)) handleCommand(world, world.player, command);
-    else hurryWake(world, command);
+    const hero: PlayerState | null = heroFor(world, command);
+    if (hero === null) continue;
+    if (acceptsCommand(world, command)) handleCommand(world, hero, command);
+    else if (isPrimary(world, hero)) hurryWake(world, command);
   }
   const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   const bubble: MomentState | null = heldIn(world, start);

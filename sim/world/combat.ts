@@ -159,7 +159,7 @@ function rollLoot(world: World, monster: MonsterState, reward: RunReward, loot: 
   return gold;
 }
 
-export function kill(world: World, target: Actor, direction: ReadonlyVec2): void {
+export function kill(world: World, target: Actor, direction: ReadonlyVec2, sourceId: number | null = null): void {
   target.alive = false;
   target.life = 0;
   if (target.kind === 'monster' && target.def.boss?.yields === true) target.yielded = true;
@@ -179,8 +179,9 @@ export function kill(world: World, target: Actor, direction: ReadonlyVec2): void
   }
   flinchTogether(world, target);
   if (regardOf(world.content, PLAYER_SIDE, target.def.faction) !== 'hostile') return;
-  world.player.kills += 1;
-  gainFlaskCharges(world.player);
+  const killer: PlayerState = (sourceId === null ? null : findHero(world, sourceId)) ?? world.player;
+  killer.kills += 1;
+  gainFlaskCharges(killer);
   const reward: RunReward = runReward(world);
   const shares: TailwindShares = tailwindShares(world);
   const gold: number = rollLoot(world, target, reward, shares.loot);
@@ -308,7 +309,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     burn: false,
   });
   if (killed) {
-    kill(world, target, direction);
+    kill(world, target, direction, offence.sourceId);
     if (target.kind === 'monster') flingCorpse(target, direction, amount - dealt);
   } else {
     ignite(world, offence, target, skill, amount);
