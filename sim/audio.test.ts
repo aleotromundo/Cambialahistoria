@@ -182,7 +182,7 @@ void test('quests, waypoints, flasks, respawns and cleared surges have sounds', 
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'quest_started', quest: 'q' })), ['page_turn']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'quest_advanced', quest: 'q', objective: 'o' })), ['quest_update']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'quest_completed', quest: 'q' })), ['quest_update']);
-  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'waypoint_unlocked', zone: 'z' })), ['shimmer_faint']);
+  assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'waypoint_unlocked', zone: 'z' })), ['waypoint_attune', 'shimmer_faint']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'player_respawn' })), ['swell_slow']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'surge_cleared', surge: 1, delay: 3 })), ['shimmer_faint']);
 });

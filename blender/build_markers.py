@@ -24,10 +24,11 @@ environment_kit.PALETTE["veil"] = ((0.0, 0.0, 0.0), 0.0, 0.99, False)
 
 
 class Node:
-    def __init__(self, name: str, kit: Kit, at: tuple[float, float, float] = (0.0, 0.0, 0.0), parent: str | None = None) -> None:
+    def __init__(self, name: str, kit: Kit | None, at: tuple[float, float, float] = (0.0, 0.0, 0.0), turn: tuple[float, float, float] = (0.0, 0.0, 0.0), parent: str | None = None) -> None:
         self.name: str = name
-        self.kit: Kit = kit
+        self.kit: Kit | None = kit
         self.at: tuple[float, float, float] = at
+        self.turn: tuple[float, float, float] = turn
         self.parent: str | None = parent
 
 
@@ -242,6 +243,42 @@ def obelisk_mark(kit: Kit, shape: Matrix, half: float, top_half: float, height: 
         target.faces.new((front[index], front[following], back[following], back[index]))
 
 
+SHAFT_RING: list[Point] = [(-1.0, -1.0), (0.0, -1.0), (1.0, -1.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (-1.0, 1.0), (-1.0, 0.0)]
+
+
+def shaft_segment(kit: Kit, shape: Matrix, half: float, top_half: float, height: float, low: list[float], high: list[float], peak: float | None) -> None:
+    target: BMesh = kit.mesh("monument")
+
+    def ring(heights: list[float]) -> list[BMVert]:
+        made: list[BMVert] = []
+        for (x, y), z in zip(SHAFT_RING, heights):
+            width: float = half + (top_half - half) * z / height
+            made.append(target.verts.new(shape @ Vector((x * width, y * width, z))))
+        return made
+
+    bottom: list[BMVert] = ring(low)
+    top: list[BMVert] = ring(high)
+    target.faces.new(bottom[::-1])
+    for index in range(8):
+        following: int = (index + 1) % 8
+        target.faces.new((bottom[index], bottom[following], top[following], top[index]))
+    if peak is None:
+        target.faces.new(top)
+        return
+    tip: BMVert = target.verts.new(shape @ Vector((0.03, 0.02, peak)))
+    for index in range(8):
+        target.faces.new((top[index], top[(index + 1) % 8], tip))
+
+
+def broken_cut(kit: Kit, at: float, depth: float) -> list[float]:
+    return [at + kit.spread(depth) for _ in SHAFT_RING]
+
+
+def piece_shape(shape: Matrix, centre: float) -> tuple[Matrix, tuple[float, float, float]]:
+    pivot: Vector = shape @ Vector((0.0, 0.0, centre))
+    return Matrix.Translation(-pivot) @ shape, (pivot.x, pivot.y, pivot.z)
+
+
 def waypoint_obelisk() -> list[Node]:
     base: Kit = Kit(91)
     pad(base, 0.66, 1.4, 8, {5}, {1, 6})
@@ -254,28 +291,34 @@ def waypoint_obelisk() -> list[Node]:
     half: float = 0.3
     top_half: float = 0.22
     shape: Matrix = settled(-0.08, back + 0.05, 0.3, 0.08, -0.05, 0.035)
-    target: BMesh = base.mesh("monument")
-    low: list[BMVert] = [target.verts.new(shape @ Vector((x * half, y * half, 0.0))) for x, y in ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0))]
-    rim: list[tuple[float, float, float]] = [(-1.0, -1.0, height - 0.12), (0.0, -1.0, height + 0.05), (1.0, -1.0, height - 0.32), (1.0, 0.0, height - 0.42), (1.0, 1.0, height - 0.22), (0.0, 1.0, height - 0.02), (-1.0, 1.0, height + 0.08), (-1.0, 0.0, height - 0.05)]
-    high: list[BMVert] = [target.verts.new(shape @ Vector((x * top_half, y * top_half, z))) for x, y, z in rim]
-    peak: BMVert = target.verts.new(shape @ Vector((0.03, 0.02, height - 0.2)))
-    for index in range(8):
-        target.faces.new((high[index], high[(index + 1) % 8], peak))
-    target.faces.new(low[::-1])
-    for side in range(4):
-        a: BMVert = low[side]
-        b: BMVert = low[(side + 1) % 4]
-        target.faces.new((a, b, high[(side * 2 + 2) % 8], high[side * 2 + 1], high[side * 2]))
-    obelisk_mark(base, shape, half, top_half, height, 0.35, 1.75, -0.03, 0.03)
-    for z in (0.55, 0.95, 1.35):
-        obelisk_mark(base, shape, half, top_half, height, z, z + 0.05, -0.13, 0.13)
-    obelisk_mark(base, shape, half, top_half, height, 1.88, 1.98, -0.07, 0.07)
-    prism(base, "monument", ngon(base, 5, 0.24, 0.17, 0.2), -0.1, 0.14, settled(0.75, back - 0.55, 0.0, 0.4, 0.5, 0.9), bevel=0.02)
-    prism(base, "monument", ngon(base, 4, 0.16, 0.12, 0.2), -0.08, 0.1, settled(-0.6, back - 0.85, 0.0, 1.2, 0.3, 0.4), bevel=0.015)
+    first: list[float] = broken_cut(base, 0.86, 0.07)
+    second: list[float] = broken_cut(base, 1.8, 0.06)
+    seam: float = 0.006
+    rim: list[float] = [height - 0.12, height + 0.05, height - 0.32, height - 0.42, height - 0.22, height - 0.02, height + 0.08, height - 0.05]
+    shaft_segment(base, shape, half, top_half, height, [0.0] * 8, first, None)
+    obelisk_mark(base, shape, half, top_half, height, 0.35, 0.74, -0.03, 0.03)
+    obelisk_mark(base, shape, half, top_half, height, 0.55, 0.6, -0.13, 0.13)
+    drum: Kit = Kit(93)
+    drum_shape, drum_at = piece_shape(shape, 1.33)
+    shaft_segment(drum, drum_shape, half, top_half, height, [z + seam for z in first], second, None)
+    obelisk_mark(drum, drum_shape, half, top_half, height, 0.98, 1.7, -0.03, 0.03)
+    for z in (1.05, 1.45):
+        obelisk_mark(drum, drum_shape, half, top_half, height, z, z + 0.05, -0.12, 0.12)
+    crown: Kit = Kit(94)
+    crown_shape, crown_at = piece_shape(shape, 2.05)
+    shaft_segment(crown, crown_shape, half, top_half, height, [z + seam for z in second], rim, height - 0.2)
+    obelisk_mark(crown, crown_shape, half, top_half, height, 1.92, 2.02, -0.07, 0.07)
     rubble(base, 10, 1.4, 2.15, 0.07, 0.19)
     focal: Kit = Kit(92)
     shard(focal, 0.7, 0.2)
-    return [Node("dais", base), Node("focal", focal, (-0.08, back + 0.12, 2.95))]
+    return [
+        Node("dais", base),
+        Node("drum", drum, drum_at),
+        Node("crown", crown, crown_at),
+        Node("drum_fallen", None, (0.78, back - 0.72, 0.31), (-1.5, 0.12, 0.55)),
+        Node("crown_fallen", None, (-0.95, back - 0.62, 0.27), (1.42, -0.3, -0.85)),
+        Node("focal", focal, (-0.08, back + 0.12, 2.95)),
+    ]
 
 
 def column(kit: Kit, x: float, y: float, height: float, radius: float, jag: float, bands: list[float]) -> None:
@@ -534,6 +577,12 @@ MODELS: dict[str, Callable[[], list[Node]]] = {
 
 
 def node_object(node: Node) -> tuple[Object, int]:
+    if node.kit is None:
+        empty: Object = bpy.data.objects.new(node.name, None)
+        empty.location = Vector(node.at)
+        empty.rotation_euler = node.turn
+        bpy.context.scene.collection.objects.link(empty)
+        return empty, 0
     mesh = bpy.data.meshes.new(node.name)
     combined: BMesh = bmesh.new()
     triangles: int = 0

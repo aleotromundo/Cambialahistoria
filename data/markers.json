@@ -17,7 +17,8 @@
       "pick": { "radius": 1.75, "height": 2.6 },
       "label": 3.1,
       "facing": "camera",
-      "levels": { "dormant": 0.1, "awake": 0.75, "aimed": 1.05, "used": 1.9 }
+      "levels": { "dormant": 0, "awake": 0.75, "aimed": 1.05, "used": 1.9 },
+      "awaken": { "radius": 4.2, "pieces": [] }
     },
     {
       "id": "waypoint_circle",
@@ -34,7 +35,8 @@
       "pick": { "radius": 1.75, "height": 2.6 },
       "label": 3.3,
       "facing": "camera",
-      "levels": { "dormant": 0.1, "awake": 0.75, "aimed": 1.05, "used": 1.9 }
+      "levels": { "dormant": 0, "awake": 0.75, "aimed": 1.05, "used": 1.9 },
+      "awaken": { "radius": 4.2, "pieces": [] }
     },
     {
       "id": "waypoint_obelisk",
@@ -51,7 +53,8 @@
       "pick": { "radius": 1.75, "height": 3.3 },
       "label": 3.9,
       "facing": "camera",
-      "levels": { "dormant": 0.1, "awake": 0.75, "aimed": 1.05, "used": 1.9 }
+      "levels": { "dormant": 0, "awake": 0.75, "aimed": 1.05, "used": 1.9 },
+      "awaken": { "radius": 4.2, "pieces": [{ "node": "drum", "fallen": "drum_fallen" }, { "node": "crown", "fallen": "crown_fallen" }] }
     },
     {
       "id": "waypoint_columns",
@@ -68,7 +71,8 @@
       "pick": { "radius": 1.75, "height": 2.8 },
       "label": 3.3,
       "facing": "camera",
-      "levels": { "dormant": 0.1, "awake": 0.75, "aimed": 1.05, "used": 1.9 }
+      "levels": { "dormant": 0, "awake": 0.75, "aimed": 1.05, "used": 1.9 },
+      "awaken": { "radius": 4.2, "pieces": [] }
     },
     {
       "id": "waypoint_cairn",
@@ -85,7 +89,8 @@
       "pick": { "radius": 1.75, "height": 2.6 },
       "label": 3.1,
       "facing": "camera",
-      "levels": { "dormant": 0.1, "awake": 0.75, "aimed": 1.05, "used": 1.9 }
+      "levels": { "dormant": 0, "awake": 0.75, "aimed": 1.05, "used": 1.9 },
+      "awaken": { "radius": 4.2, "pieces": [] }
     },
     {
       "id": "way_down",

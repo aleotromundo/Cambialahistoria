@@ -496,7 +496,6 @@ async function start(): Promise<void> {
       transition.begin((): Promise<BuiltZone> => showZone(held), veilColour(content.zones, held), (): void => hud.handleEvents(held));
     } else {
       present(events);
-      if (events.some((event: WorldEvent): boolean => event.type === 'waypoint_unlocked')) markers.use({ type: 'waypoint' });
     }
 
     const presentNow: boolean = gate.present && transition.presenting;
@@ -520,7 +519,8 @@ async function start(): Promise<void> {
         torchVersion = zoneView.lightsVersion;
         effects.setTorches(zoneView.torches);
       }
-      markers.update(dt, now / 1000, world);
+      const kick: number = markers.update(dt, now / 1000, world);
+      if (kick > 0) camera.addTrauma(kick);
       objectiveMarker.update(dt, now / 1000, world);
       stage.setFlash(weather.light);
       minimap.update(dt);

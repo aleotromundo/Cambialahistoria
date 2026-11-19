@@ -50,6 +50,16 @@ export interface MarkerLevels {
   readonly used: number;
 }
 
+export interface MarkerPiece {
+  readonly node: string;
+  readonly fallen: string;
+}
+
+export interface MarkerAwaken {
+  readonly radius: number;
+  readonly pieces: readonly MarkerPiece[];
+}
+
 export interface MarkerKind {
   readonly id: string;
   readonly model: string;
@@ -67,6 +77,7 @@ export interface MarkerKind {
   readonly label: number;
   readonly facing: MarkerFacing;
   readonly levels: MarkerLevels;
+  readonly awaken: MarkerAwaken | null;
 }
 
 export interface MarkerLibrary {

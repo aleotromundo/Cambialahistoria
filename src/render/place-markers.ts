@@ -16,6 +16,8 @@ import { loadModel } from './character-loader.ts';
 import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
 import type { PickColumn, PickRay } from './marker-pick.ts';
 import { nearestColumn } from './marker-pick.ts';
+import type { ClimbUniforms, WakePiece, WakePose, WakeState } from './marker-awaken.ts';
+import { advanceWake, climbHeight, climbingGlow, landedBetween, MARKER_AWAKEN, posePiece, pulseFlare, startWake, wakePieces, wakePose, wakeShare } from './marker-awaken.ts';
 import type { PlaceVeil } from './place-veil.ts';
 import { createPlaceVeil } from './place-veil.ts';
 import { propDressing, dressedProp } from './surfaces.ts';
@@ -44,6 +46,9 @@ interface MarkerParts {
   readonly seal: Object3D | null;
   readonly sealRest: number;
   readonly veil: PlaceVeil | null;
+  readonly pieces: readonly WakePiece[];
+  readonly climb: ClimbUniforms;
+  readonly top: number;
 }
 
 interface MarkerView {
@@ -58,6 +63,7 @@ interface MarkerView {
   parts: MarkerParts | null;
   usedLeft: number;
   spin: number;
+  wake: WakeState;
 }
 
 interface PlaceState {
@@ -69,7 +75,7 @@ interface PlaceState {
 
 export interface PlaceMarkers {
   readonly ready: Promise<void>;
-  update(dt: number, time: number, world: World): void;
+  update(dt: number, time: number, world: World): number;
   aim(ref: PlaceRef | null): void;
   use(ref: PlaceRef): void;
   pick(ray: PickRay): PlaceRef | null;
@@ -117,10 +123,11 @@ function stoneColour(content: Content, kind: MarkerKind, zone: ZoneDef): Color {
   return new Color(tint ?? PLACE_MARKERS.stoneFallback);
 }
 
-function glowMaterial(name: string, colour: Color): MeshStandardMaterial {
+function glowMaterial(name: string, colour: Color, climb: ClimbUniforms): MeshStandardMaterial {
   const crystal: boolean = name === 'crystal';
   const material: MeshStandardMaterial = new MeshStandardMaterial({ color: crystal ? PLACE_MARKERS.crystalBase : PLACE_MARKERS.glyphBase, roughness: crystal ? PLACE_MARKERS.crystalRoughness : PLACE_MARKERS.glyphRoughness, metalness: crystal ? PLACE_MARKERS.crystalMetalness : 0, emissive: colour, emissiveIntensity: 0, flatShading: crystal });
   material.name = name;
+  climbingGlow(material, climb);
   return material;
 }
 
@@ -136,10 +143,21 @@ function veilAspect(node: Object3D): number {
   return across <= 0 ? 1 : size.y / across;
 }
 
+function modelTop(scene: Object3D): number {
+  const box: Box3 = new Box3();
+  scene.traverse((child: Object3D): void => {
+    if (!(child instanceof Mesh) || !(child.geometry instanceof BufferGeometry)) return;
+    child.geometry.computeBoundingBox();
+    if (child.geometry.boundingBox !== null) box.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrixWorld));
+  });
+  return box.isEmpty() ? 0 : box.max.y;
+}
+
 function dressModel(model: GLTF, content: Content, zone: ZoneDef, kind: MarkerKind, root: Group): MarkerParts {
   const scene: Object3D = model.scene.clone(true);
   const colour: Color = new Color(kind.color);
   const glows: MeshStandardMaterial[] = [];
+  const climb: ClimbUniforms = { uClimb: { value: MARKER_AWAKEN.climbOpen }, uClimbFeather: { value: MARKER_AWAKEN.climbFeather } };
   const dress: Readonly<Record<string, string>> = markerDressing(kind, zone);
   const veilNode: Object3D | null = kind.veil === null ? null : (scene.getObjectByName(kind.veil.node) ?? null);
   const veil: PlaceVeil | null = kind.veil === null || veilNode === null ? null : createPlaceVeil(kind.veil, veilAspect(veilNode), stoneColour(content, kind, zone));
@@ -158,7 +176,7 @@ function dressModel(model: GLTF, content: Content, zone: ZoneDef, kind: MarkerKi
     const source: unknown = child.material;
     if (!(source instanceof MeshStandardMaterial)) return;
     if (kind.glow.includes(source.name)) {
-      const glow: MeshStandardMaterial = glowMaterial(source.name, colour);
+      const glow: MeshStandardMaterial = glowMaterial(source.name, colour, climb);
       glows.push(glow);
       child.material = glow;
       child.castShadow = true;
@@ -170,20 +188,31 @@ function dressModel(model: GLTF, content: Content, zone: ZoneDef, kind: MarkerKi
     child.receiveShadow = true;
   });
   root.add(scene);
+  root.updateMatrixWorld(true);
+  const top: number = modelTop(scene) - root.position.y;
   const focal: Object3D | null = kind.focal === null ? null : (scene.getObjectByName(kind.focal.node) ?? null);
   const seal: Object3D | null = kind.seal === null ? null : (scene.getObjectByName(kind.seal.node) ?? null);
-  return { glows, focal, focalRest: focal?.position.y ?? 0, seal, sealRest: seal?.position.y ?? 0, veil };
+  return { glows, focal, focalRest: focal?.position.y ?? 0, seal, sealRest: seal?.position.y ?? 0, veil, pieces: wakePieces(scene, kind.awaken?.pieces ?? []), climb, top: Math.max(0, top) };
 }
 
-function poseParts(view: MarkerView, parts: MarkerParts, dt: number, time: number): void {
+function viewPose(view: MarkerView): WakePose {
+  return wakePose(wakeShare(view.wake), view.place.kind.awaken?.pieces.length ?? 0);
+}
+
+function poseParts(view: MarkerView, parts: MarkerParts, dt: number, time: number, pose: WakePose): void {
   const kind: MarkerKind = view.place.kind;
   const level: number = Math.max(0, view.level.value);
   for (const glow of parts.glows) glow.emissiveIntensity = level * PLACE_MARKERS.glow;
+  for (const piece of parts.pieces) posePiece(piece, pose.pieces[piece.index] ?? 1);
+  parts.climb.uClimb.value = climbHeight(view.root.position.y, parts.top, pose.climb, view.wake.type === 'awake');
   if (parts.focal !== null && kind.focal !== null) {
     const rise: number = Math.min(1, Math.max(0, view.rise.value));
     view.spin += dt * kind.focal.spin * rise * Math.max(1, level);
     parts.focal.rotation.y = view.spin;
     parts.focal.position.y = parts.focalRest + kind.focal.lift * view.rise.value + kind.focal.bob * rise * Math.sin(time * PLACE_MARKERS.bobRate + view.root.position.x);
+    const grown: number = kind.awaken === null ? 1 : Math.max(MARKER_AWAKEN.crystalFloor, pose.crystal);
+    parts.focal.scale.setScalar(grown);
+    parts.focal.visible = grown > PLACE_MARKERS.gone;
   }
   if (parts.seal !== null && kind.seal !== null) {
     const shut: number = Math.min(1, Math.max(0, view.shut.value));
@@ -216,7 +245,7 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
     if (lights) root.add(light);
     group.add(root);
     const level: number = levelTarget(place.kind, state, false, false);
-    return { place, root, ground, light, level: spring(level), rise: spring(state.awake ? 1 : 0), shut: spring(state.open ? 0 : 1), shown: spring(state.shown ? 1 : 0), parts: null, usedLeft: 0, spin: place.x * 0.37 + place.z * 0.61 };
+    return { place, root, ground, light, level: spring(level), rise: spring(state.awake ? 1 : 0), shut: spring(state.open ? 0 : 1), shown: spring(state.shown ? 1 : 0), parts: null, usedLeft: 0, spin: place.x * 0.37 + place.z * 0.61, wake: startWake(place.kind.awaken === null || state.awake) };
   });
   scene.add(group);
   let disposed: boolean = false;
@@ -225,18 +254,27 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
       const model: GLTF = await loadModel(loader, view.place.kind.model);
       if (disposed) return;
       view.parts = dressModel(model, content, zone, view.place.kind, view.root);
-      poseParts(view, view.parts, 0, 0);
+      poseParts(view, view.parts, 0, 0, viewPose(view));
     }),
   ).then((): void => undefined);
 
   return {
     ready,
-    update(dt: number, time: number, current: World): void {
+    update(dt: number, time: number, current: World): number {
+      let kick: number = 0;
       for (const view of views) {
         const state: PlaceState = placeState(current, view.place.ref);
+        const kind: MarkerKind = view.place.kind;
+        const pieces: number = kind.awaken?.pieces.length ?? 0;
+        const before: WakeState = view.wake;
+        if (kind.awaken !== null) view.wake = advanceWake(view.wake, state.awake, dt);
+        if (landedBetween(wakeShare(before), wakeShare(view.wake), pieces)) kick += MARKER_AWAKEN.kick;
+        if (before.type === 'waking' && view.wake.type === 'awake') view.usedLeft = PLACE_MARKERS.usedFor;
+        const pose: WakePose = viewPose(view);
         view.usedLeft = Math.max(0, view.usedLeft - dt);
-        springTo(view.level, levelTarget(view.place.kind, state, samePlace(aimed, view.place.ref), view.usedLeft > 0));
-        springTo(view.rise, state.awake ? 1 : 0);
+        const waking: boolean = view.wake.type === 'waking';
+        springTo(view.level, waking ? kind.levels.dormant + (kind.levels.awake - kind.levels.dormant) * pose.glow : levelTarget(kind, state, samePlace(aimed, view.place.ref), view.usedLeft > 0));
+        springTo(view.rise, kind.awaken === null ? (state.awake ? 1 : 0) : pose.crystal);
         springTo(view.shut, state.open ? 0 : 1);
         springTo(view.shown, state.shown ? 1 : 0);
         stepSpring(view.level, dt);
@@ -246,9 +284,12 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
         const shown: number = Math.min(1, Math.max(0, view.shown.value));
         view.root.visible = shown > PLACE_MARKERS.gone;
         view.root.position.y = view.ground - PLACE_MARKERS.showDepth * (1 - view.shown.value);
-        view.light.intensity = view.place.kind.light.intensity * Math.max(0, view.level.value) * shown;
-        if (view.parts !== null) poseParts(view, view.parts, dt, time);
+        const level: number = Math.max(0, view.level.value);
+        const lit: number = kind.awaken === null ? level : (view.wake.type === 'asleep' ? 0 : level) + kind.levels.awake * MARKER_AWAKEN.pulseLight * pulseFlare(pose.pulse);
+        view.light.intensity = kind.light.intensity * lit * shown;
+        if (view.parts !== null) poseParts(view, view.parts, dt, time, pose);
       }
+      return kick;
     },
     aim(ref: PlaceRef | null): void {
       aimed = ref;

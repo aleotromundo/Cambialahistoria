@@ -1,3 +1,5 @@
+import type { MarkerKind } from '../content/marker-types.ts';
+import { markerKind } from '../content/markers.ts';
 import type { ZoneDef, ZoneWaypoint } from '../content/types.ts';
 import { distance } from '../math.ts';
 import type { Vec2 } from '../math.ts';
@@ -19,10 +21,16 @@ function insideCheckpoint(world: World): boolean {
   return respawn.type === 'checkpoint' && world.zone.checkpoints.some((checkpoint): boolean => checkpoint.id === respawn.checkpoint && distance(world.player.pos, checkpoint) <= checkpoint.radius);
 }
 
+export function wakeRadius(world: World, waypoint: ZoneWaypoint): number {
+  const kind: MarkerKind | null = markerKind(world.content, 'waypoint', waypoint.marker);
+  return Math.max(waypoint.radius, kind?.awaken?.radius ?? 0);
+}
+
 export function stepWaypoints(world: World): void {
-  if (!onWaypoint(world)) return;
-  if (world.respawn.type !== 'waypoint' && !insideCheckpoint(world)) world.respawn = { type: 'waypoint' };
-  if (world.waypoints.includes(world.zone.id)) return;
+  const waypoint: ZoneWaypoint | null = world.zone.waypoint;
+  if (waypoint === null || !world.player.alive) return;
+  if (onWaypoint(world) && world.respawn.type !== 'waypoint' && !insideCheckpoint(world)) world.respawn = { type: 'waypoint' };
+  if (world.waypoints.includes(world.zone.id) || distance(world.player.pos, waypoint) > wakeRadius(world, waypoint)) return;
   world.waypoints.push(world.zone.id);
   world.events.push({ type: 'waypoint_unlocked', zone: world.zone.id });
 }

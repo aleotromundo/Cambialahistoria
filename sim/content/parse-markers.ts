@@ -1,6 +1,6 @@
 import type { Fields } from './read.ts';
 import { byId, choice, colour, ContentError, each, fields, nonNegative, numeric, positive, text, textList } from './read.ts';
-import type { MarkerFocal, MarkerKind, MarkerLevels, MarkerLibrary, MarkerLight, MarkerPick, MarkerRole, MarkerSeal, MarkerVeil } from './marker-types.ts';
+import type { MarkerAwaken, MarkerFocal, MarkerKind, MarkerLevels, MarkerLibrary, MarkerLight, MarkerPick, MarkerPiece, MarkerRole, MarkerSeal, MarkerVeil } from './marker-types.ts';
 import { MARKER_FACINGS, MARKER_ROLES, VEIL_FLOWS, VEIL_SHAPES } from './marker-types.ts';
 
 function dressing(value: unknown, where: string): Record<string, string> {
@@ -45,6 +45,17 @@ function levels(value: unknown, where: string): MarkerLevels {
   return read;
 }
 
+function piece(value: unknown, where: string): MarkerPiece {
+  const source: Fields = fields(value, where);
+  return { node: text(source, 'node', where), fallen: text(source, 'fallen', where) };
+}
+
+function awaken(value: unknown, where: string): MarkerAwaken | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  return { radius: positive(source, 'radius', where), pieces: each(source['pieces'], `${where}.pieces`, piece) };
+}
+
 function kind(value: unknown, where: string): MarkerKind {
   const source: Fields = fields(value, where);
   const model: string = text(source, 'model', where);
@@ -66,6 +77,7 @@ function kind(value: unknown, where: string): MarkerKind {
     label: nonNegative(source, 'label', where),
     facing: choice(source, 'facing', MARKER_FACINGS, where),
     levels: levels(source['levels'], `${where}.levels`),
+    awaken: awaken(source['awaken'], `${where}.awaken`),
   };
 }
 
