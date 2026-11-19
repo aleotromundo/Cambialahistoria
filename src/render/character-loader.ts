@@ -10,7 +10,9 @@ import type { GhostUniforms, RigGlow } from './ghost-material.ts';
 import { createRigGlow, FLASH, flashEdge, flashLift, makeGhost } from './ghost-material.ts';
 import { fadeMaterials } from './body-swap.ts';
 import { anyUnsettled, dropSettled, sameIds, settledPiece, springTo, WEAR_FADE } from './wear-spring.ts';
-import { bindShade, seeThrough, shadeHeld, SHADOW_BODY, SHADOW_LIGHT, SHADOW_UNIFORMS, shadowRim } from './shadow-shade.ts';
+import { bindShade, seeThrough, shadedCopy, shadeHeld, SHADOW_BODY, SHADOW_LIGHT, SHADOW_UNIFORMS, shadowRim } from './shadow-shade.ts';
+import type { MeshLooks, RestLooks } from './rest-looks.ts';
+import { createMeshLooks, glowAtRest, isMesh, REST_GLOW, restLook } from './rest-looks.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
 import { RestingGroup } from './resting-group.ts';
 import type { CasterCache, CasterPiece, CasterRange } from './shadow-caster.ts';
@@ -36,6 +38,7 @@ export interface RigInstance {
   stance(): StanceClipSet | null;
   setWear(wearableIds: readonly string[], hiddenParts: readonly string[]): void;
   stepWear(dt: number): void;
+  sharedLook(): boolean;
   setFlash(color: Color, amount: number): void;
   setHover(color: Color, amount: number): void;
   setOpacity(opacity: number): void;
@@ -100,43 +103,49 @@ function recolourEmissiveMap(material: MeshStandardMaterial, glow: string): void
   material.emissiveIntensity = CHARACTER.glowBoost;
 }
 
-function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: number, skinTint: string): MeshStandardMaterial[] {
+function flashOne(entry: MeshStandardMaterial, look: RigLook, glow: RigGlow, wakeLamps: number, skinTint: string): MeshStandardMaterial {
+  const material: MeshStandardMaterial = entry.clone();
+  material.color.multiply(new Color(entry.name === CHARACTER.skinMaterial ? skinTint : look.tint));
+  material.alphaToCoverage = look.feather && material.alphaTest > 0;
+  if (material.metalness < CHARACTER.metalFrom) {
+    material.roughness = Math.max(material.roughness, CHARACTER.matteRoughness);
+    material.roughnessMap = null;
+    material.metalness = 0;
+    material.metalnessMap = null;
+  }
+  recolourEmissiveMap(material, look.glow);
+  if (look.ghost === null) {
+    material.onBeforeCompile = (shader): void => {
+      shader.uniforms['uFlash'] = glow.flash;
+      shader.uniforms['uFlashLift'] = glow.lift;
+      shader.uniforms['uHover'] = glow.hover;
+      bindShade(shader.uniforms, glow);
+      shader.uniforms['uRim'] = RIM_LIGHT;
+      shader.uniforms['uRankRim'] = glow.rankRim;
+      shader.uniforms['uWakeLamps'] = WAKE_LAMPS;
+      shader.uniforms['uLampShare'] = { value: wakeLamps };
+      shader.fragmentShader = shader.fragmentShader
+        .replace('void main() {', `uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\n${SHADOW_UNIFORMS}\nuniform vec3 uRim;\nuniform vec3 uRankRim;\nuniform float uWakeLamps;\nuniform float uLampShare;\nvoid main() {`)
+        .replace(LAMP_HOLD, `outgoingLight *= mix( 1.0, uLampShare, uWakeLamps );\n${LAMP_HOLD}`)
+        .replace('#include <lights_fragment_end>', `${CHARACTER_INSIDE}\n${SHADOW_LIGHT}`)
+        .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
+        .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
+    };
+    const programKey: string = material.alphaToCoverage ? `${FLASH_KEY}-feather` : FLASH_KEY;
+    material.customProgramCacheKey = (): string => programKey;
+  } else {
+    makeGhost(material, glow, look.ghost);
+  }
+  return material;
+}
+
+function flashing(source: unknown, look: RigLook, glow: RigGlow, wakeLamps: number, skinTint: string, rests: RestLooks | null): MeshStandardMaterial[] {
   const list: readonly unknown[] = Array.isArray(source) ? source : [source];
   const cloned: MeshStandardMaterial[] = [];
   for (const entry of list) {
     if (!(entry instanceof MeshStandardMaterial)) continue;
-    const material: MeshStandardMaterial = entry.clone();
-    material.color.multiply(new Color(entry.name === CHARACTER.skinMaterial ? skinTint : look.tint));
-    material.alphaToCoverage = look.feather && material.alphaTest > 0;
-    if (material.metalness < CHARACTER.metalFrom) {
-      material.roughness = Math.max(material.roughness, CHARACTER.matteRoughness);
-      material.roughnessMap = null;
-      material.metalness = 0;
-      material.metalnessMap = null;
-    }
-    recolourEmissiveMap(material, look.glow);
-    if (look.ghost === null) {
-      material.onBeforeCompile = (shader): void => {
-        shader.uniforms['uFlash'] = glow.flash;
-        shader.uniforms['uFlashLift'] = glow.lift;
-        shader.uniforms['uHover'] = glow.hover;
-        bindShade(shader.uniforms, glow);
-        shader.uniforms['uRim'] = RIM_LIGHT;
-        shader.uniforms['uRankRim'] = glow.rankRim;
-        shader.uniforms['uWakeLamps'] = WAKE_LAMPS;
-        shader.uniforms['uLampShare'] = { value: wakeLamps };
-        shader.fragmentShader = shader.fragmentShader
-          .replace('void main() {', `uniform vec3 uFlash;\nuniform float uFlashLift;\nuniform vec3 uHover;\n${SHADOW_UNIFORMS}\nuniform vec3 uRim;\nuniform vec3 uRankRim;\nuniform float uWakeLamps;\nuniform float uLampShare;\nvoid main() {`)
-          .replace(LAMP_HOLD, `outgoingLight *= mix( 1.0, uLampShare, uWakeLamps );\n${LAMP_HOLD}`)
-          .replace('#include <lights_fragment_end>', `${CHARACTER_INSIDE}\n${SHADOW_LIGHT}`)
-          .replace('#include <emissivemap_fragment>', CHARACTER_SHADE)
-          .replace('#include <alphatest_fragment>', material.alphaToCoverage ? CHARACTER_FEATHER : '#include <alphatest_fragment>');
-      };
-      const programKey: string = material.alphaToCoverage ? `${FLASH_KEY}-feather` : FLASH_KEY;
-      material.customProgramCacheKey = (): string => programKey;
-    } else {
-      makeGhost(material, glow, look.ghost);
-    }
+    const material: MeshStandardMaterial = flashOne(entry, look, glow, wakeLamps, skinTint);
+    if (rests !== null && look.ghost === null) rests.set(material, restLook(entry, `flash|${look.tint}|${look.glow}|${skinTint}|${look.feather}|${wakeLamps}`, (): MeshStandardMaterial => flashOne(entry, look, REST_GLOW, wakeLamps, skinTint)));
     cloned.push(material);
   }
   return cloned;
@@ -146,12 +155,12 @@ export function skinOf(tint: string, skin: string): string {
   return `#${new Color(tint).multiply(new Color(skin)).getHexString()}`;
 }
 
-function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandardMaterial[], skinTint: string): void {
+function dress(object: Object3D, look: RigLook, glow: RigGlow, sink: MeshStandardMaterial[], skinTint: string, rests: RestLooks | null): void {
   if (!(object instanceof Mesh)) return;
   object.castShadow = true;
   object.receiveShadow = false;
   object.frustumCulled = false;
-  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1, skinTint);
+  const cloned: MeshStandardMaterial[] = flashing(object.material, look, glow, 1, skinTint, rests);
   sink.push(...cloned);
   const first: MeshStandardMaterial | undefined = cloned[0];
   if (first !== undefined) object.material = cloned.length === 1 ? first : cloned;
@@ -189,7 +198,7 @@ function castersOf(rig: LoadedRig): CasterCache {
   return found;
 }
 
-export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: RigLook, shadows: RigShadows = 'pieces'): RigInstance {
+export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: RigLook, shadows: RigShadows = 'pieces', share: boolean = false): RigInstance {
   const def: RigDef = rig.def;
   boundSkins(rig.template);
   const model: Object3D = cloneSkinned(rig.template);
@@ -205,7 +214,32 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
   let shadeSees: boolean = false;
   const materials: MeshStandardMaterial[] = [];
   const skinTint: string = skinOf(look.tint, def.skin);
-  model.traverse((object: Object3D): void => dress(object, look, glow, materials, skinTint));
+  const rests: RestLooks | null = share && look.ghost === null ? new Map<Material, Material>() : null;
+  const looks: MeshLooks = createMeshLooks(rests ?? new Map<Material, Material>());
+  const keepMeshes = (branch: Object3D): void => {
+    branch.traverse((object: Object3D): void => {
+      if (isMesh(object)) looks.keep(object);
+    });
+  };
+  const forgetMeshes = (branch: Object3D): void => {
+    branch.traverse((object: Object3D): void => {
+      if (isMesh(object)) looks.forget(object);
+    });
+  };
+  const shadeSharing = (copy: Object3D, sink: MeshStandardMaterial[]): void => {
+    const sources: Map<Mesh, MeshStandardMaterial> = new Map<Mesh, MeshStandardMaterial>();
+    copy.traverse((object: Object3D): void => {
+      if (isMesh(object) && object.material instanceof MeshStandardMaterial) sources.set(object, object.material);
+    });
+    shadeHeld(copy, glow, sink);
+    if (rests === null) return;
+    for (const [mesh, source] of sources) {
+      if (mesh.material instanceof MeshStandardMaterial) rests.set(mesh.material, restLook(source, 'held', (): MeshStandardMaterial => shadedCopy(source, REST_GLOW)));
+      looks.keep(mesh);
+    }
+  };
+  model.traverse((object: Object3D): void => dress(object, look, glow, materials, skinTint, rests));
+  if (rests !== null) keepMeshes(model);
   for (const name of def.hiddenNodes) {
     const node: Object3D | undefined = findNode(model, name);
     if (node !== undefined) node.visible = false;
@@ -258,6 +292,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     for (const body of bodies) {
       const masks: readonly number[] | undefined = rig.bodyMasks.get(body.mesh.name);
       body.mesh.material = parts.length === 0 || masks === undefined ? body.skin : masks.map((mask: number): Material => (maskHidden(mask, rig.bodyParts, parts) ? UNSEEN : body.skin));
+      if (rests !== null) looks.keep(body.mesh);
     }
     castTogether();
   };
@@ -267,7 +302,10 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     if (look.ghost === null) for (const material of piece.materials) material.opacity = value;
   };
   const drop = (piece: WornPiece): void => {
-    for (const mesh of piece.meshes) mesh.removeFromParent();
+    for (const mesh of piece.meshes) {
+      looks.forget(mesh);
+      mesh.removeFromParent();
+    }
     for (const material of piece.materials) material.dispose();
   };
   const build = (id: string, skinAnchor: SkinnedMesh): WornPiece | null => {
@@ -277,7 +315,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     const fitted: readonly BufferGeometry[] = fittedPieces(rig, wearable, skinAnchor);
     wearable.drawn.forEach((source: SkinnedMesh, index: number): void => {
       const geometry: BufferGeometry | undefined = fitted[index];
-      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps, skinTint);
+      const cloned: MeshStandardMaterial[] = flashing(source.material, { tint: wearable.def.tint, glow: WHITE, ghost: look.ghost, feather: look.feather }, glow, wearable.def.wakeLamps, skinTint, rests);
       const first: MeshStandardMaterial | undefined = cloned[0];
       if (geometry === undefined || first === undefined) return;
       const mesh: SkinnedMesh = new SkinnedMesh(geometry, cloned.length === 1 ? first : cloned);
@@ -289,6 +327,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       mesh.bind(skinAnchor.skeleton, skinAnchor.bindMatrix);
       mesh.boundingSphere = skinAnchor.boundingSphere.clone();
       (skinAnchor.parent ?? model).add(mesh);
+      if (rests !== null) looks.keep(mesh);
       piece.meshes.push(mesh);
       piece.materials.push(...cloned);
     });
@@ -305,6 +344,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     return all;
   };
   const release = (piece: HeldPiece): void => {
+    forgetMeshes(piece.holder);
     piece.holder.removeFromParent();
     for (const material of piece.materials) material.dispose();
   };
@@ -318,6 +358,19 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
     if (settledPiece(piece)) return;
     springTo(piece, step, WEAR_FADE.overshoot);
     piece.holder.scale.setScalar(piece.size * piece.value);
+  };
+  const stepWearing = (dt: number): void => {
+    if (!wearMoving && !partsPending) return;
+    const step: number = Math.min(dt, WEAR_FADE.longestStep);
+    let moving: boolean = false;
+    for (const piece of worn.values()) if (stepWornPiece(piece, step)) moving = true;
+    for (const piece of leaving) if (stepWornPiece(piece, step)) moving = true;
+    for (const piece of held.values()) stepHeldPiece(piece, step);
+    for (const piece of lettingGo) stepHeldPiece(piece, step);
+    const released: boolean = dropSettled(lettingGo, release);
+    if (dropSettled(leaving, drop) || released) dressedCache = null;
+    wearMoving = lettingGo.length > 0 || leaving.length > 0 || anyUnsettled(worn.values()) || anyUnsettled(held.values());
+    if (!moving && partsPending) hide(finalParts);
   };
   let wornKey: string = '';
   castTogether();
@@ -355,8 +408,8 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         const piece: HeldPiece = { holder, size: socket.scale, materials: [], value: instant ? 1 : 0, velocity: 0, target: 1 };
         holder.scale.setScalar(socket.scale * piece.value);
         const copy: Object3D = attachment.template.clone(true);
-        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials, skinTint));
-        else shadeHeld(copy, glow, piece.materials);
+        if (look.ghost !== null) copy.traverse((object: Object3D): void => dress(object, look, glow, piece.materials, skinTint, null));
+        else shadeSharing(copy, piece.materials);
         holder.add(copy);
         bone.add(holder);
         held.set(id, piece);
@@ -402,17 +455,11 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
       hide(instant ? finalParts : shownParts.filter((part: string): boolean => hiddenParts.includes(part)));
     },
     stepWear(dt: number): void {
-      if (!wearMoving && !partsPending) return;
-      const step: number = Math.min(dt, WEAR_FADE.longestStep);
-      let moving: boolean = false;
-      for (const piece of worn.values()) if (stepWornPiece(piece, step)) moving = true;
-      for (const piece of leaving) if (stepWornPiece(piece, step)) moving = true;
-      for (const piece of held.values()) stepHeldPiece(piece, step);
-      for (const piece of lettingGo) stepHeldPiece(piece, step);
-      const released: boolean = dropSettled(lettingGo, release);
-      if (dropSettled(leaving, drop) || released) dressedCache = null;
-      wearMoving = lettingGo.length > 0 || leaving.length > 0 || anyUnsettled(worn.values()) || anyUnsettled(held.values());
-      if (!moving && partsPending) hide(finalParts);
+      stepWearing(dt);
+      if (rests !== null) looks.settle(glowAtRest(glow) && faded === 1 && !shadeSees && !wearMoving && !partsPending);
+    },
+    sharedLook(): boolean {
+      return looks.resting();
     },
     setFlash(color: Color, amount: number): void {
       glow.flash.value.copy(color).multiplyScalar(amount * FLASH.boost);
