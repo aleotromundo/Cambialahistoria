@@ -4,9 +4,10 @@ import type { NavGrid } from '../nav/grid.ts';
 import { isWalkable, lineWalkable, moveWithCollision, paceAt, routedGrid, slideAlong, slideOnBody, stepClear } from '../nav/grid.ts';
 import { isDashing, passesThrough } from './dash.ts';
 import { heroShare, pushShare, steadiness } from './poise.ts';
-import type { Actor, ActorState, MonsterState, World } from './types.ts';
+import type { Actor, ActorState, MonsterState, PlayerState, World } from './types.ts';
 
 const MOVEMENT = {
+  heroPairShare: 0.5,
   knockFriction: 9,
   knockRest: 0.08,
   readablePush: 0.05,
@@ -313,7 +314,7 @@ function apart(a: Actor, b: Actor): boolean {
 export function separateActors(world: World, dt: number, strides: Strides): void {
   const living: MonsterState[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive && !passesThrough(monster));
   const budget: Yield = { dt, strides, left: new Map<ActorState, number>() };
-  const hero: boolean = world.player.alive && !passesThrough(world.player);
+  const heroes: PlayerState[] = world.heroes.filter((hero: PlayerState): boolean => hero.alive && !passesThrough(hero));
   for (let pass: number = 0; pass < MOVEMENT.separationPasses; pass += 1) {
     for (let first: number = 0; first < living.length; first += 1) {
       const a: MonsterState | undefined = living[first];
@@ -322,7 +323,15 @@ export function separateActors(world: World, dt: number, strides: Strides): void
         const b: MonsterState | undefined = living[second];
         if (b !== undefined && !apart(a, b)) pushApart(world.grid, a, b, pushShare(a, b), budget);
       }
-      if (hero && !apart(world.player, a)) pushApart(world.grid, world.player, a, heroShare(a), budget);
+      for (const hero of heroes) if (!apart(hero, a)) pushApart(world.grid, hero, a, heroShare(a), budget);
+    }
+    for (let first: number = 0; first < heroes.length; first += 1) {
+      const a: PlayerState | undefined = heroes[first];
+      if (a === undefined) continue;
+      for (let second: number = first + 1; second < heroes.length; second += 1) {
+        const b: PlayerState | undefined = heroes[second];
+        if (b !== undefined && !apart(a, b)) pushApart(world.grid, a, b, MOVEMENT.heroPairShare, budget);
+      }
     }
   }
 }

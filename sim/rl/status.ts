@@ -1,6 +1,6 @@
 import { pickFoe } from '../world/monsters.ts';
 import { dealtScale } from '../world/weaken.ts';
-import type { Actor, MonsterState, World } from '../world/types.ts';
+import type { Actor, MonsterState, PlayerState, World } from '../world/types.ts';
 import { RL } from './contract.ts';
 
 export interface Statuses {
@@ -32,10 +32,10 @@ export function statusesOf(world: World, actor: Actor): Statuses {
   return { burning: burning(actor), branded: branded(actor), slowed: slowed(actor), weakened: weakened(world, actor) };
 }
 
-export function targetingHero(world: World, monster: MonsterState): boolean {
-  return monster.alive && monster.aggro && pickFoe(world, monster) === world.player;
+export function targetingHero(world: World, monster: MonsterState, hero: PlayerState): boolean {
+  return monster.alive && monster.aggro && pickFoe(world, monster) === hero;
 }
 
-export function targetedBy(world: World): number {
-  return world.monsters.filter((monster: MonsterState): boolean => targetingHero(world, monster)).length;
+export function targetedBy(world: World, hero: PlayerState): number {
+  return world.monsters.filter((monster: MonsterState): boolean => targetingHero(world, monster, hero)).length;
 }

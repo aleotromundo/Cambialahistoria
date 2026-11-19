@@ -156,7 +156,7 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   put(writer, ruleShare(world.content, context.pickup));
   put(writer, bagFree(world));
   writeStatuses(writer, statusesOf(world, player));
-  put(writer, targetedBy(world) / RL.countScale);
+  put(writer, targetedBy(world, player) / RL.countScale);
   blank(writer, RL.spareSelf);
 }
 
@@ -344,7 +344,7 @@ function writeFoe(writer: Writer, world: World, seen: Seen): void {
   }
   const monster: MonsterState = seen.monster;
   writeStatuses(writer, statusesOf(world, monster));
-  flag(writer, targetingHero(world, monster));
+  flag(writer, targetingHero(world, monster, world.player));
   put(writer, monster.root);
   flag(writer, monster.def.rank?.leader === true);
   put(writer, monster.def.mods.length / RL.countScale);

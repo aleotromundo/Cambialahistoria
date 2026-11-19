@@ -339,8 +339,15 @@ function foeOf(world: World, monster: MonsterState): Actor | null {
 
 function nearestFoe(world: World, monster: MonsterState): Actor | null {
   const side: Side = sideOfMonster(monster);
-  let best: Actor | null = strikes(world, monster, world.player, side) ? world.player : null;
-  let bestGap: number = best === null ? Infinity : distance(monster.pos, best.pos);
+  let best: Actor | null = null;
+  let bestGap: number = Infinity;
+  for (const hero of world.heroes) {
+    if (!strikes(world, monster, hero, side)) continue;
+    const gap: number = distance(monster.pos, hero.pos);
+    if (gap >= bestGap) continue;
+    best = hero;
+    bestGap = gap;
+  }
   const reach: number = monster.def.aggroRadius * MONSTERS.feudReach;
   for (const other of world.monsters) {
     if (fartherThan(monster.pos, other.pos, Math.min(reach, bestGap))) continue;
@@ -369,7 +376,7 @@ function rousedBy(world: World, monster: MonsterState, actor: Actor, radius: num
 function seesFight(world: World, monster: MonsterState): boolean {
   const radius: number = wakeRadius(monster.def);
   const side: Side = sideOfMonster(monster);
-  if (rousedBy(world, monster, world.player, radius, side)) return true;
+  for (const hero of world.heroes) if (rousedBy(world, monster, hero, radius, side)) return true;
   for (const other of world.monsters) if (rousedBy(world, monster, other, radius, side)) return true;
   return false;
 }
@@ -424,7 +431,7 @@ function heldAtShell(world: World, monster: MonsterState, moment: MomentState, f
 
 function loseInterest(world: World, monster: MonsterState): void {
   monster.aggro = false;
-  if (!wardedFrom(world, monster, world.player)) return;
+  if (!world.heroes.some((hero: Actor): boolean => wardedFrom(world, monster, hero))) return;
   monster.foeId = null;
   monster.returning = true;
   monster.leashTime = 0;
@@ -479,7 +486,7 @@ export function stepMonster(world: World, monster: MonsterState, dt: number): vo
   }
   monster.returning = false;
   if (foe === null) {
-    if (!strikes(world, monster, world.player)) loseInterest(world, monster);
+    loseInterest(world, monster);
     return;
   }
   const call: ZonePack | null = alarmTarget(world, monster);
