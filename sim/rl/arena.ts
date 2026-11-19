@@ -12,10 +12,11 @@ import { stepWorld } from '../world/step.ts';
 import { enterZone } from '../world/zones.ts';
 import type { Command, GroundItem, MonsterState, World, WorldEvent } from '../world/types.ts';
 import type { BenchHero } from '../world/dev-commands.ts';
-import type { Action } from './contract.ts';
-import { NO_ACTION, RL } from './contract.ts';
+import { RL } from './contract.ts';
 import type { Observation, ObserveContext } from './observe.ts';
-import { hostileMonster, observe } from './observe.ts';
+import { hostileMonster, observe, seenMonsters } from './observe.ts';
+import type { Recall } from './recall.ts';
+import { createRecall, noteSeen, recallEvents } from './recall.ts';
 import type { RewardTally } from './reward.ts';
 import { emptyTally, REWARD, rewardFor } from './reward.ts';
 
@@ -62,7 +63,7 @@ export interface Arena {
   wave: number;
   nextWaveAt: number | null;
   clearedAt: number | null;
-  last: Action;
+  readonly recall: Recall;
   outcome: ArenaOutcome;
   total: number;
   decisions: number;
@@ -191,7 +192,7 @@ export function createArena(content: Content, options: ArenaOptions): Arena {
   world.encounters = [];
   world.packReturns = [];
   stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
-  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, last: NO_ACTION, outcome: 'running', total: 0, decisions: 0 };
+  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), outcome: 'running', total: 0, decisions: 0 };
   spawnWave(arena);
   return arena;
 }
@@ -214,11 +215,13 @@ export function arenaRunning(arena: Arena): boolean {
 }
 
 export function arenaContext(arena: Arena): ObserveContext {
-  return { situation: 'arena', objective: null, timeLeft: Math.max(0, ARENA.timeLimit - (arena.world.time - arena.start)), progress: arena.wave / Math.max(1, arena.options.waves), last: arena.last };
+  return { situation: 'arena', objective: null, timeLeft: Math.max(0, ARENA.timeLimit - (arena.world.time - arena.start)), progress: arena.wave / Math.max(1, arena.options.waves), recall: arena.recall };
 }
 
 export function arenaObservation(arena: Arena): Observation {
-  return observe(arena.world, arenaContext(arena));
+  const seen: Observation = observe(arena.world, arenaContext(arena));
+  noteSeen(arena.recall, arena.world, seenMonsters(seen.view));
+  return seen;
 }
 
 export function afterTick(arena: Arena, events: readonly WorldEvent[]): number {
@@ -230,6 +233,7 @@ export function afterTick(arena: Arena, events: readonly WorldEvent[]): number {
     if (spawned !== undefined) arena.lives.set(spawned.id, spawned.maxLife);
   }
   const lifeOf = (id: number): number => arena.lives.get(id) ?? world.monsters.find((monster: MonsterState): boolean => monster.id === id)?.maxLife ?? world.player.maxLife;
+  recallEvents(arena.recall, world, events);
   let reward: number = rewardFor(events, { playerId: world.player.id, playerMaxLife: world.player.maxLife, lifeOf, calm: calm(arena) }, arena.tally);
   if (!world.player.alive || arena.tally.deaths > 0) arena.outcome = 'died';
   else if (arena.clearedAt !== null) {

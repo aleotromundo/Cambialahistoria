@@ -14,13 +14,14 @@ export const BEHAVIOUR_ORDER: Readonly<Record<MonsterBehaviour['type'], number>>
 export const BEHAVIOUR_NAMES: readonly MonsterBehaviour['type'][] = ['chaser', 'ranged', 'stalker', 'swarm', 'ambush', 'fixed'];
 
 export const RL = {
-  version: 2,
+  version: 3,
   tick: 1 / 30,
   ticksPerDecision: 4,
   actionParts: 4,
   slots: 6,
   flasks: 2,
   entities: 24,
+  remembered: 4,
   targets: 8,
   rays: 16,
   rayReach: 12,
@@ -38,6 +39,8 @@ export const RL = {
   nearReach: 6,
   pickupReach: 12,
   dangerSteps: [1, 2.5],
+  recentWindow: 1,
+  memoryWindow: 5,
   clip: 5,
   spareSelf: 8,
   spareSlot: 4,
@@ -59,6 +62,17 @@ function flaskNames(count: number): string[] {
 }
 
 export const MOVE_CHOICES: number = 9;
+export const SKILL_CHOICES: number = RL.slots + 1;
+export const PICKUP_CHOICE: number = RL.flasks + 1;
+export const USE_CHOICES: number = PICKUP_CHOICE + 1;
+
+function counted(prefix: string, count: number): string[] {
+  return Array.from({ length: count }, (_unused: unknown, index: number): string => `${prefix}${index}`);
+}
+
+function decisionNames(prefix: string): string[] {
+  return [...counted(`${prefix}move_`, MOVE_CHOICES), ...counted(`${prefix}skill_`, SKILL_CHOICES), ...counted(`${prefix}target_`, RL.targets), ...counted(`${prefix}use_`, USE_CHOICES)];
+}
 
 export const SELF_FEATURES: readonly string[] = [
   'life',
@@ -91,11 +105,13 @@ export const SELF_FEATURES: readonly string[] = [
   'foes_alive',
   'foes_near',
   'progress',
-  ...Array.from({ length: MOVE_CHOICES }, (_unused: unknown, index: number): string => `danger_${index}`),
-  'last_dx',
-  'last_dz',
-  'last_skill',
-  'last_use',
+  ...counted('danger_', MOVE_CHOICES),
+  ...decisionNames('last1_'),
+  ...decisionNames('last2_'),
+  'life_lost_recent',
+  'dealt_recent',
+  'since_hit',
+  'hit_unseen',
   ...spare('', RL.spareSelf),
 ];
 
@@ -149,13 +165,11 @@ export const ENTITY_FEATURES: readonly string[] = [
   'dir_z',
   'speed',
   'time_left',
+  'remembered',
   ...each('behaviour_', BEHAVIOUR_NAMES),
   ...spare('', RL.spareEntity),
 ];
 
-export const SKILL_CHOICES: number = RL.slots + 1;
-export const PICKUP_CHOICE: number = RL.flasks + 1;
-export const USE_CHOICES: number = PICKUP_CHOICE + 1;
 export const ACTION_HEADS: readonly number[] = [MOVE_CHOICES, SKILL_CHOICES, RL.targets, USE_CHOICES];
 
 export interface ObservationLayout {
@@ -174,9 +188,9 @@ export const LAYOUT: ObservationLayout = {
   slot: SLOT_FEATURES.length,
   slots: RL.slots,
   entity: ENTITY_FEATURES.length,
-  entities: RL.entities,
+  entities: RL.entities + RL.remembered,
   rays: RL.rays,
-  size: SELF_FEATURES.length + SLOT_FEATURES.length * RL.slots + ENTITY_FEATURES.length * RL.entities + RL.rays,
+  size: SELF_FEATURES.length + SLOT_FEATURES.length * RL.slots + ENTITY_FEATURES.length * (RL.entities + RL.remembered) + RL.rays,
   mask: ACTION_HEADS.reduce((sum: number, choices: number): number => sum + choices, 0),
 };
 

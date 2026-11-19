@@ -4,6 +4,7 @@ import type { Arena, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
 import type { Action } from './contract.ts';
 import { LAYOUT, RL } from './contract.ts';
+import { rememberDecision } from './recall.ts';
 import type { Observation } from './observe.ts';
 import type { Replay } from './replay.ts';
 import { actionFrom, recordReplay } from './replay.ts';
@@ -98,7 +99,7 @@ export function stepPool(pool: Pool, actions: Int32Array): PoolStep {
     log.push(list);
     const action: Action = actionFrom(list);
     const result = stepArena(arena, commandsFor(arena.world, action, seen.view));
-    arena.last = action;
+    rememberDecision(arena.recall, action);
     rewards[env] = result.reward;
     if (!result.done) {
       pool.seen[env] = arenaObservation(arena);

@@ -6,6 +6,7 @@ import type { Arena } from './arena.ts';
 import { afterTick, arenaObservation, arenaRunning, createArena } from './arena.ts';
 import type { Action } from './contract.ts';
 import { RL } from './contract.ts';
+import { rememberDecision } from './recall.ts';
 import type { Replay } from './replay.ts';
 import { REWARD } from './reward.ts';
 import { actionFrom, playableReplay } from './replay.ts';
@@ -35,7 +36,7 @@ function nextCommands(replayer: Replayer): readonly Command[] {
   replayer.arena.decisions += 1;
   const action: Action = actionFrom(list);
   const commands: Command[] = commandsFor(replayer.arena.world, action, arenaObservation(replayer.arena).view);
-  replayer.arena.last = action;
+  rememberDecision(replayer.arena.recall, action);
   return commands;
 }
 

@@ -5,6 +5,7 @@ import { commandsFor } from './act.ts';
 import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
 import type { Action } from './contract.ts';
+import { rememberDecision } from './recall.ts';
 import { contractShape, RL } from './contract.ts';
 import type { Observation } from './observe.ts';
 
@@ -35,7 +36,7 @@ export function recordReplay(arena: Arena, actions: readonly (readonly number[])
 export function playStep(arena: Arena, action: Action): Observation {
   const seen: Observation = arenaObservation(arena);
   stepArena(arena, commandsFor(arena.world, action, seen.view));
-  arena.last = action;
+  rememberDecision(arena.recall, action);
   return seen;
 }
 

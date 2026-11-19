@@ -11,6 +11,7 @@ import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { afterTick, arenaObservation, arenaRunning, createArena } from './arena.ts';
 import type { Action } from './contract.ts';
 import { RL } from './contract.ts';
+import { rememberDecision } from './recall.ts';
 import type { Observation } from './observe.ts';
 import { REWARD } from './reward.ts';
 
@@ -85,7 +86,7 @@ export function demonstrate(content: Content, options: ArenaOptions): DemoEpisod
     listening = false;
     const action: Action = actionOf(world, heard, seen.view, from, carried);
     samples.push({ obs: seen.obs, mask: seen.mask, action });
-    arena.last = action;
+    rememberDecision(arena.recall, action);
     arena.decisions += 1;
   }
   return { samples, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves };
