@@ -28,6 +28,7 @@ export { VFX_CUES, VFX_MAX_FORKS, VFX_STYLES } from './vfx-types.ts';
 export type { SkillVfx, VfxCue, VfxImpact, VfxLightning, VfxStyle } from './vfx-types.ts';
 export type { ExitLook, PackMember, PackReturn, PackWait, SurgeRules, ZoneCheckpoint, ZoneDef, ZoneEdge, ZoneExit, ZoneKind, ZoneNpc, ZoneOutside, ZonePack, ZonePoint, ZoneProp, ZoneReturn, ZoneSize, ZoneVoice, ZoneWalls, ZoneWaypoint } from './zone-types.ts';
 export { ZONE_KINDS } from './zone-types.ts';
+export type { ZoneFall } from './fall-types.ts';
 export type { DefeatObjective, EitherObjective, LineDef, MomentObjective, NpcDef, ObjectiveBase, ObjectiveDef, PathObjective, QuestDef, ReachObjective, TalkDef, TalkObjective } from './quest-types.ts';
 import type { ZoneDef } from './zone-types.ts';
 import type { LineDef, NpcDef, QuestDef } from './quest-types.ts';

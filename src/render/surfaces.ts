@@ -79,6 +79,10 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   return texture;
 }
 
+export function surfaceColourMap(def: SurfaceDef): Texture {
+  return loadTexture(def.color, def.metres, true);
+}
+
 export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 0): MeshStandardMaterial {
   const key: string = wet > 0 ? `${def.id}:${use}:wet${wet}` : `${def.id}:${use}`;
   const cached: Made | undefined = materials.get(key);

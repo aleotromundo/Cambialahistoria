@@ -59,6 +59,7 @@ export function caveZoneRecord(layout: CaveLayout, naming: CaveNaming, kit: Cave
     playerStart: rounded(layout.start),
     props: layout.props,
     tunnels: [],
+    falls: [],
     packs: layout.packs.map(packRecord),
     exits: [exitRecord(naming.up, layout.entrance, layout.start), ...(naming.down === null ? [] : [exitRecord(naming.down, layout.descent, layout.descentArrival)])],
     checkpoints: layout.checkpoints.map((point: Vec2, at: number): Record<string, unknown> => ({ id: `${naming.id}_c${at + 1}`, ...rounded(point), radius: CAVE_ZONE.checkpointRadius })),

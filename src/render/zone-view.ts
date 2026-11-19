@@ -43,6 +43,8 @@ import { placesFor } from './life-kinds.ts';
 import type { TunnelRoofs } from './tunnel-roofs.ts';
 import { createTunnelRoofs } from './tunnel-roofs.ts';
 import { tickGlow } from './surface-glow.ts';
+import type { LavaFalls } from './lava-falls.ts';
+import { buildLavaFalls } from './lava-falls.ts';
 import type { Embers } from './embers.ts';
 import { createEmbers } from './embers.ts';
 import type { Hero } from './life-motion.ts';
@@ -268,6 +270,8 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   useTerrain(zone);
   const ground: Ground = buildGround(content, zone);
   for (const mesh of ground.meshes) group.add(mesh);
+  const falls: LavaFalls = buildLavaFalls(content, zone);
+  group.add(falls.group);
   const terrainSight: TerrainSight | null = createTerrainSight(zone);
   if (terrainSight !== null) for (const mesh of ground.meshes) for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) withCutaway(material);
   const walls: ZoneWalls | null = zone.walls;
@@ -451,6 +455,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
       life.dispose();
       group.removeFromParent();
       ground.dispose();
+      falls.dispose();
       for (const instanced of instances) instanced.dispose();
       for (const material of tintedMaterials) material.dispose();
       for (const light of pool) light.dispose();

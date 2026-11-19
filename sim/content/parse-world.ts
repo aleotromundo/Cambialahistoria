@@ -54,6 +54,7 @@ import { zoneScenes } from './parse-scene.ts';
 import { zoneHeroLight, zoneWeather } from './parse-weather.ts';
 import { zoneTerrain } from './parse-terrain.ts';
 import { zoneTunnels } from './parse-tunnel.ts';
+import { zoneFalls } from './parse-fall.ts';
 
 function point(value: unknown, where: string): ZonePoint {
   const source: Fields = fields(value, where);
@@ -324,6 +325,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     weather: zoneWeather(source['weather'], `${where}.weather`),
     heroLight: zoneHeroLight(source['heroLight'], `${where}.heroLight`),
     tunnels: zoneTunnels(source['tunnels'], `${where}.tunnels`),
+    falls: zoneFalls(source['falls'], `${where}.falls`),
   };
 }
 

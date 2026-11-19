@@ -6,6 +6,7 @@ import type { ZoneAmbience } from './ambience-types.ts';
 import type { ZoneVoid } from './story-types.ts';
 import type { ZoneDrift, ZoneHeroLight, ZoneTrigger, ZoneWeather } from './road-types.ts';
 import type { ZoneTunnel } from './tunnel-types.ts';
+import type { ZoneFall } from './fall-types.ts';
 import type { MomentField } from './moment-types.ts';
 import type { SceneDef } from './scene-types.ts';
 
@@ -173,4 +174,5 @@ export interface ZoneDef {
   readonly weather: ZoneWeather;
   readonly heroLight: ZoneHeroLight;
   readonly tunnels: readonly ZoneTunnel[];
+  readonly falls: readonly ZoneFall[];
 }
