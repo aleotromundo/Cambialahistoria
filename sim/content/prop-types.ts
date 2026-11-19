@@ -23,6 +23,8 @@ export interface GlowLight extends PropLightBase {
 
 export type PropLight = FlameLight | GlowLight;
 
+export type GlowLit = 'tint' | 'map';
+
 export interface SurfaceGlow {
   readonly color: string;
   readonly strength: number;
@@ -31,6 +33,7 @@ export interface SurfaceGlow {
   readonly scale: number;
   readonly flow: number;
   readonly pulse: number;
+  readonly lit: GlowLit;
 }
 
 export interface SurfaceHeat {

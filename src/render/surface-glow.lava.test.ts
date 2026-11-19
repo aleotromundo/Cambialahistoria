@@ -4,8 +4,8 @@ import type { SurfaceGlow } from '../../sim/content/types.ts';
 import { unsafeGlsl } from '../../test/glsl-support.ts';
 import { glowFragment, SURFACE_GLOW } from './surface-glow.ts';
 
-const POOL: SurfaceGlow = { color: '#ff5414', strength: 1, cover: 0.45, cracks: 0.1, scale: 3.2, flow: 0.16, pulse: 0.14 };
-const CRUST: SurfaceGlow = { color: '#ff4a12', strength: 1.15, cover: 0.14, cracks: 0.85, scale: 2.4, flow: 0.02, pulse: 0.12 };
+const POOL: SurfaceGlow = { color: '#ff5414', strength: 1, cover: 0.45, cracks: 0.1, scale: 3.2, flow: 0.16, pulse: 0.14, lit: 'tint' };
+const CRUST: SurfaceGlow = { color: '#ff4a12', strength: 1.15, cover: 0.14, cracks: 0.85, scale: 2.4, flow: 0.02, pulse: 0.12, lit: 'tint' };
 
 void test('molten rock runs from deep red through its own colour to a hot core, never one flat colour', (): void => {
   const source: string = glowFragment(POOL);

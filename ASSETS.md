@@ -610,6 +610,14 @@ Ground and rock textures from polyhaven.com, all CC0, made like the surface text
 | `public/textures/dark_cobble_color.webp`, `public/textures/dark_cobble_normal.webp`, `public/textures/dark_cobble_orm.webp`, `public/textures/half/dark_cobble_color.webp`, `public/textures/half/dark_cobble_normal.webp`, `public/textures/half/dark_cobble_orm.webp` | "Rock Wall 08" (`rock_wall_08`) | Amal Kumar | CC0 1.0 |
 | `public/textures/old_tiles_color.webp`, `public/textures/old_tiles_normal.webp`, `public/textures/old_tiles_orm.webp`, `public/textures/half/old_tiles_color.webp`, `public/textures/half/old_tiles_normal.webp`, `public/textures/half/old_tiles_orm.webp` | "Mixed Stone Tiles" (`mixed_stone_tiles`) | Dimitrios Savva | CC0 1.0 |
 
+### Molten lava texture from ambientCG
+
+The open lava in the lava levels. The 1K JPEG download's colour and normal (OpenGL) maps, written as `cwebp` WebP at 1024 pixels, with half-size copies in `public/textures/half/`. The licence is in `licenses/ambientCG-CC0.txt`.
+
+| Files | ambientCG asset | Author | Licence |
+|---|---|---|---|
+| `public/textures/molten_color.webp`, `public/textures/molten_normal.webp`, `public/textures/half/molten_color.webp`, `public/textures/half/molten_normal.webp` | "Lava 004" (`Lava004`, https://ambientcg.com/view?id=Lava004) | ambientCG (Lennart Demes) | CC0 1.0 |
+
 ## Shore dressing
 
 Standing stones, arches, spires and steps for the opening area, in `public/models/shore/`. Every file is one `.glb` standing on its origin: the middle of its footprint at x and z and its lowest point at y = 0, scaled to the size it should have in the world, without animations, skins, cameras or lights. Each went through the same steps as the cave dressing: the model was taken from the source below, the wanted object was kept and its parents' transforms were baked in, it was turned upright where noted, scaled to its size (the paving slabs flattened to 0.14 m), reduced to the triangle count in the manifest, and its textures reduced to at most 1024 pixels (512 for the models from Poly Pizza) and written as WebP; `tools/compress-models.ts` compressed it. The scans from Poly Haven went through `blender/import_polyhaven.py`'s steps (weld, decimate to 2400 triangles, ARM maps rewired). On the Poly Pizza models `rock_spire_tall` has its snow material coloured as the rock, and `rock_pillar_faceted` has its palette texture replaced by a flat dark grey colour; materials were made non-metallic where they are not metal.

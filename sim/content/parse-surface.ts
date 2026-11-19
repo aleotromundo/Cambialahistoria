@@ -1,6 +1,8 @@
-import type { SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
+import type { GlowLit, SurfaceDef, SurfaceGlow, SurfaceHeat } from './prop-types.ts';
 import type { Fields } from './read.ts';
-import { colour, fields, flag, nonNegative, nullableText, numeric, positive, share, text } from './read.ts';
+import { choice, colour, fields, flag, nonNegative, nullableText, numeric, positive, share, text } from './read.ts';
+
+const GLOW_LIT: readonly GlowLit[] = ['tint', 'map'];
 
 function surfaceGlow(value: unknown, where: string): SurfaceGlow | null {
   if (value === null || value === undefined) return null;
@@ -13,6 +15,7 @@ function surfaceGlow(value: unknown, where: string): SurfaceGlow | null {
     scale: positive(source, 'scale', where),
     flow: nonNegative(source, 'flow', where),
     pulse: nonNegative(source, 'pulse', where),
+    lit: source['lit'] === undefined ? 'tint' : choice(source, 'lit', GLOW_LIT, where),
   };
 }
 

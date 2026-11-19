@@ -206,12 +206,15 @@ void test('a step on a surface with a step sound of its own plays it, and a surf
   assert.deepEqual(sounds(cuesForEvent(audio, world, { type: 'hero_step', pos: ARENA_CENTRE })), ['footstep_stone']);
 });
 
-void test('every lava floor a hero can walk on steps in ash', (): void => {
+void test('every lava floor a hero can walk on steps in ash, and wading through molten lava gloops', (): void => {
   for (const id of ['lava_depths', 'lava_depths_2', 'lava_depths_3']) {
     const zone: ZoneDef = must(content.zones.get(id), id);
     const walked: readonly string[] = [...new Set<string>(Object.values(zone.floors))].filter((surface: string): boolean => content.surfaces.get(surface)?.blocks !== true);
     assert.ok(walked.length > 0, id);
-    for (const surface of walked) assert.deepEqual(audio.steps.get(surface)?.map((cue: CueDef): string => cue.sound), ['step_ash'], `${id} ${surface}`);
+    for (const surface of walked) {
+      const molten: boolean = content.surfaces.get(surface)?.glow?.lit === 'map';
+      assert.deepEqual(audio.steps.get(surface)?.map((cue: CueDef): string => cue.sound), [molten ? 'lava_glop' : 'step_ash'], `${id} ${surface}`);
+    }
   }
 });
 

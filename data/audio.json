@@ -351,7 +351,8 @@
     "basalt": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
     "scorched_stone": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
     "cooled_crust": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
-    "vent_bed": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }]
+    "vent_bed": [{ "sound": "step_ash", "volume": 0.7, "maxVoices": 2, "pitch": [0.94, 1.06], "volumeJitter": 0.12 }],
+    "molten": [{ "sound": "lava_glop", "volume": 0.45, "maxVoices": 2, "pitch": [0.85, 1.2], "volumeJitter": 0.15 }]
   },
   "tailwindKill": {
     "breeze": [{ "sound": "shimmer_faint", "volume": 0.16, "maxVoices": 2, "cooldown": 0.06, "pitch": [0.92, 0.96] }, { "sound": "tailwind_whisk", "volume": 0.1, "maxVoices": 2, "cooldown": 0.06, "pitch": [0.95, 1.05] }],
@@ -452,9 +453,9 @@
         { "sound": "ambience_drone_low", "volume": 0.12 }
       ],
       "stingers": [
-        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed"], "reach": 18 } },
-        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed"], "reach": 14 } },
-        { "sound": "lava_glop", "volume": 0.3, "minDelay": 5, "maxDelay": 12, "pitch": [0.85, 1.15], "near": { "surfaces": ["vent_bed"], "reach": 16 } }
+        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "lava_glop", "volume": 0.3, "minDelay": 5, "maxDelay": 12, "pitch": [0.85, 1.15], "near": { "surfaces": ["vent_bed", "molten"], "reach": 16 } }
       ]
     },
     "lava_depths_2": {
@@ -466,9 +467,9 @@
         { "sound": "ambience_drone_low", "volume": 0.12 }
       ],
       "stingers": [
-        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed"], "reach": 18 } },
-        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed"], "reach": 14 } },
-        { "sound": "lava_glop", "volume": 0.3, "minDelay": 5, "maxDelay": 12, "pitch": [0.85, 1.15], "near": { "surfaces": ["vent_bed"], "reach": 16 } }
+        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "lava_glop", "volume": 0.3, "minDelay": 5, "maxDelay": 12, "pitch": [0.85, 1.15], "near": { "surfaces": ["vent_bed", "molten"], "reach": 16 } }
       ]
     },
     "lava_depths_3": {
@@ -480,9 +481,9 @@
         { "sound": "ambience_drone_low", "volume": 0.12 }
       ],
       "stingers": [
-        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed"], "reach": 18 } },
-        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed"], "reach": 14 } },
-        { "sound": "lava_glop", "volume": 0.3, "minDelay": 5, "maxDelay": 12, "pitch": [0.85, 1.15], "near": { "surfaces": ["vent_bed"], "reach": 16 } }
+        { "sound": "vent_hiss", "volume": 0.45, "minDelay": 6, "maxDelay": 14, "pitch": [0.9, 1.12], "near": { "surfaces": ["vent_bed", "molten"], "reach": 18 } },
+        { "sound": "lava_bubble", "volume": 0.3, "minDelay": 2, "maxDelay": 5, "pitch": [0.75, 1.35], "near": { "surfaces": ["vent_bed", "molten"], "reach": 14 } },
+        { "sound": "lava_glop", "volume": 0.3, "minDelay": 5, "maxDelay": 12, "pitch": [0.85, 1.15], "near": { "surfaces": ["vent_bed", "molten"], "reach": 16 } }
       ]
     },
     "ledger_hall": {

@@ -39,8 +39,17 @@ export function pathLength(from: Vec2, path: readonly Vec2[]): number {
   return total;
 }
 
+const EVEN_PACE: WeakMap<Float32Array, Float32Array> = new WeakMap<Float32Array, Float32Array>();
+
+export function evenGround(grid: NavGrid): NavGrid {
+  const known: Float32Array | undefined = EVEN_PACE.get(grid.pace);
+  const pace: Float32Array = known ?? new Float32Array(grid.pace.length).fill(1);
+  if (known === undefined) EVEN_PACE.set(grid.pace, pace);
+  return { ...grid, pace };
+}
+
 export function aroundPath(grid: NavGrid, from: Vec2, past: Vec2): Vec2[] | null {
-  const path: Vec2[] = findPath(grid, from, past);
+  const path: Vec2[] = findPath(evenGround(grid), from, past);
   const end: Vec2 | undefined = path.at(-1);
   if (end === undefined || distance(end, past) > STICK.arrive) return null;
   return pathLength(from, path) <= distance(from, past) * STICK.detour ? path : null;

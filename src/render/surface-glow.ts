@@ -46,6 +46,17 @@ export const SURFACE_GLOW = {
   hot: [1.0, 0.64, 0.26],
   hotLift: 1.05,
   poolFrom: 0.3,
+  mapWarp: 0.18,
+  mapFlow: 0.22,
+  mapSecondScale: 0.63,
+  mapSecondSpeed: 0.55,
+  mapSecondShift: 0.37,
+  mapSecondShare: 0.85,
+  mapHeatFrom: 0.06,
+  mapHeatTo: 0.26,
+  mapHotFrom: 0.7,
+  mapCrustShade: 0.2,
+  mapMoltenShade: 0.1,
 } as const;
 
 export const GLOW_CLOCK: IUniform<number> = { value: 0 };
@@ -71,7 +82,28 @@ function glslHot(hex: string, strength: number): string {
 }
 
 export function glowKey(glow: SurfaceGlow | null): string {
-  return glow === null ? '' : `:glow-${glow.color}-${glow.strength}-${glow.cover}-${glow.cracks}-${glow.scale}-${glow.flow}-${glow.pulse}`;
+  return glow === null ? '' : `:glow-${glow.lit}-${glow.color}-${glow.strength}-${glow.cover}-${glow.cracks}-${glow.scale}-${glow.flow}-${glow.pulse}`;
+}
+
+function tintLines(glow: SurfaceGlow): readonly string[] {
+  const g = SURFACE_GLOW;
+  if (glow.lit === 'tint') {
+    return [
+      `vec3 glowTint = mix( mix( ${glslColour(glow.color, glow.strength, g.deep)}, ${glslColour(glow.color, glow.strength)}, smoothstep( 0.0, ${glsl(g.warmTo)}, glowHeat ) ), ${glslHot(glow.color, glow.strength)}, smoothstep( ${glsl(g.hotFrom)}, 1.0, glowCore * glowShimmer ) );`,
+      `diffuseColor.rgb *= mix( 1.0, ${glsl(g.crustDarken)}, glowMolten );`,
+    ];
+  }
+  return [
+    'float glowLavaHeat = glowHeat;',
+    '#ifdef USE_MAP',
+    `  vec2 glowFlowUv = vMapUv + ( vec2( glowFirst, glowSecond ) - 0.5 ) * ${glsl(g.mapWarp)} + glowDrift * ${glsl(g.mapFlow)};`,
+    `  vec2 glowSecondUv = vMapUv * ${glsl(g.mapSecondScale)} - glowDrift * ${glsl(g.mapFlow * g.mapSecondSpeed)} + ${glsl(g.mapSecondShift)};`,
+    `  vec3 glowSample = max( texture2D( map, glowFlowUv ).rgb, texture2D( map, glowSecondUv ).rgb * ${glsl(g.mapSecondShare)} );`,
+    `  glowLavaHeat = smoothstep( ${glsl(g.mapHeatFrom)}, ${glsl(g.mapHeatTo)}, dot( glowSample, vec3( 0.2126, 0.7152, 0.0722 ) ) ) * glowShimmer;`,
+    '#endif',
+    `vec3 glowTint = mix( mix( ${glslColour(glow.color, glow.strength, g.deep)}, ${glslColour(glow.color, glow.strength)}, smoothstep( 0.0, ${glsl(g.warmTo)}, glowLavaHeat ) ), ${glslHot(glow.color, glow.strength)}, smoothstep( ${glsl(g.mapHotFrom)}, 1.0, glowLavaHeat ) );`,
+    `diffuseColor.rgb *= mix( ${glsl(g.mapCrustShade)}, ${glsl(g.mapMoltenShade)}, glowMolten );`,
+  ];
 }
 
 export const GLOW_HELPERS: string = [
@@ -124,8 +156,7 @@ export function glowFragment(glow: SurfaceGlow): string {
     `float glowShimmer = mix( ${glsl(g.shimmerLeast)}, 1.0, groundNoise( glowAt * ${glsl(g.shimmerScale)} - glowDrift * ${glsl(g.shimmerSpeed)} ) );`,
     `float glowCore = max( ( 1.0 - smoothstep( 0.0, glowWidth * ${glsl(g.coreReach)} + ${glsl(g.leastGap)}, glowEdge ) ) * glowOpen, smoothstep( ${glsl(riverEdge)}, ${glsl(riverEdge + g.riverCore)}, glowRiverField ) ) * glowMolten;`,
     'float glowHeat = clamp( glowMask * glowShimmer, 0.0, 1.0 );',
-    `vec3 glowTint = mix( mix( ${glslColour(glow.color, glow.strength, g.deep)}, ${glslColour(glow.color, glow.strength)}, smoothstep( 0.0, ${glsl(g.warmTo)}, glowHeat ) ), ${glslHot(glow.color, glow.strength)}, smoothstep( ${glsl(g.hotFrom)}, 1.0, glowCore * glowShimmer ) );`,
-    `diffuseColor.rgb *= mix( 1.0, ${glsl(g.crustDarken)}, glowMolten );`,
+    ...tintLines(glow),
     `totalEmissiveRadiance += glowTint * glowMask * ( ${pulse} );`,
   ].join('\n');
 }

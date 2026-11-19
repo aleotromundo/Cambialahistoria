@@ -7,7 +7,7 @@ import type { SurfaceGlow } from '../../sim/content/types.ts';
 import { GLOW_CLOCK, GLOW_HELPERS, glowFragment, glowingGround, glowKey, patchGlowShader, tickGlow } from './surface-glow.ts';
 import { patchGroundShader, wetGroundKey } from './wet-ground.ts';
 
-const LAVA: SurfaceGlow = { color: '#ff5a14', strength: 2, cover: 0.7, cracks: 0.3, scale: 6, flow: 0.08, pulse: 0.2 };
+const LAVA: SurfaceGlow = { color: '#ff5a14', strength: 2, cover: 0.7, cracks: 0.3, scale: 6, flow: 0.08, pulse: 0.2, lit: 'tint' };
 
 void test('the glow is written as safe GLSL that drifts, pulses and lights the surface in its own colour', (): void => {
   const source: string = glowFragment(LAVA);
