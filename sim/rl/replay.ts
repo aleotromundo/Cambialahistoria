@@ -88,7 +88,7 @@ export function readReplay(raw: unknown): Replay {
     situation: 'arena',
     version: numberField(source, 'version'),
     fingerprint: text(source, 'fingerprint', 'replay'),
-    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), waves: numberField(options, 'waves') },
+    options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), waves: numberField(options, 'waves'), ...(options['level'] === undefined ? {} : { level: numberField(options, 'level') }) },
     actions,
     outcome: outcomeOf(source['outcome']),
     total: numberField(source, 'total'),

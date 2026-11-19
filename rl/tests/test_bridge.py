@@ -10,7 +10,7 @@ import torch
 
 from lost_storm_rl.bridge import read_batch, read_demonstrations
 from lost_storm_rl.model import Policy
-from lost_storm_rl.train import check_duels, check_minibatches, check_seed
+from lost_storm_rl.train import check_anchor, check_duels, check_minibatches, check_seed
 
 
 def contract() -> dict[str, object]:
@@ -127,3 +127,11 @@ def test_widen_carries_the_flask_head_into_the_use_head(tmp_path) -> None:
     assert carried["use.weight"].shape == (4, 16)
     assert torch.equal(carried["use.weight"][:3], state["flask.weight"])
     assert torch.equal(carried["use.bias"][:3], state["flask.bias"])
+
+
+def test_bot_settings_that_would_switch_the_anchor_off_unseen_are_refused() -> None:
+    parser = argparse.ArgumentParser()
+    check_anchor(parser, 0.5, 0.05, 3000, 20, 16, 0.5)
+    for bad in ((float("nan"), 0.05, 3000, 20, 16, 0.5), (0.5, float("nan"), 3000, 20, 16, 0.5), (0.5, -1.0, 3000, 20, 16, 0.5), (0.5, 0.05, -1, 20, 16, 0.5), (0.5, 0.05, 3000, 0, 16, 0.5), (0.5, 0.05, 3000, 20, 0, 0.5), (0.5, 0.05, 3000, 20, 16, float("nan"))):
+        with pytest.raises(SystemExit):
+            check_anchor(parser, *bad)

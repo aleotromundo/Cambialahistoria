@@ -10,7 +10,7 @@ const CONTENT: Content = loadContent();
 const SEATS = { envs: 3, duels: 1, limit: 3000 } as const;
 
 void test('a pool with a duel gives the duel two seats after the arenas, and both seats finish together', (): void => {
-  const pool: Pool = createPool(CONTENT, { seed: 71, envs: SEATS.envs, duels: SEATS.duels, jitter: 0, waves: 1, keepEvery: 0 });
+  const pool: Pool = createPool(CONTENT, { seed: 71, envs: SEATS.envs, duels: SEATS.duels, jitter: 0, waves: 1, keepEvery: 0, levels: [] });
   assert.deepEqual(pool.matches.map((match): string => match.kind), ['arena', 'duel']);
   const first: PoolStep = poolObservations(pool);
   assert.equal(first.obs.length, SEATS.envs * LAYOUT.size);
@@ -28,5 +28,5 @@ void test('a pool with a duel gives the duel two seats after the arenas, and bot
 });
 
 void test('a pool refuses more duels than its envs can seat', (): void => {
-  assert.throws((): Pool => createPool(CONTENT, { seed: 72, envs: 1, duels: 1, jitter: 0, waves: 1, keepEvery: 0 }));
+  assert.throws((): Pool => createPool(CONTENT, { seed: 72, envs: 1, duels: 1, jitter: 0, waves: 1, keepEvery: 0, levels: [] }));
 });

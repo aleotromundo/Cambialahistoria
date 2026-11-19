@@ -6,6 +6,7 @@ export const FRAME = {
   step: 115,
   demo: 100,
   tag: 116,
+  levels: 108,
   quit: 113,
   observations: 111,
   demonstrations: 68,

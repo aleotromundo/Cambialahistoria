@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import os
 import time
 from dataclasses import asdict, dataclass
@@ -11,10 +12,13 @@ from typing import Any, TextIO
 
 import numpy as np
 import torch
-from torch.distributions import Categorical
 
+from .anchor import HEAD_NAMES, BotBuffer, LevelCurriculum, bot_weight, imitation_loss, paired
 from .bridge import MAX_SEED, ArenaEnvs, demonstrations
-from .model import Policy, head_masks, load, save, widen
+from .model import Policy, load, save, widen
+
+BOT_SEED_OFFSET = 1_000_000_000
+BOT_SEED_STRIDE = 10_007
 
 RUNS = Path(__file__).resolve().parents[1] / "runs"
 
@@ -29,7 +33,7 @@ def default_workers() -> int:
     return max(1, min(12, (os.cpu_count() or 4) - 4))
 
 
-LOG_HEADER = ["update", "decisions", "seconds", "episodes", "win_rate", "died_rate", "mean_return", "mean_waves", "policy_loss", "value_loss", "entropy", "explained", "kl", "duel_episodes", "duel_decided", "duel_return"]
+LOG_HEADER = ["update", "decisions", "seconds", "episodes", "win_rate", "died_rate", "mean_return", "mean_waves", "policy_loss", "value_loss", "entropy", "explained", "kl", "duel_episodes", "duel_decided", "duel_return", "bot_loss", "bot_weight", "win_high"]
 
 
 def retired_log(path: Path) -> Path:
@@ -103,26 +107,15 @@ def imitate(args: ImitateArgs) -> Path:
             batch_obs = obs[index].to(device)
             batch_mask = mask[index].to(device)
             batch_actions = actions[index].to(device)
-            logits, _ = policy.logits(batch_obs, batch_mask)
-            loss = torch.zeros((), device=device)
-            allowed = head_masks(policy.shape, batch_mask)
-            for head, logit in enumerate(logits):
-                label = batch_actions[:, head]
-                valid = allowed[head].gather(1, label.unsqueeze(1)).squeeze(1)
-                if head == 2:
-                    valid = valid & (batch_actions[:, 1] > 0)
-                if not bool(valid.any()):
-                    continue
-                part = -Categorical(logits=logit[valid]).log_prob(label[valid]).mean()
-                loss = loss + part
-                totals[head] += part.item() * int(valid.sum())
-                correct[head] += float((logit[valid].argmax(dim=1) == label[valid]).float().sum())
-                seen[head] += int(valid.sum())
+            learned = imitation_loss(policy, batch_obs, batch_mask, batch_actions)
+            totals += learned.totals
+            correct += learned.correct
+            seen += learned.seen
             optimizer.zero_grad()
-            loss.backward()
+            learned.loss.backward()
             torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
             optimizer.step()
-        accuracy = " ".join(f"{name}={correct[i] / max(1, seen[i]):.3f}" for i, name in enumerate(("move", "skill", "target", "use")))
+        accuracy = " ".join(f"{name}={correct[i] / max(1, seen[i]):.3f}" for i, name in enumerate(HEAD_NAMES))
         print(f"epoch {epoch + 1}/{args.epochs} loss={totals.sum() / max(1, seen[0]):.3f} {accuracy}", flush=True)
     path = folder / "imitate.pt"
     save(policy, str(path), {"stage": "imitate", "args": asdict(args)})
@@ -155,6 +148,21 @@ class PpoArgs:
     width: int
     device: str
     duels: int = 0
+    bot_coef: float = 0.5
+    bot_floor: float = 0.05
+    bot_decay: int = 3000
+    bot_every: int = 20
+    bot_episodes: int = 16
+    bot_keep: int = 4
+    curriculum: float = 0.5
+
+
+def refresh_bot(envs: ArenaEnvs, buffer: BotBuffer, args: PpoArgs, update: int, weights: list[float]) -> None:
+    started = time.time()
+    part = envs.bot(args.seed + BOT_SEED_OFFSET + update * BOT_SEED_STRIDE, args.bot_episodes, args.jitter, args.waves, weights or None)
+    buffer.add(part)
+    won = sum(1 for episode in part.episodes if episode["outcome"] == "won")
+    print(f"bot played {len(part.episodes)} arenas, won {won}, {len(part.actions)} decisions in {time.time() - started:.0f}s; buffer {len(buffer)}", flush=True)
 
 
 def explained(values: np.ndarray, returns: np.ndarray) -> float:
@@ -168,6 +176,14 @@ def ppo(args: PpoArgs) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays, args.duels)
     contract = envs.contract
+    levels = contract["levels"]
+    curriculum = LevelCurriculum(int(levels["min"]), int(levels["max"]), args.curriculum)
+    if args.curriculum > 0:
+        envs.set_levels(curriculum.weights())
+    buffer = BotBuffer(args.bot_keep)
+    sampler = np.random.default_rng(args.seed)
+    if args.bot_coef > 0:
+        refresh_bot(envs, buffer, args, 0, curriculum.weights())
     device = pick_device(args.device)
     policy = load(args.start, contract, device) if args.start else Policy(contract, width=args.width).to(device)
     actor = Policy(contract, width=policy.width)
@@ -231,7 +247,9 @@ def ppo(args: PpoArgs) -> Path:
             b_ret = torch.from_numpy(returns.reshape(flat))
             warming = update <= args.value_warmup
             minibatch = flat // args.minibatches
-            stats = {"policy": 0.0, "value": 0.0, "entropy": 0.0, "kl": 0.0, "n": 0}
+            stats = {"policy": 0.0, "value": 0.0, "entropy": 0.0, "kl": 0.0, "bot": 0.0, "n": 0}
+            weight = bot_weight(args.bot_coef, args.bot_floor, args.bot_decay, update)
+            anchored = weight > 0 and not warming and len(buffer) > 0
             for _ in range(args.epochs):
                 order = torch.randperm(flat)
                 for start in range(0, flat, minibatch):
@@ -249,6 +267,11 @@ def ppo(args: PpoArgs) -> Path:
                     value_loss = 0.5 * ((value - ret_mb) ** 2).mean()
                     entropy_mean = entropy.mean()
                     loss = value_loss * args.value_coef if warming else policy_loss + value_loss * args.value_coef - entropy_mean * args.entropy
+                    if anchored:
+                        bot_obs, bot_mask, bot_act = buffer.sample(sampler, len(index))
+                        taught = imitation_loss(policy, bot_obs.to(device), bot_mask.to(device), bot_act.to(device))
+                        loss = loss + weight * taught.loss
+                        stats["bot"] += taught.loss.item()
                     optimizer.zero_grad()
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(policy.parameters(), 0.5)
@@ -263,6 +286,13 @@ def ppo(args: PpoArgs) -> Path:
             n = max(1, stats["n"])
             arena = [episode for episode in finished if episode.get("situation", "arena") == "arena"]
             duels = [episode for episode in finished if episode.get("situation") == "duel"]
+            curriculum.note(arena)
+            if args.curriculum > 0:
+                envs.set_levels(curriculum.weights())
+            if args.bot_coef > 0 and update % args.bot_every == 0:
+                refresh_bot(envs, buffer, args, update, curriculum.weights())
+            win_high = curriculum.win_between(9, int(levels["max"]))
+            bot_loss = stats["bot"] / n if anchored else float("nan")
             episodes = len(arena)
             win = sum(1 for episode in arena if episode["outcome"] == "won") / max(1, episodes)
             died = sum(1 for episode in arena if episode["outcome"] == "died") / max(1, episodes)
@@ -272,10 +302,10 @@ def ppo(args: PpoArgs) -> Path:
             duel_return = float(np.mean([episode["total"] for episode in duels])) if duels else float("nan")
             seconds = time.time() - started
             ev = explained(val_buf.reshape(-1), returns.reshape(-1))
-            row = [update, decisions, round(seconds, 1), episodes, round(win, 3), round(died, 3), round(mean_return, 3), round(mean_waves, 3), round(stats["policy"] / n, 4), round(stats["value"] / n, 4), round(stats["entropy"] / n, 4), round(ev, 3), round(stats["kl"] / n, 5), len(duels), round(decided, 3), round(duel_return, 3)]
+            row = [update, decisions, round(seconds, 1), episodes, round(win, 3), round(died, 3), round(mean_return, 3), round(mean_waves, 3), round(stats["policy"] / n, 4), round(stats["value"] / n, 4), round(stats["entropy"] / n, 4), round(ev, 3), round(stats["kl"] / n, 5), len(duels), round(decided, 3), round(duel_return, 3), round(bot_loss, 4), round(weight if anchored else 0.0, 4), round(win_high, 3)]
             log.writerow(row)
             log_file.flush()
-            print(f"update {update} | {decisions / max(1.0, seconds):.0f} dec/s | episodes {episodes} won {win:.0%} died {died:.0%} return {mean_return:.2f} waves {mean_waves:.2f}{f' | duels {len(duels)} decided {decided:.0%} return {duel_return:.2f}' if duels else ''} | entropy {stats['entropy'] / n:.2f} ev {ev:.2f}{' (value warmup)' if warming else ''}", flush=True)
+            print(f"update {update} | {decisions / max(1.0, seconds):.0f} dec/s | episodes {episodes} won {win:.0%} died {died:.0%} return {mean_return:.2f} waves {mean_waves:.2f}{f' | duels {len(duels)} decided {decided:.0%} return {duel_return:.2f}' if duels else ''}{f' | bot {bot_loss:.2f} x{weight:.2f}' if anchored else ''} | L9+ {win_high:.0%} | entropy {stats['entropy'] / n:.2f} ev {ev:.2f}{' (value warmup)' if warming else ''}", flush=True)
             if update % args.save_every == 0 or update == args.updates:
                 save(policy, str(folder / f"policy-u{update:05d}.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
                 save(policy, str(folder / "latest.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
@@ -298,12 +328,13 @@ def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves
             action, _, _ = policy.act(torch.from_numpy(batch.obs), torch.from_numpy(batch.mask), greedy=greedy)
         batch = envs.step(action.numpy())
         finished.extend(batch.finished)
-    envs.close()
     finished = finished[:episodes]
+    bot = envs.bot(seed, len(finished), jitter, waves, seeds=[episode["seed"] for episode in finished], samples=False).episodes
+    envs.close()
     outcomes: dict[str, int] = {}
     for episode in finished:
         outcomes[episode["outcome"]] = outcomes.get(episode["outcome"], 0) + 1
-    print(json.dumps({"episodes": len(finished), "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "replays": str(folder)}, indent=2))
+    print(json.dumps({"episodes": len(finished), "greedy": greedy, "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "against_bot": paired(finished, bot), "replays": str(folder)}, indent=2))
 
 
 EVAL_DUELS_AT_ONCE = 8
@@ -335,6 +366,20 @@ def evaluate_duels(path: str, run: str, duels: int, seed: int, jitter: float, gr
 def check_seed(parser: argparse.ArgumentParser, seed: int) -> None:
     if seed < 0 or seed > MAX_SEED:
         parser.error(f"--seed must be between 0 and {MAX_SEED}, which leaves room for each worker's offset under the game's limit")
+
+
+def check_anchor(parser: argparse.ArgumentParser, bot_coef: float, bot_floor: float, bot_decay: int, bot_every: int, bot_episodes: int, curriculum: float) -> None:
+    for name, value in (("--bot-coef", bot_coef), ("--bot-floor", bot_floor)):
+        if not math.isfinite(value) or value < 0:
+            parser.error(f"{name} must be a number of 0 or more")
+    if bot_decay < 0:
+        parser.error("--bot-decay must be 0 or more")
+    if bot_every < 1:
+        parser.error("--bot-every must be 1 or more")
+    if bot_episodes < 1:
+        parser.error("--bot-episodes must be 1 or more")
+    if not math.isfinite(curriculum) or not 0 <= curriculum <= 1:
+        parser.error("--curriculum must be between 0 and 1")
 
 
 def check_duels(parser: argparse.ArgumentParser, duels: int, envs: int) -> None:
@@ -388,6 +433,13 @@ def main() -> None:
     ppo_cmd.add_argument("--save-every", type=int, default=10)
     ppo_cmd.add_argument("--keep-every", type=int, default=200)
     ppo_cmd.add_argument("--duels", type=int, default=0)
+    ppo_cmd.add_argument("--bot-coef", type=float, default=0.5)
+    ppo_cmd.add_argument("--bot-floor", type=float, default=0.05)
+    ppo_cmd.add_argument("--bot-decay", type=int, default=3000)
+    ppo_cmd.add_argument("--bot-every", type=int, default=20)
+    ppo_cmd.add_argument("--bot-episodes", type=int, default=16)
+    ppo_cmd.add_argument("--bot-keep", type=int, default=4)
+    ppo_cmd.add_argument("--curriculum", type=float, default=0.5)
     eval_cmd = sub.choices["eval"]
     eval_cmd.add_argument("--policy", required=True)
     eval_cmd.add_argument("--episodes", type=int, default=16)
@@ -401,6 +453,7 @@ def main() -> None:
     if parsed.command == "ppo":
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
         check_duels(parser, parsed.duels, parsed.envs)
+        check_anchor(parser, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.curriculum)
     torch.set_num_threads(4)
     if parsed.command == "widen":
         probe = ArenaEnvs(1, 1, 1, 0.0, 1)
@@ -413,7 +466,7 @@ def main() -> None:
     elif parsed.command == "imitate":
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
-        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels))
+        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum))
     elif parsed.duels:
         evaluate_duels(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, not parsed.sample)
     else:

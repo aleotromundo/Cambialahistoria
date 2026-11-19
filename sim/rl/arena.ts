@@ -58,10 +58,12 @@ export interface ArenaOptions {
   readonly seed: number;
   readonly jitter: number;
   readonly waves: number;
+  readonly level?: number;
 }
 
 export interface Arena {
   readonly options: ArenaOptions;
+  readonly level: number;
   readonly world: World;
   readonly rng: Rng;
   readonly pool: readonly MonsterDef[];
@@ -203,10 +205,11 @@ export function emptyArena(content: Content, seed: number, level: number): World
 export function createArena(content: Content, options: ArenaOptions): Arena {
   const rng: Rng = createRng(options.seed);
   const played: Content = jitterContent(content, rng, options.jitter);
-  const level: number = rng.int(ARENA.levels.min, ARENA.levels.max);
+  const rolled: number = rng.int(ARENA.levels.min, ARENA.levels.max);
+  const level: number = options.level ?? rolled;
   const world: World = emptyArena(played, options.seed, Math.max(1, level + rng.int(-ARENA.levelSpread, ARENA.levelSpread)));
   stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
-  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), pickup: rollRule(played, rng), outcome: 'running', total: 0, decisions: 0 };
+  const arena: Arena = { options, level, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), pickup: rollRule(played, rng), outcome: 'running', total: 0, decisions: 0 };
   spawnWave(arena);
   return arena;
 }

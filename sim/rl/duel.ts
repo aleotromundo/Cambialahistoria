@@ -40,6 +40,7 @@ export interface Duel {
   readonly world: World;
   readonly seats: readonly DuelSeat[];
   readonly pickup: PickupRule;
+  readonly level: number;
   readonly start: number;
   decisions: number;
 }
@@ -70,7 +71,7 @@ export function createDuel(content: Content, options: DuelOptions): Duel {
   const rival: PlayerState = { ...benched, id: world.nextId, party: DUEL.rivalParty, pos: spawnSpot(world, rng) };
   world.nextId += 1;
   world.heroes.push(rival);
-  return { options, world, seats: [seatOf(world.player), seatOf(rival)], pickup: { minRarity: played.rarities.length }, start: world.time, decisions: 0 };
+  return { options, world, seats: [seatOf(world.player), seatOf(rival)], pickup: { minRarity: played.rarities.length }, level, start: world.time, decisions: 0 };
 }
 
 export function duelRunning(duel: Duel): boolean {

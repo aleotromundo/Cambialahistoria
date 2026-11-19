@@ -1,9 +1,12 @@
 import type { Content } from '../content/types.ts';
 import type { Command } from '../world/types.ts';
 import { commandsFor } from './act.ts';
-import type { Arena, ArenaOutcome } from './arena.ts';
+import type { Rng } from '../rng.ts';
+import { createRng } from '../rng.ts';
+import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
 import type { Action } from './contract.ts';
+import { CURRICULUM, pickLevel } from './curriculum.ts';
 import { LAYOUT, RL } from './contract.ts';
 import type { Duel, DuelSeat } from './duel.ts';
 import { createDuel, duelObservation, stepDuel } from './duel.ts';
@@ -21,6 +24,7 @@ export interface PoolOptions {
   readonly jitter: number;
   readonly waves: number;
   readonly keepEvery: number;
+  readonly levels: readonly number[];
 }
 
 export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel };
@@ -29,6 +33,7 @@ export interface EpisodeSummary {
   readonly env: number;
   readonly seed: number;
   readonly situation: Match['kind'];
+  readonly level: number;
   readonly outcome: ArenaOutcome;
   readonly total: number;
   readonly waves: number;
@@ -41,6 +46,8 @@ export interface Pool {
   readonly matches: Match[];
   readonly seen: Observation[];
   readonly actions: number[][][];
+  readonly levelRng: Rng;
+  levels: readonly number[];
   nextSeed: number;
   episodes: number;
   best: number;
@@ -74,10 +81,20 @@ function observeSeats(match: Match): Observation[] {
   return duel.seats.map((seat: DuelSeat): Observation => duelObservation(duel, seat));
 }
 
+function arenaOptions(pool: Pool, seed: number): ArenaOptions {
+  const level: number | null = pickLevel(pool.levelRng, pool.levels);
+  const options: ArenaOptions = { seed, jitter: pool.options.jitter, waves: pool.options.waves };
+  return level === null ? options : { ...options, level };
+}
+
+export function setLevels(pool: Pool, weights: readonly number[]): void {
+  pool.levels = weights;
+}
+
 function freshMatch(pool: Pool, index: number): void {
   const seed: number = pool.nextSeed;
   pool.nextSeed += 1;
-  const match: Match = index < arenaSeats(pool.options) ? { kind: 'arena', arena: createArena(pool.content, { seed, jitter: pool.options.jitter, waves: pool.options.waves }) } : { kind: 'duel', duel: createDuel(pool.content, { seed, jitter: pool.options.jitter }) };
+  const match: Match = index < arenaSeats(pool.options) ? { kind: 'arena', arena: createArena(pool.content, arenaOptions(pool, seed)) } : { kind: 'duel', duel: createDuel(pool.content, { seed, jitter: pool.options.jitter }) };
   pool.matches[index] = match;
   const env: number = firstEnv(pool, index);
   observeSeats(match).forEach((seen: Observation, seat: number): void => {
@@ -88,7 +105,7 @@ function freshMatch(pool: Pool, index: number): void {
 
 export function createPool(content: Content, options: PoolOptions): Pool {
   if (options.duels < 0 || arenaSeats(options) < 0) throw new Error(`${options.duels} duels need ${options.duels * 2} envs, but there are ${options.envs}`);
-  const pool: Pool = { content, options, matches: [], seen: [], actions: [], nextSeed: options.seed, episodes: 0, best: -Infinity, tag: '' };
+  const pool: Pool = { content, options, matches: [], seen: [], actions: [], levelRng: createRng(options.seed + CURRICULUM.seedSalt), levels: options.levels, nextSeed: options.seed, episodes: 0, best: -Infinity, tag: '' };
   const count: number = arenaSeats(options) + options.duels;
   for (let index: number = 0; index < count; index += 1) freshMatch(pool, index);
   return pool;
@@ -159,10 +176,10 @@ function play(match: Match, commands: readonly Command[][]): Played {
 function summaries(match: Match, env: number): EpisodeSummary[] {
   if (match.kind === 'arena') {
     const arena: Arena = match.arena;
-    return [{ env, seed: arena.options.seed, situation: 'arena', outcome: arena.outcome, total: arena.total, waves: arena.tally.waves, decisions: arena.decisions }];
+    return [{ env, seed: arena.options.seed, situation: 'arena', level: arena.level, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves, decisions: arena.decisions }];
   }
   const duel: Duel = match.duel;
-  return duel.seats.map((seat: DuelSeat, index: number): EpisodeSummary => ({ env: env + index, seed: duel.options.seed, situation: 'duel', outcome: seat.outcome, total: seat.total, waves: 0, decisions: duel.decisions }));
+  return duel.seats.map((seat: DuelSeat, index: number): EpisodeSummary => ({ env: env + index, seed: duel.options.seed, situation: 'duel', level: duel.level, outcome: seat.outcome, total: seat.total, waves: 0, decisions: duel.decisions }));
 }
 
 export function stepPool(pool: Pool, actions: Int32Array): PoolStep {

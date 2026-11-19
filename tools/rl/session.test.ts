@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadContent } from '../../sim/content/content.ts';
+import { ARENA } from '../../sim/rl/arena.ts';
 import { contractShape, LAYOUT, RL } from '../../sim/rl/contract.ts';
 import type { Frame } from './frames.ts';
 import { frame, FRAME, jsonPart, readJson } from './frames.ts';
@@ -26,7 +27,7 @@ void test('hello answers with the contract the trainer must match', (): void => 
   const answer: Frame = only(handle(session(), request(FRAME.hello, { seed: 3, envs: 2 })));
   assert.equal(answer.kind, FRAME.hello);
   const shape = readJson(answer.payload.subarray(FRAME.word));
-  assert.deepEqual(shape, JSON.parse(JSON.stringify({ ...contractShape(), envs: 2 })));
+  assert.deepEqual(shape, JSON.parse(JSON.stringify({ ...contractShape(), envs: 2, levels: ARENA.levels })));
 });
 
 void test('reset and step answer with observations for every arena', (): void => {

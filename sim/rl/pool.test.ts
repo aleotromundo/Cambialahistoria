@@ -11,7 +11,7 @@ const CONTENT: Content = loadContent();
 const ENVS: number = 3;
 
 void test('a pool gives one observation and mask per arena', (): void => {
-  const pool: Pool = createPool(CONTENT, { seed: 61, envs: ENVS, duels: 0, jitter: 0, waves: 1, keepEvery: 0 });
+  const pool: Pool = createPool(CONTENT, { seed: 61, envs: ENVS, duels: 0, jitter: 0, waves: 1, keepEvery: 0, levels: [] });
   const first: PoolStep = poolObservations(pool);
   assert.equal(first.obs.length, ENVS * LAYOUT.size);
   assert.equal(first.mask.length, ENVS * LAYOUT.mask);
@@ -21,7 +21,7 @@ void test('a pool gives one observation and mask per arena', (): void => {
 });
 
 void test('a finished arena reports its episode, keeps a replay and starts afresh', (): void => {
-  const pool: Pool = createPool(CONTENT, { seed: 62, envs: 1, duels: 0, jitter: 0, waves: 1, keepEvery: 1 });
+  const pool: Pool = createPool(CONTENT, { seed: 62, envs: 1, duels: 0, jitter: 0, waves: 1, keepEvery: 1, levels: [] });
   const idle: Int32Array = new Int32Array(RL.actionParts);
   const limit: number = 2000;
   let step: PoolStep = poolObservations(pool);

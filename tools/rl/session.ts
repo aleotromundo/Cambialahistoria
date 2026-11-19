@@ -1,11 +1,16 @@
 import type { Content } from '../../sim/content/types.ts';
 import { fields, text } from '../../sim/content/read.ts';
 import type { Fields } from '../../sim/content/read.ts';
+import { createRng } from '../../sim/rng.ts';
+import type { Rng } from '../../sim/rng.ts';
+import { ARENA } from '../../sim/rl/arena.ts';
+import type { ArenaOptions } from '../../sim/rl/arena.ts';
 import { contractShape, LAYOUT, RL } from '../../sim/rl/contract.ts';
+import { CURRICULUM, pickLevel, readLevelWeights } from '../../sim/rl/curriculum.ts';
 import type { DemoEpisode, Demonstration } from '../../sim/rl/demo.ts';
 import { demonstrate } from '../../sim/rl/demo.ts';
 import type { Pool, PoolOptions, PoolStep } from '../../sim/rl/pool.ts';
-import { createPool, poolObservations, stepPool } from '../../sim/rl/pool.ts';
+import { createPool, poolObservations, setLevels, stepPool } from '../../sim/rl/pool.ts';
 import type { KeptReplay } from '../../sim/rl/duel-replay.ts';
 import type { Frame } from './frames.ts';
 import { demonstrationFrame, frame, FRAME, jsonPart, observationFrame, readActions, readJson } from './frames.ts';
@@ -47,7 +52,7 @@ function count(source: Fields, key: string, fallback: number): number {
 
 export function readPoolOptions(raw: unknown): PoolOptions {
   const source: Fields = fields(raw, 'hello');
-  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)) };
+  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels']) };
 }
 
 function observations(step: PoolStep, envs: number): Buffer {
@@ -59,15 +64,33 @@ interface DemoRequest {
   readonly episodes: number;
   readonly jitter: number;
   readonly waves: number;
+  readonly seeds: readonly number[];
+  readonly levels: readonly number[];
+  readonly samples: boolean;
 }
 
-function readDemoRequest(raw: unknown): DemoRequest {
+function seedList(raw: unknown): number[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) throw new Error('seeds must be a list');
+  return raw.map((value: unknown): number => seedOf({ seed: value }));
+}
+
+export function readDemoRequest(raw: unknown): DemoRequest {
   const source: Fields = fields(raw, 'demo');
-  return { seed: seedOf(source), episodes: Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))) };
+  const seeds: number[] = seedList(source['seeds']);
+  const samples: unknown = source['samples'];
+  if (samples !== undefined && typeof samples !== 'boolean') throw new Error('samples must be true or false');
+  return { seed: seedOf(source), episodes: seeds.length > 0 ? seeds.length : Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), seeds, levels: readLevelWeights(source['levels']), samples: samples !== false };
 }
 
-function episodeFrame(episode: DemoEpisode | null): Buffer {
-  const samples: readonly Demonstration[] = episode?.samples ?? [];
+export function demoOptions(request: DemoRequest, rng: Rng, index: number): ArenaOptions {
+  const options: ArenaOptions = { seed: request.seeds[index] ?? request.seed + index, jitter: request.jitter, waves: request.waves };
+  const level: number | null = pickLevel(rng, request.levels);
+  return level === null ? options : { ...options, level };
+}
+
+function episodeFrame(episode: DemoEpisode | null, keepSamples: boolean): Buffer {
+  const samples: readonly Demonstration[] = keepSamples ? (episode?.samples ?? []) : [];
   const obs: Float32Array = new Float32Array(samples.length * LAYOUT.size);
   const mask: Uint8Array = new Uint8Array(samples.length * LAYOUT.mask);
   const actions: Int32Array = new Int32Array(samples.length * RL.actionParts);
@@ -76,14 +99,15 @@ function episodeFrame(episode: DemoEpisode | null): Buffer {
     mask.set(sample.mask, index * LAYOUT.mask);
     actions.set([sample.action.move, sample.action.skill, sample.action.target, sample.action.use], index * RL.actionParts);
   });
-  const episodes = episode === null ? [] : [{ outcome: episode.outcome, total: episode.total, waves: episode.waves }];
+  const episodes = episode === null ? [] : [{ seed: episode.seed, level: episode.level, outcome: episode.outcome, total: episode.total, waves: episode.waves }];
   return demonstrationFrame({ count: samples.length, size: LAYOUT.size, maskSize: LAYOUT.mask, obs, actions, mask, info: { episodes, done: episode === null } });
 }
 
 function* demonstrations(session: Session, request: DemoRequest): Generator<Buffer> {
   try {
-    for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, { seed: request.seed + index, jitter: request.jitter, waves: request.waves }));
-    yield episodeFrame(null);
+    const rng: Rng = createRng(request.seed + CURRICULUM.seedSalt);
+    for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, demoOptions(request, rng, index)), request.samples);
+    yield episodeFrame(null, request.samples);
   }
   catch (error: unknown) {
     yield errorFrame(error);
@@ -104,7 +128,7 @@ function answer(session: Session, received: Frame): Reply {
     case FRAME.hello: {
       const options: PoolOptions = readPoolOptions(readJson(received.payload));
       session.pool = createPool(session.content, options);
-      return { frames: [frame(FRAME.hello, jsonPart({ ...contractShape(), envs: options.envs }))], keep: [], quit: false };
+      return { frames: [frame(FRAME.hello, jsonPart({ ...contractShape(), envs: options.envs, levels: ARENA.levels }))], keep: [], quit: false };
     }
     case FRAME.reset: {
       const pool: Pool = needPool(session);
@@ -119,6 +143,11 @@ function answer(session: Session, received: Frame): Reply {
       const pool: Pool = needPool(session);
       pool.tag = text(fields(readJson(received.payload), 'tag'), 'tag', 'tag');
       return { frames: [frame(FRAME.tag, [])], keep: [], quit: false };
+    }
+    case FRAME.levels: {
+      const pool: Pool = needPool(session);
+      setLevels(pool, readLevelWeights(fields(readJson(received.payload), 'levels')['weights']));
+      return { frames: [frame(FRAME.levels, [])], keep: [], quit: false };
     }
     case FRAME.demo:
       return { frames: demonstrations(session, readDemoRequest(readJson(received.payload))), keep: [], quit: false };

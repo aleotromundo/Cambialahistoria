@@ -4,6 +4,7 @@ import type { Vec2 } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { mayStrike } from '../world/factions.ts';
 import { hostileFrom, isPrimary, partyOf } from '../world/heroes.ts';
+import { blockedFlask } from '../world/flasks.ts';
 import { blockedReason } from '../world/skills.ts';
 import type { NpcState } from '../world/npc-types.ts';
 import type { Actor, AreaState, FlaskState, GroundItem, HazardState, MonsterState, PlayerState, ProjectileState, World } from '../world/types.ts';
@@ -460,8 +461,8 @@ function writeRays(writer: Writer, world: World, hero: PlayerState): void {
   }
 }
 
-function flaskReady(flask: FlaskState | undefined): boolean {
-  return flask !== undefined && flask.charges >= flask.def.chargesPerUse && flask.cooldown <= 0;
+function flaskReady(hero: PlayerState, flask: FlaskState | undefined): boolean {
+  return flask !== undefined && blockedFlask(hero, flask) === null;
 }
 
 export function actionMask(world: World, view: View): Uint8Array {
@@ -478,7 +479,7 @@ export function actionMask(world: World, view: View): Uint8Array {
   at += SKILL_CHOICES;
   for (let target: number = 0; target < RL.targets; target += 1) mask[at + target] = target === 0 || target < view.targets.length ? 1 : 0;
   at += RL.targets;
-  for (let choice: number = 0; choice <= RL.flasks; choice += 1) mask[at + choice] = choice === 0 || (alive && flaskReady(player.flasks[choice - 1])) ? 1 : 0;
+  for (let choice: number = 0; choice <= RL.flasks; choice += 1) mask[at + choice] = choice === 0 || (alive && flaskReady(player, player.flasks[choice - 1])) ? 1 : 0;
   mask[at + PICKUP_CHOICE] = alive && view.pickup !== null && isPrimary(world, player) ? 1 : 0;
   return mask;
 }

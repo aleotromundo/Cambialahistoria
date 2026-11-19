@@ -10,7 +10,7 @@ import { actionOf, carriedOrder } from './act.ts';
 import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { afterTick, arenaObservation, arenaRunning, createArena } from './arena.ts';
 import type { Action } from './contract.ts';
-import { RL } from './contract.ts';
+import { ACTION_HEADS, RL } from './contract.ts';
 import { rememberDecision } from './recall.ts';
 import type { Observation } from './observe.ts';
 import { REWARD } from './reward.ts';
@@ -28,9 +28,22 @@ export interface Demonstration {
 
 export interface DemoEpisode {
   readonly samples: readonly Demonstration[];
+  readonly seed: number;
+  readonly level: number;
   readonly outcome: ArenaOutcome;
   readonly total: number;
   readonly waves: number;
+}
+
+export function allowedAction(action: Action, mask: Uint8Array): Action {
+  const chosen: number[] = [action.move, action.skill, action.target, action.use];
+  let at: number = 0;
+  const kept: number[] = chosen.map((choice: number, head: number): number => {
+    const allowed: boolean = mask[at + choice] === 1;
+    at += ACTION_HEADS[head] ?? 0;
+    return allowed ? choice : 0;
+  });
+  return { move: kept[0] ?? 0, skill: kept[1] ?? 0, target: kept[2] ?? 0, use: kept[3] ?? 0 };
 }
 
 export function arenaPlan(world: World): BotPlan {
@@ -84,10 +97,10 @@ export function demonstrate(content: Content, options: ArenaOptions): DemoEpisod
       oneTick(bot);
     }
     listening = false;
-    const action: Action = actionOf(heard, seen.view, from, carried);
+    const action: Action = allowedAction(actionOf(heard, seen.view, from, carried), seen.mask);
     samples.push({ obs: seen.obs, mask: seen.mask, action });
     rememberDecision(arena.recall, action);
     arena.decisions += 1;
   }
-  return { samples, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves };
+  return { samples, seed: options.seed, level: arena.level, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves };
 }

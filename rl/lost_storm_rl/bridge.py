@@ -19,6 +19,7 @@ RESET = ord("r")
 STEP = ord("s")
 DEMO = ord("d")
 TAG = ord("t")
+LEVELS = ord("l")
 QUIT = ord("q")
 OBSERVATIONS = ord("o")
 DEMONSTRATIONS = ord("D")
@@ -138,7 +139,7 @@ class Worker:
 
 
 class ArenaEnvs:
-    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0) -> None:
+    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None) -> None:
         self.workers: list[Worker] = []
         self.envs_per_worker = envs_per_worker
         self.count = workers * envs_per_worker
@@ -146,7 +147,7 @@ class ArenaEnvs:
             for index in range(workers):
                 self.workers.append(Worker(index, replays))
             for index, worker in enumerate(self.workers):
-                worker.send_json(HELLO, {"seed": seed + index * 1_000_003, "envs": envs_per_worker, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every})
+                worker.send_json(HELLO, {"seed": seed + index * 1_000_003, "envs": envs_per_worker, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels or []})
             hellos = [json.loads(worker.receive(HELLO)[WORD:].decode("utf-8")) for worker in self.workers]
         except BaseException:
             self.close()
@@ -185,9 +186,47 @@ class ArenaEnvs:
         for worker in self.workers:
             worker.receive(TAG)
 
+    def set_levels(self, weights: list[float]) -> None:
+        for worker in self.workers:
+            worker.send_json(LEVELS, {"weights": weights})
+        for worker in self.workers:
+            worker.receive(LEVELS)
+
+    def bot(self, seed: int, episodes: int, jitter: float, waves: int, levels: list[float] | None = None, seeds: list[int] | None = None, samples: bool = True) -> Demonstrations:
+        return _gather_demos(self.workers, seed, episodes, jitter, waves, levels or [], seeds, samples)
+
     def close(self) -> None:
         for worker in self.workers:
             worker.close()
+
+
+def _shares(count: int, workers: int) -> list[tuple[int, int]]:
+    base, extra = divmod(count, workers)
+    spans: list[tuple[int, int]] = []
+    at = 0
+    for index in range(workers):
+        size = base + (1 if index < extra else 0)
+        spans.append((at, size))
+        at += size
+    return spans
+
+
+def _gather_demos(workers: list["Worker"], seed: int, episodes: int, jitter: float, waves: int, levels: list[float], seeds: list[int] | None, samples: bool) -> Demonstrations:
+    asked = workers[: max(1, min(len(workers), len(seeds) if seeds is not None else episodes))]
+    total = len(seeds) if seeds is not None else episodes
+    for index, ((at, size), worker) in enumerate(zip(_shares(total, len(asked)), asked)):
+        request: dict[str, Any] = {"seed": seed + at + index * 1_000_003, "episodes": size, "jitter": jitter, "waves": waves, "levels": levels, "samples": samples}
+        if seeds is not None:
+            request["seeds"] = seeds[at : at + size]
+        worker.send_json(DEMO, request)
+    with ThreadPoolExecutor(max_workers=len(asked)) as readers:
+        parts = [part for streamed in readers.map(_stream, asked) for part in streamed]
+    return Demonstrations(
+        np.concatenate([part.obs for part in parts]),
+        np.concatenate([part.mask for part in parts]),
+        np.concatenate([part.actions for part in parts]),
+        [episode for part in parts for episode in part.episodes],
+    )
 
 
 def _stream(worker: Worker) -> list[Demonstrations]:

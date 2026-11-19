@@ -25,7 +25,7 @@ function randomActions(rng: Rng, seats: number): Int32Array {
 }
 
 function keptDuel(seed: number): DuelReplay {
-  const pool: Pool = createPool(CONTENT, { seed, envs: 2, duels: 1, jitter: 0.2, waves: 1, keepEvery: 1 });
+  const pool: Pool = createPool(CONTENT, { seed, envs: 2, duels: 1, jitter: 0.2, waves: 1, keepEvery: 1, levels: [] });
   const rng: Rng = createRng(seed);
   for (let decision: number = 0; decision < LIMITS.decisions; decision += 1) {
     const step: PoolStep = stepPool(pool, randomActions(rng, 2));
