@@ -6,7 +6,8 @@ import type { ItemBaseDef, SkillDef, WeaponKind } from './content/types.ts';
 import { baseOf } from './items.ts';
 import { surfaceAt } from './world/ground-surface.ts';
 import type { Vec2 } from './math.ts';
-import type { AreaStage, AreaState, Command, GroundItem, ItemInstance, MonsterState, WakeBeat, World, WorldEvent } from './world/types.ts';
+import { findHero } from './world/heroes.ts';
+import type { AreaStage, AreaState, Command, GroundItem, ItemInstance, MonsterState, PlayerState, WakeBeat, World, WorldEvent } from './world/types.ts';
 
 export interface SoundCue extends CueDef {
   readonly position: Vec2 | null;
@@ -55,8 +56,9 @@ function firstOf(table: CueTable, keys: readonly string[], position: Vec2 | null
 }
 
 function weaponOf(world: World, actorId: number): WeaponKind | null {
-  if (actorId !== world.player.id) return null;
-  const held: ItemInstance | null = world.player.equipped.weapon;
+  const hero: PlayerState | null = findHero(world, actorId);
+  if (hero === null) return null;
+  const held: ItemInstance | null = hero.equipped.weapon;
   if (held === null) return null;
   const base: ItemBaseDef | null = baseOf(world.content, held);
   return base === null ? null : base.weaponKind;
@@ -67,7 +69,7 @@ function monsterOf(world: World, id: number): MonsterState | undefined {
 }
 
 function positionOf(world: World, actorId: number): Vec2 | null {
-  const actor: { readonly pos: Vec2 } | undefined = actorId === world.player.id ? world.player : (monsterOf(world, actorId) ?? world.npcs.find((npc): boolean => npc.id === actorId));
+  const actor: { readonly pos: Vec2 } | undefined = findHero(world, actorId) ?? monsterOf(world, actorId) ?? world.npcs.find((npc): boolean => npc.id === actorId);
   return actor === undefined ? null : { x: actor.pos.x, z: actor.pos.z };
 }
 

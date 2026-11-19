@@ -73,7 +73,7 @@ export function createDeathBursts(deps: DeathBurstDeps): DeathBursts {
         }
         if (event.type !== 'death') continue;
         if (event.team === 'player') {
-          deps.trauma(FALL.playerShake);
+          if (event.actorId === world.player.id) deps.trauma(FALL.playerShake);
           spray(event.pos.x, 1.2, event.pos.z, deps.blood, 50, { speed: { min: 2, max: 9 }, lift: { min: 2, max: 9 }, life: { min: 0.4, max: 1 } });
           continue;
         }

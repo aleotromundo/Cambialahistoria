@@ -364,11 +364,13 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     camera.addTrauma(event.skill.shake * (landed ? 1 : 0.2));
   };
 
-  const onDamage = (event: Extract<WorldEvent, { type: 'damage' }>): void => {
+  const onDamage = (event: Extract<WorldEvent, { type: 'damage' }>, world: World): void => {
     const skillColor: Color = colorOf(event.skill.vfx.color);
     if (event.targetTeam === 'player') {
-      wash = washHit(wash);
-      camera.addTrauma(Math.max(EFFECTS.hurtShake, event.skill.shake));
+      if (event.targetId === world.player.id) {
+        wash = washHit(wash);
+        camera.addTrauma(Math.max(EFFECTS.hurtShake, event.skill.shake));
+      }
       if (event.skill.root > 0 && !event.killed) {
         mark(event.pos.x, event.pos.z, EFFECTS.rootRing, ROOT, event.skill.root);
         spray(event.pos.x, 0.3, event.pos.z, ROOT, EFFECTS.rootSpray, { speed: { min: 0.3, max: 1.4 }, lift: { min: 0.2, max: 1.6 }, life: { min: 0.4, max: event.skill.root }, gravity: 1, size: { min: 0.3, max: 0.7 } });
@@ -478,7 +480,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             break;
           case 'damage':
             noteMoment(event, world);
-            if (!event.burn) onDamage(event);
+            if (!event.burn) onDamage(event, world);
             break;
           case 'death':
             cancelOwned(event.actorId);

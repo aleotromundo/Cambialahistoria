@@ -165,7 +165,7 @@ function tallyEvents(tally: Tally, events: readonly WorldEvent[], heroId: number
     }
     if (event.type === 'drop') tally.drops += 1;
     if (event.type === 'skill_start' && event.actorId === heroId) tally.casts += 1;
-    if (event.type === 'death' && event.team === 'player') tally.heroDeaths += 1;
+    if (event.type === 'death' && event.actorId === heroId) tally.heroDeaths += 1;
   }
 }
 

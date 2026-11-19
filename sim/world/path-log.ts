@@ -22,8 +22,8 @@ const NOTABLE: Readonly<Partial<Record<WorldEvent['type'], PathAct>>> = {
   glitch_start: 'glitch',
 };
 
-function actOf(event: WorldEvent): PathAct | null {
-  if (event.type === 'death') return event.team === 'monster' ? 'kill' : 'death';
+function actOf(world: World, event: WorldEvent): PathAct | null {
+  if (event.type === 'death') return event.team === 'monster' ? 'kill' : event.actorId === world.player.id ? 'death' : null;
   return NOTABLE[event.type] ?? null;
 }
 
@@ -63,7 +63,7 @@ function entryAt(world: World, act: PathAct): PathEntry {
 export function recordPath(world: World, dt: number): void {
   const log: PathLog = world.path;
   log.clock += dt;
-  const acts: PathAct[] = world.events.map(actOf).filter((act: PathAct | null): act is PathAct => act !== null);
+  const acts: PathAct[] = world.events.map((event: WorldEvent): PathAct | null => actOf(world, event)).filter((act: PathAct | null): act is PathAct => act !== null);
   for (const act of acts) push(world, entryAt(world, act));
   if (strayed(world)) push(world, entryAt(world, 'step'));
 }

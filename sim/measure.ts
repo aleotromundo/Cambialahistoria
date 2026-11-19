@@ -108,8 +108,8 @@ function round(value: number): number {
 }
 
 function hitMeasures(world: World, meter: Meter, event: Extract<WorldEvent, { readonly type: 'damage' }>, t: number): Measurement[] {
-  if (event.targetTeam === 'player') return [{ kind: 'hit', t, taken: true, amount: round(event.amount), foe: nameOf(world, meter, event.sourceId), skill: event.skill.id, zone: world.zone.id, fight: momentOfEcho(world, event.sourceId)?.id ?? null }];
-  if (event.sourceId !== world.player.id) return [];
+  if (event.targetId === world.player.id) return [{ kind: 'hit', t, taken: true, amount: round(event.amount), foe: nameOf(world, meter, event.sourceId), skill: event.skill.id, zone: world.zone.id, fight: momentOfEcho(world, event.sourceId)?.id ?? null }];
+  if (event.sourceId !== world.player.id || event.targetTeam === 'player') return [];
   const foe: string = nameOf(world, meter, event.targetId);
   const hit: Measurement = { kind: 'hit', t, taken: false, amount: round(event.amount), foe, skill: event.skill.id, zone: world.zone.id, fight: momentOfEcho(world, event.targetId)?.id ?? null };
   return event.killed ? [hit, { kind: 'kill', t, foe }] : [hit];

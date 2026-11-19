@@ -61,7 +61,7 @@ export function glitchBlock(world: World, request: GlitchRequest): GlitchBlock |
 
 function noteFights(world: World): void {
   const hero: number = world.player.id;
-  if (world.events.some((event: WorldEvent): boolean => event.type === 'damage' && (event.targetTeam === 'player' || event.sourceId === hero))) world.glitch.lastFight = world.time;
+  if (world.events.some((event: WorldEvent): boolean => event.type === 'damage' && (event.targetId === hero || event.sourceId === hero))) world.glitch.lastFight = world.time;
 }
 
 export function requestGlitch(world: World, kind: GlitchKind, source: GlitchSource): void {

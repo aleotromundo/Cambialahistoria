@@ -419,7 +419,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             if (event.targetTeam !== 'player') targetBar.hit(event.targetId);
             if (event.amount === 0 && event.targetTeam === 'monster') break;
             const y: number = floorUp(event.pos.x, hooks.heightOf(event.targetId) * OVERLAYS.numberHeight, event.pos.z);
-            const kind: NumberKind = event.burn ? 'burn' : event.targetTeam === 'player' ? 'hurt' : event.crit ? 'crit' : 'plain';
+            const kind: NumberKind = event.burn ? 'burn' : event.targetId === world.player.id ? 'hurt' : event.crit ? 'crit' : 'plain';
             floating.show({ amount: event.amount, kind, key: event.targetId, x: event.pos.x, y, z: event.pos.z });
             break;
           }
