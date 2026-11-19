@@ -7,7 +7,7 @@ import { isWalkable, lineOfSight, lineWalkable, nearestWalkable, routedGrid } fr
 import type { NavGrid } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
 import { lifePhase, pickBossSkill } from './boss.ts';
-import { aggroPack } from './combat.ts';
+import { aggroPack, findActor } from './combat.ts';
 import { anchoredGoal, onBeat, passOver, stepMeasure } from './count.ts';
 import { allHold } from './conditions.ts';
 import type { Steering, SteerStep } from './movement.ts';
@@ -322,9 +322,7 @@ function strikes(world: World, monster: MonsterState, actor: Actor, side: Side =
 
 function heldFoe(world: World, foeId: number | null): Actor | undefined {
   if (foeId === null) return undefined;
-  if (world.player.id === foeId) return world.player;
-  for (const other of world.monsters) if (other.id === foeId) return other;
-  return undefined;
+  return findActor(world, foeId) ?? undefined;
 }
 
 export function pickFoe(world: World, monster: MonsterState): Actor | null {

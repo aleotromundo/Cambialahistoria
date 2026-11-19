@@ -493,6 +493,7 @@ export interface World {
   readonly rng: Rng;
   time: number;
   readonly player: PlayerState;
+  readonly heroes: PlayerState[];
   monsters: MonsterState[];
   spawnedPacks: ZonePack[];
   rankRun: RankRun;

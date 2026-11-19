@@ -31,8 +31,9 @@ import { dealtScale } from './weaken.ts';
 import { leechActor, mendActor } from './mend.ts';
 import { leechScale, stunMonster, stunned } from './stun.ts';
 import { holdLine, openScale, strike } from './count.ts';
-import type { ActionState, Actor, BrandState, BurnState, GuardOutcome, ItemInstance, MonsterState, Offence, Team, World } from './types.ts';
+import type { ActionState, Actor, BrandState, BurnState, GuardOutcome, ItemInstance, MonsterState, Offence, PlayerState, Team, World } from './types.ts';
 import { sameFloor } from './floors.ts';
+import { findHero } from './heroes.ts';
 
 export const COMBAT = {
   guardedKnockback: 0.2,
@@ -114,7 +115,8 @@ export function setTempo(actor: Actor, scale: number, time: number): void {
 }
 
 export function findActor(world: World, id: number): Actor | null {
-  if (world.player.id === id) return world.player;
+  const hero: PlayerState | null = findHero(world, id);
+  if (hero !== null) return hero;
   return world.monsters.find((monster: MonsterState): boolean => monster.id === id) ?? null;
 }
 

@@ -153,6 +153,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   const respawn: RespawnPoint = save !== null && save.zone === zone.id && respawnExists(zone, save.respawn) ? save.respawn : { type: 'start' };
   const visited: string[] = save === null ? [] : save.visited.filter((id: string): boolean => content.zones.has(id));
   if (!visited.includes(zone.id)) visited.push(zone.id);
+  const player: PlayerState = freshPlayer(content, save, options.hero ?? null);
   const world: World = {
     content,
     zone,
@@ -162,7 +163,8 @@ export function createWorld(content: Content, options: WorldOptions): World {
     visited,
     rng: createRng(options.seed),
     time: 0,
-    player: freshPlayer(content, save, options.hero ?? null),
+    player,
+    heroes: [player],
     monsters: [],
     spawnedPacks: [],
     rankRun: { rolled: 0, ranked: false },
