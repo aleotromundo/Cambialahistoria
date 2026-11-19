@@ -98,7 +98,7 @@ def imitate(args: ImitateArgs) -> Path:
             loss.backward()
             torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
             optimizer.step()
-        accuracy = " ".join(f"{name}={correct[i] / max(1, seen[i]):.3f}" for i, name in enumerate(("move", "skill", "target", "flask")))
+        accuracy = " ".join(f"{name}={correct[i] / max(1, seen[i]):.3f}" for i, name in enumerate(("move", "skill", "target", "use")))
         print(f"epoch {epoch + 1}/{args.epochs} loss={totals.sum() / max(1, seen[0]):.3f} {accuracy}", flush=True)
     path = folder / "imitate.pt"
     save(policy, str(path), {"stage": "imitate", "args": asdict(args)})

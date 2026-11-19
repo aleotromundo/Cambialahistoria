@@ -102,3 +102,20 @@ def test_seeds_leave_room_for_worker_offsets() -> None:
     for bad in (-1, 2**39 + 1):
         with pytest.raises(SystemExit):
             check_seed(parser, bad)
+
+
+def test_widen_carries_the_flask_head_into_the_use_head(tmp_path) -> None:
+    from lost_storm_rl.model import widen
+
+    old = Policy(named(["a", "b", "c", "d", "e"]), width=16, layers=1, attention_heads=2)
+    state = {("flask." + name[len("use."):] if name.startswith("use.") else name): tensor for name, tensor in old.state_dict().items()}
+    path = str(tmp_path / "flask.pt")
+    torch.save({"contract": old.contract, "width": 16, "state": state, "extra": {}}, path)
+    grown = named(["a", "b", "c", "d", "e"])
+    grown = {**grown, "fingerprint": "use", "heads": [9, 3, 2, 4], "layout": {**grown["layout"], "mask": 9 + 3 + 2 + 4}}
+    out = str(tmp_path / "use.pt")
+    widen(path, grown, out)
+    carried = torch.load(out, weights_only=False)["state"]
+    assert carried["use.weight"].shape == (4, 16)
+    assert torch.equal(carried["use.weight"][:3], state["flask.weight"])
+    assert torch.equal(carried["use.bias"][:3], state["flask.bias"])

@@ -14,7 +14,7 @@ void test('the bot plays an arena to its end and every decision is labelled with
   assert.ok(episode.samples.length > 0);
   for (const sample of episode.samples) {
     assert.equal(sample.obs.length, LAYOUT.size);
-    const parts: number[] = [sample.action.move, sample.action.skill, sample.action.target, sample.action.flask];
+    const parts: number[] = [sample.action.move, sample.action.skill, sample.action.target, sample.action.use];
     parts.forEach((part: number, head: number): void => assert.ok(part >= 0 && part < (ACTION_HEADS[head] ?? 0)));
   }
   assert.ok(episode.samples.some((sample: Demonstration): boolean => sample.action.skill > 0), 'the bot attacks');

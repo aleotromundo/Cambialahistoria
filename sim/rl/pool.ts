@@ -2,6 +2,7 @@ import type { Content } from '../content/types.ts';
 import { commandsFor } from './act.ts';
 import type { Arena, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
+import type { Action } from './contract.ts';
 import { LAYOUT, RL } from './contract.ts';
 import type { Observation } from './observe.ts';
 import type { Replay } from './replay.ts';
@@ -95,7 +96,9 @@ export function stepPool(pool: Pool, actions: Int32Array): PoolStep {
     if (arena === undefined || seen === undefined || log === undefined) continue;
     const list: number[] = Array.from(actions.subarray(env * RL.actionParts, (env + 1) * RL.actionParts));
     log.push(list);
-    const result = stepArena(arena, commandsFor(arena.world, actionFrom(list), seen.view));
+    const action: Action = actionFrom(list);
+    const result = stepArena(arena, commandsFor(arena.world, action, seen.view));
+    arena.last = action;
     rewards[env] = result.reward;
     if (!result.done) {
       pool.seen[env] = arenaObservation(arena);

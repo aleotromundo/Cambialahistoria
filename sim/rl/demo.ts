@@ -83,7 +83,9 @@ export function demonstrate(content: Content, options: ArenaOptions): DemoEpisod
       oneTick(bot);
     }
     listening = false;
-    samples.push({ obs: seen.obs, mask: seen.mask, action: actionOf(world, heard, seen.view, from, carried) });
+    const action: Action = actionOf(world, heard, seen.view, from, carried);
+    samples.push({ obs: seen.obs, mask: seen.mask, action });
+    arena.last = action;
     arena.decisions += 1;
   }
   return { samples, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves };

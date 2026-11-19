@@ -10,9 +10,10 @@ import { fightZones } from '../world/moments.ts';
 import { spawnPackNear } from '../world/monsters.ts';
 import { stepWorld } from '../world/step.ts';
 import { enterZone } from '../world/zones.ts';
-import type { Command, MonsterState, World, WorldEvent } from '../world/types.ts';
+import type { Command, GroundItem, MonsterState, World, WorldEvent } from '../world/types.ts';
 import type { BenchHero } from '../world/dev-commands.ts';
-import { RL } from './contract.ts';
+import type { Action } from './contract.ts';
+import { NO_ACTION, RL } from './contract.ts';
 import type { Observation, ObserveContext } from './observe.ts';
 import { hostileMonster, observe } from './observe.ts';
 import type { RewardTally } from './reward.ts';
@@ -39,6 +40,7 @@ export const ARENA = {
   extraSlots: [1, 2, 3, 4],
   rollSlot: 5,
   benchSeed: 7919,
+  lootTime: 5,
 } as const;
 
 export type ArenaOutcome = 'running' | 'won' | 'died' | 'timeout';
@@ -59,6 +61,8 @@ export interface Arena {
   readonly start: number;
   wave: number;
   nextWaveAt: number | null;
+  clearedAt: number | null;
+  last: Action;
   outcome: ArenaOutcome;
   total: number;
   decisions: number;
@@ -187,7 +191,7 @@ export function createArena(content: Content, options: ArenaOptions): Arena {
   world.encounters = [];
   world.packReturns = [];
   stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
-  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, outcome: 'running', total: 0, decisions: 0 };
+  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, last: NO_ACTION, outcome: 'running', total: 0, decisions: 0 };
   spawnWave(arena);
   return arena;
 }
@@ -196,12 +200,21 @@ function foesLeft(arena: Arena): number {
   return arena.world.monsters.filter((monster: MonsterState): boolean => hostileMonster(arena.world, monster)).length;
 }
 
+function calm(arena: Arena): boolean {
+  const from: Vec2 = arena.world.player.pos;
+  return !arena.world.monsters.some((monster: MonsterState): boolean => hostileMonster(arena.world, monster) && Math.hypot(monster.pos.x - from.x, monster.pos.z - from.z) <= RL.nearReach);
+}
+
+function goldLeft(world: World): boolean {
+  return world.ground.some((ground: GroundItem): boolean => ground.content.kind === 'gold');
+}
+
 export function arenaRunning(arena: Arena): boolean {
   return arena.outcome === 'running';
 }
 
 export function arenaContext(arena: Arena): ObserveContext {
-  return { situation: 'arena', objective: null, timeLeft: Math.max(0, ARENA.timeLimit - (arena.world.time - arena.start)), progress: arena.wave / Math.max(1, arena.options.waves) };
+  return { situation: 'arena', objective: null, timeLeft: Math.max(0, ARENA.timeLimit - (arena.world.time - arena.start)), progress: arena.wave / Math.max(1, arena.options.waves), last: arena.last };
 }
 
 export function arenaObservation(arena: Arena): Observation {
@@ -217,19 +230,23 @@ export function afterTick(arena: Arena, events: readonly WorldEvent[]): number {
     if (spawned !== undefined) arena.lives.set(spawned.id, spawned.maxLife);
   }
   const lifeOf = (id: number): number => arena.lives.get(id) ?? world.monsters.find((monster: MonsterState): boolean => monster.id === id)?.maxLife ?? world.player.maxLife;
-  let reward: number = rewardFor(events, { playerId: world.player.id, playerMaxLife: world.player.maxLife, lifeOf }, arena.tally);
+  let reward: number = rewardFor(events, { playerId: world.player.id, playerMaxLife: world.player.maxLife, lifeOf, calm: calm(arena) }, arena.tally);
   if (!world.player.alive || arena.tally.deaths > 0) arena.outcome = 'died';
+  else if (arena.clearedAt !== null) {
+    if (world.time - arena.clearedAt >= ARENA.lootTime || !goldLeft(world)) arena.outcome = 'won';
+  }
   else if (foesLeft(arena) === 0 && arena.nextWaveAt === null) {
     reward += REWARD.wave;
     arena.tally.waves += 1;
     if (arena.wave >= arena.options.waves) {
       reward += REWARD.win;
-      arena.outcome = 'won';
+      arena.clearedAt = world.time;
+      if (!goldLeft(world)) arena.outcome = 'won';
     }
     else arena.nextWaveAt = world.time + ARENA.waveGap;
   }
   else if (arena.nextWaveAt !== null && world.time >= arena.nextWaveAt) spawnWave(arena);
-  if (arena.outcome === 'running' && world.time - arena.start >= ARENA.timeLimit) arena.outcome = 'timeout';
+  if (arena.outcome === 'running' && arena.clearedAt === null && world.time - arena.start >= ARENA.timeLimit) arena.outcome = 'timeout';
   arena.total += reward;
   return reward;
 }

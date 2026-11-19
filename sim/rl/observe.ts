@@ -2,12 +2,15 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { DAMAGE_TYPES, SKILL_CATEGORIES } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
+import { roomFor } from '../stacks.ts';
 import { playerMayStrike } from '../world/factions.ts';
 import { blockedReason } from '../world/skills.ts';
 import type { NpcState } from '../world/npc-types.ts';
 import type { AreaState, FlaskState, GroundItem, HazardState, MonsterState, PlayerState, ProjectileState, World } from '../world/types.ts';
-import type { EntityKind, Situation } from './contract.ts';
-import { BEHAVIOUR_ORDER, FLASK_FEATURES, categoryIndex, damageIndex, DELIVERY_ORDER, ENTITY_KINDS, LAYOUT, MOVE_CHOICES, RL, SITUATIONS, SKILL_CHOICES } from './contract.ts';
+import { moveDirection } from './moves.ts';
+import type { Action, EntityKind, Situation } from './contract.ts';
+import { BEHAVIOUR_ORDER, FLASK_FEATURES, categoryIndex, damageIndex, DELIVERY_ORDER, ENTITY_KINDS, LAYOUT, MOVE_CHOICES, PICKUP_CHOICE, RL, SITUATIONS, SKILL_CHOICES } from './contract.ts';
+import { dangerAround } from './danger.ts';
 import { skillNumbers } from './skill-numbers.ts';
 import type { SkillNumbers } from './skill-numbers.ts';
 
@@ -16,6 +19,7 @@ export interface ObserveContext {
   readonly objective: Vec2 | null;
   readonly timeLeft: number;
   readonly progress: number;
+  readonly last: Action;
 }
 
 export type Seen =
@@ -139,6 +143,12 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   put(writer, foes.length / RL.countScale);
   put(writer, view.targets.filter((monster: MonsterState): boolean => gap(player.pos, monster.pos) <= RL.nearReach).length / RL.countScale);
   put(writer, context.progress);
+  for (const danger of dangerAround(world)) put(writer, danger);
+  const lastMove: Vec2 | null = moveDirection(context.last.move);
+  put(writer, lastMove?.x ?? 0);
+  put(writer, lastMove?.z ?? 0);
+  flag(writer, context.last.skill > 0);
+  flag(writer, context.last.use > 0);
   blank(writer, RL.spareSelf);
 }
 
@@ -297,6 +307,29 @@ function writeRays(writer: Writer, world: World): void {
   }
 }
 
+function takeable(world: World, ground: GroundItem): boolean {
+  switch (ground.content.kind) {
+    case 'gold':
+      return true;
+    case 'item':
+      return roomFor(world.content, world.player.inventory, ground.content.item) > 0;
+  }
+  return false;
+}
+
+export function nearestGround(world: World): GroundItem | null {
+  const from: Vec2 = world.player.pos;
+  let best: GroundItem | null = null;
+  let bestGap: number = RL.pickupReach;
+  for (const ground of world.ground) {
+    const reach: number = gap(from, ground.pos);
+    if (reach > bestGap || !takeable(world, ground)) continue;
+    best = ground;
+    bestGap = reach;
+  }
+  return best;
+}
+
 function flaskReady(flask: FlaskState | undefined): boolean {
   return flask !== undefined && flask.charges >= flask.def.chargesPerUse && flask.cooldown <= 0;
 }
@@ -316,6 +349,7 @@ export function actionMask(world: World, view: View): Uint8Array {
   for (let target: number = 0; target < RL.targets; target += 1) mask[at + target] = target === 0 || target < view.targets.length ? 1 : 0;
   at += RL.targets;
   for (let choice: number = 0; choice <= RL.flasks; choice += 1) mask[at + choice] = choice === 0 || (alive && flaskReady(player.flasks[choice - 1])) ? 1 : 0;
+  mask[at + PICKUP_CHOICE] = alive && nearestGround(world) !== null ? 1 : 0;
   return mask;
 }
 

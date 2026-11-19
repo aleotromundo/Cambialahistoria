@@ -1,30 +1,16 @@
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import type { Command, Intent, MonsterState, PlayerState, World } from '../world/types.ts';
+import type { Command, GroundItem, Intent, MonsterState, PlayerState, World } from '../world/types.ts';
 import type { Action } from './contract.ts';
-import { MOVE_CHOICES, RL } from './contract.ts';
+import { PICKUP_CHOICE, RL } from './contract.ts';
+import { moveBucket, moveDirection } from './moves.ts';
 import type { View } from './observe.ts';
+import { nearestGround } from './observe.ts';
 import { movesHero, skillNumbers } from './skill-numbers.ts';
 
 export const ACT = {
-  still: 0.25,
   minDash: 1,
 } as const;
-
-const DIRECTIONS: number = MOVE_CHOICES - 1;
-
-export function moveDirection(move: number): Vec2 | null {
-  if (move < 1 || move > DIRECTIONS) return null;
-  const angle: number = ((move - 1) / DIRECTIONS) * Math.PI * 2;
-  return { x: Math.cos(angle), z: Math.sin(angle) };
-}
-
-export function moveBucket(offset: Vec2): number {
-  if (Math.hypot(offset.x, offset.z) < ACT.still) return 0;
-  const turn: number = Math.atan2(offset.z, offset.x) / (Math.PI * 2);
-  const index: number = Math.round(turn * DIRECTIONS);
-  return (((index % DIRECTIONS) + DIRECTIONS) % DIRECTIONS) + 1;
-}
 
 function ahead(from: Vec2, direction: Vec2, reach: number): Vec2 {
   return { x: from.x + direction.x * reach, z: from.z + direction.z * reach };
@@ -52,11 +38,14 @@ export function commandsFor(world: World, action: Action, view: View): Command[]
   const skill: SkillDef | null = slot >= 0 ? (player.skills[slot] ?? null) : null;
   const direction: Vec2 | null = moveDirection(action.move);
   const target: MonsterState | null = view.targets[action.target] ?? view.targets[0] ?? null;
-  const out: Command[] = player.held.filter((held: number): boolean => held !== slot).map((held: number): Command => ({ type: 'hold', slot: held, down: false }));
-  if (skill !== null) out.push(...skillCommands(player, slot, skill, direction, target));
+  const ground: GroundItem | null = action.use === PICKUP_CHOICE ? nearestGround(world) : null;
+  const kept: number | null = ground === null ? slot : null;
+  const out: Command[] = player.held.filter((held: number): boolean => held !== kept).map((held: number): Command => ({ type: 'hold', slot: held, down: false }));
+  if (ground !== null) out.push({ type: 'pickup', groundId: ground.id });
+  else if (skill !== null) out.push(...skillCommands(player, slot, skill, direction, target));
   else if (direction !== null) out.push({ type: 'move', held: false, dest: ahead(player.pos, direction, RL.moveReach) });
-  else if (action.flask === 0 && player.intent.type !== 'idle') out.push({ type: 'stop' });
-  if (action.flask > 0) out.push({ type: 'flask', slot: action.flask - 1 });
+  else if (action.use === 0 && player.intent.type !== 'idle') out.push({ type: 'stop' });
+  if (action.use > 0 && action.use < PICKUP_CHOICE) out.push({ type: 'flask', slot: action.use - 1 });
   return out;
 }
 
@@ -99,7 +88,7 @@ export function actionOf(world: World, commands: readonly Command[], view: View,
   let move: number = 0;
   let skill: number = 0;
   let target: number = 0;
-  let flask: number = 0;
+  let use: number = 0;
   for (const command of commands) {
     if (command.type === 'skill' && skill === 0) {
       const def: SkillDef | null = player.skills[command.slot] ?? null;
@@ -110,12 +99,13 @@ export function actionOf(world: World, commands: readonly Command[], view: View,
       if (movesHero(def)) move = moveBucket({ x: command.aim.x - from.x, z: command.aim.z - from.z });
     }
     else if ((command.type === 'move' || command.type === 'walk') && skill === 0) move = moveBucket({ x: command.dest.x - from.x, z: command.dest.z - from.z });
-    else if (command.type === 'flask' && flask === 0) flask = command.slot + 1;
+    else if (command.type === 'flask' && use === 0) use = Math.min(command.slot + 1, RL.flasks);
+    else if (command.type === 'pickup') use = PICKUP_CHOICE;
   }
   if (move === 0 && skill === 0) {
     move = carried.move;
     skill = carried.skill;
     target = carried.target;
   }
-  return { move, skill, target: Math.min(target, RL.targets - 1), flask: Math.min(flask, RL.flasks) };
+  return { move, skill, target: Math.min(target, RL.targets - 1), use };
 }

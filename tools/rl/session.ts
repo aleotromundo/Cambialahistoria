@@ -74,7 +74,7 @@ function episodeFrame(episode: DemoEpisode | null): Buffer {
   samples.forEach((sample: Demonstration, index: number): void => {
     obs.set(sample.obs, index * LAYOUT.size);
     mask.set(sample.mask, index * LAYOUT.mask);
-    actions.set([sample.action.move, sample.action.skill, sample.action.target, sample.action.flask], index * RL.actionParts);
+    actions.set([sample.action.move, sample.action.skill, sample.action.target, sample.action.use], index * RL.actionParts);
   });
   const episodes = episode === null ? [] : [{ outcome: episode.outcome, total: episode.total, waves: episode.waves }];
   return demonstrationFrame({ count: samples.length, size: LAYOUT.size, maskSize: LAYOUT.mask, obs, actions, mask, info: { episodes, done: episode === null } });

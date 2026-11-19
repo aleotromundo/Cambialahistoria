@@ -8,6 +8,7 @@ from torch import nn
 from torch.distributions import Categorical
 
 NEG = -1e9
+RENAMED = {"use.weight": "flask.weight", "use.bias": "flask.bias"}
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,7 @@ class Policy(nn.Module):
         self.skip_skill = nn.Linear(width, 1)
         self.skill_query = nn.Linear(width, width)
         self.target_query = nn.Linear(width, width)
-        self.flask = nn.Linear(width, shape.heads[3])
+        self.use = nn.Linear(width, shape.heads[3])
         self.value = nn.Sequential(nn.Linear(width, width), nn.GELU(), nn.Linear(width, 1))
 
     def features(self, obs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -102,7 +103,7 @@ class Policy(nn.Module):
         scale = self.width ** -0.5
         skill = torch.einsum("bw,bsw->bs", self.skill_query(state), slots) * scale
         target = torch.einsum("bw,btw->bt", self.target_query(state), targets) * scale
-        raw = [self.move(state), torch.cat([self.skip_skill(state), skill], dim=1), target, self.flask(state)]
+        raw = [self.move(state), torch.cat([self.skip_skill(state), skill], dim=1), target, self.use(state)]
         masked = [logit.masked_fill(~allowed, NEG) for logit, allowed in zip(raw, head_masks(self.shape, mask))]
         return masked, self.value(state).squeeze(-1)
 
@@ -184,7 +185,7 @@ def widen(path: str, contract: dict[str, Any], out: str) -> list[str]:
     new_inputs = input_names(contract)
     changed: list[str] = []
     for name, tensor in fresh.items():
-        old = saved["state"].get(name)
+        old = saved["state"].get(name, saved["state"].get(RENAMED.get(name, name)))
         if old is None:
             changed.append(f"{name}: new")
             continue

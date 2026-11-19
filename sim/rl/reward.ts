@@ -7,6 +7,7 @@ export const REWARD = {
   death: 3,
   wave: 2,
   win: 3,
+  gold: 0.1,
   step: 0.002,
 } as const;
 
@@ -16,16 +17,18 @@ export interface RewardTally {
   taken: number;
   deaths: number;
   waves: number;
+  gold: number;
 }
 
 export function emptyTally(): RewardTally {
-  return { dealt: 0, kills: 0, taken: 0, deaths: 0, waves: 0 };
+  return { dealt: 0, kills: 0, taken: 0, deaths: 0, waves: 0, gold: 0 };
 }
 
 export interface RewardInputs {
   readonly playerId: number;
   readonly playerMaxLife: number;
   readonly lifeOf: (id: number) => number;
+  readonly calm: boolean;
 }
 
 export function rewardFor(events: readonly WorldEvent[], inputs: RewardInputs, tally: RewardTally): number {
@@ -44,6 +47,10 @@ export function rewardFor(events: readonly WorldEvent[], inputs: RewardInputs, t
       const share: number = Math.min(1, event.amount / Math.max(1, inputs.playerMaxLife));
       reward -= share * REWARD.taken;
       tally.taken += share;
+    }
+    else if (event.type === 'pickup' && event.ground.content.kind === 'gold' && inputs.calm) {
+      reward += REWARD.gold;
+      tally.gold += 1;
     }
     else if (event.type === 'death' && event.actorId === inputs.playerId) {
       reward -= REWARD.death;

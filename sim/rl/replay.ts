@@ -20,11 +20,11 @@ export interface Replay {
 }
 
 export function actionList(action: Action): number[] {
-  return [action.move, action.skill, action.target, action.flask];
+  return [action.move, action.skill, action.target, action.use];
 }
 
 export function actionFrom(list: readonly number[]): Action {
-  return { move: list[0] ?? 0, skill: list[1] ?? 0, target: list[2] ?? 0, flask: list[3] ?? 0 };
+  return { move: list[0] ?? 0, skill: list[1] ?? 0, target: list[2] ?? 0, use: list[3] ?? 0 };
 }
 
 export function recordReplay(arena: Arena, actions: readonly (readonly number[])[], label: string): Replay {
@@ -35,6 +35,7 @@ export function recordReplay(arena: Arena, actions: readonly (readonly number[])
 export function playStep(arena: Arena, action: Action): Observation {
   const seen: Observation = arenaObservation(arena);
   stepArena(arena, commandsFor(arena.world, action, seen.view));
+  arena.last = action;
   return seen;
 }
 

@@ -13,8 +13,9 @@ Python (rl/)                         Node (tools/rl/serve.ts, one process per wo
 ```
 
 - **Arena** (`sim/rl/arena.ts`): the Hall of Time with its own monsters cleared, a bench hero with a random level (1-12), weapon and skill bar, and five waves of random packs. Every episode jitters skill damage, cooldowns, mana costs and monster life, damage and speed by up to 20%, so the model learns to read numbers instead of memorising them.
-- **Decisions**: the model acts every 4 sim ticks (7.5 times a second). Each action is four choices: move (stay or one of 8 directions), skill (none or one of 6 slots), target (one of the 8 nearest foes), flask (none or one of 2).
-- **Reward**: damage dealt as a share of the foe's life, +0.5 a kill, +2 a wave, +3 for clearing all waves; damage taken as a share of the hero's life x2, -3 for dying, and a small cost per decision.
+- **Decisions**: the model acts every 4 sim ticks (7.5 times a second). Each action is four choices: move (stay or one of 8 directions), skill (none or one of 6 slots), target (one of the 8 nearest foes), use (none, one of 2 flasks, or pick up the nearest thing on the ground).
+- **Reward**: damage dealt as a share of the foe's life, +0.5 a kill, +2 a wave, +3 for clearing all waves, +0.1 for each gold picked up with no foe within 6 m; damage taken as a share of the hero's life x2, -3 for dying, and a small cost per decision. After the last wave the arena stays open up to 5 s, or until no gold is left, so there is time to loot.
+- **Dodging**: the hero reads, for standing still and each of the 8 move directions, whether a blow winding up, a delayed strike, a hazard or burning ground will catch it there (`sim/rl/danger.ts`, the same check the scripted bot dodges by). It also reads its own last decision.
 
 ## The contract, and why game updates do not throw training away
 

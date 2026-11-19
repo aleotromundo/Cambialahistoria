@@ -14,7 +14,7 @@ export const BEHAVIOUR_ORDER: Readonly<Record<MonsterBehaviour['type'], number>>
 export const BEHAVIOUR_NAMES: readonly MonsterBehaviour['type'][] = ['chaser', 'ranged', 'stalker', 'swarm', 'ambush', 'fixed'];
 
 export const RL = {
-  version: 1,
+  version: 2,
   tick: 1 / 30,
   ticksPerDecision: 4,
   actionParts: 4,
@@ -36,6 +36,8 @@ export const RL = {
   manaScale: 200,
   countScale: 10,
   nearReach: 6,
+  pickupReach: 12,
+  dangerSteps: [1, 2.5],
   clip: 5,
   spareSelf: 8,
   spareSlot: 4,
@@ -55,6 +57,8 @@ export const FLASK_FEATURES: readonly string[] = ['present', 'charges', 'ready',
 function flaskNames(count: number): string[] {
   return Array.from({ length: count }, (_unused: unknown, index: number): string[] => each(`flask${index}_`, FLASK_FEATURES)).flat();
 }
+
+export const MOVE_CHOICES: number = 9;
 
 export const SELF_FEATURES: readonly string[] = [
   'life',
@@ -87,6 +91,11 @@ export const SELF_FEATURES: readonly string[] = [
   'foes_alive',
   'foes_near',
   'progress',
+  ...Array.from({ length: MOVE_CHOICES }, (_unused: unknown, index: number): string => `danger_${index}`),
+  'last_dx',
+  'last_dz',
+  'last_skill',
+  'last_use',
   ...spare('', RL.spareSelf),
 ];
 
@@ -144,10 +153,10 @@ export const ENTITY_FEATURES: readonly string[] = [
   ...spare('', RL.spareEntity),
 ];
 
-export const MOVE_CHOICES: number = 9;
 export const SKILL_CHOICES: number = RL.slots + 1;
-export const FLASK_CHOICES: number = RL.flasks + 1;
-export const ACTION_HEADS: readonly number[] = [MOVE_CHOICES, SKILL_CHOICES, RL.targets, FLASK_CHOICES];
+export const PICKUP_CHOICE: number = RL.flasks + 1;
+export const USE_CHOICES: number = PICKUP_CHOICE + 1;
+export const ACTION_HEADS: readonly number[] = [MOVE_CHOICES, SKILL_CHOICES, RL.targets, USE_CHOICES];
 
 export interface ObservationLayout {
   readonly self: number;
@@ -175,10 +184,10 @@ export interface Action {
   readonly move: number;
   readonly skill: number;
   readonly target: number;
-  readonly flask: number;
+  readonly use: number;
 }
 
-export const NO_ACTION: Action = { move: 0, skill: 0, target: 0, flask: 0 };
+export const NO_ACTION: Action = { move: 0, skill: 0, target: 0, use: 0 };
 
 export interface ContractShape {
   readonly version: number;
