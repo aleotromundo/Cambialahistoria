@@ -329,25 +329,87 @@ def waypoint_cairn() -> list[Node]:
     return [Node("dais", base), Node("focal", focal, (0.0, back, 1.6))]
 
 
+Rect = tuple[float, float, float, float]
+
+
+def block(kit: Kit, name: str, x: float, y: float, sx: float, sy: float, z0: float, z1: float, yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0, jag: float = 0.0, bevel: float = 0.02) -> Matrix:
+    shape: Matrix = settled(x, y, 0.0, yaw, tilt_x, tilt_y)
+    prism(kit, name, [(-sx / 2.0, -sy / 2.0), (sx / 2.0, -sy / 2.0), (sx / 2.0, sy / 2.0), (-sx / 2.0, sy / 2.0)], z0, z1, shape, jag=jag, bevel=bevel)
+    return shape
+
+
+def flagstones(kit: Kit, at: Point, reach: Point, cell: float, holes: list[Rect], missing: float, heaved: float) -> None:
+    gap: float = 0.03
+    rows: int = int(reach[1] * 2.0 / cell) + 1
+    for row in range(rows):
+        y0: float = -reach[1] + row * cell
+        y1: float = y0 + cell
+        x0: float = -reach[0] - kit.rng.random() * cell
+        while x0 < reach[0]:
+            x1: float = x0 + cell * (0.7 + kit.rng.random() * 0.6)
+            cx: float = (x0 + x1) / 2.0
+            cy: float = (y0 + y1) / 2.0
+            edge: float = (cx / reach[0]) ** 2 + (cy / reach[1]) ** 2
+            covered: bool = any(x1 > hx0 and x0 < hx1 and y1 > hy0 and y0 < hy1 for hx0, hx1, hy0, hy1 in holes)
+            outside: bool = edge > 0.7 + kit.rng.random() * 0.4
+            lost: bool = kit.rng.random() < missing
+            if not covered and not outside and not lost:
+                lift: float = 0.0
+                tilt: float = 0.0
+                if kit.rng.random() < heaved:
+                    lift = 0.04 + kit.rng.random() * 0.05
+                    tilt = 0.08 + kit.rng.random() * 0.1
+                sink: float = max(0.0, edge - 0.5) * 0.1
+                footprint: list[Point] = [(x0 + gap - cx + kit.spread(0.03), y0 + gap - cy + kit.spread(0.03)), (x1 - gap - cx + kit.spread(0.03), y0 + gap - cy + kit.spread(0.03)), (x1 - gap - cx + kit.spread(0.03), y1 - gap - cy + kit.spread(0.03)), (x0 + gap - cx + kit.spread(0.03), y1 - gap - cy + kit.spread(0.03))]
+                shape: Matrix = settled(at[0] + cx, at[1] + cy, lift, kit.spread(0.05), kit.spread(tilt), kit.spread(tilt))
+                prism(kit, "stone", footprint, -PAD_SINK, PAD_TOP - 0.02 - sink + kit.spread(0.02), shape, jag=0.012, bevel=0.015)
+            x0 = x1
+
+
+def chips(kit: Kit, at: Point, count: int, reach: float, low: float, high: float) -> None:
+    for _ in range(count):
+        angle: float = kit.rng.random() * math.tau
+        distance: float = reach * (0.4 + kit.rng.random() * 0.6)
+        size: float = low + kit.rng.random() * (high - low)
+        prism(kit, "monument", ngon(kit, 4 + kit.rng.randrange(2), size, size * 0.75, 0.25), -0.08, size * 0.55, settled(at[0] + math.cos(angle) * distance, at[1] + math.sin(angle) * distance, 0.0, kit.rng.random() * math.pi, kit.spread(0.5), kit.spread(0.5)), bevel=0.012)
+
+
 ARCH_HALF: float = 1.05
 ARCH_SPRING: float = 2.35
 ARCH_RING: float = 0.6
 ARCH_DEPTH: float = 0.8
 ARCH_PLINTH: float = 0.42
 ARCH_STONES: int = 9
+ARCH_PIER: float = 0.62
 
 
 def way_up() -> list[Node]:
     frame: Kit = Kit(51)
-    frame.box("stone", 0.0, 0.0, 0.0, 3.5, 1.2, ARCH_PLINTH, jitter=0.01)
+    flagstones(frame, (0.0, -0.3), (3.1, 2.5), 0.66, [(-1.95, 1.95, -1.15, 0.95)], 0.1, 0.16)
+    for x0, x1, drop in ((-1.78, -0.62, 0.03), (-0.6, 0.64, 0.0), (0.66, 1.8, 0.05)):
+        block(frame, "monument", (x0 + x1) / 2.0, frame.spread(0.02), x1 - x0, 1.2, -PAD_SINK, ARCH_PLINTH - drop, yaw=frame.spread(0.015), bevel=0.025)
     for index, (depth, height) in enumerate(((0.36, 0.28), (0.36, 0.14))):
-        frame.box("stone", 0.0, FRONT * (0.6 + 0.18 + index * 0.36), 0.0, 2.6 - index * 0.2, depth, height, jitter=0.01)
-    pier: float = ARCH_HALF + 0.31
+        y: float = FRONT * (0.6 + 0.18 + index * 0.36)
+        span: float = 1.3 - index * 0.1
+        cuts: list[float] = [-span, -span * 0.3 + frame.spread(0.1), span * 0.35 + frame.spread(0.1), span]
+        for piece in range(3):
+            if index == 1 and piece == 2:
+                continue
+            x0, x1 = cuts[piece] + 0.02, cuts[piece + 1] - 0.02
+            block(frame, "monument", (x0 + x1) / 2.0, y + frame.spread(0.02), x1 - x0, depth - 0.03, -PAD_SINK, height - frame.rng.random() * 0.03, yaw=frame.spread(0.04), tilt_y=frame.spread(0.03), jag=0.015, bevel=0.02)
+    chips(frame, (1.05, FRONT * 1.15), 3, 0.25, 0.08, 0.14)
     for side in (-1.0, 1.0):
-        frame.box("stone", side * pier, 0.0, ARCH_PLINTH, 0.8, 0.98, 0.28)
-        frame.box("stone", side * pier, 0.0, ARCH_PLINTH + 0.28, 0.62, ARCH_DEPTH, ARCH_SPRING - ARCH_PLINTH - 0.46, jitter=0.008)
-        frame.box("stone", side * pier, 0.0, ARCH_SPRING - 0.18, 0.84, 0.98, 0.18)
+        inner: float = ARCH_HALF + 0.005
+        base_outer: float = inner + 0.8
+        block(frame, "monument", side * (inner + base_outer) / 2.0 - side * 0.1, 0.0, 0.8, 0.98, ARCH_PLINTH - 0.05, ARCH_PLINTH + 0.28, bevel=0.025)
+        courses: list[float] = [ARCH_PLINTH + 0.28, ARCH_PLINTH + 0.74, ARCH_PLINTH + 1.12, ARCH_PLINTH + 1.55, ARCH_SPRING - 0.18]
+        for low, high in zip(courses, courses[1:]):
+            outer: float = inner + ARCH_PIER - 0.04 + frame.rng.random() * 0.08
+            block(frame, "monument", side * (inner + outer) / 2.0, frame.spread(0.015), outer - inner, ARCH_DEPTH, low, high - 0.012, bevel=0.022)
+        capital_jag: float = 0.06 if side > 0.0 else 0.0
+        block(frame, "monument", side * (ARCH_HALF + 0.31), 0.0, 0.84, 0.98, ARCH_SPRING - 0.18, ARCH_SPRING, jag=capital_jag, bevel=0.02)
         face: float = FRONT * (ARCH_DEPTH / 2.0) - INLAY
+        pier: float = ARCH_HALF + 0.31
         frame.box("glyph", side * pier, face, ARCH_PLINTH + 0.5, 0.07, INLAY * 2.0, 1.05)
         for z in (ARCH_PLINTH + 0.62, ARCH_PLINTH + 0.95, ARCH_PLINTH + 1.28):
             frame.box("glyph", side * pier, face, z, 0.3, INLAY * 2.0, 0.06)
@@ -356,8 +418,15 @@ def way_up() -> list[Node]:
         a0: float = math.pi * index / ARCH_STONES + gap
         a1: float = math.pi * (index + 1) / ARCH_STONES - gap
         key: bool = index == ARCH_STONES // 2
-        wedge(frame, "stone", ARCH_SPRING, ARCH_HALF, ARCH_HALF + ARCH_RING + (0.14 if key else 0.0), a0, a1, FRONT * (ARCH_DEPTH / 2.0 + (0.06 if key else 0.0)), ARCH_DEPTH / 2.0 + (0.06 if key else 0.0))
-    chevron(frame, 0.0, FRONT * (ARCH_DEPTH / 2.0 + 0.06) - INLAY, ARCH_SPRING + ARCH_HALF + 0.2, 0.34, 1.0)
+        broken: bool = index == 1
+        outer: float = ARCH_HALF + ARCH_RING + (0.14 if key else frame.spread(0.07)) - (0.24 if broken else 0.0)
+        sag: float = -0.05 if key else 0.0
+        reach: float = ARCH_DEPTH / 2.0 + (0.06 if key else frame.spread(0.02))
+        wedge(frame, "monument", ARCH_SPRING + sag, ARCH_HALF, outer, a0, a1, FRONT * reach, reach)
+    chevron(frame, 0.0, FRONT * (ARCH_DEPTH / 2.0 + 0.06) - INLAY, ARCH_SPRING + ARCH_HALF + 0.15, 0.34, 1.0)
+    block(frame, "monument", 2.05, -0.95, 0.55, 0.4, -0.12, 0.3, yaw=0.6, tilt_x=0.25, tilt_y=0.5, jag=0.04, bevel=0.02)
+    chips(frame, (1.9, -0.6), 4, 0.5, 0.07, 0.15)
+    rubble(frame, 12, 2.3, 3.2, 0.07, 0.2)
     top: float = ARCH_SPRING + ARCH_HALF
     veil: Kit = Kit(52)
     quad(veil, "veil", [(-ARCH_HALF, 0.0, ARCH_PLINTH), (ARCH_HALF, 0.0, ARCH_PLINTH), (ARCH_HALF, 0.0, top), (-ARCH_HALF, 0.0, top)], [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
@@ -375,26 +444,56 @@ WELL_BACK: float = 1.0
 WELL_RIM: float = 0.46
 WELL_COPING: float = 0.1
 WELL_CORNER: float = 0.82
+WELL_WALL: float = 0.5
+
+
+def coping(kit: Kit, x: float, y0: float, y1: float, top: float, slumped: bool) -> None:
+    centre: float = (y0 + y1) / 2.0
+    length: float = y1 - y0 - 0.03
+    height: float = top - (0.24 if slumped else kit.rng.random() * 0.04)
+    tilt: float = 0.16 if slumped else kit.spread(0.02)
+    shape: Matrix = block(kit, "monument", x, centre, WELL_WALL, length, -PAD_SINK, height, yaw=kit.spread(0.012), tilt_y=tilt * (1.0 if x > 0.0 else -1.0), bevel=0.022)
+    if not slumped:
+        prism(kit, "glyph", [(-0.04, -length * 0.3), (0.04, -length * 0.3), (0.04, length * 0.3), (-0.04, length * 0.3)], height - INLAY, height + INLAY, shape)
+
+
+def well_post(kit: Kit, x: float, y: float, height: float, broken: bool, lit: bool) -> None:
+    shape: Matrix = block(kit, "monument", x, y, 0.68, 0.68, -PAD_SINK, height, yaw=kit.spread(0.06), tilt_x=kit.spread(0.04), tilt_y=kit.spread(0.04), jag=0.12 if broken else 0.0, bevel=0.025)
+    if broken:
+        return
+    prism(kit, "monument", [(-0.3, -0.3), (0.3, -0.3), (0.3, 0.3), (-0.3, 0.3)], height, height + 0.12, shape, bevel=0.02)
+    if lit:
+        prism(kit, "glyph", [(-0.15, -0.15), (0.15, -0.15), (0.15, 0.15), (-0.15, 0.15)], height + 0.12 - INLAY, height + 0.12 + INLAY, shape)
+        face_mark(kit, shape, -0.035, 0.035, 0.2, height - 0.15, -0.34)
 
 
 def way_down() -> list[Node]:
     frame: Kit = Kit(61)
-    length: float = WELL_BACK - WELL_FRONT
-    middle: float = (WELL_FRONT + WELL_BACK) / 2.0
     top: float = WELL_RIM + WELL_COPING
+    flagstones(frame, (0.0, 0.0), (2.75, 2.7), 0.62, [(-1.7, 1.7, -1.85, 1.95)], 0.1, 0.16)
     for side in (-1.0, 1.0):
-        frame.box("stone", side * (WELL_HALF + 0.28), middle, 0.0, 0.5, length, WELL_RIM, jitter=0.01)
-        frame.box("stone", side * (WELL_HALF + 0.28), middle, WELL_RIM, 0.62, length + 0.08, WELL_COPING)
-        frame.box("glyph", side * (WELL_HALF + 0.28), middle, top - INLAY, 0.08, length * 0.62, INLAY * 2.0)
-        for end in (WELL_FRONT - 0.2, WELL_BACK + 0.32):
-            frame.box("stone", side * (WELL_HALF + 0.32), end, 0.0, 0.72, 0.72, WELL_CORNER, jitter=0.01)
-            frame.box("stone", side * (WELL_HALF + 0.32), end, WELL_CORNER, 0.58, 0.58, 0.12)
-            frame.box("glyph", side * (WELL_HALF + 0.32), end, WELL_CORNER + 0.12 - INLAY, 0.3, 0.3, INLAY * 2.0)
-    frame.box("stone", 0.0, WELL_BACK + 0.32, 0.0, WELL_HALF * 2.0 + 0.1, 0.5, WELL_RIM, jitter=0.01)
-    frame.box("stone", 0.0, WELL_BACK + 0.32, WELL_RIM, WELL_HALF * 2.0 + 0.2, 0.66, WELL_COPING)
-    frame.box("stone", 0.0, WELL_FRONT - 0.12, 0.0, WELL_HALF * 2.0 + 0.4, 0.26, 0.1)
+        x: float = side * (WELL_HALF + 0.28)
+        cuts: list[float] = [WELL_FRONT + 0.15, WELL_FRONT + 0.85 + frame.spread(0.08), 0.2 + frame.spread(0.08), WELL_BACK + 0.05]
+        for piece in range(3):
+            coping(frame, x, cuts[piece], cuts[piece + 1], top, side > 0.0 and piece == 1)
+    back: float = WELL_BACK + 0.32
+    for x0, x1 in ((-WELL_HALF - 0.05, -0.42), (0.42, WELL_HALF + 0.05)):
+        block(frame, "monument", (x0 + x1) / 2.0, back, x1 - x0 - 0.03, WELL_WALL, -PAD_SINK, top - frame.rng.random() * 0.05, yaw=frame.spread(0.02), jag=0.02, bevel=0.022)
+    block(frame, "monument", 0.0, back + 0.04, 0.8, WELL_WALL + 0.08, -PAD_SINK, top + 0.04, bevel=0.022)
     for side in (-1.0, 1.0):
-        frame.beam("glyph", (side * 0.32, WELL_BACK + 0.12, top - INLAY), (0.0, WELL_BACK + 0.5, top - INLAY), 0.07, INLAY * 2.0)
+        frame.beam("glyph", (side * 0.3, back - 0.2, top + 0.04 - INLAY), (0.0, back + 0.18, top + 0.04 - INLAY), 0.07, INLAY * 2.0)
+    for x0, x1 in ((-1.22, -0.35), (-0.32, 0.48)):
+        block(frame, "monument", (x0 + x1) / 2.0, WELL_FRONT - 0.12, x1 - x0, 0.26, -PAD_SINK, 0.1 - frame.rng.random() * 0.02, yaw=frame.spread(0.03), jag=0.01, bevel=0.015)
+    chips(frame, (0.85, WELL_FRONT - 0.3), 3, 0.3, 0.06, 0.12)
+    corner_x: float = WELL_HALF + 0.32
+    well_post(frame, -corner_x, WELL_FRONT - 0.2, WELL_CORNER, False, True)
+    well_post(frame, corner_x, WELL_FRONT - 0.2, 0.42, True, False)
+    well_post(frame, -corner_x, back, WELL_CORNER + 0.32, False, True)
+    block(frame, "monument", corner_x, back, 0.68, 0.68, -PAD_SINK, 0.16, yaw=0.2, jag=0.05, bevel=0.02)
+    block(frame, "monument", corner_x + 0.95, back - 0.05, 0.62, 0.62, -0.32, 0.32, yaw=0.5, tilt_x=math.pi / 2.0 - 0.15, tilt_y=0.2, jag=0.03, bevel=0.025)
+    chips(frame, (corner_x + 0.6, back + 0.4), 4, 0.5, 0.07, 0.15)
+    chips(frame, (corner_x + 0.3, WELL_FRONT - 0.5), 3, 0.4, 0.07, 0.14)
+    rubble(frame, 12, 2.2, 3.0, 0.07, 0.2)
     veil: Kit = Kit(62)
     wall: float = WELL_BACK + 0.07 - 0.01
     quad(veil, "veil", [(-WELL_HALF, WELL_FRONT, 0.02), (WELL_HALF, WELL_FRONT, 0.02), (WELL_HALF, wall, 0.02), (-WELL_HALF, wall, 0.02)], [(0.0, 0.0), (1.0, 0.0), (1.0, 0.5), (0.0, 0.5)])
@@ -409,12 +508,16 @@ def way_down() -> list[Node]:
 def checkpoint() -> list[Node]:
     stone: Kit = Kit(71)
     back: float = 1.9
-    stone.box("stone", 0.0, back, 0.0, 0.86, 0.6, 0.22, jitter=0.01)
-    stone.cylinder("stone", 0.0, back, 0.22, 0.34, 1.12, segments=4, top=0.25, yaw=math.pi / 4.0)
-    stone.cylinder("stone", 0.0, back, 1.34, 0.27, 0.26, segments=4, top=0.0, yaw=math.pi / 4.0)
-    face: float = back + FRONT * 0.215 - INLAY
-    stone.box("glyph", 0.0, face, 0.36, 0.06, INLAY * 2.0, 0.62, tilt_x=-0.06)
-    stone.box("glyph", 0.0, face - 0.012, 1.08, 0.13, INLAY * 2.0, 0.13, tilt_y=math.pi / 4.0)
+    flagstones(stone, (0.0, back), (1.25, 1.05), 0.5, [(-0.55, 0.55, -0.36, 0.36)], 0.12, 0.2)
+    block(stone, "monument", 0.0, back, 1.0, 0.66, -PAD_SINK, 0.22, yaw=0.06, tilt_y=0.03, jag=0.03, bevel=0.025)
+    shape: Matrix = settled(0.02, back + 0.03, 0.14, 0.06, -0.07, 0.04)
+    prism(stone, "monument", [(-0.32, -0.15), (0.32, -0.15), (0.32, 0.15), (-0.32, 0.15)], 0.0, 1.62, shape, jag=0.05, slope=(-0.22, 0.0), bevel=0.025)
+    face_mark(stone, shape, -0.03, 0.03, 0.3, 1.12, -0.15)
+    for z, width in ((0.58, 0.16), (0.82, 0.12)):
+        face_mark(stone, shape, -width, width, z, z + 0.05, -0.15)
+    face_mark(stone, shape, -0.09, 0.09, 1.22, 1.32, -0.15)
+    chips(stone, (0.55, back - 0.45), 3, 0.35, 0.07, 0.13)
+    chips(stone, (-0.5, back + 0.3), 2, 0.3, 0.06, 0.11)
     return [Node("stele", stone)]
 
 

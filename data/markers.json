@@ -84,7 +84,7 @@
     {
       "id": "way_down",
       "model": "models/world/way_down.glb",
-      "surfaces": { "stone": "ashlar" },
+      "surfaces": { "stone": "ashlar", "monument": "ashlar" },
       "color": "#86a6ff",
       "glow": ["glyph"],
       "focal": null,
@@ -100,7 +100,7 @@
     {
       "id": "way_up",
       "model": "models/world/way_up.glb",
-      "surfaces": { "stone": "ashlar" },
+      "surfaces": { "stone": "ashlar", "monument": "ashlar" },
       "color": "#9ab0ff",
       "glow": ["glyph"],
       "focal": null,
@@ -116,7 +116,7 @@
     {
       "id": "checkpoint",
       "model": "models/world/checkpoint_stone.glb",
-      "surfaces": { "stone": "ashlar" },
+      "surfaces": { "stone": "ashlar", "monument": "ashlar" },
       "color": "#ffaa52",
       "glow": ["glyph"],
       "focal": null,
