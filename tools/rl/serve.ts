@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadContent } from '../../sim/content/content.ts';
-import type { Replay } from '../../sim/rl/replay.ts';
+import type { DuelSeatRecord, KeptReplay } from '../../sim/rl/duel-replay.ts';
 import type { Frame, FrameReader } from './frames.ts';
 import { createReader, readFrames } from './frames.ts';
 import type { Reply, Session } from './session.ts';
@@ -17,12 +17,13 @@ function flagValue(name: string): string | null {
   return at < 0 ? null : (process.argv[at + 1] ?? null);
 }
 
-function replayName(worker: string, replay: Replay): string {
+function replayName(worker: string, replay: KeptReplay): string {
   const tag: string = replay.label === '' ? 'untagged' : replay.label.replace(/[^a-z0-9-]+/gi, '-');
-  return `${tag}-w${worker}-seed${replay.options.seed}-${replay.outcome}-${replay.total.toFixed(1)}.json`;
+  if (replay.situation === 'arena') return `${tag}-w${worker}-seed${replay.options.seed}-${replay.outcome}-${replay.total.toFixed(1)}.json`;
+  return `${tag}-w${worker}-duel-seed${replay.options.seed}-${replay.seats.map((seat: DuelSeatRecord): string => seat.outcome).join('-')}.json`;
 }
 
-function saveReplays(folder: string | null, worker: string, keep: readonly Replay[]): void {
+function saveReplays(folder: string | null, worker: string, keep: readonly KeptReplay[]): void {
   if (folder === null || keep.length === 0) return;
   try {
     mkdirSync(folder, { recursive: true });

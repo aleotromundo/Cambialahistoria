@@ -7,10 +7,11 @@ import type { Action } from './contract.ts';
 import { LAYOUT, RL } from './contract.ts';
 import type { Duel, DuelSeat } from './duel.ts';
 import { createDuel, duelObservation, stepDuel } from './duel.ts';
+import type { KeptReplay } from './duel-replay.ts';
+import { recordDuelReplay } from './duel-replay.ts';
 import type { Recall } from './recall.ts';
 import { rememberDecision } from './recall.ts';
 import type { Observation } from './observe.ts';
-import type { Replay } from './replay.ts';
 import { actionFrom, recordReplay } from './replay.ts';
 
 export interface PoolOptions {
@@ -52,7 +53,7 @@ export interface PoolStep {
   readonly rewards: Float32Array;
   readonly dones: Uint8Array;
   readonly finished: readonly EpisodeSummary[];
-  readonly keep: readonly Replay[];
+  readonly keep: readonly KeptReplay[];
 }
 
 export function arenaSeats(options: PoolOptions): number {
@@ -93,7 +94,7 @@ export function createPool(content: Content, options: PoolOptions): Pool {
   return pool;
 }
 
-function gather(pool: Pool, rewards: Float32Array, dones: Uint8Array, finished: readonly EpisodeSummary[], keep: readonly Replay[]): PoolStep {
+function gather(pool: Pool, rewards: Float32Array, dones: Uint8Array, finished: readonly EpisodeSummary[], keep: readonly KeptReplay[]): PoolStep {
   const envs: number = pool.options.envs;
   const obs: Float32Array = new Float32Array(envs * LAYOUT.size);
   const mask: Uint8Array = new Uint8Array(envs * LAYOUT.mask);
@@ -109,10 +110,20 @@ export function poolObservations(pool: Pool): PoolStep {
   return gather(pool, new Float32Array(envs), new Uint8Array(envs), [], []);
 }
 
+function keptOnSchedule(pool: Pool): boolean {
+  return pool.options.keepEvery > 0 && pool.episodes % pool.options.keepEvery === 0;
+}
+
 function worthKeeping(pool: Pool, arena: Arena): boolean {
   const best: boolean = arena.total > pool.best;
   if (best) pool.best = arena.total;
-  return best || (pool.options.keepEvery > 0 && pool.episodes % pool.options.keepEvery === 0);
+  return best || keptOnSchedule(pool);
+}
+
+function kept(pool: Pool, match: Match, env: number): KeptReplay | null {
+  if (match.kind === 'arena') return worthKeeping(pool, match.arena) ? recordReplay(match.arena, pool.actions[env] ?? [], pool.tag) : null;
+  if (!keptOnSchedule(pool)) return null;
+  return recordDuelReplay(match.duel, match.duel.seats.map((_seat: DuelSeat, seat: number): number[][] => pool.actions[env + seat] ?? []), pool.tag);
 }
 
 function recallOf(match: Match, seat: number): Recall | null {
@@ -160,7 +171,7 @@ export function stepPool(pool: Pool, actions: Int32Array): PoolStep {
   const rewards: Float32Array = new Float32Array(envs);
   const dones: Uint8Array = new Uint8Array(envs);
   const finished: EpisodeSummary[] = [];
-  const keep: Replay[] = [];
+  const keep: KeptReplay[] = [];
   let env: number = 0;
   pool.matches.forEach((match: Match, index: number): void => {
     const seats: number = seatCount(match);
@@ -179,10 +190,8 @@ export function stepPool(pool: Pool, actions: Int32Array): PoolStep {
     for (let seat: number = 0; seat < seats; seat += 1) dones[env + seat] = 1;
     pool.episodes += 1;
     finished.push(...summaries(match, env));
-    if (match.kind === 'arena') {
-      const log: number[][] = pool.actions[env] ?? [];
-      if (worthKeeping(pool, match.arena)) keep.push(recordReplay(match.arena, log, pool.tag));
-    }
+    const replay: KeptReplay | null = kept(pool, match, env);
+    if (replay !== null) keep.push(replay);
     freshMatch(pool, index);
     env += seats;
   });

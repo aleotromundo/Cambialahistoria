@@ -10,6 +10,7 @@ import { contractShape, RL } from './contract.ts';
 import type { Observation } from './observe.ts';
 
 export interface Replay {
+  readonly situation: 'arena';
   readonly version: number;
   readonly fingerprint: string;
   readonly options: ArenaOptions;
@@ -30,7 +31,7 @@ export function actionFrom(list: readonly number[]): Action {
 
 export function recordReplay(arena: Arena, actions: readonly (readonly number[])[], label: string): Replay {
   const shape = contractShape();
-  return { version: shape.version, fingerprint: shape.fingerprint, options: arena.options, actions, outcome: arena.outcome, total: Math.round(arena.total * 1000) / 1000, waves: arena.tally.waves, label };
+  return { situation: 'arena', version: shape.version, fingerprint: shape.fingerprint, options: arena.options, actions, outcome: arena.outcome, total: Math.round(arena.total * 1000) / 1000, waves: arena.tally.waves, label };
 }
 
 export function playStep(arena: Arena, action: Action): Observation {
@@ -40,7 +41,7 @@ export function playStep(arena: Arena, action: Action): Observation {
   return seen;
 }
 
-export function playableReplay(replay: Replay): Replay {
+export function playableReplay<Kept extends { readonly fingerprint: string }>(replay: Kept): Kept {
   const shape = contractShape();
   if (replay.fingerprint !== shape.fingerprint) throw new Error(`replay was recorded under contract ${replay.fingerprint}, the game now plays ${shape.fingerprint}`);
   return replay;
@@ -57,27 +58,34 @@ export function replayArena(content: Content, replay: Replay): Arena {
 
 const OUTCOMES: readonly ArenaOutcome[] = ['running', 'won', 'died', 'timeout'];
 
-function numberField(source: Fields, key: string): number {
+export function numberField(source: Fields, key: string): number {
   const value: unknown = source[key];
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`replay field ${key} is not a number`);
   return value;
 }
 
-function outcomeOf(value: unknown): ArenaOutcome {
+export function outcomeOf(value: unknown): ArenaOutcome {
   const found: ArenaOutcome | undefined = OUTCOMES.find((outcome: ArenaOutcome): boolean => outcome === value);
   if (found === undefined) throw new Error('replay outcome is unknown');
   return found;
 }
 
-export function readReplay(raw: unknown): Replay {
-  const source: Fields = fields(raw, 'replay');
-  const options: Fields = fields(source['options'], 'replay options');
-  const actions: number[][] = items(source['actions'], 'replay actions').map((entry: unknown): number[] => items(entry, 'replay action').map((value: unknown): number => {
+export function actionLists(raw: unknown): number[][] {
+  const actions: number[][] = items(raw, 'replay actions').map((entry: unknown): number[] => items(entry, 'replay action').map((value: unknown): number => {
     if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) throw new Error('replay action is not a choice');
     return value;
   }));
   if (actions.some((entry: number[]): boolean => entry.length !== RL.actionParts)) throw new Error(`replay actions must have ${RL.actionParts} parts`);
+  return actions;
+}
+
+export function readReplay(raw: unknown): Replay {
+  const source: Fields = fields(raw, 'replay');
+  if (source['situation'] !== undefined && source['situation'] !== 'arena') throw new Error('replay is not of an arena');
+  const options: Fields = fields(source['options'], 'replay options');
+  const actions: number[][] = actionLists(source['actions']);
   return {
+    situation: 'arena',
     version: numberField(source, 'version'),
     fingerprint: text(source, 'fingerprint', 'replay'),
     options: { seed: numberField(options, 'seed'), jitter: numberField(options, 'jitter'), waves: numberField(options, 'waves') },

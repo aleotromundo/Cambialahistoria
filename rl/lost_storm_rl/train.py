@@ -306,6 +306,32 @@ def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves
     print(json.dumps({"episodes": len(finished), "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "replays": str(folder)}, indent=2))
 
 
+EVAL_DUELS_AT_ONCE = 8
+
+
+def evaluate_duels(path: str, run: str, duels: int, seed: int, jitter: float, greedy: bool) -> None:
+    folder = RUNS / run / "eval"
+    at_once = min(duels, EVAL_DUELS_AT_ONCE)
+    envs = ArenaEnvs(1, at_once * 2, seed, jitter, 1, keep_every=1, replays=folder, duels=at_once)
+    policy = load(path, envs.contract, torch.device("cpu"))
+    policy.eval()
+    envs.tag("eval-duel")
+    batch = envs.reset()
+    seats: list[dict[str, Any]] = []
+    while len(seats) < duels * 2:
+        with torch.no_grad():
+            action, _, _ = policy.act(torch.from_numpy(batch.obs), torch.from_numpy(batch.mask), greedy=greedy)
+        batch = envs.step(action.numpy())
+        seats.extend(episode for episode in batch.finished if episode["situation"] == "duel")
+    envs.close()
+    seats = seats[: duels * 2]
+    outcomes: dict[str, int] = {}
+    for seat in seats:
+        outcomes[seat["outcome"]] = outcomes.get(seat["outcome"], 0) + 1
+    decided = sum(1 for seat in seats if seat["outcome"] != "timeout") / len(seats)
+    print(json.dumps({"duels": len(seats) // 2, "seat_outcomes": outcomes, "decided": decided, "mean_return": float(np.mean([seat["total"] for seat in seats])), "replays": str(folder)}, indent=2))
+
+
 def check_seed(parser: argparse.ArgumentParser, seed: int) -> None:
     if seed < 0 or seed > MAX_SEED:
         parser.error(f"--seed must be between 0 and {MAX_SEED}, which leaves room for each worker's offset under the game's limit")
@@ -366,9 +392,12 @@ def main() -> None:
     eval_cmd.add_argument("--policy", required=True)
     eval_cmd.add_argument("--episodes", type=int, default=16)
     eval_cmd.add_argument("--sample", action="store_true")
+    eval_cmd.add_argument("--duels", action="store_true")
     parsed = parser.parse_args()
     if parsed.command != "widen":
         check_seed(parser, parsed.seed)
+    if parsed.command == "eval" and parsed.episodes < 1:
+        parser.error("--episodes must be 1 or more")
     if parsed.command == "ppo":
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
         check_duels(parser, parsed.duels, parsed.envs)
@@ -385,6 +414,8 @@ def main() -> None:
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
         ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels))
+    elif parsed.duels:
+        evaluate_duels(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, not parsed.sample)
     else:
         evaluate(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, parsed.waves, not parsed.sample)
 

@@ -16,6 +16,7 @@ import type { RewardTally } from './reward.ts';
 import { emptyTally, REWARD, rewardFor } from './reward.ts';
 
 export const DUEL = {
+  seats: 2,
   timeLimit: 60,
   rivalParty: 1,
   rivalSeed: 104729,
@@ -102,7 +103,7 @@ function settle(duel: Duel, rewards: number[]): void {
   for (const seat of duel.seats) seat.outcome = 'timeout';
 }
 
-function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards: number[]): void {
+export function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards: number[]): void {
   const world: World = duel.world;
   duel.seats.forEach((seat: DuelSeat, index: number): void => {
     recallEvents(seat.recall, world, seat.hero, events);

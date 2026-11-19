@@ -40,7 +40,7 @@ import { prepareZone } from '../sim/world/zones.ts';
 import { MAX_STEP, stepWorld } from '../sim/world/step.ts';
 import type { DebugHooks } from './debug-handle.ts';
 import type { WatchRequest, Watching } from './watch/replay-watch.ts';
-import { fetchWatching, watchCaption, watchRequest, watchTicks } from './watch/replay-watch.ts';
+import { fetchWatching, watchCaption, watchedWorld, watchRequest, watchTicks } from './watch/replay-watch.ts';
 import type { WatchCaption } from './watch/watch-caption.ts';
 import { createWatchCaption } from './watch/watch-caption.ts';
 import { attachDebug } from './debug-handle.ts';
@@ -203,7 +203,7 @@ async function start(): Promise<void> {
   });
   const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
   const watching: Watching | null = watchAsked === null ? null : await fetchWatching(content, watchAsked);
-  const world: World = watching !== null ? watching.replayer.arena.world : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
+  const world: World = watching !== null ? watchedWorld(watching) : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
   const tracker: Tracker = startTracking({ serverUrl, build: import.meta.env.VITE_BUILD_ID, world, touch: mobile.touch });
   overlayManager.subscribe((state: OverlayState): void => tracker.overlays(visibleOverlays(state)));
   let entered: boolean = save !== null;
@@ -219,6 +219,9 @@ async function start(): Promise<void> {
   const propDresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressedProp(content, dress, material, propDressing(world.zone));
   const [library, firstView]: [CharacterLibrary, ZoneView] = await Promise.all([loadCharacters(loader, content, dresser, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero)), buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name)]);
   void privateClips.then((clips: PrivateClips): void => usePrivateClips(library, content.player.heroes.map((hero: HeroDef): string => hero.rig), clips));
+  await Promise.all(world.heroes.filter((other: PlayerState): boolean => other.id !== world.player.id).map((other: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, other.equipped, other.hero), loadGate).catch((error: unknown): void => {
+    warnInConsole(`Loading the body of hero ${other.id} failed: ${String(error)}`);
+  })));
   const loot: LootView = await createLootView(loader, stage.scene, library);
   let zoneView: ZoneView = firstView;
   let markers: PlaceMarkers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);

@@ -12,9 +12,11 @@ import { HERO, heroRig } from '../../sim/hero.ts';
 import { heroBase, lookOf, wearKey, wornWearables } from '../../sim/wear.ts';
 import { wakeStage } from '../../sim/world/wake.ts';
 import { wakePose } from './wake-pose.ts';
-import type { ActorState, Equipment, MomentState, MonsterState, NpcState, World, WorldEvent } from '../../sim/world/types.ts';
+import type { ActorState, Equipment, MomentState, MonsterState, NpcState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
 import type { ActorPose, ActorView, SyncOptions } from './actor-view.ts';
 import { ACTOR, createActorView } from './actor-view.ts';
+import type { HeroViews } from './hero-views.ts';
+import { createHeroViews } from './hero-views.ts';
 import type { CharacterLibrary, LoadedRig, RigInstance } from './character-loader.ts';
 import { hasWear, instantiateRig } from './character-loader.ts';
 import { holdEquipped } from './hero-gear.ts';
@@ -166,16 +168,21 @@ function echoLook(current: World, monster: MonsterState): EchoLook | null {
 export function createActors(scene: Scene, library: CharacterLibrary, world: World, feather: boolean, sight: Sight = SEES_ALL, particles: ParticleSystem | null = null, pacer: FramePacer = browserPacer()): Actors {
   const content: Content = world.content;
   const spin: SpinView = createSpinView(scene, particles, spinStyleFrom(window.location.search));
-  const heroView = (loaded: LoadedRig, current: World): ActorView => {
-    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }, 'together'), HERO.size, current.player.facing);
-    holdEquipped(content, view.rig, current.player.equipped);
-    dress(content, loaded.def.id, view.rig, heroBase(content, loaded.def.id), current.player.equipped);
+  const heroView = (loaded: LoadedRig, hero: PlayerState): ActorView => {
+    const view: ActorView = createActorView(instantiateRig(loaded, library, { tint: content.player.tint, glow: content.player.color, ghost: null, feather }, 'together'), HERO.size, hero.facing);
+    holdEquipped(content, view.rig, hero.equipped);
+    dress(content, loaded.def.id, view.rig, heroBase(content, loaded.def.id), hero.equipped);
     scene.add(view.rig.root);
     return view;
   };
   const playerRig: LoadedRig | undefined = library.rigs.get(heroRig(content, world.player.hero));
   if (playerRig === undefined) throw new Error(`Player rig "${heroRig(content, world.player.hero)}" was not loaded`);
-  let playerView: ActorView = heroView(playerRig, world);
+  let playerView: ActorView = heroView(playerRig, world.player);
+  const rivals: HeroViews<ActorView> = createHeroViews((hero: PlayerState): ActorView | null => {
+    const loaded: LoadedRig | undefined = library.rigs.get(heroRig(content, hero.hero));
+    return loaded === undefined ? null : heroView(loaded, hero);
+  });
+  rivals.each(world, (): void => undefined);
   const shade: ShadeMotion = { value: 0, speed: 0 };
   const shadeColor: Color = new Color();
   const soaks: Map<number, Soaking> = new Map<number, Soaking>();
@@ -190,12 +197,16 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     const loaded: LoadedRig | undefined = library.rigs.get(wanted);
     if (loaded === undefined) return;
     playerView.dispose();
-    playerView = heroView(loaded, current);
+    playerView = heroView(loaded, current.player);
   };
   const dressHero = (current: World): void => {
     standChosen(current);
     holdEquipped(content, playerView.rig, current.player.equipped);
     dress(content, playerView.rig.def.id, playerView.rig, heroBase(content, playerView.rig.def.id), current.player.equipped);
+    rivals.each(current, (hero: PlayerState, view: ActorView): void => {
+      holdEquipped(content, view.rig, hero.equipped);
+      dress(content, view.rig.def.id, view.rig, heroBase(content, view.rig.def.id), hero.equipped);
+    });
   };
   const librarySize = (): number => library.rigs.size + library.wearables.size + library.attachments.size;
   let dressedWith: number = librarySize();
@@ -341,7 +352,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
 
   const viewOf = (actorId: number): ActorView | null => {
     if (actorId === world.player.id) return playerView;
-    return monsters.get(actorId)?.view ?? npcs.get(actorId)?.view ?? null;
+    return rivals.view(actorId) ?? monsters.get(actorId)?.view ?? npcs.get(actorId)?.view ?? null;
   };
   const fell = (actorId: number, current: World): void => {
     const fallen: MonsterState | undefined = current.monsters.find((candidate: MonsterState): boolean => candidate.id === actorId);
@@ -420,6 +431,14 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       stepShade(shade, Math.max(shadow?.strength ?? 0, veil?.shade ?? 0), dt);
       playerView.rig.setShade(shadeColor, shade.value, true, 0);
       playerView.sync(dt * strikes.rate(current.player.id), poseOf(current.player, null), { rise: 1, floor: floorAt(current.player.pos.x, current.player.pos.z), turnRate: ACTOR.turnRate, seen: true });
+      rivals.each(current, (hero: PlayerState, view: ActorView): void => {
+        holdEquipped(content, view.rig, hero.equipped);
+        const floor: number = floorAt(hero.pos.x, hero.pos.z);
+        draw(view, hero.pos.x, floor, hero.pos.z);
+        view.setHover(hero.id === hoveredId);
+        view.sync(dt * strikes.rate(hero.id), poseOf(hero, null), { rise: 1, floor, turnRate: ACTOR.turnRate, seen: seen(view, hero.pos.x, floor, hero.pos.z) });
+      });
+      rivals.sweep(current);
       for (const monster of current.monsters) {
         const found: MonsterEntry | null = entryFor(current, monster);
         if (found === null) continue;

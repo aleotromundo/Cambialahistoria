@@ -6,7 +6,7 @@ import type { DemoEpisode, Demonstration } from '../../sim/rl/demo.ts';
 import { demonstrate } from '../../sim/rl/demo.ts';
 import type { Pool, PoolOptions, PoolStep } from '../../sim/rl/pool.ts';
 import { createPool, poolObservations, stepPool } from '../../sim/rl/pool.ts';
-import type { Replay } from '../../sim/rl/replay.ts';
+import type { KeptReplay } from '../../sim/rl/duel-replay.ts';
 import type { Frame } from './frames.ts';
 import { demonstrationFrame, frame, FRAME, jsonPart, observationFrame, readActions, readJson } from './frames.ts';
 
@@ -22,7 +22,7 @@ export interface Session {
 
 export interface Reply {
   readonly frames: Iterable<Buffer>;
-  readonly keep: readonly Replay[];
+  readonly keep: readonly KeptReplay[];
   readonly quit: boolean;
 }
 
