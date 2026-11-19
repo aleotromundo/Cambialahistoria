@@ -4,6 +4,7 @@ import { isFloorCell, tileAtCell, zoneColumns, zoneRows } from '../../sim/nav/la
 import type { NoiseLattice, TerrainCell } from '../../sim/nav/terrain.ts';
 import { latticeNoise, noiseLattice, rampAt, terrainCell, terrainNoise, tileHeight } from '../../sim/nav/terrain.ts';
 import type { Batch } from './ground.ts';
+import { fringeShare, spreadsOnto } from './ground-spill.ts';
 
 export const GROUND_TERRAIN = {
   step: 0.5,
@@ -27,7 +28,15 @@ export const GROUND_TERRAIN = {
   faceTop: 0.78,
   faceFoot: 0.32,
   outsideShade: 0.72,
+  fringeReach: 1.9,
+  fringeNoise: 0.38,
+  fringeNoiseScale: 0.45,
+  fringeLeast: 0.01,
+  nearNoise: 0.45,
+  nearNoiseScale: 0.35,
 } as const;
+
+const TERRAIN_SALT = { fringe: 51, near: 61 } as const;
 
 export interface Field {
   readonly columns: number;
@@ -100,7 +109,9 @@ export function shownTiles(zone: ZoneDef, reach: number): Uint8Array {
   return shown;
 }
 
-function nearTile(zone: ZoneDef, mark: string, x: number, z: number, reach: number): number {
+type TileHit = (column: number, row: number) => boolean;
+
+function nearTile(zone: ZoneDef, hit: TileHit, x: number, z: number, reach: number): number {
   const size: number = zone.cellSize;
   const span: number = Math.ceil(reach / size);
   const column: number = Math.floor(x / size);
@@ -110,12 +121,23 @@ function nearTile(zone: ZoneDef, mark: string, x: number, z: number, reach: numb
     for (let dc: number = -span; dc <= span; dc += 1) {
       const c: number = column + dc;
       const r: number = row + dr;
-      const hit: boolean = mark === '/' ? rampAt(zone, c, r) : tileAtCell(zone, c, r) === mark;
-      if (!hit) continue;
+      if (!hit(c, r)) continue;
       best = Math.min(best, Math.hypot(Math.max(c * size - x, 0, x - (c + 1) * size), Math.max(r * size - z, 0, z - (r + 1) * size)));
     }
   }
   return best;
+}
+
+function markHit(zone: ZoneDef, mark: string): TileHit {
+  return (column: number, row: number): boolean => (mark === '/' ? rampAt(zone, column, row) : tileAtCell(zone, column, row) === mark);
+}
+
+function signedNear(zone: ZoneDef, mark: string, x: number, z: number, reach: number): number {
+  const hit: TileHit = markHit(zone, mark);
+  const outside: number = nearTile(zone, hit, x, z, reach);
+  if (outside > 0) return outside;
+  const inside: number = nearTile(zone, (column: number, row: number): boolean => !hit(column, row), x, z, reach);
+  return Number.isFinite(inside) ? -inside : -reach;
 }
 
 export function blendLattice(zone: ZoneDef, blend: TerrainBlend, salt: number): NoiseLattice | null {
@@ -127,7 +149,8 @@ export function blendShare(zone: ZoneDef, blend: TerrainBlend, salt: number, x: 
   const field: number = ((lattice === null ? terrainNoise(x / blend.scale, z / blend.scale, 11 + salt) : latticeNoise(lattice, x, z)) + 1) / 2;
   const mask: number = smooth((field - (1 - blend.cover)) / GROUND_TERRAIN.blendSoft + 0.5);
   if (blend.near === null) return mask;
-  return mask * smooth(1 - nearTile(zone, blend.near, x, z, blend.reach) / blend.reach);
+  const ragged: number = terrainNoise(x * GROUND_TERRAIN.nearNoiseScale, z * GROUND_TERRAIN.nearNoiseScale, TERRAIN_SALT.near + salt) * GROUND_TERRAIN.nearNoise;
+  return mask * smooth(1 - signedNear(zone, blend.near, x, z, blend.reach) / blend.reach + ragged);
 }
 
 interface Vertex {
@@ -198,11 +221,68 @@ function quad(batch: Batch, corners: readonly [Vertex, Vertex, Vertex, Vertex], 
   batch.indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
 }
 
+export type GroundLayer = 'solid' | 'fringe' | 'overlay';
+
 export interface TerrainBatches {
-  batchFor(surface: string, overlay: boolean): Batch;
+  batchFor(surface: string, layer: GroundLayer): Batch;
 }
 
-export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches): void {
+export type SpillOf = (surface: string) => number;
+
+export function surfaceReach(field: Field, surface: string, cap: number): Float32Array {
+  const step: number = GROUND_TERRAIN.step;
+  const diagonal: number = step * Math.SQRT2;
+  const { columns, rows } = field;
+  const reach: Float32Array = new Float32Array(columns * rows).fill(cap);
+  for (let at: number = 0; at < reach.length; at += 1) if (field.surfaces[at] === surface) reach[at] = 0;
+  const relax = (at: number, from: number, cost: number): void => {
+    const through: number = (reach[from] ?? cap) + cost;
+    if (through < (reach[at] ?? cap)) reach[at] = through;
+  };
+  for (let row: number = 0; row < rows; row += 1) {
+    for (let column: number = 0; column < columns; column += 1) {
+      const at: number = row * columns + column;
+      if (column > 0) relax(at, at - 1, step);
+      if (row > 0) {
+        relax(at, at - columns, step);
+        if (column > 0) relax(at, at - columns - 1, diagonal);
+        if (column < columns - 1) relax(at, at - columns + 1, diagonal);
+      }
+    }
+  }
+  for (let row: number = rows - 1; row >= 0; row -= 1) {
+    for (let column: number = columns - 1; column >= 0; column -= 1) {
+      const at: number = row * columns + column;
+      if (column < columns - 1) relax(at, at + 1, step);
+      if (row < rows - 1) {
+        relax(at, at + columns, step);
+        if (column < columns - 1) relax(at, at + columns + 1, diagonal);
+        if (column > 0) relax(at, at + columns - 1, diagonal);
+      }
+    }
+  }
+  return reach;
+}
+
+export interface SurfaceFringe {
+  readonly surface: string;
+  readonly reach: Float32Array;
+}
+
+export function surfaceFringes(field: Field, spill: SpillOf): SurfaceFringe[] {
+  const present: string[] = [...new Set(field.surfaces)].filter((id: string): boolean => id !== '');
+  const spreading: string[] = present.filter((id: string): boolean => present.some((own: string): boolean => spreadsOnto({ id, spill: spill(id) }, { id: own, spill: spill(own) })));
+  return spreading.map((surface: string): SurfaceFringe => ({ surface, reach: surfaceReach(field, surface, GROUND_TERRAIN.fringeReach) }));
+}
+
+export function fringeAt(distance: number, x: number, z: number): number {
+  const ragged: number = terrainNoise(x * GROUND_TERRAIN.fringeNoiseScale, z * GROUND_TERRAIN.fringeNoiseScale, TERRAIN_SALT.fringe) * GROUND_TERRAIN.fringeNoise;
+  return fringeShare(distance, GROUND_TERRAIN.fringeReach, ragged);
+}
+
+const NO_SPILL: SpillOf = (): number => 0;
+
+export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches, spill: SpillOf = NO_SPILL): void {
   const terrain: ZoneTerrain | null = zone.terrain;
   if (terrain === null) return;
   const field: Field = sampleField(zone);
@@ -212,6 +292,7 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches): void
   const step: number = GROUND_TERRAIN.step;
   const perTile: number = zone.cellSize / step;
   const bed: string = zone.outside?.surface ?? terrain.cliff;
+  const fringes: SurfaceFringe[] = surfaceFringes(field, spill);
   const lattices: (NoiseLattice | null)[] = terrain.blends.map((blend: TerrainBlend, salt: number): NoiseLattice | null => blendLattice(zone, blend, salt));
   const vertices: Map<number, Vertex> = new Map<number, Vertex>();
   const vertex = (column: number, row: number): Vertex => {
@@ -237,21 +318,30 @@ export function buildTerrainGround(zone: ZoneDef, batches: TerrainBatches): void
         const span: number = Math.max(Math.hypot(gx, gz), Number.EPSILON);
         const uvs: number[] = corners.flatMap((entry: Vertex): number[] => [(-gz * entry.x + gx * entry.z) / span, entry.y]);
         const shades: number[] = corners.map((entry: Vertex): number => (GROUND_TERRAIN.faceFoot + (GROUND_TERRAIN.faceTop - GROUND_TERRAIN.faceFoot) * smooth((entry.y - low) / (high - low))) * entry.shade);
-        quad(batches.batchFor(terrain.cliff, false), corners, uvs, shades, [1, 1, 1, 1], 0);
+        quad(batches.batchFor(terrain.cliff, 'solid'), corners, uvs, shades, [1, 1, 1, 1], 0);
         continue;
       }
       const uvs: number[] = corners.flatMap((entry: Vertex): number[] => [entry.x, entry.z]);
       const shades: number[] = corners.map((entry: Vertex): number => entry.shade);
       if (floors === 0) {
-        quad(batches.batchFor(bed, false), corners, uvs, shades.map((shade: number): number => shade * GROUND_TERRAIN.outsideShade), [1, 1, 1, 1], 0);
+        quad(batches.batchFor(bed, 'solid'), corners, uvs, shades.map((shade: number): number => shade * GROUND_TERRAIN.outsideShade), [1, 1, 1, 1], 0);
         continue;
       }
       const surface: string = [index, index + 1, index + field.columns, index + field.columns + 1].map((at: number): string => field.surfaces[at] ?? '').find((id: string): boolean => id !== '') ?? bed;
-      quad(batches.batchFor(surface, false), corners, uvs, shades, [1, 1, 1, 1], 0);
+      quad(batches.batchFor(surface, 'solid'), corners, uvs, shades, [1, 1, 1, 1], 0);
+      const at: readonly number[] = [index, index + 1, index + field.columns, index + field.columns + 1];
+      for (const fringe of fringes) {
+        if (!spreadsOnto({ id: fringe.surface, spill: spill(fringe.surface) }, { id: surface, spill: spill(surface) })) continue;
+        const distances: number[] = at.map((sample: number): number => fringe.reach[sample] ?? GROUND_TERRAIN.fringeReach);
+        if (Math.min(...distances) >= GROUND_TERRAIN.fringeReach) continue;
+        const alphas: number[] = corners.map((entry: Vertex, corner: number): number => fringeAt(distances[corner] ?? GROUND_TERRAIN.fringeReach, entry.x, entry.z));
+        if (alphas.every((alpha: number): boolean => alpha <= GROUND_TERRAIN.fringeLeast)) continue;
+        quad(batches.batchFor(fringe.surface, 'fringe'), corners, uvs, shades, alphas, GROUND_TERRAIN.blendLift);
+      }
       terrain.blends.forEach((blend: TerrainBlend, salt: number): void => {
         const alphas: number[] = corners.map((entry: Vertex): number => blendShare(zone, blend, salt, entry.x, entry.z, lattices[salt] ?? null));
         if (alphas.every((alpha: number): boolean => alpha <= 0.01)) return;
-        quad(batches.batchFor(blend.surface, true), corners, uvs, shades, alphas, GROUND_TERRAIN.blendLift * (salt + 1));
+        quad(batches.batchFor(blend.surface, 'overlay'), corners, uvs, shades, alphas, GROUND_TERRAIN.blendLift * (salt + 2));
       });
     }
   }

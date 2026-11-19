@@ -14,7 +14,8 @@ void test('the glow is written as safe GLSL that drifts, pulses and lights the s
   assert.deepEqual(unsafeGlsl(source), []);
   assert.match(source, /uGlowTime \* 0\.08/);
   assert.match(source, /sin\( uGlowTime \* /);
-  assert.match(source, /totalEmissiveRadiance \+= vec3\( 2\.0, /);
+  assert.match(source, /totalEmissiveRadiance \+= glowTint \* glowMask/);
+  assert.match(source, /vec3 glowTint = mix\( mix\( vec3\( 1\.1, /);
   assert.doesNotMatch(glowFragment({ ...LAVA, pulse: 0 }), /sin\(/);
   assert.deepEqual(unsafeGlsl(glowFragment({ ...LAVA, cover: 0 })), []);
   assert.deepEqual(unsafeGlsl(GLOW_HELPERS), []);

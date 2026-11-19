@@ -22,6 +22,14 @@ export const WET_GROUND = {
   roughScale: 0.37,
 } as const;
 
+export const GROUND_EDGE = {
+  scale: 1.3,
+  low: 0.05,
+  high: 0.42,
+  soft: 0.08,
+  solid: 0.999,
+} as const;
+
 function glsl(value: number): string {
   return Number.isInteger(value) ? `${value}.0` : `${value}`;
 }
@@ -50,6 +58,23 @@ export interface WetGroundParts {
   readonly roughness: string;
   readonly normal: string;
   readonly normalAfter: string;
+}
+
+export function groundEdgeFragment(): string {
+  const e = GROUND_EDGE;
+  return [
+    'float groundShare = 1.0;',
+    'float groundCut = 0.0;',
+    'float groundEdge = 1.0;',
+    '#ifdef USE_COLOR_ALPHA',
+    `if ( vColor.a < ${glsl(e.solid)} ) {`,
+    '  groundShare = vColor.a;',
+    `  groundCut = mix( ${glsl(e.low)}, ${glsl(e.high)}, groundFbm( vGroundXZ * ${glsl(e.scale)} + 3.7 ) );`,
+    `  groundEdge = smoothstep( groundCut - ${glsl(e.soft)}, groundCut + ${glsl(e.soft)}, groundShare );`,
+    '  diffuseColor.a *= groundEdge;',
+    '}',
+    '#endif',
+  ].join('\n');
 }
 
 export function wetGroundFragment(wet: number): WetGroundParts {
@@ -92,6 +117,7 @@ export function patchGroundShader(shader: Pick<WebGLProgramParametersWithUniform
   shader.fragmentShader = shader.fragmentShader
     .replace('void main() {', `${parts.head}\nvoid main() {`)
     .replace('#include <map_fragment>', parts.map)
+    .replace('#include <color_fragment>', `#include <color_fragment>\n${groundEdgeFragment()}`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${parts.roughness}`)
     .replace('#include <normal_fragment_maps>', `${normalMaps}\n${parts.normalAfter}`);
 }

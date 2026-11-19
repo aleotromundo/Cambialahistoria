@@ -9,7 +9,9 @@ import { buildCliffs } from './ground-cliffs.ts';
 import { buildTerrainGround } from './ground-terrain.ts';
 import { tileLift } from './terrain-lift.ts';
 import { wetGround } from './wet-ground.ts';
+import { fringeShare, spreadsOnto } from './ground-spill.ts';
 import type { SurfaceUse } from './surfaces.ts';
+import type { GroundLayer } from './ground-terrain.ts';
 
 export const GROUND = {
   divisions: 8,
@@ -34,6 +36,8 @@ export const GROUND = {
 } as const;
 
 const GROUND_GRID = { spillMargin: 2 } as const;
+
+export const GROUND_ORDER = { solid: 0, fringe: 0.5, overlay: 1 } as const;
 
 const GROUND_INDEX = { narrowLimit: 65535 } as const;
 
@@ -304,13 +308,13 @@ function fringes(spills: SpillGrid, cell: FloorCell, own: SurfaceDef): SurfaceDe
   for (let dr: number = -1; dr <= 1; dr += 1) {
     for (let dc: number = -1; dc <= 1; dc += 1) {
       const other: SurfaceDef | null = spills.at(cell.column + dc, cell.row + dr);
-      if (other !== null && other.id !== own.id && other.spill > own.spill) found.set(other.id, other);
+      if (other !== null && spreadsOnto(other, own)) found.set(other.id, other);
     }
   }
   return [...found.values()];
 }
 
-function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: ShapedBatch, wet: number): Mesh | null {
+function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: ShapedBatch, wet: number, order: number = use === 'overlay' ? GROUND_ORDER.overlay : GROUND_ORDER.solid): Mesh | null {
   const def: SurfaceDef | undefined = content.surfaces.get(surfaceId);
   if (def === undefined || batch.indices.length === 0) return null;
   const geometry: BufferGeometry = new BufferGeometry();
@@ -321,12 +325,13 @@ function toMesh(content: Content, surfaceId: string, use: SurfaceUse, batch: Sha
   geometry.setIndex(batch.wideIndices ? new Uint32BufferAttribute(batch.indices, 1) : new Uint16BufferAttribute(batch.indices, 1));
   const mesh: Mesh = new Mesh(geometry, surfaceMaterial(def, use, wet));
   mesh.receiveShadow = true;
-  mesh.renderOrder = use === 'overlay' ? 1 : 0;
+  mesh.renderOrder = order;
   return mesh;
 }
 
 export interface GroundBatches {
   readonly solid: ReadonlyMap<string, ShapedBatch>;
+  readonly fringe: ReadonlyMap<string, ShapedBatch>;
   readonly overlay: ReadonlyMap<string, ShapedBatch>;
   readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, ShapedBatch>>;
 }
@@ -344,9 +349,10 @@ export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
 }
 
 function shapeGround(content: Content, zone: ZoneDef): GroundBatches {
-  const { solid, overlay, drifting } = rawGround(content, zone);
+  const { solid, fringe, overlay, drifting } = rawGround(content, zone);
   return {
     solid: shapedBatches(solid),
+    fringe: shapedBatches(fringe),
     overlay: shapedBatches(overlay),
     drifting: new Map<ZoneDrift, ReadonlyMap<string, ShapedBatch>>([...drifting].map(([drift, batches]: [ZoneDrift, ReadonlyMap<string, Batch>]): [ZoneDrift, ReadonlyMap<string, ShapedBatch>] => [drift, shapedBatches(batches)])),
   };
@@ -354,13 +360,16 @@ function shapeGround(content: Content, zone: ZoneDef): GroundBatches {
 
 interface RawGround {
   readonly solid: ReadonlyMap<string, Batch>;
+  readonly fringe: ReadonlyMap<string, Batch>;
   readonly overlay: ReadonlyMap<string, Batch>;
   readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, Batch>>;
 }
 
 function rawGround(content: Content, zone: ZoneDef): RawGround {
   const solid: Map<string, Batch> = new Map<string, Batch>();
+  const fringe: Map<string, Batch> = new Map<string, Batch>();
   const overlay: Map<string, Batch> = new Map<string, Batch>();
+  const layers: Readonly<Record<GroundLayer, Map<string, Batch>>> = { solid, fringe, overlay };
   const floorY: number = zone.floorHeight;
   const occluders: Occluder[] = zone.props.flatMap((placed: ZoneProp): Occluder[] => {
     const radius: number = content.props.get(placed.prop)?.blockRadius ?? 0;
@@ -372,8 +381,8 @@ function rawGround(content: Content, zone: ZoneDef): RawGround {
 
   const drifting: Map<ZoneDrift, Map<string, Batch>> = new Map<ZoneDrift, Map<string, Batch>>();
   if (zone.terrain !== null && zone.terrain.rough !== null) {
-    buildTerrainGround(zone, { batchFor: (surface: string, onTop: boolean): Batch => batchFor(onTop ? overlay : solid, surface) });
-    return { solid, overlay, drifting };
+    buildTerrainGround(zone, { batchFor: (surface: string, layer: GroundLayer): Batch => batchFor(layers[layer], surface) }, (surface: string): number => content.surfaces.get(surface)?.spill ?? 0);
+    return { solid, fringe, overlay, drifting };
   }
   for (const cell of floorCells(zone)) {
     const own: SurfaceDef | null = spills.at(cell.column, cell.row);
@@ -393,9 +402,9 @@ function rawGround(content: Content, zone: ZoneDef): RawGround {
       const alphaAt = (x: number, z: number): number => {
         const distance: number = nearest(zone, x, z, 1, (column: number, row: number): boolean => spills.at(column, row)?.id === other.id);
         const ragged: number = (noise(x * GROUND.fringeNoiseScale + 7.3, z * GROUND.fringeNoiseScale + 3.1) - 0.5) * GROUND.fringeNoise;
-        return smooth(1 - distance / GROUND.fringeReach + ragged);
+        return fringeShare(distance, GROUND.fringeReach, ragged);
       };
-      cover(shading, batchFor(overlay, other.id), cell.column, cell.row, floorY + GROUND.overlayLift, 1, alphaAt);
+      cover(shading, batchFor(fringe, other.id), cell.column, cell.row, floorY + GROUND.overlayLift, 1, alphaAt);
     }
   }
 
@@ -411,16 +420,20 @@ function rawGround(content: Content, zone: ZoneDef): RawGround {
     for (const cell of cells) cover(shading, batchFor(overlay, outside.surface), cell.column, cell.row, floorY + GROUND.outsideLift, GROUND.outsideShade, alphaAt);
   }
   if (zone.terrain !== null) buildCliffs(zone, batchFor(solid, zone.terrain.cliff));
-  return { solid, overlay, drifting };
+  return { solid, fringe, overlay, drifting };
 }
 
 export function buildGround(content: Content, zone: ZoneDef): Ground {
-  const { solid, overlay, drifting } = groundBatches(content, zone);
+  const { solid, fringe, overlay, drifting } = groundBatches(content, zone);
   const zoneWet: number = zone.weather.wet;
 
   const meshes: Mesh[] = [];
   for (const [surfaceId, batch] of solid) {
     const mesh: Mesh | null = toMesh(content, surfaceId, 'ground', batch, zoneWet);
+    if (mesh !== null) meshes.push(mesh);
+  }
+  for (const [surfaceId, batch] of fringe) {
+    const mesh: Mesh | null = toMesh(content, surfaceId, 'overlay', batch, zoneWet, GROUND_ORDER.fringe);
     if (mesh !== null) meshes.push(mesh);
   }
   for (const [surfaceId, batch] of overlay) {

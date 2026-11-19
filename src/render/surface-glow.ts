@@ -16,7 +16,7 @@ export const SURFACE_GLOW = {
   rimReach: 0.35,
   rimShare: 0.45,
   riverScale: 0.32,
-  riverSoft: 0.16,
+  riverSoft: 0.08,
   riverDrift: 0.5,
   crackBlur: 2,
   crackFrom: 0.55,
@@ -26,12 +26,26 @@ export const SURFACE_GLOW = {
   leastGap: 0.01,
   widthScale: 0.35,
   widthShift: 13.7,
-  widthLeast: 0.0,
+  widthLeast: 0.35,
   widthMost: 2.4,
   coreLeast: 0.2,
   riverLeast: 0.4,
   openFrom: 0.38,
   openTo: 0.62,
+  plateCarry: 0.55,
+  shimmerScale: 2.7,
+  shimmerSpeed: 2.2,
+  shimmerLeast: 0.55,
+  coreReach: 1.1,
+  riverCore: 0.3,
+  shoreReach: 0.25,
+  shoreKeep: 0.3,
+  warmTo: 0.55,
+  hotFrom: 0.6,
+  deep: [0.55, 0.16, 0.08],
+  hot: [1.0, 0.64, 0.26],
+  hotLift: 1.05,
+  poolFrom: 0.3,
 } as const;
 
 export const GLOW_CLOCK: IUniform<number> = { value: 0 };
@@ -44,9 +58,16 @@ function glsl(value: number): string {
   return Number.isInteger(value) ? `${value}.0` : `${value}`;
 }
 
-function glslColour(hex: string, strength: number): string {
+function glslColour(hex: string, strength: number, shift: readonly [number, number, number] = [1, 1, 1]): string {
   const colour: Color = new Color(hex);
-  return `vec3( ${glsl(colour.r * strength)}, ${glsl(colour.g * strength)}, ${glsl(colour.b * strength)} )`;
+  return `vec3( ${glsl(colour.r * strength * shift[0])}, ${glsl(colour.g * strength * shift[1])}, ${glsl(colour.b * strength * shift[2])} )`;
+}
+
+function glslHot(hex: string, strength: number): string {
+  const colour: Color = new Color(hex);
+  const [r, g, b] = SURFACE_GLOW.hot;
+  const lift: number = strength * SURFACE_GLOW.hotLift;
+  return `vec3( ${glsl(Math.max(colour.r, r) * lift)}, ${glsl(Math.max(colour.g, g) * lift)}, ${glsl(Math.max(colour.b, b) * lift)} )`;
 }
 
 export function glowKey(glow: SurfaceGlow | null): string {
@@ -78,6 +99,7 @@ export function glowFragment(glow: SurfaceGlow): string {
   const g = SURFACE_GLOW;
   const width: number = Math.max(glow.cover * g.gapWidth, g.leastGap);
   const riverEdge: number = 1 - glow.cover;
+  const least: number = glow.cover >= g.poolFrom ? g.widthLeast : 0;
   const pulse: string = glow.pulse > 0 ? `1.0 - ${glsl(g.pulseDepth)} * 0.5 * ( 1.0 + sin( uGlowTime * ${glsl(glow.pulse * Math.PI * 2)} + glowFirst * 6.2832 ) )` : '1.0';
   return [
     `vec2 glowDrift = vec2( ${glsl(g.driftX)}, ${glsl(g.driftZ)} ) * uGlowTime * ${glsl(glow.flow)};`,
@@ -85,20 +107,26 @@ export function glowFragment(glow: SurfaceGlow): string {
     `float glowFirst = groundFbm( glowAt * ${glsl(g.warpScale)} + glowDrift );`,
     `float glowSecond = groundFbm( glowAt * ${glsl(g.warpScale)} - glowDrift + ${glsl(g.warpShift)} );`,
     `vec2 glowWarped = glowAt + ( vec2( glowFirst, glowSecond ) - 0.5 ) * ${glsl(g.warpReach * 2)};`,
-    `float glowEdge = glowPlates( glowWarped, uGlowTime * ${glsl(glow.flow * g.wobble * 10)} );`,
+    `float glowEdge = glowPlates( glowWarped - glowDrift * ${glsl(g.plateCarry)}, uGlowTime * ${glsl(glow.flow * g.wobble * 10)} );`,
     `float glowOpen = smoothstep( ${glsl(g.openFrom)}, ${glsl(g.openTo)}, groundFbm( glowAt * ${glsl(g.widthScale)} + ${glsl(g.widthShift)} - glowDrift ) );`,
-    `float glowWidth = ${glsl(width)} * mix( ${glsl(g.widthLeast)}, ${glsl(g.widthMost)}, glowOpen );`,
+    `float glowWidth = ${glsl(width)} * mix( ${glsl(least)}, ${glsl(g.widthMost)}, glowOpen );`,
     `float glowGap = ( 1.0 - smoothstep( glowWidth * ${glsl(1 - g.gapSoft)}, glowWidth * ${glsl(1 + g.gapSoft)} + ${glsl(g.leastGap)}, glowEdge ) ) * mix( ${glsl(g.coreLeast)}, 1.0, glowOpen );`,
     `float glowRim = exp( - max( glowEdge - glowWidth, 0.0 ) / ${glsl(g.rimReach)} ) * ${glsl(g.rimShare)} * glowOpen;`,
-    `float glowRiver = smoothstep( ${glsl(riverEdge - g.riverSoft)}, ${glsl(riverEdge + g.riverSoft)}, groundFbm( glowAt * ${glsl(g.riverScale)} + glowDrift * ${glsl(g.riverDrift)} ) );`,
+    `float glowRiverField = groundFbm( glowAt * ${glsl(g.riverScale)} + glowDrift * ${glsl(g.riverDrift)} );`,
+    `float glowRiver = smoothstep( ${glsl(riverEdge - g.riverSoft)}, ${glsl(riverEdge + g.riverSoft)}, glowRiverField );`,
     'float glowCrack = 1.0;',
     '#ifdef USE_MAP',
     `  glowCrack = 1.0 - smoothstep( ${glsl(g.crackFrom)}, ${glsl(g.crackTo)}, dot( texture2D( map, vMapUv, ${glsl(g.crackBlur)} ).rgb, vec3( 0.333 ) ) / max( dot( texture2D( map, vMapUv, ${glsl(g.crackBlur + 3)} ).rgb, vec3( 0.333 ) ), 0.02 ) );`,
     '#endif',
-    `float glowMolten = max( glowGap, glowRiver * mix( ${glsl(g.riverLeast)}, 1.0, glowFirst ) );`,
+    `float glowShore = mix( ${glsl(g.shoreKeep)}, 1.0, smoothstep( 0.0, ${glsl(g.shoreReach)}, groundShare - groundCut ) );`,
+    `float glowMolten = max( glowGap, glowRiver * mix( ${glsl(g.riverLeast)}, 1.0, glowFirst ) ) * glowShore;`,
     `float glowMask = glowMolten + ( 1.0 - glowMolten ) * glowRim * mix( 1.0, glowCrack, ${glsl(glow.cracks)} );`,
+    `float glowShimmer = mix( ${glsl(g.shimmerLeast)}, 1.0, groundNoise( glowAt * ${glsl(g.shimmerScale)} - glowDrift * ${glsl(g.shimmerSpeed)} ) );`,
+    `float glowCore = max( ( 1.0 - smoothstep( 0.0, glowWidth * ${glsl(g.coreReach)} + ${glsl(g.leastGap)}, glowEdge ) ) * glowOpen, smoothstep( ${glsl(riverEdge)}, ${glsl(riverEdge + g.riverCore)}, glowRiverField ) ) * glowMolten;`,
+    'float glowHeat = clamp( glowMask * glowShimmer, 0.0, 1.0 );',
+    `vec3 glowTint = mix( mix( ${glslColour(glow.color, glow.strength, g.deep)}, ${glslColour(glow.color, glow.strength)}, smoothstep( 0.0, ${glsl(g.warmTo)}, glowHeat ) ), ${glslHot(glow.color, glow.strength)}, smoothstep( ${glsl(g.hotFrom)}, 1.0, glowCore * glowShimmer ) );`,
     `diffuseColor.rgb *= mix( 1.0, ${glsl(g.crustDarken)}, glowMolten );`,
-    `totalEmissiveRadiance += ${glslColour(glow.color, glow.strength)} * glowMask * ( ${pulse} );`,
+    `totalEmissiveRadiance += glowTint * glowMask * ( ${pulse} );`,
   ].join('\n');
 }
 

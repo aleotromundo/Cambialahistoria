@@ -8,6 +8,7 @@ import { buildNavGrid, isWalkable } from '../../sim/nav/grid.ts';
 import { floorAt, rampAt, terrainCell } from '../../sim/nav/terrain.ts';
 import type { Batch } from './ground.ts';
 import { buildTerrainGround, drawnGround } from './ground-terrain.ts';
+import type { GroundLayer } from './ground-terrain.ts';
 import { liftAt } from './terrain-lift.ts';
 
 const SWEEP = { stride: 3.1, settle: 0.001 } as const;
@@ -63,7 +64,7 @@ void test('in every raised zone no drawn rock stands over a spot the hero can wa
   assert.ok(zones.some((zone: ZoneDef): boolean => zone.id === 'under_hall_2'));
   for (const zone of zones) {
     const batch: Batch = emptyBatch();
-    buildTerrainGround(zone, { batchFor: (_surface: string, overlay: boolean): Batch => (overlay ? emptyBatch() : batch) });
+    buildTerrainGround(zone, { batchFor: (_surface: string, layer: GroundLayer): Batch => (layer === 'solid' ? batch : emptyBatch()) });
     const grid: NavGrid = buildNavGrid(zone, content.props, content.surfaces, content.player.radius);
     let steep: number = 0;
     for (let at: number = 0; at < batch.indices.length; at += 3) {
