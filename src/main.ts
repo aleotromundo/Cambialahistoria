@@ -103,6 +103,8 @@ import type { PrivateClips } from './render/private-clips.ts';
 import { browserClipDeps, loadPrivateClips } from './render/private-clips.ts';
 import { readAssetBase } from './audio/manifest.ts';
 import { createEffects } from './render/effects.ts';
+import type { Moment } from './render/time-moment.ts';
+import { momentScale, NO_MOMENT, startMoment } from './render/time-moment.ts';
 import type { MomentEffects } from './render/moment-effects.ts';
 import { momentEffects } from './render/moment-effects.ts';
 import type { Ward } from './render/ward.ts';
@@ -325,7 +327,7 @@ async function start(): Promise<void> {
   let failed: boolean = false;
   let saveHeld: boolean = false;
   let watchCaptionView: WatchCaption | null = null;
-  let hitStop: number = 0;
+  let moment: Moment = NO_MOMENT;
   let dirty: boolean = false;
   let urgent: boolean = false;
   let sinceSave: number = 0;
@@ -362,7 +364,7 @@ async function start(): Promise<void> {
     overlays.handle(events, world);
     glitches.handle(events);
     for (const event of events) playEvent(event);
-    hitStop = Math.max(hitStop, effects.takeHitStop());
+    if (effects.takeMoment()) moment = startMoment(moment, performance.now() / 1000);
     if (changesSave(events)) {
       dirty = true;
       wantCarried();
@@ -416,7 +418,7 @@ async function start(): Promise<void> {
     stage.render();
     hideWarm();
     queue.length = 0;
-    hitStop = 0;
+    moment = NO_MOMENT;
     saveHeld = false;
     persist();
     return { ready: bodiesIn };
@@ -449,6 +451,7 @@ async function start(): Promise<void> {
     if (last > 0) transition.frame(now - last);
     last = now;
     let events: WorldEvent[] = [];
+    const worldDt: number = dt * momentScale(moment, now / 1000);
     const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, hidden: HOST.pauseWhenHidden && document.hidden, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
     if (gate.present) {
       overlays.readHud(dt);
@@ -458,13 +461,11 @@ async function start(): Promise<void> {
     if (gate.queue && watching === null) queue.push(...collected);
     if (gate.step) {
       keeper.stepped();
-      hitStop = Math.max(0, hitStop - dt);
-      if (hitStop <= 0 && watching !== null) {
-        events = watchTicks(watching, dt);
+      if (watching !== null) {
+        events = watchTicks(watching, worldDt);
         watchCaptionView?.show(watchCaption(watching));
-      }
-      else if (hitStop <= 0) {
-        let remaining: number = dt;
+      } else {
+        let remaining: number = worldDt;
         while (remaining > 1e-5 && !events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
           const step: number = Math.min(MAX_STEP, remaining);
           events = events.concat(stepWorld(world, queue.splice(0, queue.length), step));
@@ -486,13 +487,13 @@ async function start(): Promise<void> {
 
     const presentNow: boolean = gate.present && transition.presenting;
     if (presentNow) {
-      const simDt: number = gate.step && hitStop <= 0 ? dt : 0;
+      const simDt: number = gate.step ? worldDt : 0;
       actors.sync(simDt, world, input.hoveredId);
       loot.sync(world);
       opening.update();
       journalCount?.update();
       camera.update(dt, world.player.pos.x, world.player.pos.z, liftAt(world.zone, world.player.pos.x, world.player.pos.z));
-      effects.update(dt, world);
+      effects.update(worldDt, world);
       ward.update(dt, world);
       stage.follow(world.player.pos.x, world.player.pos.z, world.zone.floorHeight + liftAt(world.zone, world.player.pos.x, world.player.pos.z), dt);
       setCutawayCompany(cutawayCompany({ x: world.player.pos.x, z: world.player.pos.z, floor: 0 }, world.monsters, (x: number, z: number): number => world.zone.floorHeight + liftAt(world.zone, x, z)));
@@ -512,13 +513,13 @@ async function start(): Promise<void> {
     }
     audio.setMuffled(insideAwakeMoment(world));
     audio.update(dt);
-    particles.update(dt);
+    particles.update(worldDt);
     hud.update(dt, transition.blocking ? 'veiled' : 'shown');
     touch.update();
     ladder?.noteLevel(world.player.level);
     if (watching === null) launch.update(world, dt, gate.queue);
     hurtVignette.show(effects.hurt);
-    if (presentNow) glitches.update(now / 1000, dt, gate.queue && hitStop <= 0 && !transition.blocking ? dt : 0);
+    if (presentNow) glitches.update(now / 1000, dt, gate.queue && !transition.blocking ? worldDt : 0);
     perf.frame(now);
     if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);

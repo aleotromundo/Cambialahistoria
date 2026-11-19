@@ -42,8 +42,8 @@ export function momentEffects(effects: Effects, deps: MomentViewDeps, renderer: 
     clickMarker(x: number, z: number, hostile: boolean): void {
       effects.clickMarker(x, z, hostile);
     },
-    takeHitStop(): number {
-      return effects.takeHitStop();
+    takeMoment(): boolean {
+      return effects.takeMoment();
     },
     setTorches(points: readonly Vector3[]): void {
       effects.setTorches(points);

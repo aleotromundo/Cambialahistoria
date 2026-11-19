@@ -36,7 +36,21 @@ import { sameFloor } from './floors.ts';
 
 export const COMBAT = {
   guardedKnockback: 0.2,
+  flingBase: 2.5,
+  flingPerOverkill: 6,
+  flingMost: 11,
 } as const;
+
+export function corpseFling(overkill: number, maxLife: number): number {
+  const share: number = maxLife > 0 ? Math.max(0, overkill) / maxLife : 0;
+  return Math.min(COMBAT.flingMost, COMBAT.flingBase + COMBAT.flingPerOverkill * share);
+}
+
+function flingCorpse(target: MonsterState, direction: ReadonlyVec2, overkill: number): void {
+  const speed: number = corpseFling(overkill, target.maxLife) * steadiness(target);
+  target.knock.x += direction.x * speed;
+  target.knock.z += direction.z * speed;
+}
 
 export type { Offence } from './types.ts';
 
@@ -291,8 +305,10 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     skill,
     burn: false,
   });
-  if (killed) kill(world, target, direction);
-  else {
+  if (killed) {
+    kill(world, target, direction);
+    if (target.kind === 'monster') flingCorpse(target, direction, amount - dealt);
+  } else {
     ignite(world, offence, target, skill, amount);
     drench(world, target, skill);
   }

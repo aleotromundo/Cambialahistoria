@@ -50,6 +50,8 @@ import { startSwap, stepSwap } from './body-swap.ts';
 import { crustBody } from './body-crust.ts';
 import type { ZoneBody } from './zone-bodies.ts';
 import { monsterKey, zoneBodies } from './zone-bodies.ts';
+import type { StrikeHolds } from './strike-holds.ts';
+import { strikeHolds } from './strike-holds.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
@@ -177,6 +179,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   const shade: ShadeMotion = { value: 0, speed: 0 };
   const shadeColor: Color = new Color();
   const soaks: Map<number, Soaking> = new Map<number, Soaking>();
+  const strikes: StrikeHolds = strikeHolds();
   const countLook: CountLook = createCountLook(scene);
   const presenceLook: PresenceLook = createPresenceLook(scene);
   const rankLook: RankLookView = createRankLook();
@@ -340,6 +343,13 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     if (actorId === world.player.id) return playerView;
     return monsters.get(actorId)?.view ?? npcs.get(actorId)?.view ?? null;
   };
+  const fell = (actorId: number, current: World): void => {
+    const fallen: MonsterState | undefined = current.monsters.find((candidate: MonsterState): boolean => candidate.id === actorId);
+    const view: ActorView | null = viewOf(actorId);
+    if (fallen?.yielded === true && view !== null) standDown(view);
+    else view?.die();
+    monsters.get(actorId)?.swap?.old.die();
+  };
 
   return {
     hero(): Object3D {
@@ -384,6 +394,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         sparesDue = null;
       }
       const floorAt = (x: number, z: number): number => heightAt(current.zone, x, z);
+      for (const id of strikes.step(dt)) fell(id, current);
       sight.refresh();
       const seen = (view: ActorView, x: number, floor: number, z: number): boolean => sight.sees(x, floor + view.height / 2, z, view.height);
       const draw = (view: ActorView, x: number, floor: number, z: number): void => {
@@ -408,7 +419,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       else if (veil !== null) shadeColor.set(veil.color);
       stepShade(shade, Math.max(shadow?.strength ?? 0, veil?.shade ?? 0), dt);
       playerView.rig.setShade(shadeColor, shade.value, true, 0);
-      playerView.sync(dt, poseOf(current.player, null), { rise: 1, floor: floorAt(current.player.pos.x, current.player.pos.z), turnRate: ACTOR.turnRate, seen: true });
+      playerView.sync(dt * strikes.rate(current.player.id), poseOf(current.player, null), { rise: 1, floor: floorAt(current.player.pos.x, current.player.pos.z), turnRate: ACTOR.turnRate, seen: true });
       for (const monster of current.monsters) {
         const found: MonsterEntry | null = entryFor(current, monster);
         if (found === null) continue;
@@ -443,13 +454,14 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         if (monster.alive) guard.keep(monster.id, entry.view.rig.root, scene, monster.def.id);
         const pose: ActorPose = monster.yielded ? stillPose(monster) : poseOf(monster, unisonOf(current, monster) === null ? null : current.time);
         const placed: SyncOptions = { rise: entry.echo === null ? turning : 1, floor, turnRate: ACTOR.turnRate, seen: seen(entry.view, monster.pos.x, floor, monster.pos.z) };
-        entry.view.sync(dt, pose, placed);
+        const held: number = dt * strikes.rate(monster.id);
+        entry.view.sync(held, pose, placed);
         if (entry.swap !== null) {
           const mix: SwapMix = stepSwap(entry.swap, dt);
           const shown: number = 1 - (entry.echo === null ? 0 : echoFade(current, monster.id));
           showBody(entry.view, entry.echo, mix.incoming * shown);
           showBody(entry.swap.old, entry.echo, mix.outgoing * shown);
-          entry.swap.old.sync(dt, pose, placed);
+          entry.swap.old.sync(held, pose, placed);
           if (mix.done) {
             entry.swap.old.dispose();
             entry.swap = null;
@@ -509,6 +521,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
     handle(events: readonly WorldEvent[], current: World): void {
       const guarded: Set<number> = new Set<number>();
       countLook.handle(events);
+      strikes.handle(events, current);
       for (const event of events) {
         switch (event.type) {
           case 'skill_start':
@@ -541,14 +554,9 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             if (played || !event.broken) guarded.add(event.monsterId);
             break;
           }
-          case 'death': {
-            const fallen: MonsterState | undefined = current.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
-            const view: ActorView | null = viewOf(event.actorId);
-            if (fallen?.yielded === true && view !== null) standDown(view);
-            else view?.die();
-            monsters.get(event.actorId)?.swap?.old.die();
+          case 'death':
+            if (event.team === 'player') fell(event.actorId, current);
             break;
-          }
           case 'unison_look':
             for (const id of event.monsterIds) viewOf(id)?.glance(event.turn);
             break;
@@ -564,6 +572,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           case 'monster_remove': {
             const entry: MonsterEntry | undefined = monsters.get(event.monsterId);
             guard.forget(event.monsterId);
+            strikes.forget(event.monsterId);
             waiting.delete(event.monsterId);
             if (entry !== undefined) {
               if (entry.echo === null) retire(entry);
@@ -576,6 +585,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             spareRound += 1;
             sparesDue = null;
             spin.clear();
+            strikes.clear();
             waiting.clear();
             for (const entry of monsters.values()) retire(entry);
             monsters.clear();

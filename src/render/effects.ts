@@ -48,6 +48,11 @@ import { createTorchFlames } from './torch-flames.ts';
 import { breaker } from './water-look.ts';
 import type { TailwindGlow } from './tailwind-glow.ts';
 import { createTailwindGlow } from './tailwind-glow.ts';
+import type { DeathBursts } from './death-bursts.ts';
+import { createDeathBursts } from './death-bursts.ts';
+import { momentousKill } from './time-moment.ts';
+import type { VolleyHit } from './volley-kick.ts';
+import { volleyKicks } from './volley-kick.ts';
 
 export const EFFECTS = {
   levelLight: 45,
@@ -80,13 +85,7 @@ export const EFFECTS = {
   lightCheckSeconds: 0.5,
   warmScale: 0.001,
   releaseSparks: 5,
-  killStop: 0.03,
-  critStop: 1.6,
-  maxStop: 0.11,
   hurtShake: 0.34,
-  deathShake: 0.6,
-  punch: 0.16,
-  punchShake: 0.12,
   phaseRing: 9,
   phaseShake: 0.5,
   defeatRing: 12,
@@ -124,7 +123,7 @@ export interface Effects {
   handle(events: readonly WorldEvent[], world: World): void;
   update(dt: number, world: World): void;
   clickMarker(x: number, z: number, hostile: boolean): void;
-  takeHitStop(): number;
+  takeMoment(): boolean;
   setTorches(points: readonly Vector3[]): void;
   clear(): void;
   showKeepers(): () => void;
@@ -162,7 +161,7 @@ function easeOut(t: number): number {
 export function createEffects(scene: Scene, particles: ParticleSystem, camera: IsoCamera, onFlash: (power: number) => void, streakSoft: () => boolean): Effects {
   const transients: Transient[] = [];
   const colors: Map<string, Color> = new Map<string, Color>();
-  let hitStop: number = 0;
+  let momentous: boolean = false;
   let wash: HurtWash = CALM_WASH;
   const dashTrails: DashTrails = createDashTrails(scene, particles);
 
@@ -370,7 +369,6 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     if (event.targetTeam === 'player') {
       wash = washHit(wash);
       camera.addTrauma(Math.max(EFFECTS.hurtShake, event.skill.shake));
-      hitStop = Math.min(EFFECTS.maxStop, Math.max(hitStop, event.skill.hitStop));
       if (event.skill.root > 0 && !event.killed) {
         mark(event.pos.x, event.pos.z, EFFECTS.rootRing, ROOT, event.skill.root);
         spray(event.pos.x, 0.3, event.pos.z, ROOT, EFFECTS.rootSpray, { speed: { min: 0.3, max: 1.4 }, lift: { min: 0.2, max: 1.6 }, life: { min: 0.4, max: event.skill.root }, gravity: 1, size: { min: 0.3, max: 0.7 } });
@@ -383,23 +381,21 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     const count: number = event.crit ? 22 : 11;
     spray(event.pos.x, 1.25, event.pos.z, BONE, count, { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.1, speed: { min: 4, max: event.crit ? 15 : 10 }, lift: { min: 0.5, max: 6 } });
     spray(event.pos.x, 1.25, event.pos.z, skillColor, Math.ceil(count / 2), { dirX: event.direction.x, dirZ: event.direction.z, spread: 1.8, speed: { min: 2, max: 8 }, size: { min: 0.3, max: 0.8 }, life: { min: 0.15, max: 0.4 } });
-    hitStop = Math.min(EFFECTS.maxStop, Math.max(hitStop, event.skill.hitStop * (event.crit ? EFFECTS.critStop : 1) + (event.killed && event.skill.hitStop > 0 ? EFFECTS.killStop : 0)));
-    camera.punch(event.direction.x, event.direction.z, EFFECTS.punch * (event.crit ? 2 : 1) * Math.min(1, event.skill.shake / EFFECTS.punchShake));
     if (event.crit) flashLight(event.pos.x, EFFECTS.critHeight, event.pos.z, skillColor, EFFECTS.critLight);
   };
 
-  const onDeath = (event: Extract<WorldEvent, { type: 'death' }>, world: World): void => {
-    cancelOwned(event.actorId);
-    if (event.team === 'player') {
-      camera.addTrauma(EFFECTS.deathShake);
-      spray(event.pos.x, 1.2, event.pos.z, BLOOD, 50, { speed: { min: 2, max: 9 }, lift: { min: 2, max: 9 }, life: { min: 0.4, max: 1 } });
-      return;
-    }
-    const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.actorId);
-    const tint: Color = monster === undefined ? BONE : colorOf(monster.def.color);
-    spray(event.pos.x, 1.1, event.pos.z, BONE, 26, { dirX: event.direction.x, dirZ: event.direction.z, spread: 2.4, speed: { min: 3, max: 12 }, lift: { min: 2, max: 9 }, life: { min: 0.4, max: 0.95 }, size: { min: 0.3, max: 0.7 } });
-    spray(event.pos.x, 1.4, event.pos.z, tint, 18, { speed: { min: 0.5, max: 3 }, lift: { min: 2, max: 7 }, life: { min: 0.5, max: 1.1 }, gravity: -2, size: { min: 0.35, max: 0.9 } });
-    ring(event.pos.x, event.pos.z, 2.2, tint, 0.3);
+  const falls: DeathBursts = createDeathBursts({ spray, ring, flashLight, colorOf, trauma: (amount: number): void => camera.addTrauma(amount), bone: BONE, blood: BLOOD });
+
+  const noteMoment = (event: Extract<WorldEvent, { type: 'damage' }>, world: World): void => {
+    if (!event.killed || event.targetTeam !== 'monster') return;
+    const monster: MonsterState | undefined = world.monsters.find((candidate: MonsterState): boolean => candidate.id === event.targetId);
+    if (monster !== undefined && momentousKill(monster.def, { crit: event.crit, amount: event.amount, maxLife: monster.maxLife })) momentous = true;
+  };
+
+  const kickOnce = (events: readonly WorldEvent[]): void => {
+    const hits: VolleyHit[] = [];
+    for (const event of events) if (event.type === 'damage' && !event.burn && event.targetTeam !== 'player') hits.push({ key: `${event.sourceId}:${event.skill.id}`, dirX: event.direction.x, dirZ: event.direction.z, crit: event.crit, shake: event.skill.shake });
+    for (const kick of volleyKicks(hits)) camera.punch(kick.dirX, kick.dirZ, kick.amount);
   };
 
   const onHazard = (event: Extract<WorldEvent, { type: 'hazard' }>): void => {
@@ -436,9 +432,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     get hurt(): number {
       return wash.level;
     },
-    takeHitStop(): number {
-      const pending: number = hitStop;
-      hitStop = 0;
+    takeMoment(): boolean {
+      const pending: boolean = momentous;
+      momentous = false;
       return pending;
     },
     clickMarker(x: number, z: number, hostile: boolean): void {
@@ -456,6 +452,8 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       if (!hostile) spray(x, 0.12, z, DUST, 5, { speed: { min: 0.3, max: 1.2 }, lift: { min: 0.3, max: 1.1 }, life: { min: 0.3, max: 0.6 }, size: { min: 0.5, max: 1.1 }, gravity: 1.5, drag: 3 });
     },
     handle(events: readonly WorldEvent[], world: World): void {
+      falls.handle(events, world);
+      kickOnce(events);
       for (const event of events) {
         fires.take(event);
         storm.handle(event);
@@ -479,10 +477,11 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             onGuarded(event);
             break;
           case 'damage':
+            noteMoment(event, world);
             if (!event.burn) onDamage(event);
             break;
           case 'death':
-            onDeath(event, world);
+            cancelOwned(event.actorId);
             streakGlow.handle(event, world);
             break;
           case 'tailwind_rise':
@@ -523,6 +522,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             ring(boss.pos.x, boss.pos.z, EFFECTS.defeatRing, colorOf(boss.def.color), EFFECTS.waveTime);
             spray(boss.pos.x, 1.4, boss.pos.z, colorOf(boss.def.color), EFFECTS.defeatSparks, { speed: { min: 2, max: 11 }, lift: { min: 2, max: 10 }, life: { min: 0.6, max: 1.6 }, gravity: 2.5, jitter: 0.9 });
             camera.addTrauma(EFFECTS.defeatShake);
+            momentous = true;
             break;
           }
           case 'boss_phase': {
@@ -619,6 +619,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
       flashes.clear();
       kit.clear();
       dashTrails.clear();
+      falls.clear();
       storm.clear();
       waves.clear();
       fires.clear();
@@ -644,6 +645,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
         if (transient !== undefined && transient.age >= transient.duration) transients.splice(index, 1);
       }
       kit.update(dt);
+      falls.update(dt);
       shots.update(dt, world);
       followLights(dt);
       if (warmFrames > 0) warmFrames -= 1;

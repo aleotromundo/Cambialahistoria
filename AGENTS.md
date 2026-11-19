@@ -119,7 +119,7 @@ This repository is meant to become public, so every file in it must be redistrib
 
 ## Game feel
 
-Input must answer on the same frame. A hit that lands shows it: flash, knockback, a damage number, particles, and for heavy hits a short hit-stop and screen shake. When you add an attack, a skill or a monster, give it all of these through the skill's data (`knockback`, `stagger`, `shake`, `hitStop`, `vfx`).
+Input must answer on the same frame. A hit that lands shows it: flash, knockback, a damage number, particles, and for heavy hits a short hit-stop and screen shake. A hit-stop holds only the struck body (and the hero's swing on a heavy melee hit), never the whole world; the only world-wide slow-down is a rare eased dip on a boss, a pack leader or a huge crit, with a cooldown (`src/render/time-moment.ts`). The camera kicks once per volley, not once per monster. When you add an attack, a skill or a monster, give it all of these through the skill's data (`knockback`, `stagger`, `shake`, `hitStop`, `vfx`).
 
 ## Effects on the ground
 
