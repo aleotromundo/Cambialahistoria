@@ -6,7 +6,8 @@ import type { Side } from './factions.ts';
 import { regardOf, sideOf } from './factions.ts';
 import { sameFloor } from './floors.ts';
 import { restoreLife } from './mend.ts';
-import type { Actor, World } from './types.ts';
+import { findHero } from './heroes.ts';
+import type { Actor, PlayerState, World } from './types.ts';
 
 export interface MendPulse {
   readonly skill: SkillDef;
@@ -17,13 +18,15 @@ export interface MendPulse {
 
 export function isAlly(world: World, side: Side, target: Actor): boolean {
   if (!target.alive || (target.kind === 'monster' && target.sealed)) return false;
+  const healer: PlayerState | null = side.faction === null && target.kind === 'player' ? findHero(world, side.sourceId) : null;
+  if (healer !== null && target.kind === 'player') return healer.party === target.party;
   const from: string = side.faction ?? PLAYER_SIDE;
   const toward: string = sideOf(target);
   return from === toward || regardOf(world.content, toward, from) === 'friendly' || regardOf(world.content, from, toward) === 'friendly';
 }
 
 export function alliesOf(world: World, side: Side): Actor[] {
-  return [world.player, ...world.monsters].filter((actor: Actor): boolean => isAlly(world, side, actor));
+  return [...world.heroes, ...world.monsters].filter((actor: Actor): boolean => isAlly(world, side, actor));
 }
 
 export function mendAmount(mend: SkillMend, target: Actor): number {

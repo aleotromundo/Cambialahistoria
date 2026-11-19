@@ -53,6 +53,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
   const inventory: (ItemInstance | null)[] = Array.from({ length: content.player.inventorySize }, (_: unknown, index: number): ItemInstance | null => save?.inventory[index] ?? null);
   return {
     kind: 'player',
+    party: 0,
     hero: heroOf(content, save === null ? chosen : save.hero).id,
     wielding: heldGroup(content, equipped),
     id: PLAYER_ID,

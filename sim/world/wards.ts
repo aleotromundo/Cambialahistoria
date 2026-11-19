@@ -2,7 +2,8 @@ import type { WardDef, WardSide } from '../content/scene-types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import type { Side } from './factions.ts';
-import type { Actor, MonsterState, NpcState, World } from './types.ts';
+import { findHero } from './heroes.ts';
+import type { Actor, MonsterState, NpcState, PlayerState, World } from './types.ts';
 
 export const WARDS = {
   rest: 1e-6,
@@ -64,7 +65,8 @@ export function wardedFrom(world: World, monster: MonsterState, target: Actor): 
 }
 
 function sourceAt(world: World, sourceId: number): Vec2 | null {
-  if (sourceId === world.player.id) return world.player.pos;
+  const hero: PlayerState | null = findHero(world, sourceId);
+  if (hero !== null) return hero.pos;
   return world.monsters.find((monster: MonsterState): boolean => monster.id === sourceId)?.pos ?? null;
 }
 
@@ -121,7 +123,7 @@ function pushOut(ward: WardState, body: Actor): void {
 
 export function keepOutOfWards(world: World): void {
   for (const ward of world.wards.filter(standing)) {
-    for (const body of [world.player, ...world.monsters]) {
+    for (const body of [...world.heroes, ...world.monsters]) {
       if (body.alive && !admits(ward, body)) pushOut(ward, body);
     }
   }

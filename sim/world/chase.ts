@@ -4,7 +4,7 @@ import { distance } from '../math.ts';
 import type { Blocker, GridStamp } from '../nav/grid.ts';
 import { lineWalkable, liftStamp, stampBlockers } from '../nav/grid.ts';
 import { findPath } from '../nav/path.ts';
-import { playerMayStrike } from './factions.ts';
+import { mayStrike } from './factions.ts';
 import type { Actor, ChaseState, MonsterState, PlayerState, World } from './types.ts';
 
 export const CHASE = {
@@ -89,7 +89,7 @@ export function blockerInReach(world: World, player: PlayerState, target: Actor,
   let best: MonsterState | null = null;
   let bestGap: number = Infinity;
   for (const monster of world.monsters) {
-    if (monster.id === target.id || !playerMayStrike(world, monster)) continue;
+    if (monster.id === target.id || !mayStrike(world, { sourceId: player.id, faction: null }, monster)) continue;
     const gap: number = distance(player.pos, monster.pos) - monster.radius;
     const ahead: boolean = aheadOf(player.pos, heading, monster.pos) || aheadOf(player.pos, target.pos, monster.pos);
     if (gap > skill.engageRange || !ahead || gap >= bestGap) continue;

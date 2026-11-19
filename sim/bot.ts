@@ -152,7 +152,7 @@ function tick(bot: Bot, commands: readonly Command[]): WorldEvent[] {
   }
   for (const event of events) {
     if (event.type === 'damage' && (event.sourceId === bot.focus || event.targetId === bot.focus)) bot.progressAt = bot.world.time;
-    if (event.type === 'death' && event.team === 'player') bot.deaths += 1;
+    if (event.type === 'death' && event.actorId === player.id) bot.deaths += 1;
     if (event.type === 'pickup' || event.type === 'level_up') bot.bagChanged = true;
   }
   if (bot.bagChanged) revealCarried(bot.world);

@@ -127,6 +127,6 @@ export function stepDeath(world: World, dt: number): void {
   player.invulnerable = Math.max(0, player.invulnerable - dt);
   if (!player.alive && world.death !== null) world.death.elapsed += dt;
   for (const event of world.events) {
-    if (event.type === 'damage' && event.killed && event.targetTeam === 'player') recordDeath(world, event);
+    if (event.type === 'damage' && event.killed && event.targetId === player.id) recordDeath(world, event);
   }
 }

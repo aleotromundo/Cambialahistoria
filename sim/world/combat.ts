@@ -92,7 +92,7 @@ export type TargetFilter = (actor: Actor) => boolean;
 
 export function targetsWhere(world: World, offence: Side, near: TargetFilter): Actor[] {
   const found: Actor[] = [];
-  if (near(world.player) && strikable(world, offence, world.player)) found.push(world.player);
+  for (const hero of world.heroes) if (near(hero) && strikable(world, offence, hero)) found.push(hero);
   for (const monster of world.monsters) if (near(monster) && strikable(world, offence, monster)) found.push(monster);
   return found;
 }
@@ -353,6 +353,11 @@ function powersOnHit(world: World, hero: PlayerState, target: Actor, skill: Skil
   if (hit || slain) refreshHero(world, hero);
 }
 
+function heroBurst(world: World, offence: Offence, burst: SkillDef): SkillDef {
+  const hero: PlayerState = findHero(world, offence.sourceId) ?? world.player;
+  return resolveSkill(world.content, burst, hero.allocated, [], [], hero.wielding, hero.changes);
+}
+
 function burstBrand(world: World, target: Actor, brand: BrandState): void {
   const delivery = brand.burst.delivery;
   if (delivery.type !== 'nova') return;
@@ -376,6 +381,6 @@ function brandStrike(world: World, offence: Offence, target: Actor, skill: Skill
   if (skill.brand === null || !target.alive) return;
   const burst: SkillDef | undefined = world.content.skills.get(skill.brand.burst);
   if (burst === undefined) return;
-  target.brand = { source: skill.id, burst: offence.team === 'player' ? resolveSkill(world.content, burst, world.player.allocated, [], [], world.player.wielding, world.player.changes) : burst, offence, timeLeft: skill.brand.duration };
+  target.brand = { source: skill.id, burst: offence.team === 'player' ? heroBurst(world, offence, burst) : burst, offence, timeLeft: skill.brand.duration };
   world.events.push({ type: 'brand', targetId: target.id, skill, pos: { x: target.pos.x, z: target.pos.z }, burst: false });
 }

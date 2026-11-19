@@ -1,4 +1,4 @@
-import type { Actor, Command, PlayerState, World } from './types.ts';
+import type { Actor, Command, Offence, PlayerState, World } from './types.ts';
 
 export function actorsOf(world: World): Actor[] {
   return [...world.heroes, ...world.monsters];
@@ -14,4 +14,15 @@ export function isPrimary(world: World, actor: Actor): boolean {
 
 export function heroFor(world: World, command: Command): PlayerState | null {
   return command.by === undefined ? world.player : findHero(world, command.by);
+}
+
+export function partyOf(world: World, sourceId: number): number | null {
+  return findHero(world, sourceId)?.party ?? null;
+}
+
+export function sameSide(world: World, offence: Offence, actor: Actor): boolean {
+  if (offence.team !== actor.kind) return false;
+  if (actor.kind !== 'player') return true;
+  const party: number | null = partyOf(world, offence.sourceId);
+  return party === null || party === actor.party;
 }

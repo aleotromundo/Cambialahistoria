@@ -136,7 +136,7 @@ export function topRank(world: World, ids: readonly number[]): string {
 function eventMeasures(world: World, meter: Meter, event: WorldEvent, t: number): Measurement[] {
   if (event.type === 'monster_spawn') nameOf(world, meter, event.monsterId);
   if (event.type === 'damage') return hitMeasures(world, meter, event, t);
-  if (event.type === 'death' && event.team === 'player') return [{ kind: 'death', t, zone: world.zone.id, foe: world.death?.killer ?? 'unknown', skill: world.death?.skill ?? 'unknown', xpLost: world.death?.xpLost ?? 0 }];
+  if (event.type === 'death' && event.actorId === world.player.id) return [{ kind: 'death', t, zone: world.zone.id, foe: world.death?.killer ?? 'unknown', skill: world.death?.skill ?? 'unknown', xpLost: world.death?.xpLost ?? 0 }];
   if (event.type === 'xp') return [{ kind: 'xp', t, amount: event.amount }];
   if (event.type === 'pickup' && event.ground.content.kind === 'item') meter.owned.add(event.ground.content.item.uid);
   if (event.type === 'pickup' && event.ground.content.kind === 'gold') return [{ kind: 'gold', t, amount: event.ground.content.amount }];

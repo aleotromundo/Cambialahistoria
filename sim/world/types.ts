@@ -167,6 +167,7 @@ export type Intent = IdleIntent | MoveIntent | AttackIntent | PickupIntent | Tra
 
 export interface PlayerState extends ActorState {
   readonly kind: 'player';
+  party: number;
   hero: string;
   wielding: string | null;
   mana: number;
