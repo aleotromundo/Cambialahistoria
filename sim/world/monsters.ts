@@ -327,10 +327,19 @@ function heldFoe(world: World, foeId: number | null): Actor | undefined {
   return undefined;
 }
 
-function foeOf(world: World, monster: MonsterState): Actor | null {
+export function pickFoe(world: World, monster: MonsterState): Actor | null {
   const held: Actor | undefined = heldFoe(world, monster.foeId);
   if (held !== undefined && strikes(world, monster, held)) return held;
-  monster.foeId = null;
+  return nearestFoe(world, monster);
+}
+
+function foeOf(world: World, monster: MonsterState): Actor | null {
+  const foe: Actor | null = pickFoe(world, monster);
+  if (foe === null || foe.id !== monster.foeId) monster.foeId = null;
+  return foe;
+}
+
+function nearestFoe(world: World, monster: MonsterState): Actor | null {
   const side: Side = sideOfMonster(monster);
   let best: Actor | null = strikes(world, monster, world.player, side) ? world.player : null;
   let bestGap: number = best === null ? Infinity : distance(monster.pos, best.pos);

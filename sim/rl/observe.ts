@@ -7,13 +7,15 @@ import { blockedReason } from '../world/skills.ts';
 import type { NpcState } from '../world/npc-types.ts';
 import type { AreaState, FlaskState, GroundItem, HazardState, MonsterState, PlayerState, ProjectileState, World } from '../world/types.ts';
 import type { Action, EntityKind, Situation } from './contract.ts';
-import { BEHAVIOUR_ORDER, FLASK_FEATURES, LOOT_FEATURES, categoryIndex, damageIndex, DELIVERY_ORDER, ENTITY_KINDS, LAYOUT, MOVE_CHOICES, PICKUP_CHOICE, RL, SITUATIONS, SKILL_CHOICES, USE_CHOICES } from './contract.ts';
+import { BEHAVIOUR_ORDER, FLASK_FEATURES, FOE_FEATURES, LOOT_FEATURES, STATUS_FEATURES, categoryIndex, damageIndex, DELIVERY_ORDER, ENTITY_KINDS, LAYOUT, MOVE_CHOICES, PICKUP_CHOICE, RL, SITUATIONS, SKILL_CHOICES, USE_CHOICES } from './contract.ts';
 import { dangerAround } from './danger.ts';
 import type { Hit, Recall, Sighting } from './recall.ts';
 import { recentAmount } from './recall.ts';
 import type { PickupRule } from './loot.ts';
 import { bagFree, fits, nearestWanted, rarityShare, ruleShare, wanted } from './loot.ts';
 import { skillNumbers } from './skill-numbers.ts';
+import type { Statuses } from './status.ts';
+import { statusesOf, targetedBy, targetingHero } from './status.ts';
 import type { SkillNumbers } from './skill-numbers.ts';
 
 export interface ObserveContext {
@@ -153,6 +155,8 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   writeRecent(writer, world, context.recall, view);
   put(writer, ruleShare(world.content, context.pickup));
   put(writer, bagFree(world));
+  writeStatuses(writer, statusesOf(world, player));
+  put(writer, targetedBy(world) / RL.countScale);
   blank(writer, RL.spareSelf);
 }
 
@@ -326,6 +330,32 @@ function writeLoot(writer: Writer, world: World, seen: Seen, rule: PickupRule): 
   flag(writer, fits(world, ground));
 }
 
+function writeStatuses(writer: Writer, statuses: Statuses): void {
+  put(writer, statuses.burning);
+  put(writer, statuses.branded);
+  put(writer, statuses.slowed);
+  put(writer, statuses.weakened);
+}
+
+function writeFoe(writer: Writer, world: World, seen: Seen): void {
+  if (seen.type !== 'monster') {
+    blank(writer, STATUS_FEATURES.length + FOE_FEATURES.length);
+    return;
+  }
+  const monster: MonsterState = seen.monster;
+  writeStatuses(writer, statusesOf(world, monster));
+  flag(writer, targetingHero(world, monster));
+  put(writer, monster.root);
+  flag(writer, monster.def.rank?.leader === true);
+  put(writer, monster.def.mods.length / RL.countScale);
+  flag(writer, monster.def.deathSkill !== null);
+  flag(writer, monster.def.summon !== null);
+  put(writer, monster.def.regen * RL.timeScale);
+  flag(writer, monster.def.guard !== null);
+  put(writer, monster.recovery.guard);
+  put(writer, monster.recovery.strain);
+}
+
 function kindOf(seen: Seen): EntityKind {
   return seen.type === 'remembered' ? 'monster' : seen.type;
 }
@@ -362,6 +392,7 @@ function writeEntity(writer: Writer, world: World, seen: Seen | undefined, rule:
   put(writer, numbers.timeLeft);
   flag(writer, seen.type === 'remembered');
   writeLoot(writer, world, seen, rule);
+  writeFoe(writer, world, seen);
   oneHot(writer, Object.keys(BEHAVIOUR_ORDER).length, numbers.behaviour);
   blank(writer, RL.spareEntity);
 }

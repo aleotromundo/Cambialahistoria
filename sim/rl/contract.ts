@@ -14,7 +14,7 @@ export const BEHAVIOUR_ORDER: Readonly<Record<MonsterBehaviour['type'], number>>
 export const BEHAVIOUR_NAMES: readonly MonsterBehaviour['type'][] = ['chaser', 'ranged', 'stalker', 'swarm', 'ambush', 'fixed'];
 
 export const RL = {
-  version: 4,
+  version: 5,
   tick: 1 / 30,
   ticksPerDecision: 4,
   actionParts: 4,
@@ -57,6 +57,8 @@ function each(prefix: string, names: readonly string[]): string[] {
 }
 
 export const LOOT_FEATURES: readonly string[] = ['rarity', 'gold_amount', 'wanted', 'fits'];
+export const STATUS_FEATURES: readonly string[] = ['burning', 'branded', 'slowed', 'weakened'];
+export const FOE_FEATURES: readonly string[] = ['targeting_me', 'rooted', 'leader', 'mods', 'death_burst', 'summons', 'regen', 'guarded', 'recovering', 'strain'];
 
 export const FLASK_FEATURES: readonly string[] = ['present', 'charges', 'ready', 'life', 'mana'];
 
@@ -117,6 +119,8 @@ export const SELF_FEATURES: readonly string[] = [
   'hit_unseen',
   'pickup_rule',
   'bag_free',
+  ...STATUS_FEATURES,
+  'targeted_by',
   ...spare('', RL.spareSelf),
 ];
 
@@ -172,6 +176,8 @@ export const ENTITY_FEATURES: readonly string[] = [
   'time_left',
   'remembered',
   ...LOOT_FEATURES,
+  ...STATUS_FEATURES,
+  ...FOE_FEATURES,
   ...each('behaviour_', BEHAVIOUR_NAMES),
   ...spare('', RL.spareEntity),
 ];
