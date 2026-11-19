@@ -18,7 +18,7 @@ import { recallEvents } from './recall.ts';
 const CONTENT: Content = loadContent();
 const SKILL: SkillDef = must(CONTENT.skills.get('cleave'), 'cleave');
 const CROWD = { foes: 14, gold: 30, away: 9, moved: 4, later: 0.1 } as const;
-const NOBODY: View = { seen: [], targets: [] };
+const NOBODY: View = { seen: [], targets: [], pickup: null };
 
 function selfValue(seen: Observation, name: string): number {
   return seen.obs[SELF_FEATURES.indexOf(name)] ?? Number.NaN;
@@ -46,6 +46,14 @@ void test('a recent hit shows as life lost and a fresh hit, and fades with time'
   const later: Observation = arenaObservation(arena);
   assert.equal(selfValue(later, 'life_lost_recent'), 0);
   assert.ok(Math.abs(selfValue(later, 'since_hit') - (RL.recentWindow + CROWD.later) / RL.timeScale) < 1e-6);
+});
+
+void test('a hit from a foe that has since died is not an unseen attacker', (): void => {
+  const arena: Arena = createArena(CONTENT, { seed: 37, jitter: 0, waves: 1 });
+  const foe: MonsterState = must(arena.world.monsters[0], 'a foe');
+  recallEvents(arena.recall, arena.world, [struck(arena.world, foe.id, 5)]);
+  foe.alive = false;
+  assert.equal(selfValue(arenaObservation(arena), 'hit_unseen'), 0);
 });
 
 void test('burning ground is not an unseen attacker', (): void => {

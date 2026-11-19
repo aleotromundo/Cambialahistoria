@@ -5,7 +5,6 @@ import type { Action } from './contract.ts';
 import { PICKUP_CHOICE, RL } from './contract.ts';
 import { moveBucket, moveDirection } from './moves.ts';
 import type { View } from './observe.ts';
-import { nearestGround } from './observe.ts';
 import { movesHero, skillNumbers } from './skill-numbers.ts';
 
 export const ACT = {
@@ -38,7 +37,7 @@ export function commandsFor(world: World, action: Action, view: View): Command[]
   const skill: SkillDef | null = slot >= 0 ? (player.skills[slot] ?? null) : null;
   const direction: Vec2 | null = moveDirection(action.move);
   const target: MonsterState | null = view.targets[action.target] ?? view.targets[0] ?? null;
-  const ground: GroundItem | null = action.use === PICKUP_CHOICE ? nearestGround(world) : null;
+  const ground: GroundItem | null = action.use === PICKUP_CHOICE ? view.pickup : null;
   const kept: number | null = ground === null ? slot : null;
   const out: Command[] = player.held.filter((held: number): boolean => held !== kept).map((held: number): Command => ({ type: 'hold', slot: held, down: false }));
   if (ground !== null) out.push({ type: 'pickup', groundId: ground.id });

@@ -19,7 +19,7 @@ void test('an empty arena holds no danger in any direction', (): void => {
 });
 
 void test('a blow winding up on the hero shows as danger where the hero stands', (): void => {
-  const arena: Arena = createArena(CONTENT, { seed: 5, jitter: 0, waves: 1 });
+  const arena: Arena = createArena(CONTENT, { seed: 6, jitter: 0, waves: 1 });
   let warned: boolean = false;
   for (let tick: number = 0; tick < WAIT.ticks && arena.world.player.alive && !warned; tick += 1) {
     stepWorld(arena.world, [], RL.tick);

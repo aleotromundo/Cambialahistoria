@@ -10,7 +10,12 @@ import { fightZones } from '../world/moments.ts';
 import { spawnPackNear } from '../world/monsters.ts';
 import { stepWorld } from '../world/step.ts';
 import { enterZone } from '../world/zones.ts';
-import type { Command, GroundItem, MonsterState, World, WorldEvent } from '../world/types.ts';
+import type { Command, GroundItem, ItemInstance, MonsterState, World, WorldEvent } from '../world/types.ts';
+import { dropOnGround } from '../world/ground.ts';
+import { rollItem } from '../items.ts';
+import type { RarityDef } from '../content/item-types.ts';
+import type { PickupRule } from './loot.ts';
+import { rollRule, wantedLeft, worth } from './loot.ts';
 import type { BenchHero } from '../world/dev-commands.ts';
 import { RL } from './contract.ts';
 import type { Observation, ObserveContext } from './observe.ts';
@@ -42,6 +47,8 @@ export const ARENA = {
   rollSlot: 5,
   benchSeed: 7919,
   lootTime: 5,
+  drops: { min: 0, max: 3 },
+  dropReach: { min: 2, max: 6 },
 } as const;
 
 export type ArenaOutcome = 'running' | 'won' | 'died' | 'timeout';
@@ -64,6 +71,7 @@ export interface Arena {
   nextWaveAt: number | null;
   clearedAt: number | null;
   readonly recall: Recall;
+  readonly pickup: PickupRule;
   outcome: ArenaOutcome;
   total: number;
   decisions: number;
@@ -192,7 +200,7 @@ export function createArena(content: Content, options: ArenaOptions): Arena {
   world.encounters = [];
   world.packReturns = [];
   stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
-  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), outcome: 'running', total: 0, decisions: 0 };
+  const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), pickup: rollRule(played, rng), outcome: 'running', total: 0, decisions: 0 };
   spawnWave(arena);
   return arena;
 }
@@ -206,8 +214,19 @@ function calm(arena: Arena): boolean {
   return !arena.world.monsters.some((monster: MonsterState): boolean => hostileMonster(arena.world, monster) && Math.hypot(monster.pos.x - from.x, monster.pos.z - from.z) <= RL.nearReach);
 }
 
-function goldLeft(world: World): boolean {
-  return world.ground.some((ground: GroundItem): boolean => ground.content.kind === 'gold');
+function scatterLoot(arena: Arena): void {
+  const world: World = arena.world;
+  const rng: Rng = arena.rng;
+  const count: number = rng.int(ARENA.drops.min, ARENA.drops.max);
+  for (let drop: number = 0; drop < count; drop += 1) {
+    const rarity: RarityDef | null = pick(rng, world.content.rarities);
+    const item: ItemInstance | null = rarity === null ? null : rollItem(world.content, rng, world.nextItemUid, world.player.level, { base: null, rarity: rarity.id, floor: null, zone: null });
+    if (item === null) continue;
+    world.nextItemUid += 1;
+    const angle: number = rng.range(0, Math.PI * 2);
+    const reach: number = rng.range(ARENA.dropReach.min, ARENA.dropReach.max);
+    dropOnGround(world, { x: world.player.pos.x + Math.cos(angle) * reach, z: world.player.pos.z + Math.sin(angle) * reach }, { kind: 'item', item });
+  }
 }
 
 export function arenaRunning(arena: Arena): boolean {
@@ -215,7 +234,7 @@ export function arenaRunning(arena: Arena): boolean {
 }
 
 export function arenaContext(arena: Arena): ObserveContext {
-  return { situation: 'arena', objective: null, timeLeft: Math.max(0, ARENA.timeLimit - (arena.world.time - arena.start)), progress: arena.wave / Math.max(1, arena.options.waves), recall: arena.recall };
+  return { situation: 'arena', objective: null, timeLeft: Math.max(0, ARENA.timeLimit - (arena.world.time - arena.start)), progress: arena.wave / Math.max(1, arena.options.waves), recall: arena.recall, pickup: arena.pickup };
 }
 
 export function arenaObservation(arena: Arena): Observation {
@@ -234,18 +253,19 @@ export function afterTick(arena: Arena, events: readonly WorldEvent[]): number {
   }
   const lifeOf = (id: number): number => arena.lives.get(id) ?? world.monsters.find((monster: MonsterState): boolean => monster.id === id)?.maxLife ?? world.player.maxLife;
   recallEvents(arena.recall, world, events);
-  let reward: number = rewardFor(events, { playerId: world.player.id, playerMaxLife: world.player.maxLife, lifeOf, calm: calm(arena) }, arena.tally);
+  let reward: number = rewardFor(events, { playerId: world.player.id, playerMaxLife: world.player.maxLife, lifeOf, calm: calm(arena), worth: (ground: GroundItem): number => worth(world.content, arena.pickup, ground) }, arena.tally);
   if (!world.player.alive || arena.tally.deaths > 0) arena.outcome = 'died';
   else if (arena.clearedAt !== null) {
-    if (world.time - arena.clearedAt >= ARENA.lootTime || !goldLeft(world)) arena.outcome = 'won';
+    if (world.time - arena.clearedAt >= ARENA.lootTime || !wantedLeft(world, arena.pickup)) arena.outcome = 'won';
   }
   else if (foesLeft(arena) === 0 && arena.nextWaveAt === null) {
     reward += REWARD.wave;
     arena.tally.waves += 1;
+    scatterLoot(arena);
     if (arena.wave >= arena.options.waves) {
       reward += REWARD.win;
       arena.clearedAt = world.time;
-      if (!goldLeft(world)) arena.outcome = 'won';
+      if (!wantedLeft(world, arena.pickup)) arena.outcome = 'won';
     }
     else arena.nextWaveAt = world.time + ARENA.waveGap;
   }

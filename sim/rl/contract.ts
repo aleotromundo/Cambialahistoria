@@ -14,7 +14,7 @@ export const BEHAVIOUR_ORDER: Readonly<Record<MonsterBehaviour['type'], number>>
 export const BEHAVIOUR_NAMES: readonly MonsterBehaviour['type'][] = ['chaser', 'ranged', 'stalker', 'swarm', 'ambush', 'fixed'];
 
 export const RL = {
-  version: 3,
+  version: 4,
   tick: 1 / 30,
   ticksPerDecision: 4,
   actionParts: 4,
@@ -38,6 +38,7 @@ export const RL = {
   countScale: 10,
   nearReach: 6,
   pickupReach: 12,
+  goldScale: 10,
   dangerSteps: [1, 2.5],
   recentWindow: 1,
   memoryWindow: 5,
@@ -54,6 +55,8 @@ function spare(prefix: string, count: number): string[] {
 function each(prefix: string, names: readonly string[]): string[] {
   return names.map((name: string): string => `${prefix}${name}`);
 }
+
+export const LOOT_FEATURES: readonly string[] = ['rarity', 'gold_amount', 'wanted', 'fits'];
 
 export const FLASK_FEATURES: readonly string[] = ['present', 'charges', 'ready', 'life', 'mana'];
 
@@ -112,6 +115,8 @@ export const SELF_FEATURES: readonly string[] = [
   'dealt_recent',
   'since_hit',
   'hit_unseen',
+  'pickup_rule',
+  'bag_free',
   ...spare('', RL.spareSelf),
 ];
 
@@ -166,6 +171,7 @@ export const ENTITY_FEATURES: readonly string[] = [
   'speed',
   'time_left',
   'remembered',
+  ...LOOT_FEATURES,
   ...each('behaviour_', BEHAVIOUR_NAMES),
   ...spare('', RL.spareEntity),
 ];

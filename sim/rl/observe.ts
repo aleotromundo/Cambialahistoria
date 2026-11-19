@@ -2,16 +2,17 @@ import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { DAMAGE_TYPES, SKILL_CATEGORIES } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
-import { roomFor } from '../stacks.ts';
 import { playerMayStrike } from '../world/factions.ts';
 import { blockedReason } from '../world/skills.ts';
 import type { NpcState } from '../world/npc-types.ts';
 import type { AreaState, FlaskState, GroundItem, HazardState, MonsterState, PlayerState, ProjectileState, World } from '../world/types.ts';
 import type { Action, EntityKind, Situation } from './contract.ts';
-import { BEHAVIOUR_ORDER, FLASK_FEATURES, categoryIndex, damageIndex, DELIVERY_ORDER, ENTITY_KINDS, LAYOUT, MOVE_CHOICES, PICKUP_CHOICE, RL, SITUATIONS, SKILL_CHOICES, USE_CHOICES } from './contract.ts';
+import { BEHAVIOUR_ORDER, FLASK_FEATURES, LOOT_FEATURES, categoryIndex, damageIndex, DELIVERY_ORDER, ENTITY_KINDS, LAYOUT, MOVE_CHOICES, PICKUP_CHOICE, RL, SITUATIONS, SKILL_CHOICES, USE_CHOICES } from './contract.ts';
 import { dangerAround } from './danger.ts';
 import type { Hit, Recall, Sighting } from './recall.ts';
 import { recentAmount } from './recall.ts';
+import type { PickupRule } from './loot.ts';
+import { bagFree, fits, nearestWanted, rarityShare, ruleShare, wanted } from './loot.ts';
 import { skillNumbers } from './skill-numbers.ts';
 import type { SkillNumbers } from './skill-numbers.ts';
 
@@ -21,6 +22,7 @@ export interface ObserveContext {
   readonly timeLeft: number;
   readonly progress: number;
   readonly recall: Recall;
+  readonly pickup: PickupRule;
 }
 
 export type Seen =
@@ -37,6 +39,7 @@ export type Seen =
 export interface View {
   readonly seen: readonly Seen[];
   readonly targets: readonly MonsterState[];
+  readonly pickup: GroundItem | null;
 }
 
 export interface Observation {
@@ -78,7 +81,7 @@ export function hostileMonster(world: World, monster: MonsterState): boolean {
   return monster.alive && playerMayStrike(world, monster);
 }
 
-export function viewOf(world: World, objective: Vec2 | null): View {
+export function viewOf(world: World, objective: Vec2 | null, rule: PickupRule): View {
   const player: PlayerState = world.player;
   const from: Vec2 = player.pos;
   const byGap = (a: Seen, b: Seen): number => gap(from, a.pos) - gap(from, b.pos);
@@ -95,7 +98,7 @@ export function viewOf(world: World, objective: Vec2 | null): View {
     ...world.npcs.map((npc: NpcState): Seen => ({ type: 'npc', pos: npc.pos, npc })),
     ...(objective === null ? [] : [{ type: 'objective', pos: objective } satisfies Seen]),
   ].toSorted(byGap);
-  return { seen: [...first, ...rest].slice(0, RL.entities), targets };
+  return { seen: [...first, ...rest].slice(0, RL.entities), targets, pickup: nearestWanted(world, rule) };
 }
 
 function writeFlask(writer: Writer, flask: FlaskState | undefined): void {
@@ -148,6 +151,8 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   for (const danger of dangerAround(world)) put(writer, danger);
   for (const decision of context.recall.decisions) writeDecision(writer, decision);
   writeRecent(writer, world, context.recall, view);
+  put(writer, ruleShare(world.content, context.pickup));
+  put(writer, bagFree(world));
   blank(writer, RL.spareSelf);
 }
 
@@ -163,7 +168,7 @@ function seenNow(view: View, id: number): boolean {
 }
 
 function unseenAttacker(world: World, view: View, hit: Hit): boolean {
-  return world.monsters.some((monster: MonsterState): boolean => monster.id === hit.sourceId) && !seenNow(view, hit.sourceId);
+  return world.monsters.some((monster: MonsterState): boolean => monster.id === hit.sourceId && monster.alive) && !seenNow(view, hit.sourceId);
 }
 
 function writeRecent(writer: Writer, world: World, recall: Recall, view: View): void {
@@ -220,7 +225,7 @@ function writeSlot(writer: Writer, player: PlayerState, slot: number): void {
   put(writer, numbers.area / RL.areaScale);
   put(writer, skill.damage.weaponPercent / RL.damageScale);
   put(writer, (skill.damage.flatMin + skill.damage.flatMax) / 2 / RL.damageScale);
-  put(writer, skill.knockback);
+  put(writer, skill.knockback / RL.distanceScale);
   put(writer, skill.stun);
   put(writer, skill.stagger);
   flag(writer, skill.press !== null);
@@ -309,11 +314,23 @@ function entityNumbers(world: World, seen: Seen): EntityNumbers {
   return QUIET;
 }
 
+function writeLoot(writer: Writer, world: World, seen: Seen, rule: PickupRule): void {
+  if (seen.type !== 'loot') {
+    blank(writer, LOOT_FEATURES.length);
+    return;
+  }
+  const ground: GroundItem = seen.ground;
+  put(writer, ground.content.kind === 'item' ? rarityShare(world.content, ground.content.item) : 0);
+  put(writer, ground.content.kind === 'gold' ? Math.log1p(ground.content.amount) / RL.goldScale : 0);
+  flag(writer, wanted(world, rule, ground));
+  flag(writer, fits(world, ground));
+}
+
 function kindOf(seen: Seen): EntityKind {
   return seen.type === 'remembered' ? 'monster' : seen.type;
 }
 
-function writeEntity(writer: Writer, world: World, seen: Seen | undefined): void {
+function writeEntity(writer: Writer, world: World, seen: Seen | undefined, rule: PickupRule): void {
   if (seen === undefined) {
     blank(writer, LAYOUT.entity);
     return;
@@ -344,6 +361,7 @@ function writeEntity(writer: Writer, world: World, seen: Seen | undefined): void
   put(writer, numbers.speed);
   put(writer, numbers.timeLeft);
   flag(writer, seen.type === 'remembered');
+  writeLoot(writer, world, seen, rule);
   oneHot(writer, Object.keys(BEHAVIOUR_ORDER).length, numbers.behaviour);
   blank(writer, RL.spareEntity);
 }
@@ -356,29 +374,6 @@ function writeRays(writer: Writer, world: World): void {
     while (reach < RL.rayReach && isWalkable(world.grid, from.x + Math.cos(angle) * (reach + RL.rayStep), from.z + Math.sin(angle) * (reach + RL.rayStep))) reach += RL.rayStep;
     put(writer, reach / RL.rayReach);
   }
-}
-
-function takeable(world: World, ground: GroundItem): boolean {
-  switch (ground.content.kind) {
-    case 'gold':
-      return true;
-    case 'item':
-      return roomFor(world.content, world.player.inventory, ground.content.item) > 0;
-  }
-  return false;
-}
-
-export function nearestGround(world: World): GroundItem | null {
-  const from: Vec2 = world.player.pos;
-  let best: GroundItem | null = null;
-  let bestGap: number = RL.pickupReach;
-  for (const ground of world.ground) {
-    const reach: number = gap(from, ground.pos);
-    if (reach > bestGap || !takeable(world, ground)) continue;
-    best = ground;
-    bestGap = reach;
-  }
-  return best;
 }
 
 function flaskReady(flask: FlaskState | undefined): boolean {
@@ -400,18 +395,18 @@ export function actionMask(world: World, view: View): Uint8Array {
   for (let target: number = 0; target < RL.targets; target += 1) mask[at + target] = target === 0 || target < view.targets.length ? 1 : 0;
   at += RL.targets;
   for (let choice: number = 0; choice <= RL.flasks; choice += 1) mask[at + choice] = choice === 0 || (alive && flaskReady(player.flasks[choice - 1])) ? 1 : 0;
-  mask[at + PICKUP_CHOICE] = alive && nearestGround(world) !== null ? 1 : 0;
+  mask[at + PICKUP_CHOICE] = alive && view.pickup !== null ? 1 : 0;
   return mask;
 }
 
 export function observe(world: World, context: ObserveContext): Observation {
-  const view: View = viewOf(world, context.objective);
+  const view: View = viewOf(world, context.objective, context.pickup);
   const writer: Writer = { out: new Float32Array(LAYOUT.size), at: 0 };
   writeSelf(writer, world, context, view);
   for (let slot: number = 0; slot < RL.slots; slot += 1) writeSlot(writer, world.player, slot);
-  for (let index: number = 0; index < RL.entities; index += 1) writeEntity(writer, world, view.seen[index]);
+  for (let index: number = 0; index < RL.entities; index += 1) writeEntity(writer, world, view.seen[index], context.pickup);
   const remembered: Seen[] = rememberedFoes(world, context.recall, view);
-  for (let index: number = 0; index < RL.remembered; index += 1) writeEntity(writer, world, remembered[index]);
+  for (let index: number = 0; index < RL.remembered; index += 1) writeEntity(writer, world, remembered[index], context.pickup);
   writeRays(writer, world);
   if (writer.at !== LAYOUT.size) throw new Error(`observation wrote ${writer.at} of ${LAYOUT.size} numbers`);
   return { obs: writer.out, mask: actionMask(world, view), view };
