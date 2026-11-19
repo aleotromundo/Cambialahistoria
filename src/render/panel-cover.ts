@@ -1,7 +1,8 @@
 import type { ScreenRect } from './label-stack.ts';
 
 export const PANEL_COVER = {
-  panels: '.hud-panel.open, .hud-dialogue.open, .hideout-chat.open',
+  openClass: 'open',
+  panels: ['hud-panel', 'hud-dialogue', 'hideout-chat'],
   labels: '.exit-label, .npc-label, .loot-label, .player-label, .damage-number',
   coveredClass: 'under-panel',
 } as const;
@@ -24,9 +25,14 @@ function rectOf(element: Element): ScreenRect {
   return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
 }
 
-function openPanels(): ScreenRect[] {
+function isPanel(element: Element): boolean {
+  return PANEL_COVER.panels.some((name: string): boolean => element.classList.contains(name));
+}
+
+function openPanels(opened: HTMLCollectionOf<Element>): ScreenRect[] {
   const panels: ScreenRect[] = [];
-  for (const panel of document.querySelectorAll(PANEL_COVER.panels)) {
+  for (const panel of opened) {
+    if (!isPanel(panel)) continue;
     const rect: ScreenRect = rectOf(panel);
     if (rect.right > rect.left && rect.bottom > rect.top && getComputedStyle(panel).visibility !== 'hidden') panels.push(rect);
   }
@@ -35,9 +41,10 @@ function openPanels(): ScreenRect[] {
 
 export function createPanelCover(root: HTMLElement): PanelCover {
   const hidden: Set<Element> = new Set<Element>();
+  const opened: HTMLCollectionOf<Element> = document.getElementsByClassName(PANEL_COVER.openClass);
   return {
     cover(): void {
-      const panels: ScreenRect[] = openPanels();
+      const panels: ScreenRect[] = openPanels(opened);
       if (panels.length === 0 && hidden.size === 0) return;
       for (const label of hidden) {
         if (!label.isConnected) hidden.delete(label);
