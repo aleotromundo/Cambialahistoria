@@ -44,12 +44,15 @@ import type { RawContent } from './parse.ts';
 import { ContentError } from './read.ts';
 import type { Content } from './types.ts';
 import { modelFootprints, withFootprints } from './footprints.ts';
+import type { ModelFootprint } from './footprints.ts';
+import { withMarkerFootprints } from './markers.ts';
 
 export const RAW_CONTENT: RawContent = { skills, monsters, monsterMods, factions, items, skillTree, chart, rigs, attachments, wearables, baseLayers, surfaces, props, zones: [between, hallOfTime, hideout, keepersGate, underHall, ledgerHall, underHall2, underHall3, ledgerHall2, ledgerHall3, lavaDepths, lavaDepths2, lavaDepths3, ledgerCourt], world, npcs, lines, quests, player, flasks, trade, books, moments, packRanks, runTable, tailwind, markers };
 
 export function loadContent(): Content {
   const parsed: Content = parseContent(RAW_CONTENT);
-  const content: Content = { ...parsed, props: withFootprints(parsed.props, modelFootprints(footprints, 'footprints')) };
+  const measured: ReadonlyMap<string, ModelFootprint> = modelFootprints(footprints, 'footprints');
+  const content: Content = { ...parsed, props: withFootprints(parsed.props, measured), markers: withMarkerFootprints(parsed.markers, measured) };
   const problems: string[] = contentProblems(content);
   if (problems.length > 0) throw new ContentError('content', problems.join('; '));
   return content;

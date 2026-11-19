@@ -1,3 +1,5 @@
+import type { ReadonlyVec2 } from '../math.ts';
+
 export const MARKER_ROLES = ['waypoint', 'checkpoint', 'down', 'up'] as const;
 export type MarkerRole = (typeof MARKER_ROLES)[number];
 
@@ -52,6 +54,8 @@ export interface MarkerKind {
   readonly id: string;
   readonly model: string;
   readonly surfaces: Readonly<Record<string, string>>;
+  readonly solid: readonly string[];
+  readonly footprints: readonly (readonly ReadonlyVec2[])[];
   readonly color: string;
   readonly glow: readonly string[];
   readonly focal: MarkerFocal | null;
@@ -68,4 +72,5 @@ export interface MarkerKind {
 export interface MarkerLibrary {
   readonly kinds: ReadonlyMap<string, MarkerKind>;
   readonly roles: Readonly<Record<MarkerRole, string>>;
+  readonly cameraYawDegrees: number;
 }

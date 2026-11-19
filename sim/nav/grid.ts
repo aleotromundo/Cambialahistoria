@@ -49,10 +49,13 @@ export function propBlocker(def: PropDef, x: number, z: number, rotationDegrees:
 }
 
 export function propOutlines(def: PropDef, x: number, z: number, rotationDegrees: number): Blocker[] {
-  const angle: number = (rotationDegrees * Math.PI) / 180;
+  return outlineBlockers(def.footprints, x, z, (rotationDegrees * Math.PI) / 180);
+}
+
+export function outlineBlockers(footprints: readonly (readonly ReadonlyVec2[])[], x: number, z: number, angle: number): Blocker[] {
   const cos: number = Math.cos(angle);
   const sin: number = Math.sin(angle);
-  return def.footprints
+  return footprints
     .filter((outline: readonly ReadonlyVec2[]): boolean => outline.length >= 3)
     .map((outline: readonly ReadonlyVec2[]): Blocker => ({ kind: 'outline', outline: outline.map((point: ReadonlyVec2): ReadonlyVec2 => ({ x: x + point.x * cos + point.z * sin, z: z - point.x * sin + point.z * cos })) }));
 }
@@ -294,6 +297,14 @@ export function stampBlockers(grid: NavGrid, stamped: readonly Blocker[], agentR
     if (gap < 0) grid.solid[index] = 1;
   });
   return stamp;
+}
+
+export function withBodies(grid: NavGrid, added: readonly Blocker[]): NavGrid {
+  if (added.length === 0) return grid;
+  stampBlockers(grid, added, grid.radius);
+  const near: Map<number, readonly number[]> = new Map<number, readonly number[]>(grid.near);
+  for (const [index, list] of nearBodies(added, grid.radius, grid.columns, grid.rows)) near.set(index, (near.get(index) ?? []).concat(list.map((at: number): number => at + grid.bodies.length)));
+  return { ...grid, bodies: grid.bodies.concat(added), near };
 }
 
 export function liftStamp(grid: NavGrid, stamp: GridStamp): void {

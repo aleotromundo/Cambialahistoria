@@ -4,7 +4,8 @@ import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
-import { buildNavGrid, navGridPrepared, prepareNavGrid } from '../nav/grid.ts';
+import { nearestWalkable, navGridPrepared, prepareNavGrid } from '../nav/grid.ts';
+import { zoneGrid } from '../nav/marker-bodies.ts';
 import { closeDialogue, spawnNpcs } from './dialogue.ts';
 import { dropOnGround } from './ground.ts';
 import { spawnPacks } from './monsters.ts';
@@ -65,6 +66,23 @@ export function respawnExists(zone: ZoneDef, respawn: RespawnPoint): boolean {
   return anchorOf(zone, respawn) !== null;
 }
 
+function standingRoom(zone: ZoneDef, respawn: RespawnPoint): number {
+  let room: number;
+  switch (respawn.type) {
+    case 'waypoint':
+      room = zone.waypoint?.radius ?? 0;
+      break;
+    case 'checkpoint':
+      room = findCheckpoint(zone, respawn.checkpoint)?.radius ?? 0;
+      break;
+    case 'start':
+    case 'exit':
+      room = 0;
+      break;
+  }
+  return room;
+}
+
 export function respawnPosition(zone: ZoneDef, respawn: RespawnPoint): Vec2 {
   const anchor: ZonePoint = anchorOf(zone, respawn) ?? zone.playerStart;
   return { x: anchor.x, z: anchor.z };
@@ -72,7 +90,8 @@ export function respawnPosition(zone: ZoneDef, respawn: RespawnPoint): Vec2 {
 
 export function placePlayer(world: World): void {
   const player: PlayerState = world.player;
-  player.pos = respawnPosition(world.zone, world.respawn);
+  const anchor: Vec2 = respawnPosition(world.zone, world.respawn);
+  player.pos = nearestWalkable(world.grid, anchor, standingRoom(world.zone, world.respawn)) ?? anchor;
   player.knock = { x: 0, z: 0 };
   player.intent = { type: 'idle' };
   player.path = [];
@@ -102,7 +121,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   world.ground = [];
   world.surgeTimer = null;
   world.zone = zone;
-  world.grid = buildNavGrid(zone, world.content.props, world.content.surfaces, world.content.player.radius);
+  world.grid = zoneGrid(world.content, zone);
   world.respawn = respawn;
   settleRunZone(world, keepRun);
   world.shift = { x: 0, z: 0 };

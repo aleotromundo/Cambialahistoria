@@ -8,7 +8,7 @@ import { placeKey, zonePlaces } from '../../sim/content/markers.ts';
 import type { Content, ZoneDef, ZoneExit } from '../../sim/content/types.ts';
 import type { World } from '../../sim/world/types.ts';
 import { CAMERA } from './iso-camera.ts';
-import { facingYaw, levelTarget, placeState, settledMarkers } from './place-markers.ts';
+import { levelTarget, placeState, settledMarkers } from './place-markers.ts';
 
 const content: Content = loadContent();
 const waypointKind: MarkerKind = must(content.markers.kinds.get(content.markers.roles.waypoint), 'waypoint kind');
@@ -54,10 +54,10 @@ void test('a way out turns to face its arrival spot and a waypoint turns to the 
   const places: Place[] = zonePlaces(content, hall);
   const up: Place = must(places.find((place: Place): boolean => placeKey(place.ref) === 'exit:up'), 'ledger hall up');
   const facing = must(up.facing, 'facing');
-  const yaw: number = facingYaw(up);
+  const yaw: number = up.yaw;
   assert.ok(Math.abs(Math.sin(yaw) - facing.x) < 1e-9 && Math.abs(Math.cos(yaw) - facing.z) < 1e-9);
   const stone: Place = must(places.find((place: Place): boolean => place.ref.type === 'waypoint'), 'waypoint');
-  assert.equal(facingYaw(stone), (CAMERA.yawDegrees * Math.PI) / 180);
+  assert.equal(stone.yaw, (CAMERA.yawDegrees * Math.PI) / 180);
 });
 
 void test('a marker model that fails to load is reported and never holds the zone back', async (): Promise<void> => {

@@ -7,6 +7,9 @@ import { convexHull, simplifyOutline } from '../sim/nav/outline.ts';
 import type { ReadonlyVec2 } from '../sim/math.ts';
 import { outlineArea } from '../sim/content/footprints.ts';
 import { fields, items, numeric, text } from '../sim/content/read.ts';
+import type { MarkerKind } from '../sim/content/marker-types.ts';
+import { markerFootprintKey } from '../sim/content/markers.ts';
+import { markerLibrary } from '../sim/content/parse-markers.ts';
 
 export const FOOTPRINT_TOOL = {
   bodyHeight: 2.2,
@@ -40,7 +43,17 @@ function rounded(value: number): number {
   return Math.round(value * FOOTPRINT_TOOL.places) / FOOTPRINT_TOOL.places;
 }
 
-function triangles(document: Document): Point[][] {
+type PrimitiveFilter = (primitive: Primitive) => boolean;
+
+function everyPart(): boolean {
+  return true;
+}
+
+function partsNamed(parts: readonly string[]): PrimitiveFilter {
+  return (primitive: Primitive): boolean => parts.includes(primitive.getMaterial()?.getName() ?? '');
+}
+
+function triangles(document: Document, keep: PrimitiveFilter): Point[][] {
   const found: Point[][] = [];
   const element: number[] = [0, 0, 0];
   for (const node of document.getRoot().listNodes()) {
@@ -48,6 +61,7 @@ function triangles(document: Document): Point[][] {
     if (mesh === null) continue;
     const matrix: Matrix = (node satisfies Node).getWorldMatrix();
     for (const primitive of mesh.listPrimitives() satisfies Primitive[]) {
+      if (!keep(primitive)) continue;
       const position: Accessor | null = primitive.getAttribute('POSITION');
       if (position === null) continue;
       const points: Point[] = [];
@@ -219,8 +233,8 @@ function hulls(patch: readonly (readonly [number, number])[], size: number, scal
   return [...hulls(first, size, scale, depth - 1), ...hulls(second, size, scale, depth - 1)];
 }
 
-function measure(document: Document, scale: number, reachScale: number): Measured | null {
-  const found: Point[][] = triangles(document);
+function measure(document: Document, scale: number, reachScale: number, keep: PrimitiveFilter): Measured | null {
+  const found: Point[][] = triangles(document, keep);
   if (found.length === 0) return null;
   const heights: number[] = found.flatMap((triangle: Point[]): number[] => triangle.map((point: Point): number => point[1]));
   const floor: number = Math.min(...heights);
@@ -265,12 +279,19 @@ async function main(): Promise<void> {
     largest.set(model, Math.max(largest.get(model) ?? scale, scale));
   });
   const models: string[] = [...smallest.keys()].toSorted();
-  const measured: (Measured | null)[] = await Promise.all(models.map(async (model: string): Promise<Measured | null> => measure(await io.read(`public/${model}`), smallest.get(model) ?? 1, largest.get(model) ?? 1)));
+  const measured: (Measured | null)[] = await Promise.all(models.map(async (model: string): Promise<Measured | null> => measure(await io.read(`public/${model}`), smallest.get(model) ?? 1, largest.get(model) ?? 1, everyPart)));
+  const solidMarkers: MarkerKind[] = [...markerLibrary(JSON.parse(readFileSync('data/markers.json', 'utf8')), 'markers').kinds.values()].filter((kind: MarkerKind): boolean => kind.solid.length > 0);
+  const markerMeasured: (Measured | null)[] = await Promise.all(solidMarkers.map(async (kind: MarkerKind): Promise<Measured | null> => measure(await io.read(`public/${kind.model}`), 1, 1, partsNamed(kind.solid))));
   const result: Record<string, { height: number; outlines: number[][][] }> = {};
   models.forEach((model: string, index: number): void => {
     const entry: Measured | null | undefined = measured[index];
     if (entry === null || entry === undefined || entry.outlines.length === 0) return;
     result[model] = { height: entry.height, outlines: entry.outlines.map((outline: readonly ReadonlyVec2[]): number[][] => outline.map((point: ReadonlyVec2): number[] => [point.x, point.z])) };
+  });
+  solidMarkers.forEach((kind: MarkerKind, index: number): void => {
+    const entry: Measured | null | undefined = markerMeasured[index];
+    if (entry === null || entry === undefined || entry.outlines.length === 0) return;
+    result[markerFootprintKey(kind)] = { height: entry.height, outlines: entry.outlines.map((outline: readonly ReadonlyVec2[]): number[][] => outline.map((point: ReadonlyVec2): number[] => [point.x, point.z])) };
   });
   const previous: Record<string, unknown> = fields(JSON.parse(readFileSync(FOOTPRINT_TOOL.out, 'utf8')), FOOTPRINT_TOOL.out);
   const carried: string[] = [...kept].filter((key: string): boolean => !smallest.has(key)).toSorted();

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { must, worldIn } from '../test/support.ts';
+import { isWalkable } from './nav/grid.ts';
+import { onWaypoint } from './world/waypoints.ts';
 import type { Content, ZoneDef, ZoneVoice } from './content/types.ts';
 import { isUnidentified, veiled } from './identify.ts';
 import { emptyEquipment, generateItem } from './items.ts';
@@ -300,8 +302,8 @@ void test('a hero who teleported keeps the waypoint as the place to return to af
   assert.deepEqual(save.respawn, { type: 'waypoint' });
   const restored: World = createWorld(content, { seed: 15, save });
   assert.deepEqual(restored.respawn, { type: 'waypoint' });
-  const waypoint = must(restored.zone.waypoint, 'waypoint');
-  assert.deepEqual(restored.player.pos, { x: waypoint.x, z: waypoint.z });
+  assert.ok(onWaypoint(restored));
+  assert.ok(isWalkable(restored.grid, restored.player.pos.x, restored.player.pos.z));
 });
 
 void test('flask charges survive a save, and a version 2 save from before flasks loads with them full', (): void => {

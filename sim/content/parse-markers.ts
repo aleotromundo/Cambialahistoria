@@ -1,5 +1,5 @@
 import type { Fields } from './read.ts';
-import { byId, choice, colour, ContentError, each, fields, nonNegative, positive, text, textList } from './read.ts';
+import { byId, choice, colour, ContentError, each, fields, nonNegative, numeric, positive, text, textList } from './read.ts';
 import type { MarkerFocal, MarkerKind, MarkerLevels, MarkerLibrary, MarkerLight, MarkerPick, MarkerRole, MarkerSeal, MarkerVeil } from './marker-types.ts';
 import { MARKER_FACINGS, MARKER_ROLES, VEIL_FLOWS, VEIL_SHAPES } from './marker-types.ts';
 
@@ -53,6 +53,8 @@ function kind(value: unknown, where: string): MarkerKind {
     id: text(source, 'id', where),
     model,
     surfaces: dressing(source['surfaces'], `${where}.surfaces`),
+    solid: textList(source, 'solid', where),
+    footprints: [],
     color: colour(source, 'color', where),
     glow: textList(source, 'glow', where),
     focal: focal(source['focal'], `${where}.focal`),
@@ -77,5 +79,5 @@ export function markerLibrary(value: unknown, where: string): MarkerLibrary {
     if (!kinds.has(id)) throw new ContentError(`${where}.roles.${role}`, `names unknown marker kind ${id}`);
     roles[role] = id;
   }
-  return { kinds, roles };
+  return { kinds, roles, cameraYawDegrees: numeric(source, 'cameraYawDegrees', where) };
 }

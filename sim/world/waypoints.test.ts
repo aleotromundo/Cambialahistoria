@@ -4,7 +4,7 @@ import { ROAD_CONTENT, roadContent, roadZone } from '../../test/road-support.ts'
 import { finishQuests, must, withoutGlitches, zoneOf } from '../../test/support.ts';
 import type { Content, ZoneDef, ZoneExit, ZoneWaypoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
-import { buildNavGrid } from '../nav/grid.ts';
+import { buildNavGrid, isWalkable } from '../nav/grid.ts';
 import type { NavGrid } from '../nav/grid.ts';
 import { inRegion, walkRegion } from '../nav/region.ts';
 import { zoneMark } from './atlas.ts';
@@ -27,7 +27,6 @@ const content: Content = roads;
 const town: ZoneDef = zoneOf(content, 'hideout');
 const outpost: ZoneDef = zoneOf(content, 'outpost');
 const townPoint: ZoneWaypoint = must(town.waypoint, 'town waypoint');
-const outpostPoint: ZoneWaypoint = must(outpost.waypoint, 'outpost waypoint');
 const DT: number = 1 / 60;
 const LIMIT: number = 40;
 
@@ -93,7 +92,7 @@ void test('teleport enters the target zone at its waypoint, resets it, and death
   const events: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: outpost.id }], DT);
   assert.deepEqual(ofType(events, 'zone_changed'), [{ type: 'zone_changed', from: town.id, to: outpost.id }]);
   assert.equal(world.zone.id, outpost.id);
-  assert.deepEqual(world.player.pos, { x: outpostPoint.x, z: outpostPoint.z });
+  assert.ok(isWalkable(world.grid, world.player.pos.x, world.player.pos.z));
   assert.deepEqual(world.respawn, { type: 'waypoint' });
   assert.ok(world.monsters.length > 0);
   assert.equal(onWaypoint(world), true);
@@ -106,10 +105,11 @@ void test('teleport enters the target zone at its waypoint, resets it, and death
   world.player.stats.lifeRegen = 0;
   const died: WorldEvent[] = until(world, (): boolean => world.player.alive && world.player.life === world.player.maxLife && world.time > 3);
   assert.equal(ofType(died, 'player_respawn').length, 1);
-  assert.deepEqual(world.player.pos, { x: outpostPoint.x, z: outpostPoint.z });
+  assert.equal(onWaypoint(world), true);
   const back: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: town.id }], DT);
   assert.equal(ofType(back, 'zone_changed').length, 1);
-  assert.deepEqual(world.player.pos, { x: townPoint.x, z: townPoint.z });
+  assert.equal(world.zone.id, town.id);
+  assert.equal(onWaypoint(world), true);
   assert.equal(world.monsters.length, 0);
 });
 
@@ -187,8 +187,8 @@ void test('a hero who has reached the caves travels from the Hall\'s waypoint st
   assert.equal(canTeleport(world, 'keepers_gate'), false);
   const events: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: 'under_hall' }], DT);
   assert.deepEqual(ofType(events, 'zone_changed'), [{ type: 'zone_changed', from: 'hall_of_time', to: 'under_hall' }]);
-  const caves: ZoneWaypoint = must(zoneOf(shipped, 'under_hall').waypoint, 'caves waypoint');
-  assert.deepEqual(world.player.pos, { x: caves.x, z: caves.z });
+  assert.equal(onWaypoint(world), true);
+  assert.ok(isWalkable(world.grid, world.player.pos.x, world.player.pos.z));
   assert.deepEqual(world.respawn, { type: 'waypoint' });
   const back: WorldEvent[] = stepWorld(world, [{ type: 'teleport', zone: 'hall_of_time' }], DT);
   assert.deepEqual(ofType(back, 'zone_changed'), [{ type: 'zone_changed', from: 'under_hall', to: 'hall_of_time' }]);

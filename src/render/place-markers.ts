@@ -14,7 +14,6 @@ import { springTo, stepSpring } from '../hud/character-spring.ts';
 import { renderBudget } from '../mobile/quality.ts';
 import { loadModel } from './character-loader.ts';
 import { CONTACT_SHADOW, contactShadow } from './contact-shadow.ts';
-import { CAMERA } from './iso-camera.ts';
 import type { PickColumn, PickRay } from './marker-pick.ts';
 import { nearestColumn } from './marker-pick.ts';
 import type { PlaceVeil } from './place-veil.ts';
@@ -106,11 +105,6 @@ export function levelTarget(kind: MarkerKind, state: PlaceState, aimed: boolean,
 
 export function settledMarkers(markers: Pick<PlaceMarkers, 'ready'>, warn: (message: string) => void): Promise<void> {
   return markers.ready.catch((error: unknown): void => warn(`Loading the place markers failed: ${String(error)}`));
-}
-
-export function facingYaw(place: Place): number {
-  const towardCamera: number = (CAMERA.yawDegrees * Math.PI) / 180;
-  return place.kind.facing === 'arrival' && place.facing !== null ? Math.atan2(place.facing.x, place.facing.z) : towardCamera;
 }
 
 function spring(value: number): Spring {
@@ -211,7 +205,7 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
     const root: Group = new Group();
     const ground: number = floorUp(place.x, 0, place.z);
     root.position.set(place.x, ground, place.z);
-    root.rotation.y = facingYaw(place);
+    root.rotation.y = place.yaw;
     if (place.kind.shadow > 0) {
       const shadow: Mesh = contactShadow();
       shadow.scale.setScalar(place.kind.shadow / CONTACT_SHADOW.radius);

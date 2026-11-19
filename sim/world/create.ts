@@ -6,7 +6,7 @@ import type { Content, ZoneDef } from '../content/types.ts';
 import { heroOf } from '../hero.ts';
 import { emptyEquipment, slotOf } from '../items.ts';
 import { emptyLedger, makeItem } from './ledger.ts';
-import { buildNavGrid } from '../nav/grid.ts';
+import { zoneGrid } from '../nav/marker-bodies.ts';
 import { createRng } from '../rng.ts';
 import { defaultBar, startingSkills } from '../skill-book.ts';
 import { copyVendors } from '../save.ts';
@@ -158,7 +158,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
   const world: World = {
     content,
     zone,
-    grid: buildNavGrid(zone, content.props, content.surfaces, content.player.radius),
+    grid: zoneGrid(content, zone),
     respawn,
     death: null,
     visited,

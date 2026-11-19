@@ -4,7 +4,7 @@ import { heightAt, terrainMap } from '../sim/nav/terrain.ts';
 import type { Box3 as Box3Type } from 'three';
 import { Box3, Vector2 } from 'three';
 import type { Vector3 } from 'three';
-import type { ZoneExit } from '../sim/content/types.ts';
+import type { ZoneExit, ZoneWaypoint } from '../sim/content/types.ts';
 import type { Vec2 } from '../sim/math.ts';
 import { exitShown, exitUnder } from '../sim/world/exits.ts';
 import type { PlaceRef } from '../sim/content/markers.ts';
@@ -549,10 +549,13 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
             if (leftFresh) hooks.clickMarker(exit.x, exit.z, false);
             break;
           }
-          case 'move':
-            commands.push({ type: 'move', held: !leftFresh, dest: ground });
+          case 'move': {
+            const waypoint: ZoneWaypoint | null = world.zone.waypoint;
+            const dest: Vec2 = leftFresh && marked && !shift && waypoint !== null ? { x: waypoint.x, z: waypoint.z } : ground;
+            commands.push({ type: 'move', held: !leftFresh, dest });
             if (leftFresh) hooks.clickMarker(ground.x, ground.z, false);
             break;
+          }
           case 'player':
           case 'advance':
           case 'none':

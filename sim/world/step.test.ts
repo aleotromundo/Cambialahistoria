@@ -9,6 +9,7 @@ import { generateItem } from '../items.ts';
 import type { Vec2 } from '../math.ts';
 import { distance, facingOf } from '../math.ts';
 import { isWalkable, nearestWalkable } from '../nav/grid.ts';
+import { zoneGrid } from '../nav/marker-bodies.ts';
 import { xpToNextLevel } from '../progression.ts';
 import { createRng } from '../rng.ts';
 import { toSave } from '../save.ts';
@@ -332,6 +333,8 @@ void test('Storm Bolt spawns a projectile that travels, hits a monster in its pa
 
 void test('a Storm Bolt with nothing in its way flies its full range and ends without a hit', (): void => {
   const world: World = fresh();
+  world.zone = { ...world.zone, waypoint: null };
+  world.grid = zoneGrid(world.content, world.zone);
   const thrall: MonsterState = must(monstersOf(world, 'mended')[0], 'thrall');
   isolate(world, thrall);
   put(thrall, { x: 50, z: 6 });

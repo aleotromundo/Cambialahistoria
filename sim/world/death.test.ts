@@ -10,6 +10,7 @@ import { distance } from '../math.ts';
 import { nearestWalkable } from '../nav/grid.ts';
 import { stepWorld } from './step.ts';
 import type { Command, MonsterState, World, WorldEvent } from './types.ts';
+import { onWaypoint } from './waypoints.ts';
 import { enterZone } from './zones.ts';
 import { xpToNextLevel } from '../progression.ts';
 
@@ -208,7 +209,7 @@ void test('touching a waypoint makes it the checkpoint and the hero returns to i
   world.player.alive = false;
   world.death = { killer: 'x', skill: 'y', elapsed: 99, xpLost: 0 };
   stepWorld(world, [{ type: 'respawn', choice: 'checkpoint' }], DT);
-  assert.deepEqual(world.player.pos, { x: waypoint.x, z: waypoint.z });
+  assert.equal(onWaypoint(world), true);
 });
 
 void test('entering a zone through an exit makes that entrance the checkpoint', (): void => {
