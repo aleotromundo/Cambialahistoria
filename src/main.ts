@@ -12,6 +12,10 @@ import { HOST } from './host.ts';
 import type { WatchEffect } from './frame-watch.ts';
 import { startPerfReports } from './perf/perf-start.ts';
 import type { PerfReports } from './perf/perf-start.ts';
+import { startTracking } from './track/track-start.ts';
+import type { Tracker } from './track/track-start.ts';
+import { visibleOverlays } from './hud/overlay-core.ts';
+import type { OverlayState } from './hud/overlay-core.ts';
 import type { FrameKeeper } from './frame-keeper.ts';
 import { element } from './dom-element.ts';
 import { startKeepPrompt } from './keep/keep-start.ts';
@@ -200,6 +204,8 @@ async function start(): Promise<void> {
   const keptHero: string | null = save === null ? readHero(createBrowserStore(), content) : null;
   const watching: Watching | null = watchAsked === null ? null : await fetchWatching(content, watchAsked);
   const world: World = watching !== null ? watching.replayer.arena.world : createWorld(content, keptHero === null ? { seed: Date.now() >>> 0, save, opening: true } : { seed: Date.now() >>> 0, save, opening: true, hero: keptHero });
+  const tracker: Tracker = startTracking({ serverUrl, build: import.meta.env.VITE_BUILD_ID, world, touch: mobile.touch });
+  overlayManager.subscribe((state: OverlayState): void => tracker.overlays(visibleOverlays(state)));
   let entered: boolean = save !== null;
   const keepChosen = (id: string): void => {
     keepHero(createBrowserStore(), id);
@@ -225,6 +231,7 @@ async function start(): Promise<void> {
   const send = (command: Command): void => {
     if (watching !== null) return;
     queue.push(command);
+    tracker.command(command);
     const action: UiAction | null = uiActionForCommand(command);
     if (action !== null) playUi(action);
   };
@@ -359,6 +366,7 @@ async function start(): Promise<void> {
     return lobbyFlow;
   };
   const presentScene = (events: readonly WorldEvent[]): void => {
+    tracker.world(events);
     actors.handle(events, world);
     effects.handle(events, world);
     overlays.handle(events, world);
@@ -458,7 +466,10 @@ async function start(): Promise<void> {
       objectiveMarker.readHud(dt);
     }
     const collected: Command[] = gate.collect ? [...input.collect(dt), ...touch.collect(dt)] : [];
-    if (gate.queue && watching === null) queue.push(...collected);
+    if (gate.queue && watching === null) {
+      queue.push(...collected);
+      for (const command of collected) tracker.command(command);
+    }
     if (gate.step) {
       keeper.stepped();
       if (watching !== null) {
@@ -521,6 +532,7 @@ async function start(): Promise<void> {
     hurtVignette.show(effects.hurt);
     if (presentNow) glitches.update(now / 1000, dt, gate.queue && !transition.blocking ? worldDt : 0);
     perf.frame(now);
+    tracker.frame(now, playing && !elsewhere.replaced && !transition.blocking && lobbyFlow?.active !== true && document.visibilityState === 'visible');
     if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);
       stage.render();
@@ -587,6 +599,7 @@ async function start(): Promise<void> {
     dirty = true;
     title.classList.add('gone');
     launch.note('pressed_enter');
+    tracker.entered();
     playing = true;
     markPlaying(document.body, true);
     ladder?.setPlaying(true);

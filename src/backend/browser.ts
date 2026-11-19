@@ -26,6 +26,8 @@ import type { ServerUrl } from './create.ts';
 import { createPlay, playId } from './play.ts';
 import { createPerfClient } from './perf-api.ts';
 import type { PerfClient } from './perf-api.ts';
+import { createEventsClient } from './events-api.ts';
+import type { EventsClient } from './events-api.ts';
 import type { Play } from './play.ts';
 
 const PAGE_PLAY: Play = createPlay(playId(Math.random));
@@ -119,4 +121,10 @@ export function createBrowserPerfClient(rawUrl: string | undefined): PerfClient 
   const server: ServerUrl = readServerUrl(rawUrl);
   if (server.kind !== 'ok') return null;
   return createPerfClient({ serverUrl: server.url, store: createBrowserStore(), fetch: browserFetch });
+}
+
+export function createBrowserEventsClient(rawUrl: string | undefined): EventsClient | null {
+  const server: ServerUrl = readServerUrl(rawUrl);
+  if (server.kind !== 'ok') return null;
+  return createEventsClient({ serverUrl: server.url, store: createBrowserStore(), fetch: browserFetch });
 }

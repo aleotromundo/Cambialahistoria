@@ -77,10 +77,10 @@
   <body>
     <main>
       <h1>Privacy</h1>
-      <p class="dated">The Lost Storm, as served at theloststorm.com. Last updated 12 November 2026.</p>
+      <p class="dated">The Lost Storm, as served at theloststorm.com. Last updated 19 November 2026.</p>
 
       <h2>In short</h2>
-      <p>The game keeps your progress so you can come back to it. It has no ads, no analytics service and no trackers, and nothing about you is sold or shared for marketing. A few services handle data for the parts of the game that need them: Cloudflare delivers the site and runs the bot check for email sign-in, Google handles Google sign-in, Resend delivers sign-in codes by email, and ElevenLabs makes the voice that speaks your character's name. Each is described below. The game also counts a few anonymous milestones and keeps the feedback you choose to send.</p>
+      <p>The game keeps your progress so you can come back to it. It has no ads and no third-party analytics or trackers, and nothing about you is sold or shared for marketing. A few services handle data for the parts of the game that need them: Cloudflare delivers the site and runs the bot check for email sign-in, Google handles Google sign-in, Resend delivers sign-in codes by email, and ElevenLabs makes the voice that speaks your character's name. Each is described below. The game also counts a few anonymous milestones, records what happens in your own play so we can see where players get stuck and keep the game fair, and keeps the feedback you choose to send.</p>
 
       <h2>If you just play</h2>
       <p>Your progress is saved in your browser's local storage. The first time the game reaches the server it also creates a guest account so the save can be kept there. For a guest account the server stores:</p>
@@ -141,6 +141,10 @@
       <p>To see how far players get, the game sends each of these milestones at most once per browser: opened the game, pressed Enter, picked up the journal, left the mist, reached the Hall of Time, cleared the first moment, reached the fire, sent feedback, and died for the first time. Each one adds one to a counter for that day, kept separately for desktops and phones. Nothing else is sent or stored with it: no account, no IP address, no time beyond the day, no identifier of your browser. Your browser remembers in its local storage which milestones it has already sent.</p>
       <p>Feedback and counts are sent only to the game's own server. Their lines in the server's request log leave out the IP address and the account.</p>
 
+      <h2>What happens in your play</h2>
+      <p>While you play, the game sends its own server a short record of what happens in your game, a batch at a time: when you enter play, which zone you go to, when you level up, die, beat a boss, finish a quest, unlock a skill, upgrade a flask or open a waypoint, which skill-tree points you spend or refund, which skills you put on your bar, which item you equip, what you do at a trader, the stash or the auction house, and which panel you open. Once a minute it also sends your zone, level, experience, kills, gold, a rounded position in the zone and how long since your last input. Each record carries the time, your account if you have one, the game build, desktop or phone, and a random number for this browser tab that changes on every visit.</p>
+      <p>These records are used to see how players get through the game, where they get stuck, which builds they play, and to spot progress that play could not have earned. Only the operator sees them; they are not shown to other players and not shared. They are kept for 90 days and then deleted, and are never stored with your IP address. A game built without a server address sends none of them.</p>
+
       <h2>IP addresses</h2>
       <p>The server uses your IP address to limit how fast one address can send requests, and writes it to its request logs, which are used only to run and protect the service. It is not stored with your account or your save. The site is delivered through Cloudflare, which processes requests, including IP addresses, to deliver and protect it.</p>
 
@@ -152,7 +156,7 @@
         <li>"Start over" on the title screen clears your progress, here and in the cloud copy.</li>
         <li>"Sign out" ends your session on the server and returns this browser to a new guest account.</li>
         <li>Clearing this site's data in your browser removes everything kept on your device. Your account, save and character stay on the server until you ask for them to be deleted, as below.</li>
-        <li>To have your account deleted from the server, email <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> with your character name, and the address you signed in with if you used email. The operator deletes it by hand: the account, its sign-in identities and sessions, its save, its character and ladder entries, its items in the ledger with their history, seeds and refusal notes, and the feedback tied to it. You get a reply when it is done.</li>
+        <li>To have your account deleted from the server, email <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> with your character name, and the address you signed in with if you used email. The operator deletes it by hand: the account, its sign-in identities and sessions, its save, its character and ladder entries, its items in the ledger with their history, seeds and refusal notes, the records of its play, and the feedback tied to it. You get a reply when it is done.</li>
       </ul>
       <p>The alpha may reset every player's progress. A reset deletes every save and every character on the ladder, and keeps accounts, sign-ins and the item ledger's record of items found before it.</p>
 

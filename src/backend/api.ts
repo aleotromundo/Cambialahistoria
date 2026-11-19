@@ -143,6 +143,33 @@ export interface PerfReportBody {
   readonly windows: readonly PerfWindowBody[];
 }
 
+export const EVENTS_PROTOCOL = {
+  path: '/v1/events',
+  maxEvents: 60,
+  maxFields: 8,
+  textChars: 64,
+} as const;
+
+export const PLAYER_EVENT_KINDS = ['entered', 'pulse', 'panel', 'zone', 'level', 'died', 'boss', 'quest', 'skill', 'flask', 'waypoint', 'run', 'allocate', 'refund', 'respec', 'slot', 'equip', 'trade', 'travel'] as const;
+
+export type PlayerEventKind = (typeof PLAYER_EVENT_KINDS)[number];
+
+export type PlayerEventField = string | number | boolean;
+
+export interface PlayerEventBody {
+  readonly kind: PlayerEventKind;
+  readonly at: number;
+  readonly zone: string;
+  readonly fields: Readonly<Record<string, PlayerEventField>>;
+}
+
+export interface EventBatchBody {
+  readonly play: string;
+  readonly build: string;
+  readonly device: PerfDevice;
+  readonly events: readonly PlayerEventBody[];
+}
+
 export const RANKINGS = ['level', 'damage', 'life', 'played', 'kills', 'deaths'] as const;
 
 export type Ranking = (typeof RANKINGS)[number];
