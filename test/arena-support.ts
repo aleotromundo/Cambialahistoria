@@ -22,7 +22,7 @@ const thrall: MonsterDef = must(shipped.monsters.get('mended'), 'mended');
 
 const SKILLS: readonly SkillDef[] = [
   { ...claw, id: 'test_grab', windup: 0.6, root: 1.2, knockback: 0 },
-  { ...claw, id: 'test_pounce', cooldown: 2, windup: 0.8, engageRange: 8, delivery: { type: 'nova', radius: 1.4 }, leap: { distance: 9, stopShort: 0.8, airTime: 0.35, lane: false } },
+  { ...claw, id: 'test_pounce', cooldown: 2, windup: 0.8, engageRange: 8, delivery: { type: 'nova', radius: 1.4, side: 'foes' }, leap: { distance: 9, stopShort: 0.8, airTime: 0.35, lane: false } },
   { ...bolt, id: 'test_mark', cooldown: 3, windup: 0.4, engageRange: 11, delivery: { type: 'mark', range: 12, radius: 2.2, delay: 1.2, count: 1, spacing: 0, step: 0 } },
   { ...bolt, id: 'test_burst', delivery: { type: 'mark', range: 0, radius: 3, delay: 0.8, count: 1, spacing: 0, step: 0 } },
   { ...claw, id: 'test_slam', cooldown: 2.5, windup: 1.2, recovery: 0.9, engageRange: 2, delivery: { type: 'arc', reach: 3, arcDegrees: 90 } },

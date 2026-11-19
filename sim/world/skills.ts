@@ -18,6 +18,7 @@ import { widenedSkill } from '../widen.ts';
 import { placeArea, timeScaleAt } from './areas.ts';
 import { placeHazard, placeMarks } from './hazards.ts';
 import { raiseFallen } from './revive.ts';
+import { mendAllies } from './heal.ts';
 import { braceThrough } from './poise.ts';
 import { rankSize } from './ranks.ts';
 import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTurn, spendMomentum } from './momentum.ts';
@@ -247,6 +248,7 @@ function strike(world: World, impact: Impact): number {
       return hits;
     }
     case 'nova': {
+      if (delivery.side === 'allies') return skill.mend === null ? 0 : mendAllies(world, offence, { skill, mend: skill.mend, origin, radius: delivery.radius });
       const near: TargetFilter = (target: Actor): boolean => !(Math.hypot(target.pos.x - origin.x, target.pos.z - origin.z) > delivery.radius + target.radius) && sameFloor(world, origin, target.pos);
       for (const target of targetsWhere(world, offence, near)) {
         const offset: Vec2 = { x: target.pos.x - origin.x, z: target.pos.z - origin.z };

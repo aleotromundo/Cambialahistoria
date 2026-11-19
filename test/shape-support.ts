@@ -20,7 +20,7 @@ export const SHAPE_SKILLS: readonly SkillDef[] = [
   { ...plain, id: 'test_wire', manaCost: 2, delivery: { type: 'beam', range: 10, width: 1 }, press: { type: 'channel', interval: 0.2, max: 2, move: 0, passThrough: false, hint: null } },
   { ...plain, id: 'test_heave', delivery: { type: 'arc', reach: 3, arcDegrees: 120 }, press: { type: 'charge', max: 1, damageScale: 3, areaScale: 1.5, hint: null } },
   { ...plain, id: 'test_brander', delivery: { type: 'arc', reach: 3, arcDegrees: 120 }, brand: { duration: 5, burst: 'test_brand_burst' } },
-  { ...plain, id: 'test_brand_burst', delivery: { type: 'nova', radius: 3 }, damage: { type: 'physical', weaponPercent: 0, flatMin: 50, flatMax: 50 } },
+  { ...plain, id: 'test_brand_burst', delivery: { type: 'nova', radius: 3, side: 'foes' }, damage: { type: 'physical', weaponPercent: 0, flatMin: 50, flatMax: 50 } },
 ];
 
 export const SHAPE_CONTENT: Content = { ...ARENA_CONTENT, skills: new Map<string, SkillDef>([...ARENA_CONTENT.skills, ...SHAPE_SKILLS.map((def: SkillDef): [string, SkillDef] => [def.id, def])]) };

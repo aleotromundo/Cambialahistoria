@@ -10,6 +10,8 @@ import { SKILLS } from '../../sim/world/skills.ts';
 import type { MonsterState, World, WorldEvent } from '../../sim/world/types.ts';
 import { disposeObject, glow, neverCulled, programKeepers, rekey, showKeepers, slashMesh } from './effect-shapes.ts';
 import { lightCensus } from './light-census.ts';
+import type { MendPulses } from './mend-pulse.ts';
+import { createMendPulses } from './mend-pulse.ts';
 import type { Shockwave } from './shockwave.ts';
 import { createShockwave } from './shockwave.ts';
 import type { Telegraphs } from './telegraphs.ts';
@@ -272,6 +274,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
   const orbs: GatherOrbs = createGatherOrbs({ add, spray, gather: riseLight, flashLight });
   const waves: GhostWaves = createGhostWaves({ parent: scene, spray });
   const fires: FireBursts = createFireBursts({ parent: scene, kit, spray, flashLight, colorOf, trauma: (amount: number): void => camera.addTrauma(amount) });
+  const mends: MendPulses = createMendPulses({ add, spray, flashLight });
   const shockwave: Shockwave = createShockwave({ add, spray, flashLight, shade: (x: number, z: number, radius: number): void => cues.shade(x, z, radius), kit, dust: DUST });
 
   const burst = (x: number, z: number, radius: number, skill: SkillDef): void => {
@@ -285,6 +288,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
     else if (look === 'whirl') cues.whirl(x, z, radius, color);
     else if (look === 'gust') cues.gust(x, z, radius, color, skill.vfx.light);
     else if (look === 'gale') cues.gale(x, z, radius, color);
+    else if (look === 'mend') mends.pulse(x, z, radius, color);
     else ring(x, z, radius, color, EFFECTS.ringTime);
   };
 
@@ -461,6 +465,9 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
             break;
           case 'skill_impact':
             onImpact(event);
+            break;
+          case 'heal':
+            mends.touch(event.pos.x, event.pos.z, colorOf(event.skill.vfx.color));
             break;
           case 'skill_interrupt':
             cancelOwned(event.actorId);

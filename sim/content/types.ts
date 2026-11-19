@@ -6,6 +6,7 @@ export type { WeaponKind } from './item-types.ts';
 import type { FlaskDef } from './flasks.ts';
 import type { AttachmentDef, RigDef } from './rig-types.ts';
 import type { AlarmDef, AmbushBehaviour, BodyCrust, DormantDef, FactionDef, FieldDelivery, GuardDef, MarkDelivery, MonsterElement, MonsterModDef, MonsterPoise, MonsterTrail, RecoveryDef, ReviveDelivery, SkillEchoing, StalkerBehaviour, SummonDef, SwarmBehaviour } from './combat-types.ts';
+import type { NovaSide, SkillMend } from './mend-types.ts';
 import type { AreaDelivery, BeamDelivery, BlinkDelivery, ChainDelivery, SkillShape, SkillUnlock } from './shape-types.ts';
 import type { TradeDef } from './trade-types.ts';
 import type { RunTableDef } from './run-table-types.ts';
@@ -93,6 +94,7 @@ export interface ArcDelivery {
 export interface NovaDelivery {
   readonly type: 'nova';
   readonly radius: number;
+  readonly side: NovaSide;
 }
 
 export interface ProjectileDelivery {
@@ -173,6 +175,7 @@ export interface SkillDef extends SkillShape, SkillEchoing {
   readonly lifeOnHit: number;
   readonly leech: number;
   readonly leaves: string | null;
+  readonly mend: SkillMend | null;
 }
 
 export interface ChaserBehaviour {

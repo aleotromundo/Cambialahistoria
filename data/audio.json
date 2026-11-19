@@ -76,6 +76,7 @@
     "static_brand": [{ "sound": "brand_mark", "volume": 0.6, "maxVoices": 3, "pitch": [0.95, 1.05] }],
     "living_wire": [{ "sound": "electric_crackle", "volume": 0.7, "maxVoices": 2 }],
     "held_breath": [{ "sound": "hex_charge", "volume": 0.9, "maxVoices": 1 }],
+    "mending_pulse": [{ "sound": "mender_thread", "volume": 0.7, "maxVoices": 1, "pitch": [1.05, 1.15] }],
     "wisp_volley": [{ "sound": "wisp_whoosh", "volume": 0.85, "maxVoices": 2 }],
     "ghost_wave": [{ "sound": "ghost_horn", "volume": 0.85, "maxVoices": 2 }],
     "spell_strike": [{ "sound": "spell_flick", "volume": 0.8, "maxVoices": 3 }],
@@ -103,6 +104,7 @@
     "rival_clap": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 1 }, { "sound": "thunder_crack", "volume": 0.6, "maxVoices": 1 }],
     "colossus_slam": [{ "sound": "ground_boom", "volume": 1, "maxVoices": 1 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "gate_ring": [{ "sound": "ground_boom", "volume": 0.8, "maxVoices": 1 }],
+    "mending_pulse": [{ "sound": "shimmer_faint", "volume": 0.8, "maxVoices": 1 }, { "sound": "bell_chime", "volume": 0.35, "maxVoices": 1, "pitch": [1.1, 1.2] }],
     "thunderhead": [
       { "sound": "ground_boom", "volume": 1, "maxVoices": 2 },
       { "sound": "thunder_crack", "volume": 0.7, "maxVoices": 2 }

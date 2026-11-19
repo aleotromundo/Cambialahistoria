@@ -30,6 +30,8 @@ import { PICTURE_VIEWS } from './rig-types.ts';
 import { surface } from './parse-surface.ts';
 import { line, npcs, quest, worldDef, zone } from './parse-world.ts';
 import { skillVfx } from './parse-vfx.ts';
+import { mendProblems, skillMend } from './mend.ts';
+import { NOVA_SIDES } from './mend-types.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
 import { xpAfter } from './parse-xp.ts';
 import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, share, text, textList } from './read.ts';
@@ -115,7 +117,7 @@ function delivery(value: unknown, where: string): Delivery {
   if (type === 'revive') return reviveDelivery(source, where);
   if (type === 'field') return fieldDelivery(source, where);
   if (type === 'arc') return { type, reach: numeric(source, 'reach', where), arcDegrees: numeric(source, 'arcDegrees', where) };
-  if (type === 'nova') return { type, radius: numeric(source, 'radius', where) };
+  if (type === 'nova') return { type, radius: numeric(source, 'radius', where), side: source['side'] === undefined ? 'foes' : choice(source, 'side', NOVA_SIDES, where) };
   return {
     type,
     speed: numeric(source, 'speed', where),
@@ -179,6 +181,7 @@ function skill(value: unknown, where: string): SkillDef {
     combo: skillCombo(source['combo'], `${where}.combo`),
     ...skillMotion(source, where),
     ...skillPress(source, where),
+    mend: skillMend(source['mend'], `${where}.mend`),
   };
 }
 
@@ -533,7 +536,7 @@ export function contentProblems(content: Content): string[] {
   need(content.zones.get(content.world.town)?.kind === 'town', `world names ${content.world.town} as its town, which is not a town zone`);
   need(content.world.acts.length > 0, 'world has no act');
   for (const problem of atlasProblems(content)) problems.push(problem);
-  for (const problem of [...combatProblems(content), ...rankProblems(content), ...tailwindProblems(content), ...markerProblems(content), ...factionProblems(content), ...shapeProblems(content), ...bookProblems(content)]) problems.push(problem);
+  for (const problem of [...combatProblems(content), ...rankProblems(content), ...tailwindProblems(content), ...markerProblems(content), ...factionProblems(content), ...shapeProblems(content), ...mendProblems(content), ...bookProblems(content)]) problems.push(problem);
   for (const problem of storyProblems(content)) problems.push(problem);
   for (const zoneDef of content.zones.values()) {
     const at: string = `zone ${zoneDef.id}`;

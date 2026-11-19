@@ -1039,6 +1039,28 @@
     "vfx": { "style": "gap", "color": "#d8d0ff", "cue": "hand" }
   },
   {
+    "id": "mending_pulse",
+    "name": "Mending Pulse",
+    "description": "Light spreads out from you and closes wounds: you and every ally it reaches regain 10 life and 12% of their maximum life.",
+    "icon": "mending_pulse",
+    "animation": "cast",
+    "manaCost": 22,
+    "cooldown": 8,
+    "windup": 0.3,
+    "recovery": 0.25,
+    "scalesWithAttackSpeed": false,
+    "engageRange": 6,
+    "delivery": { "type": "nova", "radius": 6, "side": "allies" },
+    "mend": { "flat": 10, "lifeShare": 0.12 },
+    "damage": { "weaponPercent": 0, "flatMin": 0, "flatMax": 0 },
+    "knockback": 0,
+    "stagger": 0,
+    "shake": 0,
+    "hitStop": 0,
+    "category": "defence",
+    "vfx": { "style": "mend", "color": "#7fe39a", "cue": "hand", "light": 0.6 }
+  },
+  {
     "id": "storm_bolt_lance",
     "name": "Storm Lance",
     "description": "Storm Bolt becomes a lance: one straight line of lightning that strikes everything along it at once.",

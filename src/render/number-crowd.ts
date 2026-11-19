@@ -1,4 +1,4 @@
-export type NumberKind = 'plain' | 'crit' | 'hurt' | 'burn' | 'gold';
+export type NumberKind = 'plain' | 'crit' | 'hurt' | 'burn' | 'gold' | 'heal';
 
 export const NUMBER_CROWD = {
   mergeWindow: 0.25,
@@ -22,9 +22,9 @@ export type NumberPlan =
   | { readonly type: 'merge'; readonly index: number }
   | { readonly type: 'new'; readonly retire: readonly number[]; readonly quiet: boolean };
 
-const CROWDS: Readonly<Record<NumberKind, boolean>> = { plain: true, burn: true, crit: false, hurt: false, gold: false };
+const CROWDS: Readonly<Record<NumberKind, boolean>> = { plain: true, burn: true, crit: false, hurt: false, gold: false, heal: false };
 
-const MERGES: Readonly<Record<NumberKind, boolean>> = { plain: true, burn: true, hurt: true, crit: false, gold: false };
+const MERGES: Readonly<Record<NumberKind, boolean>> = { plain: true, burn: true, hurt: true, crit: false, gold: false, heal: true };
 
 export function joinsCrowd(kind: NumberKind): boolean {
   return CROWDS[kind];

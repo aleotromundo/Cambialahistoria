@@ -522,6 +522,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'stun':
           case 'mend':
+          case 'heal':
             break;
           case 'damage': {
             const isPlayer: boolean = event.targetTeam === 'player';

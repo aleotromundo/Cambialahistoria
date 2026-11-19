@@ -49,9 +49,10 @@ const NUMBER_TEXT: Readonly<Record<NumberKind, (amount: number) => string>> = {
   burn: (amount: number): string => `${amount}`,
   crit: (amount: number): string => `${amount}!`,
   gold: (amount: number): string => `+${amount} gold`,
+  heal: (amount: number): string => `+${amount}`,
 };
 
-const KIND_CLASS: Readonly<Record<NumberKind, string>> = { plain: '', crit: 'crit', hurt: 'hurt', burn: 'burn', gold: 'gold' };
+const KIND_CLASS: Readonly<Record<NumberKind, string>> = { plain: '', crit: 'crit', hurt: 'hurt', burn: 'burn', gold: 'gold', heal: 'heal' };
 
 export function createFloatingNumbers(layer: HTMLElement, camera: IsoCamera): FloatingNumbers {
   const numbers: FloatingNumber[] = [];

@@ -361,6 +361,9 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
           case 'mend':
             if (event.actorId === api.world.player.id) globes.mendLife();
             break;
+          case 'heal':
+            if (event.targetId === api.world.player.id) globes.mendLife();
+            break;
           case 'tailwind_end':
             tailwind.spent(event.best, event.points, event.xp, event.gold);
             break;

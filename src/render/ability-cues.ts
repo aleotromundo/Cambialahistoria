@@ -47,7 +47,7 @@ function round(radius: number): GroundLightForm {
   return { kind: 'round', radius, inner: 0, arc: Math.PI * 2 };
 }
 
-export type NovaLook = 'shockwave' | 'whirl' | 'gust' | 'ring' | 'gale';
+export type NovaLook = 'shockwave' | 'whirl' | 'gust' | 'ring' | 'gale' | 'mend';
 
 const NOVA_LOOK: Readonly<Record<VfxStyle, NovaLook>> = {
   slash: 'whirl',
@@ -64,6 +64,7 @@ const NOVA_LOOK: Readonly<Record<VfxStyle, NovaLook>> = {
   fork: 'ring',
   beam: 'ring',
   gap: 'ring',
+  mend: 'mend',
   gale: 'gale',
   wave: 'gust',
   fire: 'shockwave',

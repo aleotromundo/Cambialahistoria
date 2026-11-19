@@ -20,8 +20,8 @@ const slam: SkillDef = must(ARENA_CONTENT.skills.get('test_slam'), 'test_slam');
 
 const SKILLS: readonly SkillDef[] = [
   { ...slam, id: 'k_cut', cooldown: 0, windup: 0.3, recovery: 0.2, engageRange: 2.5, echo: 0 },
-  { ...slam, id: 'k_ring', cooldown: 0, windup: 0.3, recovery: 0.2, engageRange: 2.5, echo: 0, delivery: { type: 'nova', radius: 5 } },
-  { ...slam, id: 'k_far', cooldown: 0, windup: 0.3, recovery: 0.2, engageRange: 12, echo: 0, delivery: { type: 'nova', radius: 5 } },
+  { ...slam, id: 'k_ring', cooldown: 0, windup: 0.3, recovery: 0.2, engageRange: 2.5, echo: 0, delivery: { type: 'nova', radius: 5, side: 'foes' } },
+  { ...slam, id: 'k_far', cooldown: 0, windup: 0.3, recovery: 0.2, engageRange: 12, echo: 0, delivery: { type: 'nova', radius: 5, side: 'foes' } },
 ];
 
 function phase(below: number, extra: Partial<BossPhase>): BossPhase {

@@ -255,6 +255,7 @@ export function cuesForEvent(audio: AudioDef, world: World, event: WorldEvent): 
     case 'blink':
     case 'soak':
     case 'mend':
+    case 'heal':
     case 'skill_unlocked':
     case 'chart_point':
     case 'monster_remove':

@@ -423,6 +423,11 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
             floating.show({ amount: event.amount, kind, key: event.targetId, x: event.pos.x, y, z: event.pos.z });
             break;
           }
+          case 'heal': {
+            const y: number = floorUp(event.pos.x, hooks.heightOf(event.targetId) * OVERLAYS.numberHeight, event.pos.z);
+            floating.show({ amount: Math.max(1, Math.round(event.amount)), kind: 'heal', key: event.targetId, x: event.pos.x, y, z: event.pos.z });
+            break;
+          }
           case 'drop':
             labelFor(world, event.ground);
             break;
