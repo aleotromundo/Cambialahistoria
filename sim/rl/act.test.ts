@@ -38,9 +38,9 @@ void test('the bot’s commands read back as the action that would send them', (
   const from: Vec2 = { x: arena.world.player.pos.x, z: arena.world.player.pos.z };
   const action = { move: 3, skill: 1, target: Math.min(1, seen.view.targets.length - 1), use: 2 };
   const sent: Command[] = commandsFor(arena.world, action, seen.view);
-  assert.deepEqual(actionOf(arena.world, sent, seen.view, from, NO_CARRY), { ...action, move: 0 });
+  assert.deepEqual(actionOf(sent, seen.view, from, NO_CARRY), { ...action, move: 0 });
   const both: Command[] = [{ type: 'flask', slot: 0 }, { type: 'flask', slot: 1 }];
-  assert.equal(actionOf(arena.world, both, seen.view, from, NO_CARRY).use, 1);
+  assert.equal(actionOf(both, seen.view, from, NO_CARRY).use, 1);
   const walked: Command[] = commandsFor(arena.world, { move: 6, skill: 0, target: 0, use: 0 }, seen.view);
-  assert.deepEqual(actionOf(arena.world, walked, seen.view, from, NO_CARRY), { move: 6, skill: 0, target: 0, use: 0 });
+  assert.deepEqual(actionOf(walked, seen.view, from, NO_CARRY), { move: 6, skill: 0, target: 0, use: 0 });
 });

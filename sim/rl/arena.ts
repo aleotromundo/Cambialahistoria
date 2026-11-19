@@ -6,6 +6,7 @@ import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
 import { createWorld } from '../world/create.ts';
 import { regardOf } from '../world/factions.ts';
+import { findHero } from '../world/heroes.ts';
 import { fightZones } from '../world/moments.ts';
 import { spawnPackNear } from '../world/monsters.ts';
 import { stepWorld } from '../world/step.ts';
@@ -238,7 +239,7 @@ export function arenaContext(arena: Arena): ObserveContext {
 }
 
 export function arenaObservation(arena: Arena): Observation {
-  const seen: Observation = observe(arena.world, arenaContext(arena));
+  const seen: Observation = observe(arena.world, arenaContext(arena), arena.world.player);
   noteSeen(arena.recall, arena.world, seenMonsters(seen.view));
   return seen;
 }
@@ -251,12 +252,12 @@ export function afterTick(arena: Arena, events: readonly WorldEvent[]): number {
     const spawned: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.id === event.monsterId);
     if (spawned !== undefined) arena.lives.set(spawned.id, spawned.maxLife);
   }
-  const lifeOf = (id: number): number => arena.lives.get(id) ?? world.monsters.find((monster: MonsterState): boolean => monster.id === id)?.maxLife ?? world.player.maxLife;
-  recallEvents(arena.recall, world, events);
+  const lifeOf = (id: number): number => arena.lives.get(id) ?? world.monsters.find((monster: MonsterState): boolean => monster.id === id)?.maxLife ?? findHero(world, id)?.maxLife ?? world.player.maxLife;
+  recallEvents(arena.recall, world, world.player, events);
   let reward: number = rewardFor(events, { playerId: world.player.id, playerMaxLife: world.player.maxLife, lifeOf, calm: calm(arena), worth: (ground: GroundItem): number => worth(world.content, arena.pickup, ground) }, arena.tally);
   if (!world.player.alive || arena.tally.deaths > 0) arena.outcome = 'died';
   else if (arena.clearedAt !== null) {
-    if (world.time - arena.clearedAt >= ARENA.lootTime || !wantedLeft(world, arena.pickup)) arena.outcome = 'won';
+    if (world.time - arena.clearedAt >= ARENA.lootTime || !wantedLeft(world, world.player, arena.pickup)) arena.outcome = 'won';
   }
   else if (foesLeft(arena) === 0 && arena.nextWaveAt === null) {
     reward += REWARD.wave;
@@ -265,7 +266,7 @@ export function afterTick(arena: Arena, events: readonly WorldEvent[]): number {
     if (arena.wave >= arena.options.waves) {
       reward += REWARD.win;
       arena.clearedAt = world.time;
-      if (!wantedLeft(world, arena.pickup)) arena.outcome = 'won';
+      if (!wantedLeft(world, world.player, arena.pickup)) arena.outcome = 'won';
     }
     else arena.nextWaveAt = world.time + ARENA.waveGap;
   }

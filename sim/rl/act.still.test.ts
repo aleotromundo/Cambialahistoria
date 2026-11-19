@@ -35,12 +35,12 @@ void test('the bot carrying on an earlier walk or attack is labelled as that wal
   const seen: Observation = arenaObservation(arena);
   const from: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   world.player.intent = { type: 'move', dest: { x: from.x, z: from.z + RL.moveReach } };
-  assert.deepEqual(actionOf(world, [], seen.view, from, carriedOrder(world, seen.view, from)), { move: moveBucket({ x: 0, z: RL.moveReach }), skill: 0, target: 0, use: 0 });
+  assert.deepEqual(actionOf([], seen.view, from, carriedOrder(world, seen.view, from)), { move: moveBucket({ x: 0, z: RL.moveReach }), skill: 0, target: 0, use: 0 });
   const target = must(seen.view.targets[0], 'target');
   world.player.intent = { type: 'attack', slot: 0, targetId: target.id };
-  assert.deepEqual(actionOf(world, [], seen.view, from, carriedOrder(world, seen.view, from)), { move: 0, skill: 1, target: 0, use: 0 });
+  assert.deepEqual(actionOf([], seen.view, from, carriedOrder(world, seen.view, from)), { move: 0, skill: 1, target: 0, use: 0 });
   world.player.intent = { type: 'idle' };
-  assert.deepEqual(actionOf(world, [], seen.view, from, carriedOrder(world, seen.view, from)), NO_ACTION);
+  assert.deepEqual(actionOf([], seen.view, from, carriedOrder(world, seen.view, from)), NO_ACTION);
 });
 
 void test('a drink alone does not stop a walk', (): void => {
@@ -65,5 +65,5 @@ void test('an attack on a monster outside the view is labelled at the nearest mo
   world.player.intent = { type: 'attack', slot: 0, targetId: far.id };
   const carried = carriedOrder(world, narrowed, from);
   far.alive = false;
-  assert.deepEqual(actionOf(world, [], narrowed, from, carried), { move: 0, skill: 1, target: nearest, use: 0 });
+  assert.deepEqual(actionOf([], narrowed, from, carried), { move: 0, skill: 1, target: nearest, use: 0 });
 });

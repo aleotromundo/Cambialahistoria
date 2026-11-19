@@ -29,7 +29,7 @@ function quietArena(): Arena {
 }
 
 function seenWith(arena: Arena, rule: PickupRule): Observation {
-  return observe(arena.world, { ...arenaContext(arena), pickup: rule });
+  return observe(arena.world, { ...arenaContext(arena), pickup: rule }, arena.world.player);
 }
 
 function selfValue(seen: Observation, name: string): number {

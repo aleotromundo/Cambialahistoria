@@ -18,7 +18,9 @@ import { recallEvents } from './recall.ts';
 const CONTENT: Content = loadContent();
 const SKILL: SkillDef = must(CONTENT.skills.get('cleave'), 'cleave');
 const CROWD = { foes: 14, gold: 30, away: 9, moved: 4, later: 0.1 } as const;
-const NOBODY: View = { seen: [], targets: [], pickup: null };
+function nobody(world: World): View {
+  return { hero: world.player, seen: [], targets: [], pickup: null };
+}
 
 function selfValue(seen: Observation, name: string): number {
   return seen.obs[SELF_FEATURES.indexOf(name)] ?? Number.NaN;
@@ -37,7 +39,7 @@ void test('a recent hit shows as life lost and a fresh hit, and fades with time'
   const world: World = arena.world;
   const foe: MonsterState = must(world.monsters[0], 'a foe');
   assert.equal(selfValue(arenaObservation(arena), 'since_hit'), 1);
-  recallEvents(arena.recall, world, [struck(world, foe.id, world.player.maxLife / 4)]);
+  recallEvents(arena.recall, world, world.player, [struck(world, foe.id, world.player.maxLife / 4)]);
   const hurt: Observation = arenaObservation(arena);
   assert.equal(selfValue(hurt, 'life_lost_recent'), 0.25);
   assert.equal(selfValue(hurt, 'since_hit'), 0);
@@ -51,14 +53,14 @@ void test('a recent hit shows as life lost and a fresh hit, and fades with time'
 void test('a hit from a foe that has since died is not an unseen attacker', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 37, jitter: 0, waves: 1 });
   const foe: MonsterState = must(arena.world.monsters[0], 'a foe');
-  recallEvents(arena.recall, arena.world, [struck(arena.world, foe.id, 5)]);
+  recallEvents(arena.recall, arena.world, arena.world.player, [struck(arena.world, foe.id, 5)]);
   foe.alive = false;
   assert.equal(selfValue(arenaObservation(arena), 'hit_unseen'), 0);
 });
 
 void test('burning ground is not an unseen attacker', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 37, jitter: 0, waves: 1 });
-  recallEvents(arena.recall, arena.world, [struck(arena.world, HEAT.sourceId, 5)]);
+  recallEvents(arena.recall, arena.world, arena.world.player, [struck(arena.world, HEAT.sourceId, 5)]);
   assert.equal(selfValue(arenaObservation(arena), 'hit_unseen'), 0);
 });
 
@@ -80,7 +82,7 @@ void test('a foe that drops out of view is remembered at its last seen spot', ()
   assert.equal(entityValue(crowded, RL.entities, 'hostile'), 1);
   const seen: readonly MonsterState[] = seenMonsters(crowded.view);
   const hidden: MonsterState = must(world.monsters.find((monster: MonsterState): boolean => monster.alive && !seen.includes(monster)), 'a foe out of view');
-  recallEvents(arena.recall, world, [struck(world, hidden.id, 5)]);
+  recallEvents(arena.recall, world, world.player, [struck(world, hidden.id, 5)]);
   assert.equal(selfValue(arenaObservation(arena), 'hit_unseen'), 1);
 });
 
@@ -91,11 +93,11 @@ void test('a remembered foe keeps the spot it was seen at, and is forgotten when
   const seenAt: Vec2 = { x: foe.pos.x, z: foe.pos.z };
   arenaObservation(arena);
   foe.pos = { x: foe.pos.x + CROWD.moved, z: foe.pos.z };
-  const remembered: Seen[] = rememberedFoes(world, arena.recall, NOBODY);
+  const remembered: Seen[] = rememberedFoes(world, arena.recall, nobody(world));
   assert.ok(remembered.some((seen: Seen): boolean => seen.type === 'remembered' && seen.pos.x === seenAt.x && seen.pos.z === seenAt.z));
   assert.ok(remembered.length <= RL.remembered);
   foe.alive = false;
-  assert.ok(!rememberedFoes(world, arena.recall, NOBODY).some((seen: Seen): boolean => seen.pos.x === seenAt.x && seen.pos.z === seenAt.z));
+  assert.ok(!rememberedFoes(world, arena.recall, nobody(world)).some((seen: Seen): boolean => seen.pos.x === seenAt.x && seen.pos.z === seenAt.z));
   world.time += RL.memoryWindow + CROWD.later;
-  assert.deepEqual(rememberedFoes(world, arena.recall, NOBODY), []);
+  assert.deepEqual(rememberedFoes(world, arena.recall, nobody(world)), []);
 });

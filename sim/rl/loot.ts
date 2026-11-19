@@ -3,7 +3,7 @@ import type { RarityDef } from '../content/item-types.ts';
 import type { Vec2 } from '../math.ts';
 import type { Rng } from '../rng.ts';
 import { fits as fitsIn } from '../stacks.ts';
-import type { GroundItem, ItemInstance, World } from '../world/types.ts';
+import type { GroundItem, ItemInstance, PlayerState, World } from '../world/types.ts';
 import { RL } from './contract.ts';
 
 export interface PickupRule {
@@ -28,12 +28,12 @@ export function rollRule(content: Content, rng: Rng): PickupRule {
   return { minRarity: rng.int(0, content.rarities.length) };
 }
 
-export function fits(world: World, ground: GroundItem): boolean {
+export function fits(world: World, hero: PlayerState, ground: GroundItem): boolean {
   switch (ground.content.kind) {
     case 'gold':
       return true;
     case 'item':
-      return fitsIn(world.content, world.player.inventory, ground.content.item);
+      return fitsIn(world.content, hero.inventory, ground.content.item);
   }
   return false;
 }
@@ -48,28 +48,28 @@ export function worth(content: Content, rule: PickupRule, ground: GroundItem): n
   return 0;
 }
 
-export function wanted(world: World, rule: PickupRule, ground: GroundItem): boolean {
-  return worth(world.content, rule, ground) > 0 && fits(world, ground);
+export function wanted(world: World, hero: PlayerState, rule: PickupRule, ground: GroundItem): boolean {
+  return worth(world.content, rule, ground) > 0 && fits(world, hero, ground);
 }
 
-export function wantedLeft(world: World, rule: PickupRule): boolean {
-  return world.ground.some((ground: GroundItem): boolean => wanted(world, rule, ground));
+export function wantedLeft(world: World, hero: PlayerState, rule: PickupRule): boolean {
+  return world.ground.some((ground: GroundItem): boolean => wanted(world, hero, rule, ground));
 }
 
-export function nearestWanted(world: World, rule: PickupRule): GroundItem | null {
-  const from: Vec2 = world.player.pos;
+export function nearestWanted(world: World, hero: PlayerState, rule: PickupRule): GroundItem | null {
+  const from: Vec2 = hero.pos;
   let best: GroundItem | null = null;
   let bestGap: number = RL.pickupReach;
   for (const ground of world.ground) {
     const reach: number = Math.hypot(ground.pos.x - from.x, ground.pos.z - from.z);
-    if (reach > bestGap || !wanted(world, rule, ground)) continue;
+    if (reach > bestGap || !wanted(world, hero, rule, ground)) continue;
     best = ground;
     bestGap = reach;
   }
   return best;
 }
 
-export function bagFree(world: World): number {
-  const cells: readonly (ItemInstance | null)[] = world.player.inventory;
+export function bagFree(hero: PlayerState): number {
+  const cells: readonly (ItemInstance | null)[] = hero.inventory;
   return cells.filter((cell: ItemInstance | null): boolean => cell === null).length / Math.max(1, cells.length);
 }

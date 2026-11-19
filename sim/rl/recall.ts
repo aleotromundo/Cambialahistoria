@@ -1,5 +1,5 @@
 import type { Vec2 } from '../math.ts';
-import type { MonsterState, World, WorldEvent } from '../world/types.ts';
+import type { MonsterState, PlayerState, World, WorldEvent } from '../world/types.ts';
 import type { Action } from './contract.ts';
 import { NO_ACTION, RL } from './contract.ts';
 
@@ -38,15 +38,15 @@ function fresh(moments: readonly Moment[], now: number): Moment[] {
   return moments.filter((moment: Moment): boolean => now - moment.time <= RL.recentWindow);
 }
 
-export function recallEvents(recall: Recall, world: World, events: readonly WorldEvent[]): void {
+export function recallEvents(recall: Recall, world: World, hero: PlayerState, events: readonly WorldEvent[]): void {
   const now: number = world.time;
   for (const event of events) {
     if (event.type !== 'damage') continue;
-    if (event.targetId === world.player.id) {
+    if (event.targetId === hero.id) {
       recall.taken.push({ time: now, amount: event.amount });
       recall.lastHit = { time: now, sourceId: event.sourceId };
     }
-    else if (event.targetTeam === 'monster') recall.dealt.push({ time: now, amount: event.amount });
+    else if (event.targetTeam === 'monster' || event.sourceId === hero.id) recall.dealt.push({ time: now, amount: event.amount });
   }
   recall.taken = fresh(recall.taken, now);
   recall.dealt = fresh(recall.dealt, now);

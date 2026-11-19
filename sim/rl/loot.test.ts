@@ -52,18 +52,18 @@ void test('gold is always wanted, and an item only from the rule rarity up', ():
   assert.equal(worth(CONTENT, rule, gold), 1);
   assert.equal(worth(CONTENT, rule, best), 2);
   assert.equal(worth(CONTENT, rule, plain), 0);
-  assert.ok(wanted(world, rule, gold) && wanted(world, rule, best) && !wanted(world, rule, plain));
-  assert.ok(!wanted(world, { minRarity: CONTENT.rarities.length }, best));
+  assert.ok(wanted(world, world.player, rule, gold) && wanted(world, world.player, rule, best) && !wanted(world, world.player, rule, plain));
+  assert.ok(!wanted(world, world.player, { minRarity: CONTENT.rarities.length }, best));
 });
 
 void test('a full bag leaves an item unwanted and bag space reads empty', (): void => {
   const world: World = quietWorld();
   const low: RarityDef = must(CONTENT.rarities[0], 'the lowest rarity');
-  assert.equal(bagFree(world), 1);
+  assert.equal(bagFree(world.player), 1);
   world.player.inventory = world.player.inventory.map((): ItemInstance => itemOf(world, low));
-  assert.equal(bagFree(world), 0);
+  assert.equal(bagFree(world.player), 0);
   const stuck: GroundItem = dropOnGround(world, world.player.pos, { kind: 'item', item: itemOf(world, low) });
-  assert.equal(wanted(world, { minRarity: 0 }, stuck), false);
+  assert.equal(wanted(world, world.player, { minRarity: 0 }, stuck), false);
 });
 
 void test('the nearest wanted loot is chosen over nearer loot the rule passes over', (): void => {
@@ -71,7 +71,7 @@ void test('the nearest wanted loot is chosen over nearer loot the rule passes ov
   const low: RarityDef = must(CONTENT.rarities[0], 'the lowest rarity');
   dropOnGround(world, world.player.pos, { kind: 'item', item: itemOf(world, low) });
   const gold: GroundItem = dropOnGround(world, { x: world.player.pos.x + FAR.gap, z: world.player.pos.z }, { kind: 'gold', amount: 3 });
-  assert.equal(nearestWanted(world, { minRarity: 1 }), gold);
+  assert.equal(nearestWanted(world, world.player, { minRarity: 1 }), gold);
 });
 
 void test('a stack that only partly fits the bag does not fit, so it is never offered', (): void => {
@@ -81,6 +81,6 @@ void test('a stack that only partly fits the bag does not fit, so it is never of
   world.player.inventory = world.player.inventory.map((): ItemInstance => itemOf(world, low));
   world.player.inventory[0] = withCount(hour, HOURS.held);
   const lying: GroundItem = dropOnGround(world, world.player.pos, { kind: 'item', item: withCount(hour, HOURS.lying) });
-  assert.equal(fits(world, lying), false);
-  assert.equal(nearestWanted(world, { minRarity: 0 }), null);
+  assert.equal(fits(world, world.player, lying), false);
+  assert.equal(nearestWanted(world, world.player, { minRarity: 0 }), null);
 });

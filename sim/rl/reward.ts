@@ -44,6 +44,15 @@ export function rewardFor(events: readonly WorldEvent[], inputs: RewardInputs, t
         tally.kills += 1;
       }
     }
+    else if (event.type === 'damage' && event.targetId !== inputs.playerId && event.sourceId === inputs.playerId) {
+      const share: number = Math.min(1, event.amount / Math.max(1, inputs.lifeOf(event.targetId)));
+      reward += share * REWARD.dealt;
+      tally.dealt += share;
+      if (event.killed) {
+        reward += REWARD.kill;
+        tally.kills += 1;
+      }
+    }
     else if (event.type === 'damage' && event.targetId === inputs.playerId) {
       const share: number = Math.min(1, event.amount / Math.max(1, inputs.playerMaxLife));
       reward -= share * REWARD.taken;

@@ -14,7 +14,7 @@ import { burning, slowed } from './status.ts';
 const HIT = { amount: 200, tempo: 0.5, slowFor: 2, strain: 0.7, guard: 0.4, root: 1.5, gold: 10 } as const;
 
 function seenOf(world: World): Observation {
-  return observe(world, { situation: 'arena', objective: null, timeLeft: 0, progress: 0, recall: createRecall(), pickup: TAKE_ALL });
+  return observe(world, { situation: 'arena', objective: null, timeLeft: 0, progress: 0, recall: createRecall(), pickup: TAKE_ALL }, world.player);
 }
 
 function selfValue(seen: Observation, name: string): number {

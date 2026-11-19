@@ -5,7 +5,8 @@ import { damageTakenScale, expectedHit, skillCycle } from './stats.ts';
 import { areaOf, stokedOffence } from './world/areas.ts';
 import { burnTicks } from './world/combat.ts';
 import { heatAt } from './world/heat.ts';
-import type { AreaState, MonsterState, Offence, World } from './world/types.ts';
+import { hostileFrom } from './world/heroes.ts';
+import type { AreaState, MonsterState, Offence, PlayerState, World } from './world/types.ts';
 
 export const FINISH = {
   swings: 2,
@@ -18,14 +19,14 @@ function hurtsToStand(skill: SkillDef): boolean {
   return skill.damage.weaponPercent > 0 || skill.damage.flatMax > 0 || skill.burn !== null;
 }
 
-function burningUnder(world: World, area: AreaState, pos: ReadonlyVec2): boolean {
+function burningUnder(world: World, hero: PlayerState, area: AreaState, pos: ReadonlyVec2): boolean {
   const delivery = areaOf(area.skill);
-  return delivery !== null && area.offence.team === 'monster' && hurtsToStand(area.skill) && distance(pos, area.pos) <= delivery.radius + world.player.radius;
+  return delivery !== null && hostileFrom(world, hero, area.offence.team, area.ownerId) && hurtsToStand(area.skill) && distance(pos, area.pos) <= delivery.radius + hero.radius;
 }
 
-export function hotGround(world: World, pos: ReadonlyVec2): boolean {
+export function hotGround(world: World, pos: ReadonlyVec2, hero: PlayerState = world.player): boolean {
   if (heatAt(world, pos.x, pos.z) !== null) return true;
-  return world.areas.some((area: AreaState): boolean => burningUnder(world, area, pos));
+  return world.areas.some((area: AreaState): boolean => burningUnder(world, hero, area, pos));
 }
 
 function heatBurn(world: World, pos: ReadonlyVec2, seconds: number): number {
@@ -46,7 +47,7 @@ function hitOf(world: World, offence: Offence, skill: SkillDef): number {
 
 function areaBurn(world: World, area: AreaState, pos: ReadonlyVec2, seconds: number): number {
   const delivery = areaOf(area.skill);
-  if (delivery === null || delivery.pulse <= 0 || !burningUnder(world, area, pos)) return 0;
+  if (delivery === null || delivery.pulse <= 0 || !burningUnder(world, world.player, area, pos)) return 0;
   const window: number = Math.min(seconds, area.timeLeft);
   if (area.pulseLeft > window) return 0;
   const pulses: number = 1 + Math.floor((window - area.pulseLeft) / delivery.pulse);

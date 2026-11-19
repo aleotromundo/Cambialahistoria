@@ -41,6 +41,6 @@ void test('the hero sees its last two decisions, newest first', (): void => {
 void test('the danger in each move direction is written in move order', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 13, jitter: 0, waves: 1 });
   const seen: Observation = arenaObservation(arena);
-  const danger: number[] = dangerAround(arena.world);
+  const danger: number[] = dangerAround(arena.world, arena.world.player);
   for (let move: number = 0; move < MOVE_CHOICES; move += 1) assert.equal(selfValue(seen, `danger_${move}`), danger[move]);
 });

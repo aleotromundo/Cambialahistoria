@@ -21,7 +21,7 @@ function entityValue(seen: Observation, index: number, name: string): number {
 
 void test('an arena observation fills the whole layout with finite numbers', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 11, jitter: 0.2, waves: 1 });
-  const seen: Observation = observe(arena.world, arenaContext(arena));
+  const seen: Observation = observe(arena.world, arenaContext(arena), arena.world.player);
   assert.equal(seen.obs.length, LAYOUT.size);
   assert.equal(seen.mask.length, LAYOUT.mask);
   assert.ok(seen.obs.every((value: number): boolean => Number.isFinite(value) && Math.abs(value) <= RL.clip));
@@ -29,7 +29,7 @@ void test('an arena observation fills the whole layout with finite numbers', ():
 
 void test('the targets come first among the things the hero sees, nearest first', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 12, jitter: 0, waves: 1 });
-  const seen: Observation = observe(arena.world, arenaContext(arena));
+  const seen: Observation = observe(arena.world, arenaContext(arena), arena.world.player);
   assert.ok(seen.view.targets.length > 0);
   seen.view.targets.forEach((monster, index: number): void => {
     const shown = seen.view.seen[index];
@@ -44,9 +44,9 @@ void test('a skill reaches the model through its numbers, so a buff shows up wit
   const arena: Arena = createArena(CONTENT, { seed: 13, jitter: 0, waves: 1 });
   const player = arena.world.player;
   const basic: SkillDef = must(player.skills[0], 'basic attack');
-  const before: Observation = observe(arena.world, arenaContext(arena));
+  const before: Observation = observe(arena.world, arenaContext(arena), arena.world.player);
   player.skills[0] = { ...basic, damage: { ...basic.damage, weaponPercent: basic.damage.weaponPercent * 2 }, cooldown: basic.cooldown + 3 };
-  const after: Observation = observe(arena.world, arenaContext(arena));
+  const after: Observation = observe(arena.world, arenaContext(arena), arena.world.player);
   assert.ok(Math.abs(slotValue(after, 0, 'weapon_percent') - slotValue(before, 0, 'weapon_percent') * 2) < 1e-5);
   assert.ok(slotValue(after, 0, 'cooldown') > slotValue(before, 0, 'cooldown'));
   assert.equal(slotValue(after, 0, 'present'), 1);
@@ -54,7 +54,7 @@ void test('a skill reaches the model through its numbers, so a buff shows up wit
 
 void test('the mask allows doing nothing and refuses empty skill slots and missing targets', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 14, jitter: 0, waves: 1 });
-  const seen: Observation = observe(arena.world, arenaContext(arena));
+  const seen: Observation = observe(arena.world, arenaContext(arena), arena.world.player);
   assert.equal(seen.mask[0], 1);
   assert.equal(seen.mask[MOVE_CHOICES], 1);
   arena.world.player.skills.forEach((skill: SkillDef | null, slot: number): void => {

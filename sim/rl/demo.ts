@@ -84,7 +84,7 @@ export function demonstrate(content: Content, options: ArenaOptions): DemoEpisod
       oneTick(bot);
     }
     listening = false;
-    const action: Action = actionOf(world, heard, seen.view, from, carried);
+    const action: Action = actionOf(heard, seen.view, from, carried);
     samples.push({ obs: seen.obs, mask: seen.mask, action });
     rememberDecision(arena.recall, action);
     arena.decisions += 1;

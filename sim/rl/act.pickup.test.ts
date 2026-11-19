@@ -42,7 +42,7 @@ void test('the pick up choice walks to the nearest thing on the ground and takes
   const commands: Command[] = commandsFor(arena.world, { move: 0, skill: 0, target: 0, use: PICKUP_CHOICE }, seen.view);
   assert.deepEqual(commands, [{ type: 'pickup', groundId: gold.id }]);
   const from: Vec2 = { x: arena.world.player.pos.x, z: arena.world.player.pos.z };
-  assert.equal(actionOf(arena.world, commands, seen.view, from, NO_CARRY).use, PICKUP_CHOICE);
+  assert.equal(actionOf(commands, seen.view, from, NO_CARRY).use, PICKUP_CHOICE);
   let taken: boolean = false;
   for (let tick: number = 0; tick < WALK.ticks && !taken; tick += 1) {
     const events: WorldEvent[] = stepWorld(arena.world, tick === 0 ? commands : [], RL.tick);

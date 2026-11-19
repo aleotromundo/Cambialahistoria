@@ -23,7 +23,7 @@ void test('damage taken and dealt count for the recent window, then fade', (): v
   const world: World = arena.world;
   const foe: MonsterState = must(world.monsters[0], 'a foe');
   const recall: Recall = createRecall();
-  recallEvents(recall, world, [hit(world, world.player.id, foe.id, 12), hit(world, foe.id, world.player.id, 30)]);
+  recallEvents(recall, world, world.player, [hit(world, world.player.id, foe.id, 12), hit(world, foe.id, world.player.id, 30)]);
   assert.equal(recentAmount(recall.taken, world.time), 12);
   assert.equal(recentAmount(recall.dealt, world.time), 30);
   assert.deepEqual(recall.lastHit, { time: world.time, sourceId: foe.id });

@@ -15,7 +15,7 @@ const WAIT = { ticks: 900 } as const;
 void test('an empty arena holds no danger in any direction', (): void => {
   const arena: Arena = createArena(CONTENT, { seed: 5, jitter: 0, waves: 1 });
   arena.world.monsters = [];
-  assert.deepEqual(dangerAround(arena.world), Array.from({ length: MOVE_CHOICES }, (): number => 0));
+  assert.deepEqual(dangerAround(arena.world, arena.world.player), Array.from({ length: MOVE_CHOICES }, (): number => 0));
 });
 
 void test('a blow winding up on the hero shows as danger where the hero stands', (): void => {
@@ -26,7 +26,7 @@ void test('a blow winding up on the hero shows as danger where the hero stands',
     warned = botInDanger(arena.world, arena.world.player.pos);
   }
   assert.ok(warned, 'no monster ever wound up a blow on the hero');
-  const danger: number[] = dangerAround(arena.world);
+  const danger: number[] = dangerAround(arena.world, arena.world.player);
   assert.equal(danger[0], 1);
   assert.ok(danger.every((value: number): boolean => value >= 0 && value <= 1));
 });

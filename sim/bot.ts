@@ -22,7 +22,8 @@ import { markRow } from './world/hazards.ts';
 import { anyUpgradeReady } from './world/flask-tiers.ts';
 import { hotGround, worthTheBurn } from './bot-ground.ts';
 import { playerMayStrike } from './world/factions.ts';
-import type { ActionState, Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, World, WorldEvent } from './world/types.ts';
+import { hostileFrom } from './world/heroes.ts';
+import type { ActionState, Actor, Command, EchoState, ItemInstance, HazardState, MomentState, MonsterState, NpcState, PlayerState, World, WorldEvent } from './world/types.ts';
 
 export const BOT = {
   step: 1 / 30,
@@ -206,8 +207,8 @@ function attack(world: World, target: MonsterState, crowd: readonly MonsterState
   return { type: 'skill', slot: 0, aim: target.pos, targetId: target.id };
 }
 
-function struck(world: World, skill: SkillDef, origin: ReadonlyVec2, direction: ReadonlyVec2, target: ReadonlyVec2 | null, pos: ReadonlyVec2): boolean {
-  const reach: number = world.player.radius + BOT.dodgeMargin;
+function struck(hero: PlayerState, skill: SkillDef, origin: ReadonlyVec2, direction: ReadonlyVec2, target: ReadonlyVec2 | null, pos: ReadonlyVec2): boolean {
+  const reach: number = hero.radius + BOT.dodgeMargin;
   const offset: Vec2 = { x: pos.x - origin.x, z: pos.z - origin.z };
   const gap: number = Math.hypot(offset.x, offset.z);
   const delivery = skill.delivery;
@@ -255,32 +256,33 @@ function struck(world: World, skill: SkillDef, origin: ReadonlyVec2, direction: 
   return false;
 }
 
-function threatened(world: World, monster: MonsterState, pos: ReadonlyVec2, reaction: number): boolean {
-  const action = monster.action;
-  if (!monster.alive || action === null || action.phase !== 'windup' || action.windup - action.timeLeft < reaction) return false;
-  const origin: ReadonlyVec2 = action.skill.leap === null ? monster.pos : (action.target ?? monster.pos);
-  return struck(world, action.skill, origin, action.direction, action.target, pos);
+function threatened(hero: PlayerState, actor: Actor, pos: ReadonlyVec2, reaction: number): boolean {
+  const action = actor.action;
+  if (!actor.alive || action === null || action.phase !== 'windup' || action.windup - action.timeLeft < reaction) return false;
+  const origin: ReadonlyVec2 = action.skill.leap === null ? actor.pos : (action.target ?? actor.pos);
+  return struck(hero, action.skill, origin, action.direction, action.target, pos);
 }
 
-function blowComing(world: World, pos: ReadonlyVec2, reaction: number): boolean {
-  const reach: number = world.player.radius + BOT.dodgeMargin;
-  if (world.hazards.some((hazard: HazardState): boolean => hazard.team === 'monster' && Math.hypot(pos.x - hazard.pos.x, pos.z - hazard.pos.z) <= hazard.radius + reach)) return true;
-  return struckSoon(world, pos, reaction);
+function blowComing(world: World, pos: ReadonlyVec2, reaction: number, hero: PlayerState): boolean {
+  const reach: number = hero.radius + BOT.dodgeMargin;
+  if (world.hazards.some((hazard: HazardState): boolean => hostileFrom(world, hero, hazard.team, hazard.ownerId) && Math.hypot(pos.x - hazard.pos.x, pos.z - hazard.pos.z) <= hazard.radius + reach)) return true;
+  return struckSoon(world, pos, reaction, hero);
 }
 
-export function botInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
-  return hotGround(world, pos) || blowComing(world, pos, reaction);
+export function botInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0, hero: PlayerState = world.player): boolean {
+  return hotGround(world, pos, hero) || blowComing(world, pos, reaction, hero);
 }
 
-function struckSoon(world: World, pos: ReadonlyVec2, reaction: number): boolean {
-  if (world.echoes.some((echo: EchoState): boolean => echo.team === 'monster' && struck(world, echo.skill, echo.origin, echo.direction, echo.target, pos))) return true;
-  return world.monsters.some((monster: MonsterState): boolean => threatened(world, monster, pos, reaction));
+function struckSoon(world: World, pos: ReadonlyVec2, reaction: number, hero: PlayerState): boolean {
+  if (world.echoes.some((echo: EchoState): boolean => hostileFrom(world, hero, echo.team, echo.ownerId) && struck(hero, echo.skill, echo.origin, echo.direction, echo.target, pos))) return true;
+  if (world.monsters.some((monster: MonsterState): boolean => threatened(hero, monster, pos, reaction))) return true;
+  return world.heroes.some((other: PlayerState): boolean => other !== hero && other.party !== hero.party && threatened(hero, other, pos, reaction));
 }
 
 function spinBlowComing(world: World, pos: ReadonlyVec2, reaction: number): boolean {
   const reach: number = world.player.radius + BOT.dodgeMargin;
   if (world.hazards.some((hazard: HazardState): boolean => harmful(hazard) && hazardDue(world, hazard, pos, reach, reaction))) return true;
-  return struckSoon(world, pos, reaction);
+  return struckSoon(world, pos, reaction, world.player);
 }
 
 export function spinInDanger(world: World, pos: ReadonlyVec2, reaction: number = 0): boolean {
@@ -289,7 +291,7 @@ export function spinInDanger(world: World, pos: ReadonlyVec2, reaction: number =
 
 function spinSafe(world: World, spot: ReadonlyVec2): boolean {
   const reach: number = world.player.radius + BOT.dodgeMargin;
-  return within(world, spot, BOT.bubbleKeep) && !hotGround(world, spot) && !world.hazards.some((hazard: HazardState): boolean => harmful(hazard) && distance(spot, hazard.pos) <= hazard.radius + reach) && !struckSoon(world, spot, 0);
+  return within(world, spot, BOT.bubbleKeep) && !hotGround(world, spot) && !world.hazards.some((hazard: HazardState): boolean => harmful(hazard) && distance(spot, hazard.pos) <= hazard.radius + reach) && !struckSoon(world, spot, 0, world.player);
 }
 
 function spinRefuge(world: World, pack: readonly MonsterState[], heatOnly: boolean): Vec2 | null {
@@ -410,7 +412,7 @@ function fightStep(bot: Bot, prefer: string | null): boolean {
     }
   }
   if (bot.habits.dodges && world.player.alive && !gliding(world) && botInDanger(world, world.player.pos, bot.habits.reaction)) {
-    const heatOnly: boolean = !blowComing(world, world.player.pos, bot.habits.reaction);
+    const heatOnly: boolean = !blowComing(world, world.player.pos, bot.habits.reaction, world.player);
     const finishing: boolean = heatOnly && finishesHere(world, target);
     const moving: boolean = !finishing && world.player.intent.type === 'move' && !botInDanger(world, world.player.intent.dest);
     const spot: Vec2 | null = moving || finishing ? null : refuge(world, target, heatOnly);
