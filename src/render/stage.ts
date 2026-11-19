@@ -361,7 +361,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       const now: number = performance.now();
       aimCutaway(camera, { x: heroAt.x, z: heroAt.y, floor: heroFloor }, drawing.x, drawing.y, drawnAt === null ? 0 : (now - drawnAt) / 1000);
       drawnAt = now;
-      if (renderer.shadowMap.enabled) steadyShadows.steady(scene);
+      if (renderer.shadowMap.enabled) steadyShadows.sweep(scene);
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
       gpu.mark();

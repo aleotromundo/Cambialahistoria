@@ -1,10 +1,15 @@
 import type { Object3D, Side } from 'three';
 import { BackSide, DoubleSide, FrontSide, InstancedMesh, Material, Mesh, MeshDepthMaterial, SkinnedMesh, Texture } from 'three';
 
+export const STEADY_SHADOWS = {
+  objectsPerFrame: 1500,
+} as const;
+
 const SHADOW_SIDE: Readonly<Record<Side, Side>> = { [FrontSide]: BackSide, [BackSide]: FrontSide, [DoubleSide]: DoubleSide };
 
 export interface SteadyShadows {
   steady(root: Object3D): void;
+  sweep(root: Object3D): void;
   depthFor(mesh: Mesh): MeshDepthMaterial | null;
 }
 
@@ -36,8 +41,10 @@ export function depthKey(mesh: Mesh): string | null {
   return [mesh instanceof SkinnedMesh ? 'skinned' : 'rigid', instanced, `morphs:${morphs}`, map === null ? 'nomap' : `map:${map.channel}`, `side:${side}`, Reflect.get(material, 'wireframe') === true ? 'wire' : 'solid'].join('|');
 }
 
-export function createSteadyShadows(): SteadyShadows {
+export function createSteadyShadows(objectsPerFrame: number = STEADY_SHADOWS.objectsPerFrame): SteadyShadows {
   const pool: Map<string, MeshDepthMaterial> = new Map<string, MeshDepthMaterial>();
+  const unsteady: WeakMap<Mesh, Material | Material[]> = new WeakMap<Mesh, Material | Material[]>();
+  const pending: Object3D[] = [];
   const depthFor = (mesh: Mesh): MeshDepthMaterial | null => {
     const key: string | null = depthKey(mesh);
     if (key === null) return null;
@@ -47,14 +54,27 @@ export function createSteadyShadows(): SteadyShadows {
     pool.set(key, made);
     return made;
   };
+  const settle = (object: Object3D): void => {
+    if (!isMesh(object) || !object.castShadow || object.customDepthMaterial !== undefined) return;
+    if (unsteady.get(object) === object.material) return;
+    const depth: MeshDepthMaterial | null = depthFor(object);
+    if (depth === null) unsteady.set(object, object.material);
+    else object.customDepthMaterial = depth;
+  };
   return {
     depthFor,
     steady(root: Object3D): void {
-      root.traverse((object: Object3D): void => {
-        if (!isMesh(object) || !object.castShadow || object.customDepthMaterial !== undefined) return;
-        const depth: MeshDepthMaterial | null = depthFor(object);
-        if (depth !== null) object.customDepthMaterial = depth;
-      });
+      root.traverse(settle);
+    },
+    sweep(root: Object3D): void {
+      if (pending.length === 0) pending.push(root);
+      for (let left: number = objectsPerFrame; left > 0; left -= 1) {
+        const object: Object3D | undefined = pending.pop();
+        if (object === undefined) return;
+        if (!object.visible) continue;
+        settle(object);
+        for (const child of object.children) pending.push(child);
+      }
     },
   };
 }
