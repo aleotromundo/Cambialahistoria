@@ -15,7 +15,7 @@ import type { ReadonlyVec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot } from '../math.ts';
 import { resolveSkill } from '../stats.ts';
 import { elementOf, heroTaken, monsterTaken } from './element.ts';
-import { grantXp, killReduction, killXp, refreshPlayer } from './character.ts';
+import { grantXp, killReduction, killXp, refreshHero } from './character.ts';
 import { firePowers } from '../powers.ts';
 import { isDashing, isInvulnerable, rollsSteady } from './dash.ts';
 import { knockTime, readablePush } from './movement.ts';
@@ -314,8 +314,8 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     ignite(world, offence, target, skill, amount);
     drench(world, target, skill);
   }
-  if (offence.sourceId === world.player.id && target.kind === 'monster') powersOnHit(world, target, skill, killed);
-  if (target.kind === 'player' && !killed && striker?.kind === 'monster' && firePowers(world, { on: 'struck', skill, target: striker, at: { x: target.pos.x, z: target.pos.z } })) refreshPlayer(world);
+  if (striker?.kind === 'player' && target.kind === 'monster') powersOnHit(world, striker, target, skill, killed);
+  if (target.kind === 'player' && !killed && striker?.kind === 'monster' && firePowers(world, target, { on: 'struck', skill, target: striker, at: { x: target.pos.x, z: target.pos.z } })) refreshHero(world, target);
   brandStrike(world, offence, target, skill);
   return true;
 }
@@ -345,11 +345,11 @@ export function drench(world: World, target: Actor, skill: SkillDef): void {
   world.events.push({ type: 'soak', targetId: target.id, skill, pos: { x: target.pos.x, z: target.pos.z }, duration: skill.soak.duration });
 }
 
-function powersOnHit(world: World, target: Actor, skill: SkillDef, killed: boolean): void {
+function powersOnHit(world: World, hero: PlayerState, target: Actor, skill: SkillDef, killed: boolean): void {
   const at: ReadonlyVec2 = { x: target.pos.x, z: target.pos.z };
-  const hit: boolean = firePowers(world, { on: 'hit', skill, target, at });
-  const slain: boolean = killed && firePowers(world, { on: 'kill', skill, target, at });
-  if (hit || slain) refreshPlayer(world);
+  const hit: boolean = firePowers(world, hero, { on: 'hit', skill, target, at });
+  const slain: boolean = killed && firePowers(world, hero, { on: 'kill', skill, target, at });
+  if (hit || slain) refreshHero(world, hero);
 }
 
 function burstBrand(world: World, target: Actor, brand: BrandState): void {

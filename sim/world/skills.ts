@@ -11,7 +11,7 @@ import type { Offence } from './combat.ts';
 import type { TargetFilter } from './combat.ts';
 import { applyHit, offenceOf, targetsWhere, teamOf } from './combat.ts';
 import { clearSpot, passesThrough, stepDash } from './dash.ts';
-import { refreshPlayer } from './character.ts';
+import { refreshHero } from './character.ts';
 import { firePowers } from '../powers.ts';
 import { effectiveAttackSpeed } from '../stats.ts';
 import { widenedSkill } from '../widen.ts';
@@ -374,7 +374,7 @@ function stepChannel(world: World, actor: Actor, action: ActionState): void {
     }
     action.timeLeft += channelInterval(actor, action.skill, hold.interval);
     resolveImpact(world, actor, action, action.skill);
-    if (actor.kind === 'player' && firePowers(world, { on: 'pulse', skill: action.skill, target: null, at: actor.pos })) refreshPlayer(world);
+    if (actor.kind === 'player' && firePowers(world, actor, { on: 'pulse', skill: action.skill, target: null, at: actor.pos })) refreshHero(world, actor);
   }
 }
 
@@ -394,7 +394,7 @@ function finishWindup(world: World, actor: Actor, action: ActionState): void {
     action.timeLeft += action.recovery;
   }
   resolveImpact(world, actor, action, skill);
-  if (actor.kind === 'player' && firePowers(world, { on: 'use', skill: action.skill, target: null, at: from })) refreshPlayer(world);
+  if (actor.kind === 'player' && firePowers(world, actor, { on: 'use', skill: action.skill, target: null, at: from })) refreshHero(world, actor);
 }
 
 export function stepAction(world: World, actor: Actor, dt: number): void {

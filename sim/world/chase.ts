@@ -27,8 +27,7 @@ function bodyBlocker(monster: MonsterState, hero: Vec2, heroRadius: number): Blo
   return { kind: 'capsule', from: { x: monster.pos.x, z: monster.pos.z }, to: { x: monster.pos.x, z: monster.pos.z }, radius };
 }
 
-function touching(world: World, target: Actor): MonsterState | null {
-  const player: PlayerState = world.player;
+function touching(world: World, player: PlayerState, target: Actor): MonsterState | null {
   let closest: MonsterState | null = null;
   let closestGap: number = CHASE.touch;
   for (const monster of world.monsters) {
@@ -41,8 +40,7 @@ function touching(world: World, target: Actor): MonsterState | null {
   return closest;
 }
 
-function stepAround(world: World, body: MonsterState, target: Actor): Vec2 | null {
-  const player: PlayerState = world.player;
+function stepAround(world: World, player: PlayerState, body: MonsterState, target: Actor): Vec2 | null {
   const apart: number = Math.max(distance(player.pos, body.pos), Number.EPSILON);
   const outX: number = (player.pos.x - body.pos.x) / apart;
   const outZ: number = (player.pos.z - body.pos.z) / apart;
@@ -52,10 +50,9 @@ function stepAround(world: World, body: MonsterState, target: Actor): Vec2 | nul
   return lineWalkable(world.grid, player.pos, point) ? point : null;
 }
 
-export function chasePath(world: World, target: Actor): Vec2[] {
-  const player: PlayerState = world.player;
-  const body: MonsterState | null = touching(world, target);
-  const out: Vec2 | null = body === null ? null : stepAround(world, body, target);
+export function chasePath(world: World, player: PlayerState, target: Actor): Vec2[] {
+  const body: MonsterState | null = touching(world, player, target);
+  const out: Vec2 | null = body === null ? null : stepAround(world, player, body, target);
   const from: Vec2 = out ?? player.pos;
   const bodies: Blocker[] = world.monsters.filter((monster: MonsterState): boolean => monster.alive && monster.id !== target.id && distance(monster.pos, player.pos) <= CHASE.bodyReach).map((monster: MonsterState): Blocker => bodyBlocker(monster, from, world.content.player.radius));
   const stamp: GridStamp | null = bodies.length === 0 ? null : stampBlockers(world.grid, bodies, world.content.player.radius);
@@ -87,8 +84,7 @@ function aheadOf(from: Vec2, toward: Vec2, point: Vec2): boolean {
   return (point.x - from.x) * (toward.x - from.x) + (point.z - from.z) * (toward.z - from.z) > 0;
 }
 
-export function blockerInReach(world: World, target: Actor, skill: SkillDef): MonsterState | null {
-  const player: PlayerState = world.player;
+export function blockerInReach(world: World, player: PlayerState, target: Actor, skill: SkillDef): MonsterState | null {
   const heading: Vec2 = player.path[0] ?? target.pos;
   let best: MonsterState | null = null;
   let bestGap: number = Infinity;

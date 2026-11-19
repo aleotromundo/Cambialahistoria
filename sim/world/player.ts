@@ -43,6 +43,7 @@ import type { PortalEnd } from './portal-types.ts';
 import { sameFloor } from './floors.ts';
 import { goThrough, portalEndHere, stepChannel, useItem } from './portal.ts';
 import { readyBenchHero } from './bench-hero.ts';
+import { isPrimary } from './heroes.ts';
 
 const PLAYER = {
   moveDeadZone: 0.7,
@@ -57,6 +58,8 @@ const PLAYER = {
   spawnAhead: 7,
 } as const;
 
+const HERO_COMMANDS: ReadonlySet<Command['type']> = new Set<Command['type']>(['flask', 'hold', 'steer', 'move', 'walk', 'stop', 'skill']);
+
 const STEERING: Steering = {
   maxTurnRate: 24,
   minTurnRate: 2,
@@ -68,13 +71,12 @@ const STEERING: Steering = {
   settleRadius: 0.3,
 };
 
-function setDestination(world: World, dest: Vec2): void {
-  world.player.path = walkPath(world, world.player.pos, dest);
-  world.player.repathTimer = PLAYER.repathInterval;
+function setDestination(world: World, player: PlayerState, dest: Vec2): void {
+  player.path = walkPath(world, player.pos, dest);
+  player.repathTimer = PLAYER.repathInterval;
 }
 
-function heldAim(world: World, dest: Vec2): Vec2 {
-  const player: PlayerState = world.player;
+function heldAim(world: World, player: PlayerState, dest: Vec2): Vec2 {
   const walkable: boolean = isWalkable(world.grid, dest.x, dest.z);
   return walkable ? dest : (nearFace(world.grid, player.pos, dest) ?? dest);
 }
@@ -84,8 +86,7 @@ interface HeldWay {
   readonly pressing: boolean;
 }
 
-function roundWay(world: World, dest: Vec2): Vec2[] | null {
-  const player: PlayerState = world.player;
+function roundWay(world: World, player: PlayerState, dest: Vec2): Vec2[] | null {
   if (lineWalkable(world.grid, player.pos, dest)) return null;
   const openings: Vec2[] = pastBlocks(world.grid, player.pos, dest);
   if (openings.length === 0) return null;
@@ -96,12 +97,11 @@ function roundWay(world: World, dest: Vec2): Vec2[] | null {
   return roundPast(world.grid, player.pos, openings);
 }
 
-function heldWay(world: World, dest: Vec2, around: boolean): HeldWay {
-  const player: PlayerState = world.player;
-  const round: Vec2[] | null = around ? roundWay(world, dest) : null;
+function heldWay(world: World, player: PlayerState, dest: Vec2, around: boolean): HeldWay {
+  const round: Vec2[] | null = around ? roundWay(world, player, dest) : null;
   if (round !== null) return { path: round, pressing: false };
   const pressing: boolean = !isWalkable(world.grid, dest.x, dest.z);
-  const aim: Vec2 = heldAim(world, dest);
+  const aim: Vec2 = heldAim(world, player, dest);
   const direct: Vec2[] | null = directPath(world.grid, player.pos, aim);
   if (direct !== null) return { path: direct, pressing };
   if (player.repathTimer > 0) return { path: player.path.length > 0 ? player.path : null, pressing };
@@ -109,9 +109,8 @@ function heldWay(world: World, dest: Vec2, around: boolean): HeldWay {
   return { path: walkPath(world, player.pos, aim), pressing };
 }
 
-function startMove(world: World, dest: Vec2, held: boolean, around: boolean): void {
-  const player: PlayerState = world.player;
-  const way: HeldWay = held || around ? heldWay(world, dest, around) : { path: walkPath(world, player.pos, dest), pressing: false };
+function startMove(world: World, player: PlayerState, dest: Vec2, held: boolean, around: boolean): void {
+  const way: HeldWay = held || around ? heldWay(world, player, dest, around) : { path: walkPath(world, player.pos, dest), pressing: false };
   const path: Vec2[] | null = way.path;
   if (path === null) return;
   const goal: Vec2 = path.at(-1) ?? player.pos;
@@ -133,14 +132,13 @@ function startMove(world: World, dest: Vec2, held: boolean, around: boolean): vo
   if (!held && !around) player.repathTimer = PLAYER.repathInterval;
 }
 
-function fire(world: World, skill: SkillDef, aim: Vec2, slot: number): boolean {
-  const player: PlayerState = world.player;
+function fire(world: World, player: PlayerState, skill: SkillDef, aim: Vec2, slot: number): boolean {
   const reason: NoticeReason | null = blockedReason(player, skill);
   if (reason !== null) {
     world.events.push({ type: 'notice', reason });
     return false;
   }
-  closeDialogue(world, false);
+  if (isPrimary(world, player)) closeDialogue(world, false);
   player.intent = { type: 'idle' };
   player.path = [];
   startSkill(world, player, skill, { x: aim.x - player.pos.x, z: aim.z - player.pos.z }, slot);
@@ -151,25 +149,24 @@ function inEngageRange(world: World, player: PlayerState, target: Actor, skill: 
   return distance(player.pos, target.pos) - target.radius <= skill.engageRange && sameFloor(world, player.pos, target.pos);
 }
 
-function useSkill(world: World, command: SkillCommand): void {
-  const player: PlayerState = world.player;
+function useSkill(world: World, player: PlayerState, command: SkillCommand): void {
   const skill: SkillDef | undefined = player.skills[command.slot] ?? undefined;
   if (skill === undefined) {
     const clicked: Actor | null = command.targetId === null ? null : findActor(world, command.targetId);
-    if (clicked !== null && clicked.alive) startMove(world, clicked.pos, false, false);
+    if (clicked !== null && clicked.alive) startMove(world, player, clicked.pos, false, false);
     return;
   }
   if (skill.delivery.type === 'dash') {
-    if (canDash(player)) fire(world, skill, dashAim(player, command.aim, player.path), command.slot);
+    if (canDash(player)) fire(world, player, skill, dashAim(player, command.aim, player.path), command.slot);
     return;
   }
   const target: Actor | null = command.targetId === null ? null : findActor(world, command.targetId);
   if (target === null || !target.alive || glidesWith(skill.press)) {
-    fire(world, skill, target?.alive === true ? target.pos : command.aim, command.slot);
+    fire(world, player, skill, target?.alive === true ? target.pos : command.aim, command.slot);
     return;
   }
   if (inEngageRange(world, player, target, skill)) {
-    fire(world, skill, target.pos, command.slot);
+    fire(world, player, skill, target.pos, command.slot);
     return;
   }
   const reason: NoticeReason | null = blockedReason(player, skill);
@@ -177,35 +174,34 @@ function useSkill(world: World, command: SkillCommand): void {
     world.events.push({ type: 'notice', reason });
     return;
   }
-  closeDialogue(world, false);
+  if (isPrimary(world, player)) closeDialogue(world, false);
   if (player.intent.type !== 'attack') player.chase = freshChase(player.pos);
   const fresh: boolean = player.intent.type !== 'attack' || player.intent.targetId !== target.id;
   player.intent = { type: 'attack', slot: command.slot, targetId: target.id };
   if (fresh) faceToward(player, { x: target.pos.x - player.pos.x, z: target.pos.z - player.pos.z }, Math.PI);
-  chaseTarget(world, target);
+  chaseTarget(world, player, target);
 }
 
-function chaseTarget(world: World, target: Actor): void {
-  world.player.path = chasePath(world, target);
-  world.player.repathTimer = PLAYER.repathInterval;
+function chaseTarget(world: World, player: PlayerState, target: Actor): void {
+  player.path = chasePath(world, player, target);
+  player.repathTimer = PLAYER.repathInterval;
 }
 
-function strikeBlocker(world: World, target: Actor, skill: SkillDef, slot: number): boolean {
-  const blocker: Actor | null = blockerInReach(world, target, skill);
-  if (blocker === null || !fire(world, skill, blocker.pos, slot)) return false;
-  world.player.intent = { type: 'attack', slot, targetId: target.id };
-  world.player.chase = freshChase(world.player.pos);
+function strikeBlocker(world: World, player: PlayerState, target: Actor, skill: SkillDef, slot: number): boolean {
+  const blocker: Actor | null = blockerInReach(world, player, target, skill);
+  if (blocker === null || !fire(world, player, skill, blocker.pos, slot)) return false;
+  player.intent = { type: 'attack', slot, targetId: target.id };
+  player.chase = freshChase(player.pos);
   return true;
 }
 
-function act(world: World, command: Command): void {
-  const player: PlayerState = world.player;
+function act(world: World, player: PlayerState, command: Command): void {
   switch (command.type) {
     case 'move':
-      startMove(world, command.dest, command.held, false);
+      startMove(world, player, command.dest, command.held, false);
       return;
     case 'walk':
-      startMove(world, command.dest, command.held, true);
+      startMove(world, player, command.dest, command.held, true);
       return;
     case 'stop':
       player.intent = { type: 'idle' };
@@ -215,11 +211,11 @@ function act(world: World, command: Command): void {
       const ground: GroundItem | undefined = world.ground.find((entry: GroundItem): boolean => entry.id === command.groundId);
       if (ground === undefined) return;
       player.intent = { type: 'pickup', groundId: ground.id };
-      setDestination(world, ground.pos);
+      setDestination(world, player, ground.pos);
       return;
     }
     case 'skill':
-      useSkill(world, command);
+      useSkill(world, player, command);
       return;
     case 'travel': {
       const exit: ZoneExit | null = findExit(world.zone, command.exit);
@@ -229,14 +225,14 @@ function act(world: World, command: Command): void {
         return;
       }
       player.intent = { type: 'travel', exit: exit.id };
-      setDestination(world, exit);
+      setDestination(world, player, exit);
       return;
     }
     case 'talk': {
       const npc: NpcState | null = findNpc(world, command.npcId);
       if (npc === null) return;
       player.intent = { type: 'talk', npcId: npc.id };
-      setDestination(world, npc.pos);
+      setDestination(world, player, npc.pos);
       return;
     }
     case 'teleport':
@@ -246,7 +242,7 @@ function act(world: World, command: Command): void {
       const end: PortalEnd | null = portalEndHere(world);
       if (end === null) return;
       player.intent = { type: 'portal' };
-      setDestination(world, end.pos);
+      setDestination(world, player, end.pos);
       return;
     }
     case 'use': {
@@ -255,7 +251,7 @@ function act(world: World, command: Command): void {
       const placed: Vec2 | null = station?.placed ?? cache?.placed ?? null;
       if (placed === null) return;
       player.intent = { type: 'use', prop: command.prop };
-      setDestination(world, placed);
+      setDestination(world, player, placed);
       return;
     }
     case 'open': {
@@ -263,7 +259,7 @@ function act(world: World, command: Command): void {
       const spot: Vec2 | null = moment === null ? null : chestSpot(moment);
       if (moment === null || spot === null) return;
       player.intent = { type: 'open', momentId: moment.id };
-      setDestination(world, spot);
+      setDestination(world, player, spot);
       return;
     }
     case 'flask':
@@ -302,8 +298,8 @@ function cutByDodge(player: PlayerState, command: Command | null): boolean {
   return skill !== undefined && dodgesAtOnce(skill, command.targetId !== null) && canDash(player) && blockedReason(player, skill) === null;
 }
 
-export function handleCommand(world: World, command: Command): void {
-  const player: PlayerState = world.player;
+export function handleCommand(world: World, player: PlayerState, command: Command): void {
+  if (!isPrimary(world, player) && !HERO_COMMANDS.has(command.type)) return;
   switch (command.type) {
     case 'equip':
       equipFromInventory(world, command.inventoryIndex);
@@ -345,7 +341,7 @@ export function handleCommand(world: World, command: Command): void {
       setOut(world, command.setup);
       return;
     case 'flask':
-      useFlask(world, command.slot);
+      useFlask(world, player, command.slot);
       return;
     case 'trade':
       handleTrade(world, command.action);
@@ -392,14 +388,14 @@ export function handleCommand(world: World, command: Command): void {
     case 'teleport':
     case 'enter_portal':
       if (!player.alive) return;
-      if (command.type !== 'skill') closeDialogue(world, false);
+      if (command.type !== 'skill' && isPrimary(world, player)) closeDialogue(world, false);
       if ((command.type === 'move' || command.type === 'walk') && aimGlide(player, command.dest)) return;
       if (cutByDodge(player, command)) player.action = null;
       if (player.action !== null) {
-        player.buffered = bufferPress(player.buffered, pressOf(world, command));
+        player.buffered = bufferPress(player.buffered, pressOf(world, player, command));
         return;
       }
-      act(world, command);
+      act(world, player, command);
       return;
   }
 }
@@ -410,8 +406,8 @@ function rankOf(player: PlayerState, command: Command): PressRank {
   return skill !== null && isDodge(skill) ? 'dodge' : 'skill';
 }
 
-function pressOf(world: World, command: Command): Buffered {
-  return { command, rank: rankOf(world.player, command), at: world.time };
+function pressOf(world: World, player: PlayerState, command: Command): Buffered {
+  return { command, rank: rankOf(player, command), at: world.time };
 }
 
 function canTake(player: PlayerState, command: Command): boolean {
@@ -421,14 +417,12 @@ function canTake(player: PlayerState, command: Command): boolean {
   return blockedReason(player, skill) === null && (!isDodge(skill) || canDash(player));
 }
 
-function pursue(world: World, dest: Vec2, dt: number): void {
-  const player: PlayerState = world.player;
+function pursue(world: World, player: PlayerState, dest: Vec2, dt: number): void {
   player.repathTimer -= dt;
-  if (player.repathTimer <= 0) setDestination(world, dest);
+  if (player.repathTimer <= 0) setDestination(world, player, dest);
 }
 
-function stepIntent(world: World, dt: number): void {
-  const player: PlayerState = world.player;
+function stepIntent(world: World, player: PlayerState, dt: number): void {
   const intent = player.intent;
   switch (intent.type) {
     case 'idle':
@@ -447,7 +441,7 @@ function stepIntent(world: World, dt: number): void {
         return;
       }
       if (inEngageRange(world, player, target, skill)) {
-        if (!fire(world, skill, target.pos, intent.slot)) {
+        if (!fire(world, player, skill, target.pos, intent.slot)) {
           player.intent = { type: 'idle' };
           player.path = [];
         }
@@ -455,11 +449,11 @@ function stepIntent(world: World, dt: number): void {
       }
       if (chaseStalled(player, dt)) {
         player.chase = freshChase(player.pos);
-        if (strikeBlocker(world, target, skill, intent.slot)) return;
+        if (strikeBlocker(world, player, target, skill, intent.slot)) return;
         player.repathTimer = 0;
       }
       player.repathTimer -= dt;
-      if (player.repathTimer <= 0) chaseTarget(world, target);
+      if (player.repathTimer <= 0) chaseTarget(world, player, target);
       return;
     }
     case 'pickup': {
@@ -474,7 +468,7 @@ function stepIntent(world: World, dt: number): void {
         pickUp(world, ground);
         return;
       }
-      pursue(world, ground.pos, dt);
+      pursue(world, player, ground.pos, dt);
       return;
     }
     case 'travel': {
@@ -497,7 +491,7 @@ function stepIntent(world: World, dt: number): void {
         } else travelThrough(world, exit);
         return;
       }
-      pursue(world, exit, dt);
+      pursue(world, player, exit, dt);
       return;
     }
     case 'talk': {
@@ -513,11 +507,11 @@ function stepIntent(world: World, dt: number): void {
         meetNpc(world, npc);
         return;
       }
-      pursue(world, npc.pos, dt);
+      pursue(world, player, npc.pos, dt);
       return;
     }
     case 'use':
-      useProp(world, intent.prop, dt);
+      useProp(world, player, intent.prop, dt);
       return;
     case 'portal_channel':
       stepChannel(world, intent, dt);
@@ -535,7 +529,7 @@ function stepIntent(world: World, dt: number): void {
         goThrough(world, end);
         return;
       }
-      pursue(world, end.pos, dt);
+      pursue(world, player, end.pos, dt);
       return;
     }
     case 'open': {
@@ -552,20 +546,19 @@ function stepIntent(world: World, dt: number): void {
         openChest(world, moment);
         return;
       }
-      pursue(world, spot, dt);
+      pursue(world, player, spot, dt);
       return;
     }
   }
 }
 
-function useProp(world: World, index: number, dt: number): void {
-  const player: PlayerState = world.player;
+function useProp(world: World, player: PlayerState, index: number, dt: number): void {
   const station: Station | null = stationAt(world, index);
   const cache: Cache | null = station === null ? cacheAt(world, index) : null;
   const placed: Vec2 | null = station?.placed ?? cache?.placed ?? null;
   const reach: number = station !== null ? stationReach(world, station) : cache !== null ? cacheReach(world, cache) : 0;
   if (placed !== null && distance(player.pos, placed) > reach) {
-    pursue(world, placed, dt);
+    pursue(world, player, placed, dt);
     return;
   }
   player.intent = { type: 'idle' };
@@ -574,8 +567,7 @@ function useProp(world: World, index: number, dt: number): void {
   if (cache !== null) openCache(world, cache);
 }
 
-function collectGold(world: World): void {
-  const player: PlayerState = world.player;
+function collectGold(world: World, player: PlayerState): void {
   for (const ground of world.ground) {
     if (ground.content.kind !== 'gold' || ground.age < PLAYER.goldDelay) continue;
     if (distance(player.pos, ground.pos) <= world.content.player.goldMagnetRadius) pickUp(world, ground);
@@ -611,8 +603,7 @@ function emitSteps(world: World, player: PlayerState, travelled: number): void {
   }
 }
 
-export function stepPlayer(world: World, dt: number): void {
-  const player: PlayerState = world.player;
+export function stepPlayer(world: World, player: PlayerState, dt: number): void {
   player.motion = 'still';
   if (!player.alive) {
     player.walked = { x: 0, z: 0 };
@@ -633,10 +624,10 @@ export function stepPlayer(world: World, dt: number): void {
   if (player.action === null) {
     const taken: Taken = takePress(player.buffered, world.time, (command: Command): boolean => canTake(player, command));
     player.buffered = taken.rest;
-    if (taken.press !== null) act(world, taken.press.command);
+    if (taken.press !== null) act(world, player, taken.press.command);
   }
   if (player.action === null) {
-    stepIntent(world, dt);
+    stepIntent(world, player, dt);
     if (!isBusy(player) && !beingKnocked(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
       const step: SteerStep = steerAlong(world.grid, player, player.path, player.stats.moveSpeed * tailwindPace(world) * player.tempo * dt, dt, STEERING);
       const stuck: boolean = step.tried > PLAYER.stuckStep && step.moved <= PLAYER.stuckStep;
@@ -650,7 +641,8 @@ export function stepPlayer(world: World, dt: number): void {
   player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.stridePhase = PLAYER.firstStepFraction;
-  collectGold(world);
+  if (!isPrimary(world, player)) return;
+  collectGold(world, player);
   stepCheckpoints(world);
   stepWaypoints(world);
 }

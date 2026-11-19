@@ -3,7 +3,7 @@ import type { Content } from '../content/types.ts';
 import type { FlaskDose, FlaskState, NoticeReason, PlayerState, World } from './types.ts';
 import { refillFlasks } from './flask-charges.ts';
 import { clampTier, tieredFlask } from './flask-tiers.ts';
-import { onWaypoint } from './waypoints.ts';
+import { waypointAt } from './waypoints.ts';
 
 const FULL_NOTICE: Readonly<Record<FlaskResource, NoticeReason>> = { life: 'life_full', mana: 'mana_full' };
 
@@ -55,8 +55,7 @@ export function blockedFlask(player: PlayerState, flask: FlaskState): NoticeReas
   return null;
 }
 
-export function useFlask(world: World, slot: number): void {
-  const player: PlayerState = world.player;
+export function useFlask(world: World, player: PlayerState, slot: number): void {
   const flask: FlaskState | undefined = player.flasks[slot];
   if (flask === undefined || !player.alive) return;
   const reason: NoticeReason | null = blockedFlask(player, flask);
@@ -89,8 +88,7 @@ function stepFlask(player: PlayerState, flask: FlaskState, dt: number): void {
   flask.doses = flask.doses.filter((dose: FlaskDose): boolean => dose.timeLeft > 0);
 }
 
-export function stepFlasks(world: World, dt: number): void {
-  const player: PlayerState = world.player;
+export function stepFlasks(world: World, player: PlayerState, dt: number): void {
   for (const flask of player.flasks) stepFlask(player, flask, dt);
-  if (player.alive && (world.zone.kind === 'town' || onWaypoint(world)) && refillFlasks(player)) world.events.push({ type: 'flasks_refilled' });
+  if (player.alive && (world.zone.kind === 'town' || waypointAt(world, player.pos)) && refillFlasks(player)) world.events.push({ type: 'flasks_refilled' });
 }

@@ -30,7 +30,7 @@ import { stepScene } from './scene.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand, hurryWake } from './wake.ts';
 import { stepPowerState } from '../powers.ts';
-import { refreshPlayer } from './character.ts';
+import { refreshHero } from './character.ts';
 import { stepTally } from '../tally.ts';
 import { stepTailwind } from './tailwind.ts';
 import { announceArming } from './arming.ts';
@@ -44,17 +44,21 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
   world.time += dt;
   stepDrifts(world);
   for (const command of commands) {
-    if (acceptsCommand(world, command)) handleCommand(world, command);
+    if (acceptsCommand(world, command)) handleCommand(world, world.player, command);
     else hurryWake(world, command);
   }
   const start: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
   const bubble: MomentState | null = heldIn(world, start);
-  const starts: Map<ActorState, Vec2> = new Map<ActorState, Vec2>([[world.player, start]]);
+  const starts: Map<ActorState, Vec2> = new Map<ActorState, Vec2>();
   const strides: Map<ActorState, Vec2> = new Map<ActorState, Vec2>();
-  stepPlayer(world, dt);
-  strides.set(world.player, strideOf(world.player, start));
-  stepFlasks(world, dt);
-  if (stepPowerState(world.player.powers, dt)) refreshPlayer(world);
+  for (const hero of world.heroes) {
+    const from: Vec2 = { x: hero.pos.x, z: hero.pos.z };
+    starts.set(hero, from);
+    stepPlayer(world, hero, dt);
+    strides.set(hero, strideOf(hero, from));
+    stepFlasks(world, hero, dt);
+    if (stepPowerState(hero.powers, dt)) refreshHero(world, hero);
+  }
   stepVoid(world, dt);
   stepExploration(world);
   for (const monster of world.monsters) {

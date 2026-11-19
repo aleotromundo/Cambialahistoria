@@ -69,26 +69,26 @@ void test('an echo killed while wearing the Wirethread Gloves releases a Forklin
   const world: World = hero();
   wear(world, 'wirethread_gloves');
   const echo: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: echo, at: echo.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: echo, at: echo.pos });
   assert.deepEqual(casts(world), ['forkline']);
   assert.deepEqual(must(world.echoes[0], 'cast').origin, { x: echo.pos.x, z: echo.pos.z });
   const plain: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x - 2, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: plain, at: plain.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: plain, at: plain.pos });
   assert.equal(world.echoes.length, 1);
 });
 
 void test('powers follow the gear worn at the moment of the kill, even when it changes between two kills', (): void => {
   const world: World = hero();
   const first: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: first, at: first.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: first, at: first.pos });
   assert.deepEqual(casts(world), []);
   const gloves: ItemInstance = wear(world, 'wirethread_gloves');
   const second: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x - 2, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: second, at: second.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: second, at: second.pos });
   assert.deepEqual(casts(world), ['forkline']);
   world.player.equipped[must(slotOf(content, gloves), 'gloves')] = null;
   world.player.powers.cooldowns = {};
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: second, at: second.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: second, at: second.pos });
   assert.deepEqual(casts(world), ['forkline']);
 });
 
@@ -107,13 +107,13 @@ void test('the Crown splits a Storm Bolt once per bolt: its cooldown holds the s
   wear(world, 'crown_of_the_struck_hour');
   const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z });
   const bolt: SkillDef = skill('storm_bolt');
-  firePowers(world, { on: 'hit', skill: bolt, target, at: target.pos });
-  firePowers(world, { on: 'hit', skill: bolt, target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: bolt, target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: bolt, target, at: target.pos });
   assert.deepEqual(casts(world), ['forkline']);
-  firePowers(world, { on: 'hit', skill: skill('forkline'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('forkline'), target, at: target.pos });
   assert.equal(world.echoes.length, 1);
   stepPowerState(world.player.powers, 0.5);
-  firePowers(world, { on: 'hit', skill: bolt, target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: bolt, target, at: target.pos });
   assert.deepEqual(casts(world), ['forkline', 'forkline']);
 });
 
@@ -121,8 +121,8 @@ void test('Grinder\'s Bracers stack attack speed and damage per Cleave hit up to
   const world: World = hero();
   wear(world, 'grinders_bracers');
   const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 1, z: ARENA_CENTRE.z });
-  for (let hit: number = 0; hit < 12; hit += 1) assert.ok(firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos }));
-  assert.ok(!firePowers(world, { on: 'hit', skill: skill('storm_bolt'), target, at: target.pos }));
+  for (let hit: number = 0; hit < 12; hit += 1) assert.ok(firePowers(world, world.player, { on: 'hit', skill: skill('cleave'), target, at: target.pos }));
+  assert.ok(!firePowers(world, world.player, { on: 'hit', skill: skill('storm_bolt'), target, at: target.pos }));
   const mods = buffMods(world.player.powers);
   assert.deepEqual(mods.map((mod): string => mod.stat), ['attackSpeed', 'damagePercent']);
   assert.ok(Math.abs(must(mods[0], 'speed').value - 0.3) < 1e-9);
@@ -135,7 +135,7 @@ void test('Grinder\'s Bracers stack attack speed and damage per Cleave hit up to
 void test('the Gyre-Stitched Breeches let out a Thunderclap on every third turn of a held Cleave', (): void => {
   const world: World = hero();
   wear(world, 'gyre_stitched_breeches');
-  const turn = (): boolean => firePowers(world, { on: 'pulse', skill: skill('cleave'), target: null, at: world.player.pos });
+  const turn = (): boolean => firePowers(world, world.player, { on: 'pulse', skill: skill('cleave'), target: null, at: world.player.pos });
   for (let count: number = 0; count < 7; count += 1) turn();
   assert.deepEqual(casts(world), ['thunderclap', 'thunderclap']);
   assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: world.player.pos.x, z: world.player.pos.z });
@@ -167,9 +167,9 @@ void test('a Legendary reads its power and its family, counting the pieces worn 
 void test('Quietshot: a Dodge Roll gives +60% damage for three seconds, and no other skill does', (): void => {
   const world: World = hero();
   wear(world, 'quietshot');
-  assert.ok(!firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
-  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
-  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  assert.ok(!firePowers(world, world.player, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
+  assert.ok(firePowers(world, world.player, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  assert.ok(firePowers(world, world.player, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
   const mods = buffMods(world.player.powers);
   assert.equal(mods.length, 1);
   assert.equal(must(mods[0], 'buff').stat, 'damagePercent');
@@ -182,12 +182,12 @@ void test('Groundbreaker: every third Cleave strike lets out a Thunderclap on th
   const world: World = hero();
   wear(world, 'groundbreaker');
   const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 1, z: ARENA_CENTRE.z });
-  for (let hit: number = 0; hit < 3; hit += 1) firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
+  for (let hit: number = 0; hit < 3; hit += 1) firePowers(world, world.player, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
   assert.deepEqual(casts(world), ['thunderclap']);
   assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: target.pos.x, z: target.pos.z });
-  for (let hit: number = 0; hit < 12; hit += 1) firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
+  for (let hit: number = 0; hit < 12; hit += 1) firePowers(world, world.player, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
   assert.ok(Math.abs(must(buffMods(world.player.powers)[0], 'armour').value - 50) < 1e-9);
-  firePowers(world, { on: 'hit', skill: skill('storm_bolt'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('storm_bolt'), target, at: target.pos });
   assert.ok(world.echoes.length <= 6);
 });
 
@@ -195,10 +195,10 @@ void test('Rainmaker: a Squall also breaks over the caster, and lasts longer', (
   const world: World = hero();
   wear(world, 'rainmaker');
   const away = { x: world.player.pos.x + 6, z: world.player.pos.z };
-  firePowers(world, { on: 'use', skill: skill('squall'), target: null, at: away });
+  firePowers(world, world.player, { on: 'use', skill: skill('squall'), target: null, at: away });
   assert.deepEqual(casts(world), ['squall']);
   assert.deepEqual(must(world.echoes[0], 'squall').origin, { x: world.player.pos.x, z: world.player.pos.z });
-  firePowers(world, { on: 'use', skill: skill('storm_bolt'), target: null, at: away });
+  firePowers(world, world.player, { on: 'use', skill: skill('storm_bolt'), target: null, at: away });
   assert.equal(world.echoes.length, 1);
 });
 
@@ -207,11 +207,11 @@ void test('an item power casts its skill whatever weapon is in hand', (): void =
   wear(world, 'wirethread_gloves');
   world.player.wielding = 'blade';
   const echo: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: echo, at: echo.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: echo, at: echo.pos });
   assert.deepEqual(casts(world), ['forkline']);
   world.player.wielding = 'staff';
   const again: MonsterState = place(world, 'test_echo', { x: ARENA_CENTRE.x - 2, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'kill', skill: skill('cleave'), target: again, at: again.pos });
+  firePowers(world, world.player, { on: 'kill', skill: skill('cleave'), target: again, at: again.pos });
   assert.deepEqual(casts(world), ['forkline', 'forkline']);
 });
 
@@ -253,12 +253,12 @@ function pierceOf(found: SkillDef): number {
 void test('a tree place with a trigger empowers a skill for a while after a roll, and only a motion skill sets it off', (): void => {
   const world: World = veiled('blade');
   const plain: SkillDef = veiledBolt(world);
-  assert.ok(!firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
-  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  assert.ok(!firePowers(world, world.player, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
+  assert.ok(firePowers(world, world.player, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
   const empowered: SkillDef = veiledBolt(world);
   assert.ok(Math.abs(empowered.damage.weaponPercent - plain.damage.weaponPercent * 1.5) < 1e-9);
   assert.equal(pierceOf(empowered), pierceOf(plain) + 1);
-  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  assert.ok(firePowers(world, world.player, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
   assert.equal(world.player.powers.empowers.length, 1);
   assert.ok(!stepPowerState(world.player.powers, 1.9));
   assert.ok(stepPowerState(world.player.powers, 0.2));
@@ -268,7 +268,7 @@ void test('a tree place with a trigger empowers a skill for a while after a roll
 void test('a tree place sets off its trigger with any weapon in hand', (): void => {
   for (const held of ['staff', 'crossbow', 'heavy']) {
     const world: World = veiled(held);
-    assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }), held);
+    assert.ok(firePowers(world, world.player, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }), held);
     assert.equal(world.player.powers.empowers.length, 1, held);
   }
 });
@@ -290,7 +290,7 @@ function stilled(): World {
 }
 
 function strike(world: World, times: number): void {
-  for (let struck: number = 0; struck < times; struck += 1) firePowers(world, { on: 'hit', skill: skill('cleave'), target: null, at: world.player.pos });
+  for (let struck: number = 0; struck < times; struck += 1) firePowers(world, world.player, { on: 'hit', skill: skill('cleave'), target: null, at: world.player.pos });
 }
 
 function charges(world: World): number[] {
@@ -309,7 +309,7 @@ void test('a tree place gives each flask a charge for every few strikes, and not
   stepPowerState(world.player.powers, 0.5);
   strike(world, 4);
   assert.ok(charges(world).every((held: number): boolean => held === 2));
-  firePowers(world, { on: 'hit', skill: skill('storm_bolt'), target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('storm_bolt'), target: null, at: world.player.pos });
   assert.equal(world.player.powers.counts['place:test_still:0'] ?? 0, 0);
 });
 
@@ -343,16 +343,16 @@ void test('with a blade in hand the Millwheel feeds the flasks through Millrace,
   const world: World = maelstrom('blade');
   const wheel: SkillDef = resolvedIn(world, 'cleave');
   assert.deepEqual([wheel.id, wheel.form], ['cleave', 'cleave_millwheel']);
-  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, { on: 'hit', skill: shippedSkill('cleave'), target: null, at: world.player.pos });
+  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, world.player, { on: 'hit', skill: shippedSkill('cleave'), target: null, at: world.player.pos });
   assert.ok(world.player.flasks.every((flask): boolean => flask.charges === 0));
-  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, { on: 'hit', skill: wheel, target: null, at: world.player.pos });
+  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, world.player, { on: 'hit', skill: wheel, target: null, at: world.player.pos });
   assert.ok(world.player.flasks.every((flask): boolean => flask.charges === 1));
   const start = { x: world.player.pos.x + 3, z: world.player.pos.z };
-  firePowers(world, { on: 'use', skill: shippedSkill('dodge_roll'), target: null, at: start });
+  firePowers(world, world.player, { on: 'use', skill: shippedSkill('dodge_roll'), target: null, at: start });
   assert.equal(world.echoes.length, 0);
   const roll: SkillDef = resolvedIn(world, 'dodge_roll');
   assert.deepEqual([roll.id, roll.form], ['dodge_roll', 'dodge_roll_riptide']);
-  firePowers(world, { on: 'use', skill: roll, target: null, at: start });
+  firePowers(world, world.player, { on: 'use', skill: roll, target: null, at: start });
   const current: EchoState = must(world.echoes.find((echo: EchoState): boolean => echo.skill.id === 'riptide_wake'), 'rip current');
   assert.deepEqual(current.origin, start);
 });
@@ -360,7 +360,7 @@ void test('with a blade in hand the Millwheel feeds the flasks through Millrace,
 void test('Millrace feeds the flasks with a crossbow in hand too', (): void => {
   const world: World = maelstrom('crossbow');
   const wheel: SkillDef = resolvedIn(maelstrom('blade'), 'cleave');
-  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, { on: 'hit', skill: wheel, target: null, at: world.player.pos });
+  for (let struck: number = 0; struck < 4; struck += 1) firePowers(world, world.player, { on: 'hit', skill: wheel, target: null, at: world.player.pos });
   assert.ok(world.player.flasks.every((flask): boolean => flask.charges === 1));
 });
 
@@ -378,7 +378,7 @@ void test('with a heavy weapon in hand Shoulder Through flares where the charge 
   const roll: SkillDef = resolvedIn(world, 'dodge_roll');
   assert.deepEqual([roll.id, roll.form], ['dodge_roll', 'dodge_roll_shoulder']);
   const stop = { x: world.player.pos.x + 3, z: world.player.pos.z };
-  firePowers(world, { on: 'use', skill: roll, target: null, at: stop });
+  firePowers(world, world.player, { on: 'use', skill: roll, target: null, at: stop });
   const flare: EchoState = must(world.echoes.find((echo: EchoState): boolean => echo.skill.id === 'shoulder_flare'), 'flare');
   assert.deepEqual(flare.origin, stop);
   const clap: SkillDef = resolvedIn(world, 'thunderclap');
@@ -390,7 +390,7 @@ void test('with a blade in hand the heavy places still give Shoulder Through', (
   const world: World = emberwarden('blade');
   const roll: SkillDef = resolvedIn(world, 'dodge_roll');
   assert.equal(roll.form, 'dodge_roll_shoulder');
-  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: roll, target: null, at: world.player.pos });
   assert.ok(world.echoes.some((echo: EchoState): boolean => echo.skill.id === 'shoulder_flare'));
 });
 
@@ -402,14 +402,14 @@ void test('Forked: a hit of any main attack releases a Forkline, at most once pe
   world.player.wielding = 'crossbow';
   const cooldown: number = must(content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === 'forked')?.triggers[0], 'forked trigger').cooldown;
   const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 3, z: ARENA_CENTRE.z });
-  firePowers(world, { on: 'hit', skill: skill('thunderclap'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('thunderclap'), target, at: target.pos });
   assert.deepEqual(casts(world), []);
-  firePowers(world, { on: 'hit', skill: skill('quarrel_fan'), target, at: target.pos });
-  firePowers(world, { on: 'hit', skill: skill('quarrel'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('quarrel_fan'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('quarrel'), target, at: target.pos });
   assert.deepEqual(casts(world), ['forkline']);
   stepPowerState(world.player.powers, cooldown + 0.01);
   world.player.wielding = 'blade';
-  firePowers(world, { on: 'hit', skill: skill('cleave_millwheel'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('cleave_millwheel'), target, at: target.pos });
   assert.deepEqual(casts(world), ['forkline', 'forkline']);
 });
 
@@ -469,15 +469,15 @@ void test('the Anvilback Hauberk slams a Thunderclap when a Heaving Cleave is le
   wear(world, 'anvilback_hauberk');
   const heave: SkillDef = resolveSkill(content, skill('cleave'), ['heaving_cleave']);
   assert.equal(heave.form, 'cleave_heave');
-  firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos });
   assert.deepEqual(casts(world), []);
-  firePowers(world, { on: 'use', skill: heave, target: null, at: world.player.pos });
-  firePowers(world, { on: 'use', skill: heave, target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: heave, target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: heave, target: null, at: world.player.pos });
   assert.deepEqual(casts(world), ['thunderclap']);
   assert.deepEqual(must(world.echoes[0], 'clap').origin, { x: world.player.pos.x, z: world.player.pos.z });
   const target: MonsterState = place(world, 'test_shambler', { x: ARENA_CENTRE.x + 2, z: ARENA_CENTRE.z });
-  for (let hit: number = 0; hit < 20; hit += 1) firePowers(world, { on: 'hit', skill: skill('thunderclap'), target, at: target.pos });
-  firePowers(world, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
+  for (let hit: number = 0; hit < 20; hit += 1) firePowers(world, world.player, { on: 'hit', skill: skill('thunderclap'), target, at: target.pos });
+  firePowers(world, world.player, { on: 'hit', skill: skill('cleave'), target, at: target.pos });
   assert.ok(Math.abs(must(buffMods(world.player.powers)[0], 'armour').value - 60) < 1e-9);
 });
 
@@ -486,9 +486,9 @@ void test('the Nightjar Gloves fan every Quarrel into three bolts for two second
   wear(world, 'nightjar_gloves');
   const quarrel: SkillDef = skill('quarrel');
   const fanned = (): SkillDef => resolveSkill(content, quarrel, [], heldPowers(content, world.player.equipped, world.player.powers));
-  assert.ok(!firePowers(world, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
+  assert.ok(!firePowers(world, world.player, { on: 'use', skill: skill('cleave'), target: null, at: world.player.pos }));
   assert.equal(fanned(), quarrel);
-  assert.ok(firePowers(world, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
+  assert.ok(firePowers(world, world.player, { on: 'use', skill: skill('dodge_roll'), target: null, at: world.player.pos }));
   const fan: SkillDef = fanned();
   assert.ok(fan.delivery.type === 'projectile' && quarrel.delivery.type === 'projectile');
   assert.equal(fan.delivery.count, quarrel.delivery.count + 2);
@@ -516,10 +516,10 @@ void test('the Mist-Treader Boots bring every roll back sooner and leave an Unde
   wear(world, 'mist_treader_boots');
   const roll: SkillDef = skill('dodge_roll');
   assert.ok(Math.abs(resolveSkill(content, roll, [], wornPowers(content, world.player.equipped)).cooldown - roll.cooldown * 0.85) < 1e-9);
-  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
-  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: roll, target: null, at: world.player.pos });
   assert.deepEqual(casts(world), ['downdraught']);
   stepPowerState(world.player.powers, 1.05);
-  firePowers(world, { on: 'use', skill: roll, target: null, at: world.player.pos });
+  firePowers(world, world.player, { on: 'use', skill: roll, target: null, at: world.player.pos });
   assert.deepEqual(casts(world), ['downdraught', 'downdraught']);
 });

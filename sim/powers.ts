@@ -86,8 +86,7 @@ function targetMatches(content: Content, trigger: PowerTriggerDef, target: Actor
   return false;
 }
 
-function cast(world: World, effect: CastEffect, at: ReadonlyVec2): void {
-  const player: PlayerState = world.player;
+function cast(world: World, player: PlayerState, effect: CastEffect, at: ReadonlyVec2): void {
   const def: SkillDef | undefined = world.content.skills.get(effect.skill);
   if (def === undefined) return;
   const skill: SkillDef = resolveSkill(world.content, def, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes);
@@ -170,8 +169,7 @@ function ready(state: PowerState, key: string, trigger: PowerTriggerDef): boolea
   return true;
 }
 
-export function firePowers(world: World, event: PowerEvent): boolean {
-  const player: PlayerState = world.player;
+export function firePowers(world: World, player: PlayerState, event: PowerEvent): boolean {
   let buffed: boolean = false;
   for (const source of heldSources(world.content, player)) {
     source.triggers.forEach((trigger: PowerTriggerDef, index: number): void => {
@@ -181,7 +179,7 @@ export function firePowers(world: World, event: PowerEvent): boolean {
       const effect = trigger.effect;
       switch (effect.type) {
         case 'cast':
-          cast(world, effect, event.at);
+          cast(world, player, effect, event.at);
           return;
         case 'buff':
           buff(player.powers, key, effect);

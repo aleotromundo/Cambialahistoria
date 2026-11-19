@@ -87,7 +87,7 @@ void test('the chase path steps round a body standing between the hero and his t
   const target: MonsterState = spawnAt(world, 'unfinished_thrower', SCENE.target);
   const clearance: number = body.radius + world.content.player.radius - PROBE.cellSlack;
   assert.ok(closestPass(findPath(world.grid, world.player.pos, target.pos), world.player.pos, body.pos) < clearance, 'the plain path runs through the body');
-  const around: Vec2[] = chasePath(world, target);
+  const around: Vec2[] = chasePath(world, world.player, target);
   assert.ok(around.length > 0);
   assert.ok(closestPass(around, world.player.pos, body.pos) >= clearance, `passes ${closestPass(around, world.player.pos, body.pos).toFixed(2)} from the body`);
   assert.ok(distance(must(around.at(-1), 'goal'), target.pos) < PROBE.cellSlack);
@@ -99,10 +99,10 @@ void test('the blocker he swings at is a hostile body in reach on his way, never
   const target: MonsterState = spawnAt(world, 'unfinished_thrower', SCENE.target);
   const behind: MonsterState = spawnAt(world, 'unfinished_brute', SCENE.behind);
   world.player.path = [{ x: SCENE.target.x, z: SCENE.target.z }];
-  assert.equal(blockerInReach(world, target, skill), null);
+  assert.equal(blockerInReach(world, world.player, target, skill), null);
   const ahead: MonsterState = spawnAt(world, 'unfinished_brute', { x: SCENE.hero.x + skill.engageRange, z: SCENE.hero.z });
-  assert.equal(blockerInReach(world, target, skill)?.id, ahead.id);
-  assert.notEqual(blockerInReach(world, target, skill)?.id, behind.id);
+  assert.equal(blockerInReach(world, world.player, target, skill)?.id, ahead.id);
+  assert.notEqual(blockerInReach(world, world.player, target, skill)?.id, behind.id);
 });
 
 function awakeFirstFire(seed: number, from: Vec2): { world: World; moment: MomentState } {
@@ -142,7 +142,7 @@ void test('a click on a far target turns the hero toward it on the same frame', 
   const world: World = openScene();
   const target: MonsterState = spawnAt(world, 'unfinished_thrower', SCENE.target);
   world.player.facing = Math.atan2(-1, 0);
-  handleCommand(world, { type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id });
+  handleCommand(world, world.player, { type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id });
   assert.equal(world.player.intent.type, 'attack');
   assert.ok(Math.abs(world.player.facing - Math.atan2(target.pos.x - world.player.pos.x, target.pos.z - world.player.pos.z)) < PROBE.turnSlack, `facing ${world.player.facing.toFixed(3)}`);
 });
@@ -213,7 +213,7 @@ void test('after a swing at a blocker he goes back to his target even when the s
   world.player.skills[0] = { ...skill, cooldown: PROBE.longCooldown };
   const target: MonsterState = spawnAt(world, 'unfinished_thrower', SCENE.target);
   const body: MonsterState = spawnAt(world, 'unfinished_brute', SCENE.touching);
-  handleCommand(world, { type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id });
+  handleCommand(world, world.player, { type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id });
   world.player.chase = { mark: { x: world.player.pos.x, z: world.player.pos.z }, still: CHASE.patience };
   hold([body, target]);
   stepWorld(world, [], PROBE.dt);

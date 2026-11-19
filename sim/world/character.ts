@@ -14,7 +14,10 @@ import { forget, learn } from './learn.ts';
 import type { EmpowerState, ItemInstance, PlayerState, World } from './types.ts';
 
 export function refreshPlayer(world: World): void {
-  const player: PlayerState = world.player;
+  refreshHero(world, world.player);
+}
+
+export function refreshHero(world: World, player: PlayerState): void {
   player.wielding = heldGroup(world.content, player.equipped);
   player.stats = computeStats(world.content, player.level, player.equipped, player.allocated, buffMods(player.powers), player.wielding);
   player.skills = resolveSkillBar(world.content, player.bar, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes);
