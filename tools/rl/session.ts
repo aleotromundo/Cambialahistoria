@@ -47,7 +47,7 @@ function count(source: Fields, key: string, fallback: number): number {
 
 export function readPoolOptions(raw: unknown): PoolOptions {
   const source: Fields = fields(raw, 'hello');
-  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)) };
+  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)) };
 }
 
 function observations(step: PoolStep, envs: number): Buffer {

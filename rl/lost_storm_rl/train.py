@@ -7,7 +7,7 @@ import os
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 import numpy as np
 import torch
@@ -27,6 +27,30 @@ def pick_device(name: str) -> torch.device:
 
 def default_workers() -> int:
     return max(1, min(12, (os.cpu_count() or 4) - 4))
+
+
+LOG_HEADER = ["update", "decisions", "seconds", "episodes", "win_rate", "died_rate", "mean_return", "mean_waves", "policy_loss", "value_loss", "entropy", "explained", "kl", "duel_episodes", "duel_decided", "duel_return"]
+
+
+def retired_log(path: Path) -> Path:
+    index = 1
+    while (path.parent / f"{path.stem}-{index}{path.suffix}").exists():
+        index += 1
+    return path.parent / f"{path.stem}-{index}{path.suffix}"
+
+
+def open_log(path: Path) -> TextIO:
+    if path.exists():
+        with path.open(newline="") as existing:
+            header = next(csv.reader(existing), None)
+        if header != LOG_HEADER:
+            path.rename(retired_log(path))
+    fresh = not path.exists()
+    log_file = path.open("a", newline="")
+    if fresh:
+        csv.writer(log_file).writerow(LOG_HEADER)
+        log_file.flush()
+    return log_file
 
 
 @dataclass
@@ -130,6 +154,7 @@ class PpoArgs:
     keep_every: int
     width: int
     device: str
+    duels: int = 0
 
 
 def explained(values: np.ndarray, returns: np.ndarray) -> float:
@@ -141,7 +166,7 @@ def ppo(args: PpoArgs) -> Path:
     folder = RUNS / args.run
     replays = folder / "replays"
     folder.mkdir(parents=True, exist_ok=True)
-    envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays)
+    envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays, args.duels)
     contract = envs.contract
     device = pick_device(args.device)
     policy = load(args.start, contract, device) if args.start else Policy(contract, width=args.width).to(device)
@@ -159,12 +184,8 @@ def ppo(args: PpoArgs) -> Path:
     val_buf = np.zeros((args.steps, count), dtype=np.float32)
     rew_buf = np.zeros((args.steps, count), dtype=np.float32)
     done_buf = np.zeros((args.steps, count), dtype=np.float32)
-    log_path = folder / "log.csv"
-    fresh_log = not log_path.exists()
-    log_file = log_path.open("a", newline="")
+    log_file = open_log(folder / "log.csv")
     log = csv.writer(log_file)
-    if fresh_log:
-        log.writerow(["update", "decisions", "seconds", "episodes", "win_rate", "died_rate", "mean_return", "mean_waves", "policy_loss", "value_loss", "entropy", "explained", "kl"])
     batch = envs.reset()
     next_obs, next_mask = batch.obs, batch.mask
     next_done = np.zeros(count, dtype=np.float32)
@@ -240,17 +261,21 @@ def ppo(args: PpoArgs) -> Path:
                     stats["n"] += 1
             actor.load_state_dict({key: tensor.detach().cpu() for key, tensor in policy.state_dict().items()})
             n = max(1, stats["n"])
-            episodes = len(finished)
-            win = sum(1 for episode in finished if episode["outcome"] == "won") / max(1, episodes)
-            died = sum(1 for episode in finished if episode["outcome"] == "died") / max(1, episodes)
-            mean_return = float(np.mean([episode["total"] for episode in finished])) if finished else float("nan")
-            mean_waves = float(np.mean([episode["waves"] for episode in finished])) if finished else float("nan")
+            arena = [episode for episode in finished if episode.get("situation", "arena") == "arena"]
+            duels = [episode for episode in finished if episode.get("situation") == "duel"]
+            episodes = len(arena)
+            win = sum(1 for episode in arena if episode["outcome"] == "won") / max(1, episodes)
+            died = sum(1 for episode in arena if episode["outcome"] == "died") / max(1, episodes)
+            mean_return = float(np.mean([episode["total"] for episode in arena])) if arena else float("nan")
+            mean_waves = float(np.mean([episode["waves"] for episode in arena])) if arena else float("nan")
+            decided = sum(1 for episode in duels if episode["outcome"] != "timeout") / max(1, len(duels))
+            duel_return = float(np.mean([episode["total"] for episode in duels])) if duels else float("nan")
             seconds = time.time() - started
             ev = explained(val_buf.reshape(-1), returns.reshape(-1))
-            row = [update, decisions, round(seconds, 1), episodes, round(win, 3), round(died, 3), round(mean_return, 3), round(mean_waves, 3), round(stats["policy"] / n, 4), round(stats["value"] / n, 4), round(stats["entropy"] / n, 4), round(ev, 3), round(stats["kl"] / n, 5)]
+            row = [update, decisions, round(seconds, 1), episodes, round(win, 3), round(died, 3), round(mean_return, 3), round(mean_waves, 3), round(stats["policy"] / n, 4), round(stats["value"] / n, 4), round(stats["entropy"] / n, 4), round(ev, 3), round(stats["kl"] / n, 5), len(duels), round(decided, 3), round(duel_return, 3)]
             log.writerow(row)
             log_file.flush()
-            print(f"update {update} | {decisions / max(1.0, seconds):.0f} dec/s | episodes {episodes} won {win:.0%} died {died:.0%} return {mean_return:.2f} waves {mean_waves:.2f} | entropy {stats['entropy'] / n:.2f} ev {ev:.2f}{' (value warmup)' if warming else ''}", flush=True)
+            print(f"update {update} | {decisions / max(1.0, seconds):.0f} dec/s | episodes {episodes} won {win:.0%} died {died:.0%} return {mean_return:.2f} waves {mean_waves:.2f}{f' | duels {len(duels)} decided {decided:.0%} return {duel_return:.2f}' if duels else ''} | entropy {stats['entropy'] / n:.2f} ev {ev:.2f}{' (value warmup)' if warming else ''}", flush=True)
             if update % args.save_every == 0 or update == args.updates:
                 save(policy, str(folder / f"policy-u{update:05d}.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
                 save(policy, str(folder / "latest.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
@@ -284,6 +309,13 @@ def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves
 def check_seed(parser: argparse.ArgumentParser, seed: int) -> None:
     if seed < 0 or seed > MAX_SEED:
         parser.error(f"--seed must be between 0 and {MAX_SEED}, which leaves room for each worker's offset under the game's limit")
+
+
+def check_duels(parser: argparse.ArgumentParser, duels: int, envs: int) -> None:
+    if duels < 0:
+        parser.error("--duels must be 0 or more")
+    if duels * 2 > envs:
+        parser.error(f"--duels takes two envs each, so at most {envs // 2} fit in --envs {envs}")
 
 
 def check_minibatches(parser: argparse.ArgumentParser, minibatches: int, steps: int, envs: int) -> None:
@@ -329,6 +361,7 @@ def main() -> None:
     ppo_cmd.add_argument("--value-warmup", type=int, default=3)
     ppo_cmd.add_argument("--save-every", type=int, default=10)
     ppo_cmd.add_argument("--keep-every", type=int, default=200)
+    ppo_cmd.add_argument("--duels", type=int, default=0)
     eval_cmd = sub.choices["eval"]
     eval_cmd.add_argument("--policy", required=True)
     eval_cmd.add_argument("--episodes", type=int, default=16)
@@ -338,6 +371,7 @@ def main() -> None:
         check_seed(parser, parsed.seed)
     if parsed.command == "ppo":
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
+        check_duels(parser, parsed.duels, parsed.envs)
     torch.set_num_threads(4)
     if parsed.command == "widen":
         probe = ArenaEnvs(1, 1, 1, 0.0, 1)
@@ -350,7 +384,7 @@ def main() -> None:
     elif parsed.command == "imitate":
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
-        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device))
+        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels))
     else:
         evaluate(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, parsed.waves, not parsed.sample)
 

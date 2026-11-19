@@ -10,7 +10,7 @@ import torch
 
 from lost_storm_rl.bridge import read_batch, read_demonstrations
 from lost_storm_rl.model import Policy
-from lost_storm_rl.train import check_minibatches, check_seed
+from lost_storm_rl.train import check_duels, check_minibatches, check_seed
 
 
 def contract() -> dict[str, object]:
@@ -94,6 +94,14 @@ def test_minibatch_counts_outside_the_batch_are_refused() -> None:
     for bad in (0, 128 * 16 + 1):
         with pytest.raises(SystemExit):
             check_minibatches(parser, bad, 128, 16)
+
+
+def test_duels_that_do_not_fit_in_the_envs_are_refused() -> None:
+    parser = argparse.ArgumentParser()
+    check_duels(parser, 8, 16)
+    for bad in (-1, 9):
+        with pytest.raises(SystemExit):
+            check_duels(parser, bad, 16)
 
 
 def test_seeds_leave_room_for_worker_offsets() -> None:

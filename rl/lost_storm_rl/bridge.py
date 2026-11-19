@@ -138,7 +138,7 @@ class Worker:
 
 
 class ArenaEnvs:
-    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None) -> None:
+    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0) -> None:
         self.workers: list[Worker] = []
         self.envs_per_worker = envs_per_worker
         self.count = workers * envs_per_worker
@@ -146,7 +146,7 @@ class ArenaEnvs:
             for index in range(workers):
                 self.workers.append(Worker(index, replays))
             for index, worker in enumerate(self.workers):
-                worker.send_json(HELLO, {"seed": seed + index * 1_000_003, "envs": envs_per_worker, "jitter": jitter, "waves": waves, "keepEvery": keep_every})
+                worker.send_json(HELLO, {"seed": seed + index * 1_000_003, "envs": envs_per_worker, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every})
             hellos = [json.loads(worker.receive(HELLO)[WORD:].decode("utf-8")) for worker in self.workers]
         except BaseException:
             self.close()

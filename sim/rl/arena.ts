@@ -132,7 +132,7 @@ function shuffled<T>(rng: Rng, list: readonly T[]): T[] {
   return out;
 }
 
-function benchHero(content: Content, rng: Rng, level: number): BenchHero {
+export function benchHero(content: Content, rng: Rng, level: number): BenchHero {
   const weapons: ItemBaseDef[] = [...content.itemBases.values()].filter((base: ItemBaseDef): boolean => base.slot === 'weapon');
   const basic: string | null = content.player.skillBook[0]?.skill ?? null;
   const roll: string | null = content.player.skillBook[1]?.skill ?? null;
@@ -153,7 +153,7 @@ function arenaZone(content: Content, level: number): ZoneDef {
   return { ...zone, packs: [], surge: null, moments: null, level, levelUpTo: level };
 }
 
-function spawnSpot(world: World, rng: Rng): Vec2 {
+export function spawnSpot(world: World, rng: Rng): Vec2 {
   const from: Vec2 = world.player.pos;
   for (let attempt: number = 0; attempt < ARENA.spawnTries; attempt += 1) {
     const angle: number = rng.range(0, Math.PI * 2);
@@ -188,18 +188,23 @@ function spawnWave(arena: Arena): void {
   arena.nextWaveAt = null;
 }
 
-export function createArena(content: Content, options: ArenaOptions): Arena {
-  const rng: Rng = createRng(options.seed);
-  const played: Content = jitterContent(content, rng, options.jitter);
-  const level: number = rng.int(ARENA.levels.min, ARENA.levels.max);
-  const world: World = createWorld(played, { seed: options.seed, save: null, opening: false });
-  const zone: ZoneDef = arenaZone(played, Math.max(1, level + rng.int(-ARENA.levelSpread, ARENA.levelSpread)));
+export function emptyArena(content: Content, seed: number, level: number): World {
+  const world: World = createWorld(content, { seed, save: null, opening: false });
+  const zone: ZoneDef = arenaZone(content, level);
   enterZone(world, zone, { type: 'start' });
   world.zone = zone;
   world.monsters = [];
   world.moments = [];
   world.encounters = [];
   world.packReturns = [];
+  return world;
+}
+
+export function createArena(content: Content, options: ArenaOptions): Arena {
+  const rng: Rng = createRng(options.seed);
+  const played: Content = jitterContent(content, rng, options.jitter);
+  const level: number = rng.int(ARENA.levels.min, ARENA.levels.max);
+  const world: World = emptyArena(played, options.seed, Math.max(1, level + rng.int(-ARENA.levelSpread, ARENA.levelSpread)));
   stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
   const arena: Arena = { options, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), pickup: rollRule(played, rng), outcome: 'running', total: 0, decisions: 0 };
   spawnWave(arena);

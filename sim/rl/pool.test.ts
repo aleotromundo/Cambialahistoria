@@ -11,7 +11,7 @@ const CONTENT: Content = loadContent();
 const ENVS: number = 3;
 
 void test('a pool gives one observation and mask per arena', (): void => {
-  const pool: Pool = createPool(CONTENT, { seed: 61, envs: ENVS, jitter: 0, waves: 1, keepEvery: 0 });
+  const pool: Pool = createPool(CONTENT, { seed: 61, envs: ENVS, duels: 0, jitter: 0, waves: 1, keepEvery: 0 });
   const first: PoolStep = poolObservations(pool);
   assert.equal(first.obs.length, ENVS * LAYOUT.size);
   assert.equal(first.mask.length, ENVS * LAYOUT.mask);
@@ -21,7 +21,7 @@ void test('a pool gives one observation and mask per arena', (): void => {
 });
 
 void test('a finished arena reports its episode, keeps a replay and starts afresh', (): void => {
-  const pool: Pool = createPool(CONTENT, { seed: 62, envs: 1, jitter: 0, waves: 1, keepEvery: 1 });
+  const pool: Pool = createPool(CONTENT, { seed: 62, envs: 1, duels: 0, jitter: 0, waves: 1, keepEvery: 1 });
   const idle: Int32Array = new Int32Array(RL.actionParts);
   const limit: number = 2000;
   let step: PoolStep = poolObservations(pool);
@@ -29,7 +29,8 @@ void test('a finished arena reports its episode, keeps a replay and starts afres
   assert.equal(step.finished.length, 1);
   assert.equal(step.dones[0], 1);
   assert.equal(step.keep.length, 1);
-  const fresh = must(pool.arenas.at(0), 'arena');
-  assert.equal(fresh.decisions, 0);
-  assert.equal(fresh.options.seed, 63);
+  const fresh = must(pool.matches.at(0), 'arena');
+  assert.ok(fresh.kind === 'arena');
+  assert.equal(fresh.arena.decisions, 0);
+  assert.equal(fresh.arena.options.seed, 63);
 });

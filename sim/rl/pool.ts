@@ -1,9 +1,13 @@
 import type { Content } from '../content/types.ts';
+import type { Command } from '../world/types.ts';
 import { commandsFor } from './act.ts';
 import type { Arena, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
 import type { Action } from './contract.ts';
 import { LAYOUT, RL } from './contract.ts';
+import type { Duel, DuelSeat } from './duel.ts';
+import { createDuel, duelObservation, stepDuel } from './duel.ts';
+import type { Recall } from './recall.ts';
 import { rememberDecision } from './recall.ts';
 import type { Observation } from './observe.ts';
 import type { Replay } from './replay.ts';
@@ -12,14 +16,18 @@ import { actionFrom, recordReplay } from './replay.ts';
 export interface PoolOptions {
   readonly seed: number;
   readonly envs: number;
+  readonly duels: number;
   readonly jitter: number;
   readonly waves: number;
   readonly keepEvery: number;
 }
 
+export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel };
+
 export interface EpisodeSummary {
   readonly env: number;
   readonly seed: number;
+  readonly situation: Match['kind'];
   readonly outcome: ArenaOutcome;
   readonly total: number;
   readonly waves: number;
@@ -29,7 +37,7 @@ export interface EpisodeSummary {
 export interface Pool {
   readonly content: Content;
   readonly options: PoolOptions;
-  readonly arenas: Arena[];
+  readonly matches: Match[];
   readonly seen: Observation[];
   readonly actions: number[][][];
   nextSeed: number;
@@ -47,17 +55,41 @@ export interface PoolStep {
   readonly keep: readonly Replay[];
 }
 
-function freshArena(pool: Pool, env: number): void {
-  const arena: Arena = createArena(pool.content, { seed: pool.nextSeed, jitter: pool.options.jitter, waves: pool.options.waves });
+export function arenaSeats(options: PoolOptions): number {
+  return options.envs - options.duels * 2;
+}
+
+function seatCount(match: Match): number {
+  return match.kind === 'arena' ? 1 : match.duel.seats.length;
+}
+
+function firstEnv(pool: Pool, index: number): number {
+  return pool.matches.slice(0, index).reduce((sum: number, match: Match): number => sum + seatCount(match), 0);
+}
+
+function observeSeats(match: Match): Observation[] {
+  if (match.kind === 'arena') return [arenaObservation(match.arena)];
+  const duel: Duel = match.duel;
+  return duel.seats.map((seat: DuelSeat): Observation => duelObservation(duel, seat));
+}
+
+function freshMatch(pool: Pool, index: number): void {
+  const seed: number = pool.nextSeed;
   pool.nextSeed += 1;
-  pool.arenas[env] = arena;
-  pool.seen[env] = arenaObservation(arena);
-  pool.actions[env] = [];
+  const match: Match = index < arenaSeats(pool.options) ? { kind: 'arena', arena: createArena(pool.content, { seed, jitter: pool.options.jitter, waves: pool.options.waves }) } : { kind: 'duel', duel: createDuel(pool.content, { seed, jitter: pool.options.jitter }) };
+  pool.matches[index] = match;
+  const env: number = firstEnv(pool, index);
+  observeSeats(match).forEach((seen: Observation, seat: number): void => {
+    pool.seen[env + seat] = seen;
+    pool.actions[env + seat] = [];
+  });
 }
 
 export function createPool(content: Content, options: PoolOptions): Pool {
-  const pool: Pool = { content, options, arenas: [], seen: [], actions: [], nextSeed: options.seed, episodes: 0, best: -Infinity, tag: '' };
-  for (let env: number = 0; env < options.envs; env += 1) freshArena(pool, env);
+  if (options.duels < 0 || arenaSeats(options) < 0) throw new Error(`${options.duels} duels need ${options.duels * 2} envs, but there are ${options.envs}`);
+  const pool: Pool = { content, options, matches: [], seen: [], actions: [], nextSeed: options.seed, episodes: 0, best: -Infinity, tag: '' };
+  const count: number = arenaSeats(options) + options.duels;
+  for (let index: number = 0; index < count; index += 1) freshMatch(pool, index);
   return pool;
 }
 
@@ -83,6 +115,45 @@ function worthKeeping(pool: Pool, arena: Arena): boolean {
   return best || (pool.options.keepEvery > 0 && pool.episodes % pool.options.keepEvery === 0);
 }
 
+function recallOf(match: Match, seat: number): Recall | null {
+  return match.kind === 'arena' ? match.arena.recall : (match.duel.seats[seat]?.recall ?? null);
+}
+
+function decide(pool: Pool, match: Match, env: number, seat: number, actions: Int32Array): Command[] {
+  const seen: Observation | undefined = pool.seen[env + seat];
+  const log: number[][] | undefined = pool.actions[env + seat];
+  const recall: Recall | null = recallOf(match, seat);
+  if (seen === undefined || log === undefined || recall === null) return [];
+  const list: number[] = Array.from(actions.subarray((env + seat) * RL.actionParts, (env + seat + 1) * RL.actionParts));
+  log.push(list);
+  const action: Action = actionFrom(list);
+  rememberDecision(recall, action);
+  return commandsFor(match.kind === 'arena' ? match.arena.world : match.duel.world, action, seen.view);
+}
+
+interface Played {
+  readonly rewards: readonly number[];
+  readonly done: boolean;
+}
+
+function play(match: Match, commands: readonly Command[][]): Played {
+  if (match.kind === 'arena') {
+    const step = stepArena(match.arena, commands[0] ?? []);
+    return { rewards: [step.reward], done: step.done };
+  }
+  const step = stepDuel(match.duel, commands);
+  return { rewards: step.rewards, done: step.done };
+}
+
+function summaries(match: Match, env: number): EpisodeSummary[] {
+  if (match.kind === 'arena') {
+    const arena: Arena = match.arena;
+    return [{ env, seed: arena.options.seed, situation: 'arena', outcome: arena.outcome, total: arena.total, waves: arena.tally.waves, decisions: arena.decisions }];
+  }
+  const duel: Duel = match.duel;
+  return duel.seats.map((seat: DuelSeat, index: number): EpisodeSummary => ({ env: env + index, seed: duel.options.seed, situation: 'duel', outcome: seat.outcome, total: seat.total, waves: 0, decisions: duel.decisions }));
+}
+
 export function stepPool(pool: Pool, actions: Int32Array): PoolStep {
   const envs: number = pool.options.envs;
   if (actions.length !== envs * RL.actionParts) throw new Error(`expected ${envs * RL.actionParts} action numbers, got ${actions.length}`);
@@ -90,26 +161,30 @@ export function stepPool(pool: Pool, actions: Int32Array): PoolStep {
   const dones: Uint8Array = new Uint8Array(envs);
   const finished: EpisodeSummary[] = [];
   const keep: Replay[] = [];
-  for (let env: number = 0; env < envs; env += 1) {
-    const arena: Arena | undefined = pool.arenas[env];
-    const seen: Observation | undefined = pool.seen[env];
-    const log: number[][] | undefined = pool.actions[env];
-    if (arena === undefined || seen === undefined || log === undefined) continue;
-    const list: number[] = Array.from(actions.subarray(env * RL.actionParts, (env + 1) * RL.actionParts));
-    log.push(list);
-    const action: Action = actionFrom(list);
-    const result = stepArena(arena, commandsFor(arena.world, action, seen.view));
-    rememberDecision(arena.recall, action);
-    rewards[env] = result.reward;
-    if (!result.done) {
-      pool.seen[env] = arenaObservation(arena);
-      continue;
+  let env: number = 0;
+  pool.matches.forEach((match: Match, index: number): void => {
+    const seats: number = seatCount(match);
+    const commands: Command[][] = Array.from({ length: seats }, (_unused: unknown, seat: number): Command[] => decide(pool, match, env, seat, actions));
+    const played: Played = play(match, commands);
+    played.rewards.forEach((reward: number, seat: number): void => {
+      rewards[env + seat] = reward;
+    });
+    if (!played.done) {
+      observeSeats(match).forEach((seen: Observation, seat: number): void => {
+        pool.seen[env + seat] = seen;
+      });
+      env += seats;
+      return;
     }
-    dones[env] = 1;
+    for (let seat: number = 0; seat < seats; seat += 1) dones[env + seat] = 1;
     pool.episodes += 1;
-    finished.push({ env, seed: arena.options.seed, outcome: arena.outcome, total: arena.total, waves: arena.tally.waves, decisions: arena.decisions });
-    if (worthKeeping(pool, arena)) keep.push(recordReplay(arena, log, pool.tag));
-    freshArena(pool, env);
-  }
+    finished.push(...summaries(match, env));
+    if (match.kind === 'arena') {
+      const log: number[][] = pool.actions[env] ?? [];
+      if (worthKeeping(pool, match.arena)) keep.push(recordReplay(match.arena, log, pool.tag));
+    }
+    freshMatch(pool, index);
+    env += seats;
+  });
   return gather(pool, rewards, dones, finished, keep);
 }
