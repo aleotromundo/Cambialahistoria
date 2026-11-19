@@ -9,7 +9,7 @@ import bmesh
 import bpy
 from bmesh.types import BMesh, BMVert
 from bpy.types import Object
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 import environment_kit
 from environment_kit import Kit, clear_scene, material, sharpen, unwrap
@@ -19,6 +19,7 @@ INLAY: float = 0.012
 
 environment_kit.PALETTE["glyph"] = ((0.07, 0.075, 0.08), 0.0, 0.8, False)
 environment_kit.PALETTE["crystal"] = ((0.2, 0.24, 0.27), 0.05, 0.3, False)
+environment_kit.PALETTE["monument"] = ((0.5, 0.48, 0.45), 0.0, 0.9, False)
 environment_kit.PALETTE["veil"] = ((0.0, 0.0, 0.0), 0.0, 0.99, False)
 
 
@@ -97,6 +98,235 @@ def waypoint() -> list[Node]:
     focal: Kit = Kit(42)
     bipyramid(focal, "crystal", 8, 0.62, 0.17, 0.2, 0.28, 0.46)
     return [Node("dais", base), Node("focal", focal, (0.0, 0.0, 1.14))]
+
+Point = tuple[float, float]
+
+
+def prism(kit: Kit, name: str, footprint: list[Point], z0: float, z1: float, shape: Matrix, taper: float = 1.0, jag: float = 0.0, slope: Point = (0.0, 0.0), bevel: float = 0.0) -> None:
+    target: BMesh = kit.mesh(name)
+    low: list[BMVert] = [target.verts.new(shape @ Vector((x, y, z0))) for x, y in footprint]
+    high: list[BMVert] = [target.verts.new(shape @ Vector((x * taper, y * taper, z1 + x * slope[0] + y * slope[1] + kit.spread(jag)))) for x, y in footprint]
+    count: int = len(footprint)
+    made: list = [target.faces.new(low[::-1]), target.faces.new(high)]
+    for index in range(count):
+        following: int = (index + 1) % count
+        made.append(target.faces.new((low[index], low[following], high[following], high[index])))
+    if bevel > 0.0:
+        edges: set = set()
+        for face in made:
+            edges.update(face.edges)
+        bmesh.ops.bevel(target, geom=list(edges), offset=bevel, segments=1, affect="EDGES", profile=0.5)
+
+
+def ngon(kit: Kit, sides: int, rx: float, ry: float, wobble: float) -> list[Point]:
+    turn: float = kit.rng.random() * math.tau
+    points: list[Point] = []
+    for index in range(sides):
+        angle: float = turn + index * math.tau / sides + kit.spread(0.35 / sides * math.tau)
+        reach: float = 1.0 - kit.rng.random() * wobble
+        points.append((math.cos(angle) * rx * reach, math.sin(angle) * ry * reach))
+    return points
+
+
+def sector(kit: Kit, inner: float, outer: float, a0: float, a1: float, wobble: float) -> list[Point]:
+    middle: float = (a0 + a1) / 2.0
+    return [
+        (math.cos(a0) * (inner + kit.spread(wobble)), math.sin(a0) * (inner + kit.spread(wobble))),
+        (math.cos(a0) * (outer + kit.spread(wobble)), math.sin(a0) * (outer + kit.spread(wobble))),
+        (math.cos(middle) * (outer + kit.spread(wobble * 2.0)), math.sin(middle) * (outer + kit.spread(wobble * 2.0))),
+        (math.cos(a1) * (outer + kit.spread(wobble)), math.sin(a1) * (outer + kit.spread(wobble))),
+        (math.cos(a1) * (inner + kit.spread(wobble)), math.sin(a1) * (inner + kit.spread(wobble))),
+    ]
+
+
+def settled(x: float, y: float, z: float, yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0) -> Matrix:
+    return Matrix.Translation((x, y, z)) @ Matrix.Rotation(yaw, 4, "Z") @ Matrix.Rotation(tilt_x, 4, "X") @ Matrix.Rotation(tilt_y, 4, "Y")
+
+
+def rubble(kit: Kit, count: int, inner: float, outer: float, low: float, high: float, skip: tuple[float, float] | None = None) -> None:
+    placed: int = 0
+    while placed < count:
+        angle: float = kit.rng.random() * math.tau
+        if skip is not None and skip[0] < angle < skip[1]:
+            continue
+        reach: float = inner + kit.rng.random() * (outer - inner)
+        size: float = low + kit.rng.random() * (high - low)
+        kit.blob("stone", math.cos(angle) * reach, math.sin(angle) * reach, -size * 0.35, size * (1.0 + kit.rng.random() * 0.5), size, size * 0.7, size * 0.35, detail=1, yaw=kit.rng.random() * math.pi)
+        placed += 1
+
+
+PAD_TOP: float = 0.07
+PAD_SINK: float = 0.3
+
+
+def pad(kit: Kit, centre: float, outer: float, slabs: int, missing: set[int], heaved: set[int]) -> None:
+    prism(kit, "monument", ngon(kit, 9, centre, centre, 0.06), -PAD_SINK, PAD_TOP, Matrix.Identity(4), bevel=0.02)
+    gap: float = 0.035
+    for index in range(slabs):
+        if index in missing:
+            continue
+        a0: float = index * math.tau / slabs + gap
+        a1: float = (index + 1) * math.tau / slabs - gap
+        middle: float = (a0 + a1) / 2.0
+        lift: float = 0.0
+        tilt: float = 0.0
+        if index in heaved:
+            lift = 0.06 + kit.rng.random() * 0.06
+            tilt = 0.12 + kit.rng.random() * 0.1
+        shape: Matrix = Matrix.Rotation(middle, 4, "Z") @ Matrix.Translation((0.0, 0.0, lift)) @ Matrix.Rotation(-tilt, 4, "Y") @ Matrix.Rotation(-middle, 4, "Z")
+        prism(kit, "stone", sector(kit, centre + gap, outer, a0, a1, 0.05), -PAD_SINK, PAD_TOP - 0.02 + kit.spread(0.025), shape, jag=0.015, bevel=0.018)
+
+
+def pad_marks(kit: Kit, radius: float, count: int) -> None:
+    for index in range(count):
+        angle: float = index * math.tau / count
+        kit.box("glyph", math.cos(angle) * radius, math.sin(angle) * radius, PAD_TOP - INLAY, 0.075, 0.26, INLAY * 2.0, yaw=angle + math.pi / 2.0)
+    for index in range(count * 2):
+        angle = (index + 0.5) * math.tau / (count * 2)
+        kit.cylinder("glyph", math.cos(angle) * radius * 0.62, math.sin(angle) * radius * 0.62, PAD_TOP - INLAY, 0.05, INLAY * 2.0, segments=6)
+    kit.cylinder("glyph", 0.0, 0.0, PAD_TOP - INLAY, 0.11, INLAY * 2.0, segments=count)
+
+
+def shard(kit: Kit, height: float, width: float) -> None:
+    bipyramid(kit, "crystal", 5, height * 0.62, height * 0.2, width * 0.55, width, height * 0.38)
+    target: BMesh = kit.mesh("crystal")
+    for vert in target.verts:
+        vert.co += Vector((kit.spread(width * 0.12), kit.spread(width * 0.12), kit.spread(height * 0.04)))
+
+
+def face_mark(kit: Kit, shape: Matrix, x0: float, x1: float, z0: float, z1: float, face: float) -> None:
+    prism(kit, "glyph", [(x0, face - INLAY), (x1, face - INLAY), (x1, face + INLAY), (x0, face + INLAY)], z0, z1, shape)
+
+
+def menhir(kit: Kit, x: float, y: float, width: float, depth: float, height: float, yaw: float, lean: float, broken: float, marks: int) -> None:
+    shape: Matrix = settled(x, y, -PAD_SINK, yaw, lean, kit.spread(0.05))
+    half_w: float = width / 2.0
+    half_d: float = depth / 2.0
+    footprint: list[Point] = [(-half_w + kit.spread(0.04), -half_d), (half_w + kit.spread(0.04), -half_d), (half_w * 1.05, half_d + kit.spread(0.03)), (-half_w * 0.95, half_d + kit.spread(0.03))]
+    prism(kit, "monument", footprint, 0.0, height + PAD_SINK, shape, taper=0.72, jag=broken, slope=(broken * 0.6, 0.0), bevel=0.025)
+    for index in range(marks):
+        z: float = PAD_SINK + 0.3 + index * 0.28
+        if z > height + PAD_SINK - 0.25:
+            break
+        scale: float = 1.0 - (z / (height + PAD_SINK)) * 0.28
+        lean_in: float = -half_d * scale - 0.004
+        face_mark(kit, shape, -0.035, 0.035, z, z + 0.18, lean_in)
+        face_mark(kit, shape, -0.12 * scale, 0.12 * scale, z + 0.2, z + 0.24, lean_in)
+
+
+def waypoint_circle() -> list[Node]:
+    base: Kit = Kit(81)
+    pad(base, 0.62, 1.45, 9, {6}, {2, 7})
+    pad_marks(base, 0.42, 6)
+    menhir(base, 0.1, 1.85, 0.62, 0.36, 1.75, math.pi, -0.06, 0.18, 4)
+    menhir(base, -1.7, -0.55, 0.5, 0.32, 1.05, math.pi / 2.0 + 1.05, 0.05, 0.22, 2)
+    menhir(base, 1.62, -0.7, 0.52, 0.34, 0.42, -math.pi / 2.0 - 1.0, 0.12, 0.25, 0)
+    prism(base, "monument", ngon(base, 5, 0.42, 0.22, 0.15), -0.12, 0.16, settled(1.95, 0.25, 0.0, 0.7, 0.3, 1.35), bevel=0.02)
+    rubble(base, 9, 1.45, 2.2, 0.08, 0.2)
+    focal: Kit = Kit(82)
+    shard(focal, 0.95, 0.24)
+    return [Node("dais", base), Node("focal", focal, (0.0, 0.0, 1.75))]
+
+
+def obelisk_mark(kit: Kit, shape: Matrix, half: float, top_half: float, height: float, z0: float, z1: float, x0: float, x1: float) -> None:
+    face0: float = -(half + (top_half - half) * z0 / height) - 0.004
+    face1: float = -(half + (top_half - half) * z1 / height) - 0.004
+    target: BMesh = kit.mesh("glyph")
+    corners: list[Vector] = [Vector((x0, face0, z0)), Vector((x1, face0, z0)), Vector((x1, face1, z1)), Vector((x0, face1, z1))]
+    front: list[BMVert] = [target.verts.new(shape @ (corner + Vector((0.0, -INLAY, 0.0)))) for corner in corners]
+    back: list[BMVert] = [target.verts.new(shape @ (corner + Vector((0.0, INLAY * 2.0, 0.0)))) for corner in corners]
+    target.faces.new(front[::-1])
+    target.faces.new(back)
+    for index in range(4):
+        following: int = (index + 1) % 4
+        target.faces.new((front[index], front[following], back[following], back[index]))
+
+
+def waypoint_obelisk() -> list[Node]:
+    base: Kit = Kit(91)
+    pad(base, 0.66, 1.4, 8, {5}, {1, 6})
+    pad_marks(base, 0.44, 4)
+    back: float = 1.55
+    plinth: Matrix = settled(0.0, back, -PAD_SINK, 0.08, 0.0, 0.0)
+    prism(base, "monument", [(-0.62, -0.6), (0.05, -0.6), (-0.1, 0.6), (-0.62, 0.6)], 0.0, PAD_SINK + 0.34, plinth, jag=0.02, bevel=0.025)
+    prism(base, "monument", [(0.09, -0.6), (0.62, -0.6), (0.62, 0.6), (-0.05, 0.6)], 0.0, PAD_SINK + 0.27, settled(0.04, back, -PAD_SINK, 0.08, 0.04, 0.09), jag=0.02, bevel=0.025)
+    height: float = 2.35
+    half: float = 0.3
+    top_half: float = 0.22
+    shape: Matrix = settled(-0.08, back + 0.05, 0.3, 0.08, -0.05, 0.035)
+    target: BMesh = base.mesh("monument")
+    low: list[BMVert] = [target.verts.new(shape @ Vector((x * half, y * half, 0.0))) for x, y in ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0))]
+    rim: list[tuple[float, float, float]] = [(-1.0, -1.0, height - 0.12), (0.0, -1.0, height + 0.05), (1.0, -1.0, height - 0.32), (1.0, 0.0, height - 0.42), (1.0, 1.0, height - 0.22), (0.0, 1.0, height - 0.02), (-1.0, 1.0, height + 0.08), (-1.0, 0.0, height - 0.05)]
+    high: list[BMVert] = [target.verts.new(shape @ Vector((x * top_half, y * top_half, z))) for x, y, z in rim]
+    peak: BMVert = target.verts.new(shape @ Vector((0.03, 0.02, height - 0.2)))
+    for index in range(8):
+        target.faces.new((high[index], high[(index + 1) % 8], peak))
+    target.faces.new(low[::-1])
+    for side in range(4):
+        a: BMVert = low[side]
+        b: BMVert = low[(side + 1) % 4]
+        target.faces.new((a, b, high[(side * 2 + 2) % 8], high[side * 2 + 1], high[side * 2]))
+    obelisk_mark(base, shape, half, top_half, height, 0.35, 1.75, -0.03, 0.03)
+    for z in (0.55, 0.95, 1.35):
+        obelisk_mark(base, shape, half, top_half, height, z, z + 0.05, -0.13, 0.13)
+    obelisk_mark(base, shape, half, top_half, height, 1.88, 1.98, -0.07, 0.07)
+    prism(base, "monument", ngon(base, 5, 0.24, 0.17, 0.2), -0.1, 0.14, settled(0.75, back - 0.55, 0.0, 0.4, 0.5, 0.9), bevel=0.02)
+    prism(base, "monument", ngon(base, 4, 0.16, 0.12, 0.2), -0.08, 0.1, settled(-0.6, back - 0.85, 0.0, 1.2, 0.3, 0.4), bevel=0.015)
+    rubble(base, 10, 1.4, 2.15, 0.07, 0.19)
+    focal: Kit = Kit(92)
+    shard(focal, 0.7, 0.2)
+    return [Node("dais", base), Node("focal", focal, (-0.08, back + 0.12, 2.95))]
+
+
+def column(kit: Kit, x: float, y: float, height: float, radius: float, jag: float, bands: list[float]) -> None:
+    prism(kit, "monument", ngon(kit, 4, 0.55, 0.55, 0.05), -PAD_SINK, 0.2, settled(x, y, 0.0, math.pi / 4.0 + kit.spread(0.1)), bevel=0.025)
+    shape: Matrix = settled(x, y, 0.18, kit.spread(0.2), kit.spread(0.03), kit.spread(0.03))
+    circle: list[Point] = [(math.cos(index * math.tau / 14) * radius, math.sin(index * math.tau / 14) * radius) for index in range(14)]
+    prism(kit, "monument", circle, 0.0, height, shape, taper=0.9, jag=jag, slope=(jag * 0.5, -jag * 0.4))
+    for z in bands:
+        reach: float = radius * (1.0 - 0.1 * z / height) + 0.012
+        ring: list[Point] = [(math.cos(index * math.tau / 14) * reach, math.sin(index * math.tau / 14) * reach) for index in range(14)]
+        prism(kit, "glyph", ring, z, z + 0.06, shape)
+
+
+def waypoint_columns() -> list[Node]:
+    base: Kit = Kit(101)
+    pad(base, 0.64, 1.35, 8, {3}, {0, 5})
+    pad_marks(base, 0.43, 8)
+    column(base, -1.55, 0.75, 2.2, 0.26, 0.28, [0.5, 1.45])
+    column(base, 1.55, 0.75, 0.75, 0.26, 0.22, [0.5])
+    drum: Matrix = settled(2.05, -0.35, 0.12, 0.35, math.pi / 2.0, 0.0)
+    circle: list[Point] = [(math.cos(index * math.tau / 14) * 0.25, math.sin(index * math.tau / 14) * 0.25) for index in range(14)]
+    prism(base, "monument", circle, -0.32, 0.32, drum, jag=0.03)
+    prism(base, "glyph", [(x * 1.05, y * 1.05) for x, y in circle], -0.03, 0.03, drum)
+    prism(base, "monument", ngon(base, 5, 0.22, 0.16, 0.2), -0.1, 0.13, settled(1.1, 1.35, 0.0, 0.2, 0.4, -0.7), bevel=0.02)
+    rubble(base, 10, 1.35, 2.15, 0.07, 0.19)
+    focal: Kit = Kit(102)
+    shard(focal, 0.85, 0.22)
+    return [Node("dais", base), Node("focal", focal, (0.0, 0.75, 1.75))]
+
+
+def waypoint_cairn() -> list[Node]:
+    base: Kit = Kit(111)
+    pad(base, 0.6, 1.3, 7, {4}, {1})
+    pad_marks(base, 0.4, 5)
+    back: float = 1.6
+    base.blob("monument", 0.0, back, 0.05, 0.85, 0.7, 0.5, 0.18, detail=2, yaw=0.3)
+    base.blob("monument", -0.42, back + 0.12, 0.05, 0.45, 0.42, 0.42, 0.12, detail=2, yaw=1.1)
+    base.blob("monument", 0.48, back - 0.05, 0.02, 0.4, 0.38, 0.32, 0.12, detail=2, yaw=2.0)
+    base.blob("monument", 0.05, back + 0.05, 0.55, 0.55, 0.48, 0.36, 0.12, detail=2, yaw=0.8)
+    base.blob("monument", -0.05, back, 0.95, 0.36, 0.32, 0.26, 0.08, detail=2, yaw=2.4)
+    base.blob("monument", 0.02, back + 0.02, 1.22, 0.22, 0.2, 0.18, 0.06, detail=1, yaw=0.5)
+    face: Matrix = settled(0.0, back - 0.68, -0.25, 0.0, 0.32, 0.0)
+    prism(base, "monument", [(-0.4, -0.08), (0.42, -0.08), (0.38, 0.08), (-0.36, 0.08)], 0.0, 1.15, face, taper=0.82, jag=0.05, slope=(0.08, 0.0), bevel=0.02)
+    for index, z in enumerate((0.48, 0.74, 1.0)):
+        width: float = 0.17 - index * 0.03
+        prism(base, "glyph", [(-width, -0.08 - INLAY * 2.0), (width, -0.08 - INLAY * 2.0), (width, -0.08 + INLAY), (-width, -0.08 + INLAY)], z, z + 0.045, face)
+    prism(base, "glyph", [(-0.03, -0.08 - INLAY * 2.0), (0.03, -0.08 - INLAY * 2.0), (0.03, -0.08 + INLAY), (-0.03, -0.08 + INLAY)], 0.42, 1.07, face)
+    rubble(base, 14, 1.3, 2.2, 0.08, 0.24)
+    focal: Kit = Kit(112)
+    shard(focal, 0.75, 0.22)
+    return [Node("dais", base), Node("focal", focal, (0.0, back, 1.6))]
 
 
 ARCH_HALF: float = 1.05
@@ -190,6 +420,10 @@ def checkpoint() -> list[Node]:
 
 MODELS: dict[str, Callable[[], list[Node]]] = {
     "waypoint": waypoint,
+    "waypoint_circle": waypoint_circle,
+    "waypoint_obelisk": waypoint_obelisk,
+    "waypoint_columns": waypoint_columns,
+    "waypoint_cairn": waypoint_cairn,
     "way_up": way_up,
     "way_down": way_down,
     "checkpoint_stone": checkpoint,
