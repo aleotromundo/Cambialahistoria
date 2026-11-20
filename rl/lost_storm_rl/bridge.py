@@ -13,6 +13,7 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[2]
 SERVE = REPO / "tools" / "rl" / "serve.ts"
 MAX_SEED = 2**39
+WORKER_SEED_STRIDE = 1_000_003
 
 HELLO = ord("h")
 RESET = ord("r")
@@ -147,7 +148,7 @@ class ArenaEnvs:
             for index in range(workers):
                 self.workers.append(Worker(index, replays))
             for index, worker in enumerate(self.workers):
-                worker.send_json(HELLO, {"seed": seed + index * 1_000_003, "envs": envs_per_worker, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels or []})
+                worker.send_json(HELLO, {"seed": seed + index * WORKER_SEED_STRIDE, "envs": envs_per_worker, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels or []})
             hellos = [json.loads(worker.receive(HELLO)[WORD:].decode("utf-8")) for worker in self.workers]
         except BaseException:
             self.close()
@@ -215,7 +216,7 @@ def _gather_demos(workers: list["Worker"], seed: int, episodes: int, jitter: flo
     asked = workers[: max(1, min(len(workers), len(seeds) if seeds is not None else episodes))]
     total = len(seeds) if seeds is not None else episodes
     for index, ((at, size), worker) in enumerate(zip(_shares(total, len(asked)), asked)):
-        request: dict[str, Any] = {"seed": seed + at + index * 1_000_003, "episodes": size, "jitter": jitter, "waves": waves, "levels": levels, "samples": samples}
+        request: dict[str, Any] = {"seed": seed + at + index * WORKER_SEED_STRIDE, "episodes": size, "jitter": jitter, "waves": waves, "levels": levels, "samples": samples}
         if seeds is not None:
             request["seeds"] = seeds[at : at + size]
         worker.send_json(DEMO, request)

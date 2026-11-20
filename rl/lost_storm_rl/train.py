@@ -7,6 +7,7 @@ import math
 import os
 import time
 from dataclasses import asdict, dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -14,11 +15,15 @@ import numpy as np
 import torch
 
 from .anchor import HEAD_NAMES, BotBuffer, LevelCurriculum, bot_weight, imitation_loss, paired
-from .bridge import MAX_SEED, ArenaEnvs, demonstrations
+from .best import BestKeeper, best_check, note_best, saved_rate
+from .bridge import MAX_SEED, WORKER_SEED_STRIDE, ArenaEnvs, demonstrations
 from .model import Policy, load, save, widen
 
 BOT_SEED_OFFSET = 1_000_000_000
 BOT_SEED_STRIDE = 10_007
+SEED_SPACE = 2**32
+HELD_OUT_SEED = 3_000_000_000
+BEST_SEED = HELD_OUT_SEED + 1_000_000
 
 RUNS = Path(__file__).resolve().parents[1] / "runs"
 
@@ -155,6 +160,9 @@ class PpoArgs:
     bot_episodes: int = 16
     bot_keep: int = 4
     curriculum: float = 0.5
+    best_every: int = 200
+    best_episodes: int = 64
+    best_seed: int = BEST_SEED
 
 
 def refresh_bot(envs: ArenaEnvs, buffer: BotBuffer, args: PpoArgs, update: int, weights: list[float]) -> None:
@@ -181,6 +189,7 @@ def ppo(args: PpoArgs) -> Path:
     if args.curriculum > 0:
         envs.set_levels(curriculum.weights())
     buffer = BotBuffer(args.bot_keep)
+    keeper = BestKeeper(args.best_every, best_so_far(folder / "best.pt"))
     sampler = np.random.default_rng(args.seed)
     if args.bot_coef > 0:
         refresh_bot(envs, buffer, args, 0, curriculum.weights())
@@ -309,28 +318,61 @@ def ppo(args: PpoArgs) -> Path:
             if update % args.save_every == 0 or update == args.updates:
                 save(policy, str(folder / f"policy-u{update:05d}.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
                 save(policy, str(folder / "latest.pt"), {"stage": "ppo", "update": update, "args": asdict(args)})
+            if keeper.due(update):
+                keep_best(actor, policy, keeper, args, folder, update)
     finally:
         log_file.close()
         envs.close()
     return folder / "latest.pt"
 
 
+def keep_best(actor: Policy, policy: Policy, keeper: BestKeeper, args: PpoArgs, folder: Path, update: int) -> None:
+    started = time.time()
+    finished, bot = play_against_bot(actor, args.best_episodes, args.best_seed, args.jitter, args.waves, True, None)
+    check = best_check(update, sum(1 for episode in finished if episode["outcome"] == "won"), paired(finished, bot))
+    kept = keeper.offer(check)
+    if kept:
+        part = folder / "best.pt.part"
+        save(policy, str(part), {"stage": "ppo", "update": update, "best": asdict(check), "args": asdict(args)})
+        os.replace(part, folder / "best.pt")
+    note_best(folder / "best.csv", check, kept)
+    print(f"best check u{update}: model {check.model_won:.0%} bot {check.bot_won:.0%}, levels 9-12 {check.model_high:.0%} against {check.bot_high:.0%} in {time.time() - started:.0f}s{'; kept as best.pt' if kept else f'; best stays at {float(keeper.best):.0%}'}", flush=True)
+
+
+def best_so_far(path: Path) -> Fraction:
+    if not path.exists():
+        return Fraction(-1)
+    saved = torch.load(path, map_location="cpu", weights_only=True)
+    extra = saved.get("extra") if isinstance(saved, dict) else None
+    return saved_rate(extra) if isinstance(extra, dict) else Fraction(-1)
+
+
+def play_against_bot(policy: Policy, episodes: int, seed: int, jitter: float, waves: int, greedy: bool, replays: Path | None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    envs = ArenaEnvs(1, min(episodes, 16), seed, jitter, waves, keep_every=1 if replays is not None else 0, replays=replays)
+    try:
+        envs.tag("eval")
+        batch = envs.reset()
+        finished: list[dict[str, Any]] = []
+        while len(finished) < episodes:
+            with torch.no_grad():
+                action, _, _ = policy.act(torch.from_numpy(batch.obs), torch.from_numpy(batch.mask), greedy=greedy)
+            batch = envs.step(action.numpy())
+            finished.extend(batch.finished)
+        finished = finished[:episodes]
+        bot = envs.bot(seed, len(finished), jitter, waves, seeds=[episode["seed"] for episode in finished], samples=False).episodes
+    finally:
+        envs.close()
+    return finished, bot
+
+
 def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves: int, greedy: bool) -> None:
     folder = RUNS / run / "eval"
-    envs = ArenaEnvs(1, min(episodes, 16), seed, jitter, waves, keep_every=1, replays=folder)
-    policy = load(path, envs.contract, torch.device("cpu"))
+    probe = ArenaEnvs(1, 1, seed, jitter, waves)
+    contract = probe.contract
+    probe.close()
+    policy = load(path, contract, torch.device("cpu"))
     policy.eval()
-    envs.tag("eval")
-    batch = envs.reset()
-    finished: list[dict[str, Any]] = []
-    while len(finished) < episodes:
-        with torch.no_grad():
-            action, _, _ = policy.act(torch.from_numpy(batch.obs), torch.from_numpy(batch.mask), greedy=greedy)
-        batch = envs.step(action.numpy())
-        finished.extend(batch.finished)
-    finished = finished[:episodes]
-    bot = envs.bot(seed, len(finished), jitter, waves, seeds=[episode["seed"] for episode in finished], samples=False).episodes
-    envs.close()
+    finished, bot = play_against_bot(policy, episodes, seed, jitter, waves, greedy, folder)
     outcomes: dict[str, int] = {}
     for episode in finished:
         outcomes[episode["outcome"]] = outcomes.get(episode["outcome"], 0) + 1
@@ -380,6 +422,22 @@ def check_anchor(parser: argparse.ArgumentParser, bot_coef: float, bot_floor: fl
         parser.error("--bot-episodes must be 1 or more")
     if not math.isfinite(curriculum) or not 0 <= curriculum <= 1:
         parser.error("--curriculum must be between 0 and 1")
+
+
+def check_best(parser: argparse.ArgumentParser, best_every: int, best_episodes: int, best_seed: int) -> None:
+    if best_every < 0:
+        parser.error("--best-every must be 0 or more")
+    if best_episodes < 1:
+        parser.error("--best-episodes must be 1 or more")
+    if best_seed < HELD_OUT_SEED or best_seed + best_episodes > SEED_SPACE:
+        parser.error(f"--best-seed must be at least {HELD_OUT_SEED}, the seeds training never plays, and leave room for --best-episodes below {SEED_SPACE}, where the game's seeds wrap")
+
+
+def check_training_seed(parser: argparse.ArgumentParser, seed: int, updates: int, bot_episodes: int, workers: int, steps: int, envs: int, bot_coef: float) -> None:
+    if seed + max(0, workers - 1) * WORKER_SEED_STRIDE + updates * steps * envs >= HELD_OUT_SEED:
+        parser.error(f"--seed, --workers, --updates, --steps and --envs would let training arenas reach the held-out seeds from {HELD_OUT_SEED}: each worker starts {WORKER_SEED_STRIDE} past the last and takes at most one new seed per env per step")
+    if bot_coef > 0 and seed + BOT_SEED_OFFSET + updates * BOT_SEED_STRIDE + max(0, workers - 1) * WORKER_SEED_STRIDE + bot_episodes >= HELD_OUT_SEED:
+        parser.error(f"--seed, --updates and --workers would reach the held-out seeds from {HELD_OUT_SEED}: the bot's arenas run from --seed + {BOT_SEED_OFFSET} in steps of {BOT_SEED_STRIDE} per update, plus {WORKER_SEED_STRIDE} for each worker after the first")
 
 
 def check_duels(parser: argparse.ArgumentParser, duels: int, envs: int) -> None:
@@ -440,6 +498,9 @@ def main() -> None:
     ppo_cmd.add_argument("--bot-episodes", type=int, default=16)
     ppo_cmd.add_argument("--bot-keep", type=int, default=4)
     ppo_cmd.add_argument("--curriculum", type=float, default=0.5)
+    ppo_cmd.add_argument("--best-every", type=int, default=200)
+    ppo_cmd.add_argument("--best-episodes", type=int, default=64)
+    ppo_cmd.add_argument("--best-seed", type=int, default=BEST_SEED)
     eval_cmd = sub.choices["eval"]
     eval_cmd.add_argument("--policy", required=True)
     eval_cmd.add_argument("--episodes", type=int, default=16)
@@ -454,6 +515,8 @@ def main() -> None:
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
         check_duels(parser, parsed.duels, parsed.envs)
         check_anchor(parser, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.curriculum)
+        check_best(parser, parsed.best_every, parsed.best_episodes, parsed.best_seed)
+        check_training_seed(parser, parsed.seed, parsed.updates, parsed.bot_episodes, parsed.workers, parsed.steps, parsed.envs, parsed.bot_coef)
     torch.set_num_threads(4)
     if parsed.command == "widen":
         probe = ArenaEnvs(1, 1, 1, 0.0, 1)
@@ -466,7 +529,7 @@ def main() -> None:
     elif parsed.command == "imitate":
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
-        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum))
+        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum, parsed.best_every, parsed.best_episodes, parsed.best_seed))
     elif parsed.duels:
         evaluate_duels(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, not parsed.sample)
     else:
