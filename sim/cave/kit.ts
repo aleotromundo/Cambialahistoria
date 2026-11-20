@@ -1,5 +1,5 @@
 import type { Fields } from '../content/read.ts';
-import { ContentError, each, fields, nonNegative, numeric, positive, share, text, textList } from '../content/read.ts';
+import { ContentError, each, fields, flag, nonNegative, numeric, positive, share, text, textList } from '../content/read.ts';
 
 export interface KitLetters {
   readonly themes: readonly string[];
@@ -72,6 +72,7 @@ export interface CaveKit {
   readonly caches: readonly string[];
   readonly density: KitDensity;
   readonly families: readonly KitFamily[];
+  readonly openFloor: boolean;
   readonly zone: Fields;
 }
 
@@ -184,6 +185,7 @@ export function readKit(value: unknown, where: string): CaveKit {
     caches: textList(source, 'caches', where),
     density: kitDensity(source['density'], `${where}.density`),
     families,
+    openFloor: source['openFloor'] === undefined ? false : flag(source, 'openFloor', where),
     zone,
   };
 }

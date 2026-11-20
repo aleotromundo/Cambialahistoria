@@ -1,5 +1,6 @@
 {
   "id": "lava",
+  "openFloor": true,
   "letters": {
     "themes": [
       "b",

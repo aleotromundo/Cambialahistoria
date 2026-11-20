@@ -1,5 +1,6 @@
 {
   "id": "hourfall",
+  "openFloor": true,
   "letters": {
     "themes": ["c", "s", "g", "m", "l", "k"],
     "passage": "c",

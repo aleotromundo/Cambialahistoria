@@ -339,6 +339,10 @@ function tryProp(dressing: Dressing, defs: ReadonlyMap<string, PropDef>, prop: s
   return true;
 }
 
+export function clutters(def: PropDef | undefined): boolean {
+  return def !== undefined && def.light === null && (def.footprints.length > 0 || def.blockRadius > 0);
+}
+
 function rampMask(ground: Ground): Uint8Array {
   const mask: Uint8Array = new Uint8Array(ground.clear.length);
   const { columns } = ground.raster;
@@ -425,6 +429,7 @@ function dress(rng: Rng, ground: Ground, shape: CaveShape, spots: Spots, packs: 
     const cos: number = Math.cos(spin);
     const sin: number = Math.sin(spin);
     for (const member of cluster) {
+      if (kit.openFloor && clutters(defs.get(member.prop))) continue;
       const at: Vec2 = { x: centre.x + member.dx * cos - member.dz * sin, z: centre.z + member.dx * sin + member.dz * cos };
       if (tryProp(dressing, defs, member.prop, at, level, member.turn - (spin * 180) / Math.PI)) loose += 1;
     }
