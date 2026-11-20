@@ -15,6 +15,7 @@ import type { MeshLooks, RestLooks } from './rest-looks.ts';
 import { createMeshLooks, glowAtRest, isMesh, REST_GLOW, restLook } from './rest-looks.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
 import { RestingGroup } from './resting-group.ts';
+import { markSeeThrough } from './see-through.ts';
 import type { CasterCache, CasterPiece, CasterRange } from './shadow-caster.ts';
 import { casterGeometry, castsTogether, createCasterCache, createShadowCaster } from './shadow-caster.ts';
 
@@ -133,6 +134,7 @@ function flashOne(entry: MeshStandardMaterial, look: RigLook, glow: RigGlow, wak
     };
     const programKey: string = material.alphaToCoverage ? `${FLASH_KEY}-feather` : FLASH_KEY;
     material.customProgramCacheKey = (): string => programKey;
+    markSeeThrough(material);
   } else {
     makeGhost(material, glow, look.ghost);
   }

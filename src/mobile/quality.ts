@@ -30,6 +30,9 @@ export interface QualityTier {
   readonly preloadNearZones: boolean;
   readonly halfTextures: boolean;
   readonly releaseOtherZones: boolean;
+  readonly entryWaitMs: number;
+  readonly zoneWaitMs: number;
+  readonly backgroundInPlay: boolean;
   readonly rain: RainBudget;
 }
 
@@ -55,6 +58,9 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     rain: { near: 140, mid: 9000, far: 7000, splashes: 2600, sprays: 3, mist: 14, lens: true },
     halfTextures: false,
     releaseOtherZones: false,
+    entryWaitMs: 4000,
+    zoneWaitMs: 2500,
+    backgroundInPlay: true,
   },
   mobile: {
     name: 'mobile',
@@ -77,6 +83,9 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
     rain: { near: 24, mid: 2600, far: 1400, splashes: 700, sprays: 1, mist: 6, lens: false },
     halfTextures: true,
     releaseOtherZones: true,
+    entryWaitMs: 12_000,
+    zoneWaitMs: 10_000,
+    backgroundInPlay: false,
   },
 };
 

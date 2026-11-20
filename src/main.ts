@@ -127,9 +127,9 @@ import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
-import { WARM_UP, waitWithin, warmUp, warmUpWithin } from './render/warm-up.ts';
-import type { TurnGate } from './render/paced-work.ts';
-import { browserPacer, turnGate } from './render/paced-work.ts';
+import { WARM_UP, waitWithin, warmThrough, warmUp, warmUpWithin } from './render/warm-up.ts';
+import type { FramePacer, TurnGate } from './render/paced-work.ts';
+import { browserPacer, heldWhile, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
 import type { RenderScale } from './render/render-scale.ts';
@@ -368,6 +368,13 @@ async function start(): Promise<void> {
     drawTitleKeys();
     return lobbyFlow;
   };
+  const wearWhatIsHeld = (): void => {
+    loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate)
+      .then((): void => actors.refreshWear(world))
+      .catch((error: unknown): void => {
+        warnInConsole(`Loading what the hero wears failed: ${String(error)}`);
+      });
+  };
   const presentScene = (events: readonly WorldEvent[]): void => {
     tracker.world(events);
     actors.handle(events, world);
@@ -380,6 +387,7 @@ async function start(): Promise<void> {
       dirty = true;
       wantCarried();
     }
+    if (events.some((event: WorldEvent): boolean => event.type === 'character_changed')) wearWhatIsHeld();
     if (urgentEvents(events)) urgent = true;
   };
   const present = (events: readonly WorldEvent[]): void => {
@@ -419,7 +427,7 @@ async function start(): Promise<void> {
     zoneView.setGraphics(gameSettings.preset());
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
-    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), WARM_UP.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
+    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), mobile.quality.tier.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
     prepareNearZones();
     startZoneAmbience();
     glitches.refresh();
@@ -564,11 +572,15 @@ async function start(): Promise<void> {
       if (effect !== 'clear') perf.note(effect);
     },
   });
-  void warmUp(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined)).then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
+  const bootWarm: Promise<void> = warmThrough(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined));
+  void bootWarm.then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
+  const inVisiblePlay = (): boolean => playing && !transition.blocking && lobbyFlow?.active !== true;
+  const backgroundPacer: FramePacer = mobile.quality.tier.backgroundInPlay ? browserPacer() : heldWhile(browserPacer(), inVisiblePlay);
+  const backgroundGate: TurnGate = mobile.quality.tier.backgroundInPlay ? loadGate : turnGate(backgroundPacer);
   const loadTheRest = async (): Promise<void> => {
-    await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, loadGate);
+    await loadRemainingCharacters(loader, content, dresser, library, { timers: createBrowserTimers(), warn: warnInConsole }, backgroundGate);
     actors.refreshWear(world);
-    await warmUp(stage, stage.scene, stage.camera, [...loot.standIns(world), ...(await loot.dropStandIns(world, browserPacer()))]);
+    await warmUp(stage, stage.scene, stage.camera, [...loot.standIns(world), ...(await loot.dropStandIns(world, backgroundPacer))], null, backgroundPacer);
     hud.warm();
   };
   wantCarried();
@@ -630,7 +642,7 @@ async function start(): Promise<void> {
   const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), showFps: (): boolean => gameSettings.get().graphics.showFps, qualityTier, root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => pick.look(), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: pick.choice() }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
-  }, ready: (): Promise<void> => effects.ready, startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
+  }, ready: (): Promise<void> => Promise.all([effects.ready, bootWarm]).then((): void => undefined), startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();

@@ -1,6 +1,7 @@
 import type { IUniform, Material, Object3D } from 'three';
 import { Mesh, MeshStandardMaterial } from 'three';
 import type { RigGlow } from './ghost-material.ts';
+import { markSeeThrough } from './see-through.ts';
 import type { VfxShadow } from '../../sim/content/vfx-types.ts';
 import { isInvulnerable } from '../../sim/world/dash.ts';
 import type { EmpowerLook } from '../../sim/content/types.ts';
@@ -93,6 +94,7 @@ export function shadedCopy(source: MeshStandardMaterial, glow: RigGlow): MeshSta
     shader.fragmentShader = shadeFragment(shader.fragmentShader);
   };
   material.customProgramCacheKey = (): string => SHADOW_SHADE.programKey;
+  markSeeThrough(material);
   return material;
 }
 

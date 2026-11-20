@@ -4,9 +4,9 @@ import { warnInConsole } from '../backend/console-log.ts';
 import type { Timers } from '../backend/backend.ts';
 import type { CostLimit, FramePacer } from './paced-work.ts';
 import { browserPacer, framesOf, PACED_WORK, workPaced } from './paced-work.ts';
+import { asSeeThrough, opaqueSwitchables } from './see-through.ts';
 
 export const WARM_UP = {
-  zoneWaitMs: 2500,
   bodiesWaitMs: 6000,
   textureBytesPerFrame: 12 * 1024 * 1024,
   drawCostPerFrame: 4 * 1024 * 1024,
@@ -296,7 +296,11 @@ function alone<T>(object: Object3D, work: () => T): T {
 function compileOne(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, object: Object3D): Promise<Object3D> | null {
   if (!attached(stage, object)) return null;
   try {
-    return inSlice(stage, [object], (proxy: Scene): Promise<Object3D> => alone(object, (): Promise<Object3D> => compiler.compileAsync(proxy, camera)));
+    const opaque: Promise<Object3D> = inSlice(stage, [object], (proxy: Scene): Promise<Object3D> => alone(object, (): Promise<Object3D> => compiler.compileAsync(proxy, camera)));
+    const switchable: Material[] = opaqueSwitchables(object);
+    if (switchable.length === 0) return opaque;
+    const clear: Promise<Object3D> = asSeeThrough(switchable, (): Promise<Object3D> => inSlice(stage, [object], (proxy: Scene): Promise<Object3D> => alone(object, (): Promise<Object3D> => compiler.compileAsync(proxy, camera))));
+    return Promise.all([opaque, clear]).then((): Object3D => object);
   } catch {
     return null;
   }
@@ -365,12 +369,19 @@ export function waitWithin(work: Promise<unknown>, timers: Timers, ms: number): 
   return Promise.race([done(), waited]);
 }
 
+export async function warmThrough(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {
+  await warmUp(compiler, scene, camera, standIns, null, pacer);
+  if (later === null) return;
+  await Promise.allSettled([later]);
+  await warmUp(compiler, scene, camera, standIns, null, pacer);
+}
+
 export function warmUpWithin(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], timers: Timers, ms: number, later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {
   const cancels: (() => void)[] = [];
   const waited: Promise<void> = new Promise<void>((resolve: () => void): void => {
     cancels.push(timers.after(ms, resolve));
   });
-  const warmed: Promise<void> = warmUp(compiler, scene, camera, standIns, later, pacer).finally((): void => {
+  const warmed: Promise<void> = warmThrough(compiler, scene, camera, standIns, later, pacer).finally((): void => {
     for (const cancel of cancels) cancel();
   });
   return Promise.race([warmed, waited]);

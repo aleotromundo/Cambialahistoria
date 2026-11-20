@@ -1,6 +1,7 @@
 import type { WebGLRenderer } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import type { QualityName } from '../mobile/quality.ts';
+import { QUALITY_TIERS } from '../mobile/quality.ts';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { CharacterLibrary } from '../render/character-loader.ts';
 import type { Veil } from '../transition.ts';
@@ -124,7 +125,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     holdControls(true);
     if (!into) screen.hide();
     if (!covered) await veil.cover(colour);
-    await within(hold(), createBrowserTimers(), BOUNDED_WAIT.readyMs);
+    await within(hold(), createBrowserTimers(), QUALITY_TIERS[parts.tier()].entryWaitMs);
     middle();
     if (!into) active = false;
     document.body.toggleAttribute(`data-${LOBBY_FLOW.bodyMark}`, into);
@@ -133,7 +134,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       parts.restore();
     }
     if (into) {
-      await within(warmStage(), createBrowserTimers(), BOUNDED_WAIT.readyMs);
+      await within(warmStage(), createBrowserTimers(), QUALITY_TIERS[parts.tier()].entryWaitMs);
       active = true;
       holdControls(false);
       screen.show(view());

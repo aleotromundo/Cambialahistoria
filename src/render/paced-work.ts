@@ -26,6 +26,22 @@ export function browserPacer(): FramePacer {
   };
 }
 
+export function heldWhile(pacer: FramePacer, held: () => boolean): FramePacer {
+  return {
+    now(): number {
+      return pacer.now();
+    },
+    next(): Promise<void> {
+      return new Promise<void>((resolve: () => void): void => {
+        const tick = (): void => {
+          void pacer.next().then((): void => (held() ? tick() : resolve()));
+        };
+        tick();
+      });
+    },
+  };
+}
+
 export function workPaced<T>(items: readonly T[], work: (item: T) => void, pacer: FramePacer, budgetMs: number = PACED_WORK.frameBudgetMs, limit: CostLimit<T> | null = null): Promise<void> {
   const run = async (from: number): Promise<void> => {
     const started: number = pacer.now();
