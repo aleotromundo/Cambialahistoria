@@ -17,6 +17,7 @@ import torch
 from .anchor import HEAD_NAMES, BotBuffer, LevelCurriculum, bot_weight, imitation_loss, paired
 from .best import BestKeeper, best_check, note_best, saved_rate
 from .bridge import MAX_SEED, WORKER_SEED_STRIDE, ArenaEnvs, demonstrations
+from .match import MATCH_DUELS_AT_ONCE, play_match, score
 from .model import Policy, load, save, widen
 
 BOT_SEED_OFFSET = 1_000_000_000
@@ -24,6 +25,7 @@ BOT_SEED_STRIDE = 10_007
 SEED_SPACE = 2**32
 HELD_OUT_SEED = 3_000_000_000
 BEST_SEED = HELD_OUT_SEED + 1_000_000
+MATCH_SEED = HELD_OUT_SEED + 2_000_000
 
 RUNS = Path(__file__).resolve().parents[1] / "runs"
 
@@ -405,6 +407,19 @@ def evaluate_duels(path: str, run: str, duels: int, seed: int, jitter: float, gr
     print(json.dumps({"duels": len(seats) // 2, "seat_outcomes": outcomes, "decided": decided, "mean_return": float(np.mean([seat["total"] for seat in seats])), "replays": str(folder)}, indent=2))
 
 
+def match(first_path: str, second_path: str, run: str, duels: int, seed: int, jitter: float, greedy: bool) -> None:
+    folder = RUNS / run / "match"
+    probe = ArenaEnvs(1, 1, seed, jitter, 1)
+    contract = probe.contract
+    probe.close()
+    first = load(first_path, contract, torch.device("cpu"))
+    second = load(second_path, contract, torch.device("cpu"))
+    first.eval()
+    second.eval()
+    played = play_match(first, second, duels, seed, jitter, greedy, folder)
+    print(json.dumps({"first": first_path, "second": second_path, "greedy": greedy, "seed": seed, **score(played), "replays": str(folder)}, indent=2))
+
+
 def check_seed(parser: argparse.ArgumentParser, seed: int) -> None:
     if seed < 0 or seed > MAX_SEED:
         parser.error(f"--seed must be between 0 and {MAX_SEED}, which leaves room for each worker's offset under the game's limit")
@@ -438,6 +453,13 @@ def check_training_seed(parser: argparse.ArgumentParser, seed: int, updates: int
         parser.error(f"--seed, --workers, --updates, --steps and --envs would let training arenas reach the held-out seeds from {HELD_OUT_SEED}: each worker starts {WORKER_SEED_STRIDE} past the last and takes at most one new seed per env per step")
     if bot_coef > 0 and seed + BOT_SEED_OFFSET + updates * BOT_SEED_STRIDE + max(0, workers - 1) * WORKER_SEED_STRIDE + bot_episodes >= HELD_OUT_SEED:
         parser.error(f"--seed, --updates and --workers would reach the held-out seeds from {HELD_OUT_SEED}: the bot's arenas run from --seed + {BOT_SEED_OFFSET} in steps of {BOT_SEED_STRIDE} per update, plus {WORKER_SEED_STRIDE} for each worker after the first")
+
+
+def check_match(parser: argparse.ArgumentParser, duels: int, seed: int) -> None:
+    if duels < 1:
+        parser.error("--duels must be 1 or more")
+    if seed < HELD_OUT_SEED or seed + duels + MATCH_DUELS_AT_ONCE > SEED_SPACE:
+        parser.error(f"--seed must be at least {HELD_OUT_SEED}, the seeds training never plays, and leave room for the duels below {SEED_SPACE}, where the game's seeds wrap")
 
 
 def check_duels(parser: argparse.ArgumentParser, duels: int, envs: int) -> None:
@@ -506,11 +528,21 @@ def main() -> None:
     eval_cmd.add_argument("--episodes", type=int, default=16)
     eval_cmd.add_argument("--sample", action="store_true")
     eval_cmd.add_argument("--duels", action="store_true")
+    match_cmd = sub.add_parser("match")
+    match_cmd.add_argument("--run", default="match")
+    match_cmd.add_argument("--seed", type=int, default=MATCH_SEED)
+    match_cmd.add_argument("--jitter", type=float, default=0.2)
+    match_cmd.add_argument("--first", required=True)
+    match_cmd.add_argument("--second", required=True)
+    match_cmd.add_argument("--duels", type=int, default=128)
+    match_cmd.add_argument("--sample", action="store_true")
     parsed = parser.parse_args()
     if parsed.command != "widen":
         check_seed(parser, parsed.seed)
     if parsed.command == "eval" and parsed.episodes < 1:
         parser.error("--episodes must be 1 or more")
+    if parsed.command == "match":
+        check_match(parser, parsed.duels, parsed.seed)
     if parsed.command == "ppo":
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
         check_duels(parser, parsed.duels, parsed.envs)
@@ -530,6 +562,8 @@ def main() -> None:
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
         ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum, parsed.best_every, parsed.best_episodes, parsed.best_seed))
+    elif parsed.command == "match":
+        match(parsed.first, parsed.second, parsed.run, parsed.duels, parsed.seed, parsed.jitter, not parsed.sample)
     elif parsed.duels:
         evaluate_duels(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, not parsed.sample)
     else:
