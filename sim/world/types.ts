@@ -1,3 +1,4 @@
+import type { PivotState } from './pivot.ts';
 import type { TailwindEnd, TailwindState } from './tailwind-types.ts';
 import type { RankRun } from '../content/rank-types.ts';
 import type { FlaskDef, FlaskResource } from '../content/flasks.ts';
@@ -111,6 +112,7 @@ export interface ActorState {
   life: number;
   maxLife: number;
   action: ActionState | null;
+  pivot: PivotState | null;
   cooldowns: Record<string, number>;
   stagger: number;
   interrupts: number;

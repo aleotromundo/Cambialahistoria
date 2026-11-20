@@ -402,6 +402,8 @@ export interface PlayerDef {
   readonly pickupRadius: number;
   readonly pickupAim: number;
   readonly rootGrace: number;
+  readonly turnRate: number;
+  readonly walkTurnRate: number;
   readonly goldMagnetRadius: number;
   readonly respawnDelay: number;
   readonly respawnInvulnerability: number;

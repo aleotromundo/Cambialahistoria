@@ -5,6 +5,7 @@ import type { Vec2 } from '../sim/math.ts';
 import { stepWorld } from '../sim/world/step.ts';
 import type { World } from '../sim/world/types.ts';
 import { arena } from '../test/arena-support.ts';
+import { faceAt } from '../test/facing-support.ts';
 import { at, DT, inputContent, rig, screenOf } from '../test/input-support.ts';
 import type { Rig } from '../test/input-support.ts';
 import type { MoveKeys } from './move-keys.ts';
@@ -196,6 +197,7 @@ void test('in key movement a swing faces the cursor while W walks, and a roll pr
   setup.settings.setMovement('keys');
   const cursor: Vec2 = unit(STEER.cursor);
   const point: Vec2 = screenOf(world, { x: world.player.pos.x + STEER.cursor.x, z: world.player.pos.z + STEER.cursor.z });
+  faceAt(world.player, { x: world.player.pos.x + STEER.cursor.x, z: world.player.pos.z + STEER.cursor.z });
   setup.fire('pointermove', at(point, -1, 0));
   setup.fire('keydown', { code: 'KeyW' });
   setup.fire('pointerdown', at(point, 0, 1));

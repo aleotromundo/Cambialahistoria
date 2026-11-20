@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../test/facing-support.ts';
 import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import type { Content, SkillMod, SkillTreeNodeDef } from './content/types.ts';
+import type { Vec2 } from './math.ts';
 import { emptyEquipment, generateItem } from './items.ts';
 import { createRng } from './rng.ts';
 import { computeStats, resolveSkill } from './stats.ts';
@@ -111,7 +113,9 @@ function armedWith(base: string): World {
 }
 
 function bolted(world: World): readonly WorldEvent[] {
-  stepWorld(world, [{ type: 'skill', slot: 1, aim: { x: world.player.pos.x + 4, z: world.player.pos.z }, targetId: null }], 1 / 60);
+  const aim: Vec2 = { x: world.player.pos.x + 4, z: world.player.pos.z };
+  faceAt(world.player, aim);
+  stepWorld(world, [{ type: 'skill', slot: 1, aim, targetId: null }], 1 / 60);
   return world.events;
 }
 

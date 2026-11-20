@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, ARENA_CONTENT, arena, place } from '../../test/arena-support.ts';
+import { faceAt } from '../../test/facing-support.ts';
 import { cast, damageTo, dummy, offset, run, shapeArena, shapeSkill } from '../../test/shape-support.ts';
 import { must } from '../../test/support.ts';
 import type { SkillCommit } from '../content/combat-types.ts';
@@ -59,7 +60,7 @@ void test('the guard opens from behind, while the brute is staggered, and in the
   assert.equal(guardOutcome(target, light, front), 'open');
   target.tempo = 1;
   target.tempoTime = 0;
-  target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null, turned: 0 };
+  target.action = { skill: must(ARENA_CONTENT.skills.get('test_slam'), 'slam'), phase: 'recovery', timeLeft: 0.5, windup: 1, recovery: 1, direction: front, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0, goal: null, turned: 0 , steeredAt: 0};
   assert.equal(guardOutcome(target, light, front), 'open');
   target.action = { ...target.action, phase: 'windup' };
   assert.equal(guardOutcome(target, light, front), 'blocked');
@@ -282,6 +283,7 @@ void test('a hero who stands and spams Cleave at a brute is answered with a Haym
   monster.maxLife = 100000;
   world.player.life = 100000;
   world.player.maxLife = 100000;
+  faceAt(world.player, monster.pos);
   const events: WorldEvent[] = [];
   for (let step: number = 0; step < 15 / DT; step += 1) {
     const swing: readonly Command[] = world.player.action === null ? [{ type: 'skill', slot: 0, aim: { x: monster.pos.x, z: monster.pos.z }, targetId: monster.id }] : [];

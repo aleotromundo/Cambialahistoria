@@ -1,5 +1,6 @@
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
+import { directionOf } from '../math.ts';
 import { findActor } from '../world/combat.ts';
 import { isPrimary } from '../world/heroes.ts';
 import type { Actor, Command, GroundItem, Intent, PlayerState, World } from '../world/types.ts';
@@ -17,18 +18,14 @@ function ahead(from: Vec2, direction: Vec2, reach: number): Vec2 {
   return { x: from.x + direction.x * reach, z: from.z + direction.z * reach };
 }
 
-function facingOf(player: PlayerState): Vec2 {
-  return { x: Math.cos(player.facing), z: Math.sin(player.facing) };
-}
-
 function skillCommands(player: PlayerState, slot: number, skill: SkillDef, direction: Vec2 | null, target: Actor | null): Command[] {
   const press: Command[] = skill.press !== null && !player.held.includes(slot) ? [{ type: 'hold', slot, down: true }] : [];
   if (movesHero(skill)) {
     const reach: number = Math.max(ACT.minDash, skillNumbers(skill).reach);
-    const aim: Vec2 = direction !== null ? ahead(player.pos, direction, reach) : target !== null ? target.pos : ahead(player.pos, facingOf(player), reach);
+    const aim: Vec2 = direction !== null ? ahead(player.pos, direction, reach) : target !== null ? target.pos : ahead(player.pos, directionOf(player.facing), reach);
     return [...press, { type: 'skill', slot, aim, targetId: null }];
   }
-  const aim: Vec2 = target !== null ? { x: target.pos.x, z: target.pos.z } : ahead(player.pos, direction ?? facingOf(player), RL.moveReach);
+  const aim: Vec2 = target !== null ? { x: target.pos.x, z: target.pos.z } : ahead(player.pos, direction ?? directionOf(player.facing), RL.moveReach);
   return [...press, { type: 'skill', slot, aim, targetId: target?.id ?? null }];
 }
 

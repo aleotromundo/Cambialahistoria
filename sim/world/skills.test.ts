@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
+import { faceAt } from '../../test/facing-support.ts';
 import { must } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { ComboStep, Content, SkillDef } from '../content/types.ts';
@@ -19,7 +20,8 @@ const content: Content = loadContent();
 const DT: number = 1 / 60;
 const cleave: SkillDef = must(content.skills.get('cleave'), 'cleave');
 const steps: readonly ComboStep[] = must(cleave.combo, 'cleave combo').steps;
-const swing: Command = { type: 'skill', slot: 0, aim: { x: 28, z: 30 }, targetId: null };
+const SWING_AIM: Vec2 = { x: 28, z: 30 };
+const swing: Command = { type: 'skill', slot: 0, aim: SWING_AIM, targetId: null };
 
 type Start = Extract<WorldEvent, { readonly type: 'skill_start' }>;
 
@@ -28,6 +30,7 @@ function fresh(): World {
 }
 
 function swingOnce(world: World): Start {
+  faceAt(world.player, SWING_AIM);
   const events: WorldEvent[] = stepWorld(world, [swing], DT);
   const started: Start | undefined = events.find((event: WorldEvent): event is Start => event.type === 'skill_start');
   for (let step: number = 0; step < 600 && world.player.action !== null; step += 1) stepWorld(world, [], DT);
@@ -205,9 +208,11 @@ void test('a leap never lands through a wall raised across its path', (): void =
 void test('a charged skill waits while its key is held and hits harder and wider the longer it was held', (): void => {
   const quick: World = shapeArena(['test_heave']);
   const tapped: MonsterState = dummy(quick, offset(2, 0));
+  faceAt(quick.player, offset(2, 0));
   const tapEvents: WorldEvent[] = [...stepWorld(quick, [{ type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }], DT), ...run(quick, 0.4)];
   const held: World = shapeArena(['test_heave']);
   const struck: MonsterState = dummy(held, offset(2, 0));
+  faceAt(held.player, offset(2, 0));
   stepWorld(held, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }], DT);
   const waiting: WorldEvent[] = run(held, 0.7);
   assert.equal(damageTo(waiting, struck.id).length, 0);
@@ -235,6 +240,7 @@ void test('a fully charged Heavy Quarrel flies as a bolt wider by its charge are
 void test('a charge held past its limit releases on its own', (): void => {
   const world: World = shapeArena(['test_heave']);
   const struck: MonsterState = dummy(world, offset(2, 0));
+  faceAt(world.player, offset(2, 0));
   stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(2, 0), targetId: null }], DT);
   const events: WorldEvent[] = run(world, 1.4);
   assert.equal(damageTo(events, struck.id).length, 1);
@@ -245,6 +251,7 @@ void test('a channelled skill keeps striking while held, pays each tick, and sto
   const struck: MonsterState = dummy(world, offset(0, 5));
   world.player.stats = { ...world.player.stats, manaRegen: 0 };
   const mana: number = world.player.mana;
+  faceAt(world.player, offset(0, 5));
   stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }], DT);
   const during: WorldEvent[] = run(world, 1.05);
   assert.equal(world.player.action?.phase, 'channel');
@@ -259,6 +266,7 @@ void test('a channelled skill keeps striking while held, pays each tick, and sto
 void test('a channel tapped and let go before its windup ends strikes once and recovers', (): void => {
   const world: World = shapeArena(['test_wire']);
   const struck: MonsterState = dummy(world, offset(0, 5));
+  faceAt(world.player, offset(0, 5));
   const events: WorldEvent[] = [...stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }, { type: 'hold', slot: 0, down: false }], DT), ...run(world, 1)];
   assert.equal(damageTo(events, struck.id).length, 1);
   assert.equal(world.player.action, null);
@@ -268,6 +276,7 @@ void test('a channel can be steered while held', (): void => {
   const world: World = shapeArena(['test_wire']);
   const ahead: MonsterState = dummy(world, offset(0, 5));
   const beside: MonsterState = dummy(world, offset(5, 0));
+  faceAt(world.player, offset(0, 5));
   stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 5), targetId: null }], DT);
   run(world, 0.3);
   const steered: WorldEvent[] = run(world, 0.6, [{ type: 'steer', aim: offset(5, 0) }]);
@@ -279,6 +288,7 @@ void test('steering a channel that lands at its aim moves where the next pulse l
   const world: World = shapeArena(['test_squall']);
   const squall: SkillDef = shapeSkill('test_squall');
   world.player.skills = [{ ...squall, id: 'test_rain', cooldown: 0, press: { type: 'channel', interval: 0.2, max: 2, move: 0, passThrough: false, hint: null } }];
+  faceAt(world.player, offset(0, 6));
   stepWorld(world, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: offset(0, 6), targetId: null }], DT);
   run(world, 0.3);
   const steered: WorldEvent[] = run(world, 0.5, [{ type: 'steer', aim: offset(6, 0) }]);
@@ -374,6 +384,7 @@ void test('Wisp Volley looses its six wisps one after another from the release, 
       if (event.type === 'projectile_spawn') spawned.push({ at: clock, angle: Math.atan2(event.projectile.direction.x, event.projectile.direction.z) });
     }
   };
+  faceAt(world.player, offset(0, 8));
   watch(stepWorld(world, [{ type: 'skill', slot: 0, aim: offset(0, 8), targetId: null }], step));
   for (let index: number = 0; index < 600 && spawned.length < wisp.delivery.count; index += 1) {
     clock += step;
@@ -397,6 +408,7 @@ void test('a queued shot that leaves partway through a long frame flies only the
   assert.equal(delivery.type, 'projectile');
   const frame: number = 1 / 30;
   const world: World = shapeArena(['wisp_volley']);
+  faceAt(world.player, offset(0, 8));
   stepWorld(world, [{ type: 'skill', slot: 0, aim: offset(0, 8), targetId: null }], frame);
   for (let index: number = 0; index < 60 && (world.shots.length > 0 || world.projectiles.length < delivery.count); index += 1) stepWorld(world, [], frame);
   assert.equal(world.projectiles.length, delivery.count);
@@ -416,6 +428,7 @@ void test('Wisp Volley lands several wisps on one enemy ahead, each a hit of its
 
 void test('queued shots that have not left yet are dropped with the flying ones', (): void => {
   const world: World = shapeArena(['wisp_volley']);
+  faceAt(world.player, offset(0, 8));
   stepWorld(world, [{ type: 'skill', slot: 0, aim: offset(0, 8), targetId: null }], 1 / 60);
   run(world, shapeSkill('wisp_volley').windup + 1 / 120);
   assert.ok(world.shots.length > 0);
@@ -434,6 +447,7 @@ void test('Ghost Wave rolls through every enemy in its lane once, reaching the f
   const watch = (events: readonly WorldEvent[]): void => {
     for (const event of events) if (event.type === 'damage' && !struck.has(event.targetId)) struck.set(event.targetId, clock);
   };
+  faceAt(world.player, offset(0, 10));
   watch(stepWorld(world, [{ type: 'skill', slot: 0, aim: offset(0, 10), targetId: null }], 1 / 60));
   for (let step: number = 0; step < 120; step += 1) {
     clock += 1 / 60;
@@ -456,6 +470,7 @@ void test('Spell Strike lands on the enemy ahead the moment its windup ends, wit
   const watch = (events: readonly WorldEvent[]): void => {
     for (const event of events) if (event.type === 'damage' && event.targetId === target.id && marks.struck === null) marks.struck = clock;
   };
+  faceAt(world.player, target.pos);
   watch(stepWorld(world, [{ type: 'skill', slot: 0, aim: target.pos, targetId: null }], step));
   for (let index: number = 0; index < 600 && marks.struck === null; index += 1) {
     clock += step;

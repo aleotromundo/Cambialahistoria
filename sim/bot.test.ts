@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../test/facing-support.ts';
 import { ARENA_CENTRE, arena, place } from '../test/arena-support.ts';
 import { OUTPOST_CONTENT } from '../test/road-support.ts';
 import { finishQuests, must } from '../test/support.ts';
@@ -111,6 +112,7 @@ void test('the bot reads a live mark on the ground and the landing spot of a lea
   const world: World = arena(21);
   const caller: MonsterState = place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
   const mark: SkillDef = must(world.content.skills.get('test_mark'), 'mark');
+  faceAt(caller, ARENA_CENTRE);
   startSkill(world, caller, mark, { x: ARENA_CENTRE.x - caller.pos.x, z: ARENA_CENTRE.z - caller.pos.z });
   assert.equal(botInDanger(world, ARENA_CENTRE), true);
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z - 6 }), false);
@@ -120,6 +122,7 @@ void test('the bot reads a live mark on the ground and the landing spot of a lea
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z - 6 }), false);
   world.hazards = [];
   const ghoul: MonsterState = place(world, 'test_ghoul', { x: ARENA_CENTRE.x - 8, z: ARENA_CENTRE.z });
+  faceAt(ghoul, ARENA_CENTRE);
   startSkill(world, ghoul, must(world.content.skills.get('test_pounce'), 'pounce'), { x: 8, z: 0 });
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x - 0.8, z: ARENA_CENTRE.z }), true);
   assert.equal(botInDanger(world, { x: ARENA_CENTRE.x - 7, z: ARENA_CENTRE.z + 4 }), false);
@@ -152,9 +155,11 @@ void test('a bot holding a charge lets it go when a blow is coming at it, and st
     if (world.time - start <= CHARGE_TEST.slamWindup) seen.farthest = Math.max(seen.farthest, Math.hypot(world.player.pos.x - brute.pos.x, world.player.pos.z - brute.pos.z));
     if (world.player.action !== null && !world.player.held.includes(0)) seen.letGoAt = Math.min(seen.letGoAt, world.time);
   });
+  faceAt(world.player, brute.pos);
   botStep(bot, [{ type: 'hold', slot: 0, down: true }, { type: 'skill', slot: 0, aim: brute.pos, targetId: brute.id }]);
   start = world.time;
   while (world.time - start < CHARGE_TEST.slamAt) botStep(bot, []);
+  faceAt(brute, world.player.pos);
   startSkill(world, brute, must(world.content.skills.get('test_slam'), 'test_slam'), { x: world.player.pos.x - brute.pos.x, z: world.player.pos.z - brute.pos.z });
   botFight(bot, (): boolean => world.time - start >= CHARGE_TEST.watch, null);
   assert.ok(seen.letGoAt - start < CHARGE_TEST.letGoBy, `let go at ${seen.letGoAt - start}`);

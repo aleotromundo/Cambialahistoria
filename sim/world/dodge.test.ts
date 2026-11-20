@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { isEmpty } from './press-buffer.ts';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { must } from '../../test/support.ts';
 import { shapeArena } from '../../test/shape-support.ts';
 import { loadContent } from '../content/content.ts';
@@ -22,7 +23,7 @@ function skill(id: string): SkillDef {
 }
 
 function action(phase: ActionState['phase'], press: SkillDef): ActionState {
-  return { skill: press, phase, timeLeft: 0.2, windup: 0.3, recovery: 0.2, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: 0, elapsed: 0, goal: null, turned: 0 };
+  return { skill: press, phase, timeLeft: 0.2, windup: 0.3, recovery: 0.2, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: 0, elapsed: 0, goal: null, turned: 0 , steeredAt: 0};
 }
 
 void test('every dodge on the bar is a dash or a step through, and no attack counts as a dodge', (): void => {
@@ -60,6 +61,7 @@ function holder(held: string, dodge: string): World {
   world.player.bar = [held, null, null, null, null, dodge];
   refreshPlayer(world);
   world.player.mana = world.player.stats.maxMana;
+  faceAt(world.player, aimAhead(world, 1));
   return world;
 }
 

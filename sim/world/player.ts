@@ -24,7 +24,7 @@ import { useFlask } from './flasks.ts';
 import type { Steering, SteerStep } from './movement.ts';
 import { beingKnocked, faceToward, steerAlong, stepKnock, stepTimers } from './movement.ts';
 import { allHold } from './conditions.ts';
-import { blockedReason, isHeld, startSkill, steerAction, stepAction } from './skills.ts';
+import { blockedReason, isHeld, startSkill, steerAction, stepAction, stepPivot } from './skills.ts';
 import { aimGlide, glide, glidesWith, stepMomentum } from './momentum.ts';
 import type { ActionState, Actor, Command, GroundItem, MomentState, NoticeReason, NpcState, PlayerState, SkillCommand, World } from './types.ts';
 import { handlePurse } from './purse.ts';
@@ -70,6 +70,10 @@ const STEERING: Steering = {
   passRadius: 0.45,
   settleRadius: 0.3,
 };
+
+function heroSteering(world: World): Steering {
+  return { ...STEERING, maxTurnRate: world.content.player.walkTurnRate };
+}
 
 function setDestination(world: World, player: PlayerState, dest: Vec2): void {
   player.path = walkPath(world, player.pos, dest);
@@ -176,9 +180,7 @@ function useSkill(world: World, player: PlayerState, command: SkillCommand): voi
   }
   if (isPrimary(world, player)) closeDialogue(world, false);
   if (player.intent.type !== 'attack') player.chase = freshChase(player.pos);
-  const fresh: boolean = player.intent.type !== 'attack' || player.intent.targetId !== target.id;
   player.intent = { type: 'attack', slot: command.slot, targetId: target.id };
-  if (fresh) faceToward(player, { x: target.pos.x - player.pos.x, z: target.pos.z - player.pos.z }, Math.PI);
   chaseTarget(world, player, target);
 }
 
@@ -196,6 +198,8 @@ function strikeBlocker(world: World, player: PlayerState, target: Actor, skill: 
 }
 
 function act(world: World, player: PlayerState, command: Command): void {
+  if (player.pivot !== null && (command.type === 'move' || command.type === 'walk') && command.held) return;
+  player.pivot = null;
   switch (command.type) {
     case 'move':
       startMove(world, player, command.dest, command.held, false);
@@ -617,6 +621,7 @@ export function stepPlayer(world: World, player: PlayerState, dt: number): void 
   stepMomentum(player, dt);
   stepKnock(world.grid, player, dt);
   stepAction(world, player, dt * player.tempo);
+  stepPivot(world, player, dt * player.tempo);
   player.moving = false;
   const startX: number = player.pos.x;
   const startZ: number = player.pos.z;
@@ -629,7 +634,7 @@ export function stepPlayer(world: World, player: PlayerState, dt: number): void 
   if (player.action === null) {
     stepIntent(world, player, dt);
     if (!isBusy(player) && !beingKnocked(player) && player.root <= 0 && player.tempo > 0 && player.path.length > 0) {
-      const step: SteerStep = steerAlong(world.grid, player, player.path, player.stats.moveSpeed * tailwindPace(world) * player.tempo * dt, dt, STEERING);
+      const step: SteerStep = steerAlong(world.grid, player, player.path, player.stats.moveSpeed * tailwindPace(world) * player.tempo * dt, dt, heroSteering(world));
       const stuck: boolean = step.tried > PLAYER.stuckStep && step.moved <= PLAYER.stuckStep;
       player.moving = !stuck && (player.path.length > 0 || step.moved > PLAYER.stuckStep);
       if (stuck) {
@@ -637,7 +642,7 @@ export function stepPlayer(world: World, player: PlayerState, dt: number): void 
         player.repathTimer = PLAYER.repathInterval;
       } else if (player.path.length === 0) player.repathTimer = 0;
     }
-  } else if (glide(world.grid, player, dt, tailwindPace(world))) player.moving = true;
+  } else if (glide(world.grid, player, dt, world.content.player.turnRate, tailwindPace(world))) player.moving = true;
   player.walked = player.moving ? { x: player.pos.x - startX, z: player.pos.z - startZ } : { x: 0, z: 0 };
   if (player.moving) emitSteps(world, player, Math.hypot(player.pos.x - startX, player.pos.z - startZ));
   else player.stridePhase = PLAYER.firstStepFraction;

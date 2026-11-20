@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { cast, damageTo, dummy, offset, run, shapeArena } from '../../test/shape-support.ts';
 import type { SkillDef } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -42,6 +43,7 @@ void test('a beam hits everything along its line and nothing beside it', (): voi
   const inLine: MonsterState = dummy(world, offset(0, 5));
   const further: MonsterState = dummy(world, offset(0, 9));
   const aside: MonsterState = dummy(world, offset(4, 5));
+  faceAt(world.player, offset(0, 6));
   const events: WorldEvent[] = [...cast(world, 0, offset(0, 6)), ...run(world, 0.3)];
   assert.equal(damageTo(events, inLine.id).length, 1);
   assert.equal(damageTo(events, further.id).length, 1);

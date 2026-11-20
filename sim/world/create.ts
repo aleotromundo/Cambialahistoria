@@ -64,6 +64,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
     life: stats.maxLife,
     maxLife: stats.maxLife,
     action: null,
+    pivot: null,
     cooldowns: {},
     stagger: 0,
     interrupts: 0,

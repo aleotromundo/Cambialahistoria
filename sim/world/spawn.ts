@@ -71,6 +71,7 @@ export function spawnMonster(world: World, def: MonsterDef, packId: number, cent
     life,
     maxLife: life,
     action: null,
+    pivot: null,
     cooldowns: {},
     stagger: 0,
     interrupts: 0,

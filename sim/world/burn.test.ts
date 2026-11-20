@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { must } from '../../test/support.ts';
 import { damageTo, dummy, offset, run, shapeArena, shapeSkill } from '../../test/shape-support.ts';
 import type { SkillDef } from '../content/types.ts';
@@ -20,6 +21,7 @@ function watchBurst(world: World, target: MonsterState, seconds: number): Struck
   const watch = (events: readonly WorldEvent[]): void => {
     for (const event of events) if (event.type === 'damage' && event.targetId === target.id) struck.push({ at: clock, amount: event.amount, burn: event.burn });
   };
+  faceAt(world.player, target.pos);
   watch(stepWorld(world, [{ type: 'skill', slot: 0, aim: target.pos, targetId: null }], step));
   for (let index: number = 0; index < Math.round(seconds / step); index += 1) {
     clock += step;
@@ -56,6 +58,7 @@ void test('Fire Burst blasts the ground ahead the moment its windup ends, then t
 void test('burning does not push, stagger or provoke a second burn of its own', (): void => {
   const world: World = shapeArena(['fire_burst']);
   const target: MonsterState = dummy(world, offset(0, 4));
+  faceAt(world.player, target.pos);
   run(world, shapeSkill('fire_burst').windup + 0.2, [{ type: 'skill', slot: 0, aim: target.pos, targetId: null }]);
   const held = must(target.burn, 'burning');
   target.knock = { x: 0, z: 0 };
@@ -98,6 +101,7 @@ void test('a burn can finish an enemy off, and then it stops', (): void => {
 void test('a skill that does not burn leaves nothing burning', (): void => {
   const world: World = shapeArena(['cleave']);
   const target: MonsterState = dummy(world, offset(0, 1.2));
+  faceAt(world.player, target.pos);
   run(world, 0.6, [{ type: 'skill', slot: 0, aim: target.pos, targetId: null }]);
   assert.equal(target.burn, null);
 });

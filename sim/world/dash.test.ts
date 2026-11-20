@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import type { TestScene } from '../../test/motion-support.ts';
 import { MOTION_DT, placedProp, sceneZone } from '../../test/motion-support.ts';
 import { armed, must, worldIn } from '../../test/support.ts';
@@ -157,6 +158,7 @@ void test('the hero cannot roll while dead or stunned', (): void => {
 
 void test('a roll cuts the recovery of an attack but waits out its wind-up', (): void => {
   const world: World = scene('cancel', { tiles: OPEN, props: [], start: { x: 8, z: 14 } });
+  faceAt(world.player, { x: 4, z: 14 });
   stepWorld(world, [{ type: 'skill', slot: 0, aim: { x: 4, z: 14 }, targetId: null }], MOTION_DT);
   assert.equal(world.player.action?.phase, 'windup');
   const pressed: WorldEvent[] = stepWorld(world, [rollToward({ x: 20, z: 14 })], MOTION_DT);
@@ -169,6 +171,7 @@ void test('a roll cuts the recovery of an attack but waits out its wind-up', ():
   assert.equal(rolledAt, 'impact');
 
   const again: World = scene('cancel_recovery', { tiles: OPEN, props: [], start: { x: 8, z: 14 } });
+  faceAt(again.player, { x: 4, z: 14 });
   stepWorld(again, [{ type: 'skill', slot: 0, aim: { x: 4, z: 14 }, targetId: null }], MOTION_DT);
   while (again.player.action?.phase === 'windup') stepWorld(again, [], MOTION_DT);
   assert.equal(again.player.action?.phase, 'recovery');

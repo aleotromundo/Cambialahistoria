@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ARENA_CENTRE, arena, place } from '../../test/arena-support.ts';
+import { faceAt } from '../../test/facing-support.ts';
 import { must } from '../../test/support.ts';
 import { directionOf, distance } from '../math.ts';
 import { applyHit, kill, offenceOf } from './combat.ts';
@@ -26,6 +27,7 @@ function marks(events: readonly WorldEvent[], burst: boolean): HazardState[] {
 void test('a caster marks the ground where the hero stands and the mark bursts only after its delay', (): void => {
   const world: World = arena(1);
   const caller: MonsterState = place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  faceAt(caller, ARENA_CENTRE);
   const hero = world.player;
   const events: WorldEvent[] = run(world, 0.45, (): void => {
     hero.pos = { ...ARENA_CENTRE };
@@ -49,7 +51,7 @@ void test('a caster marks the ground where the hero stands and the mark bursts o
 
 void test('a hero who walks out of the mark before it bursts takes nothing', (): void => {
   const world: World = arena(2);
-  place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  faceAt(place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z }), ARENA_CENTRE);
   const hero = world.player;
   run(world, 0.45, (): void => {
     hero.pos = { ...ARENA_CENTRE };
@@ -67,7 +69,7 @@ void test('a hero who walks out of the mark before it bursts takes nothing', ():
 
 void test('a burst on a warded hero counts no hit', (): void => {
   const world: World = arena(2);
-  place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  faceAt(place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z }), ARENA_CENTRE);
   const hero = world.player;
   run(world, 0.45, (): void => {
     hero.pos = { ...ARENA_CENTRE };
@@ -105,7 +107,7 @@ void test('a volatile elite leaves a burst where it fell, and it goes off after 
 
 void test('clearing hazards forgets every mark', (): void => {
   const world: World = arena(4);
-  place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  faceAt(place(world, 'test_caller', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z }), ARENA_CENTRE);
   run(world, 0.45);
   assert.equal(world.hazards.length, 1);
   clearHazards(world);
@@ -115,6 +117,7 @@ void test('clearing hazards forgets every mark', (): void => {
 void test('a row of marks is laid through the target along the cast, nearest first, each later by its step', (): void => {
   const world: World = arena(3);
   const counter: MonsterState = place(world, 'test_counter', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  faceAt(counter, ARENA_CENTRE);
   const hero = world.player;
   const events: WorldEvent[] = run(world, 0.45, (): void => {
     hero.pos = { ...ARENA_CENTRE };
@@ -134,7 +137,7 @@ void test('a row of marks is laid through the target along the cast, nearest fir
 
 void test('a hero standing beside the row but off its line is never hit', (): void => {
   const world: World = arena(4);
-  place(world, 'test_counter', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z });
+  faceAt(place(world, 'test_counter', { x: ARENA_CENTRE.x + 8, z: ARENA_CENTRE.z }), ARENA_CENTRE);
   const hero = world.player;
   run(world, 0.45, (): void => {
     hero.pos = { ...ARENA_CENTRE };

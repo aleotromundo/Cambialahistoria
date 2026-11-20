@@ -1,6 +1,7 @@
 import type { SkillDef, ZoneExit } from '../content/types.ts';
 import { DAMAGE_TYPES, SKILL_CATEGORIES } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
+import { directionOf } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { mayStrike } from '../world/factions.ts';
 import { hostileFrom, isPrimary, partyOf } from '../world/heroes.ts';
@@ -174,6 +175,10 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   put(writer, bagFree(player));
   writeStatuses(writer, statusesOf(world, player));
   put(writer, targetedBy(world, player) / RL.countScale);
+  const facing: Vec2 = directionOf(player.facing);
+  put(writer, facing.x);
+  put(writer, facing.z);
+  flag(writer, player.pivot !== null);
   blank(writer, RL.spareSelf);
 }
 
@@ -302,7 +307,7 @@ function monsterNumbers(world: World, player: PlayerState, monster: MonsterState
     boss: monster.def.boss !== null,
     rank: monster.def.rank !== null,
     stunned: monster.recovery.stunned > 0 || monster.stagger > 0,
-    dir: { x: Math.cos(monster.facing), z: Math.sin(monster.facing) },
+    dir: directionOf(monster.facing),
     speed: 0,
     timeLeft: 0,
     behaviour: BEHAVIOUR_ORDER[monster.def.behaviour.type],
@@ -327,7 +332,7 @@ function heroNumbers(player: PlayerState, other: PlayerState, hostile: boolean):
     boss: false,
     rank: false,
     stunned: other.stagger > 0,
-    dir: { x: Math.cos(other.facing), z: Math.sin(other.facing) },
+    dir: directionOf(other.facing),
     speed: 0,
     timeLeft: 0,
     behaviour: -1,

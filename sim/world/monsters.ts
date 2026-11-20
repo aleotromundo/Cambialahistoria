@@ -14,6 +14,7 @@ import type { Steering, SteerStep } from './movement.ts';
 import { beingKnocked, faceToward, steerAlong, steerToward, stepKnock, stepTimers } from './movement.ts';
 import { stepRecovery } from './poise.ts';
 import { blockedReason, startSkill, stepAction } from './skills.ts';
+import { needsPivot, turnInPlace, TURNING } from './pivot.ts';
 import { monsterLevel, SPAWN, spawnMonster } from './spawn.ts';
 import { stepTrail } from './trail.ts';
 import { alarmTarget, freshRun, spawnPack, surgeExtra, wakePack } from './packs.ts';
@@ -44,7 +45,6 @@ const MONSTERS = {
   roomBand: 1.5,
   engageBand: 0.6,
   blindGrace: 0.6,
-  turnRate: 10,
   stuckFraction: 0.3,
   stuckLimit: 0.3,
   restTime: 0.6,
@@ -71,7 +71,7 @@ function towardOf(monster: MonsterState, target: Vec2): Vec2 {
 }
 
 function face(monster: MonsterState, target: Vec2, dt: number): void {
-  faceToward(monster, { x: target.x - monster.pos.x, z: target.z - monster.pos.z }, MONSTERS.turnRate * dt);
+  faceToward(monster, { x: target.x - monster.pos.x, z: target.z - monster.pos.z }, TURNING.monsterRate * dt);
 }
 
 function travel(world: World, monster: MonsterState, direction: Vec2, speed: number, foe: Vec2, dt: number): void {
@@ -107,10 +107,15 @@ function approach(world: World, monster: MonsterState, target: Vec2, dt: number)
   monster.moving = step.moved > MONSTERS.stillStep || (step.tried > 0 && monster.stuckTime < MONSTERS.blockedGrace);
 }
 
-function attack(world: World, monster: MonsterState, skill: SkillDef, foe: Actor): boolean {
+function attack(world: World, monster: MonsterState, skill: SkillDef, foe: Actor, dt: number): boolean {
   if (blockedReason(monster, skill) !== null || attacksHeld(world) || !onBeat(world, monster)) return false;
   const aim: Vec2 = ledAim(foe, monster.def.behaviour.type === 'ranged' ? monster.def.behaviour.lead : 0);
-  startSkill(world, monster, skill, { x: aim.x - monster.pos.x, z: aim.z - monster.pos.z });
+  const toward: Vec2 = { x: aim.x - monster.pos.x, z: aim.z - monster.pos.z };
+  if (needsPivot(monster, skill, toward)) {
+    turnInPlace(world, monster, toward, dt);
+    return true;
+  }
+  startSkill(world, monster, skill, toward);
   monster.nextSkill = null;
   stepMeasure(world, monster);
   return true;
@@ -130,8 +135,7 @@ function chase(world: World, monster: MonsterState, skill: SkillDef, foe: Actor,
   const waiting: boolean = sight && monster.stance === 'engage' && blockedReason(monster, skill) !== null;
   if (inReach || waiting) {
     monster.stance = 'engage';
-    face(monster, foe.pos, dt);
-    if (inReach) attack(world, monster, skill, foe);
+    if (!inReach || !attack(world, monster, skill, foe, dt)) face(monster, foe.pos, dt);
     return;
   }
   passOver(world, monster);
@@ -158,7 +162,7 @@ function keepRange(world: World, monster: MonsterState, behaviour: RangedBehavio
   const lostSight: boolean = !sight && monster.blindTime === 0;
   monster.blindTime = sight ? 0 : monster.blindTime + dt;
   const reach: number = skill.engageRange + foe.radius;
-  if (sight && gap <= reach && attack(world, monster, skill, foe)) return;
+  if (sight && gap <= reach && attack(world, monster, skill, foe, dt)) return;
   const probe: number = MONSTERS.retreatProbe + (monster.stance === 'retreat' ? 0 : MONSTERS.roomBand);
   const behind: Vec2 = { x: monster.pos.x - toward.x * probe, z: monster.pos.z - toward.z * probe };
   monster.stance = rangeStance(monster, behaviour, gap, sight, lineWalkable(routedGrid(world.grid), monster.pos, behind) && insideShell(world, monster, behind), reach);
@@ -190,7 +194,7 @@ function circle(world: World, monster: MonsterState, foe: Actor, range: number, 
 function stalk(world: World, monster: MonsterState, behaviour: StalkerBehaviour, skill: SkillDef, foe: Actor, dt: number): void {
   const gap: number = distance(monster.pos, foe.pos) - foe.radius;
   const sight: boolean = canReach(world, monster.pos, foe.pos);
-  if (sight && gap <= skill.engageRange && attack(world, monster, skill, foe)) return;
+  if (sight && gap <= skill.engageRange && attack(world, monster, skill, foe, dt)) return;
   if (!sight || gap > behaviour.orbitRange + MONSTERS.orbitBand) {
     monster.stance = 'approach';
     approach(world, monster, foe.pos, dt);
@@ -225,7 +229,7 @@ function turnTowardSide(monster: MonsterState, foe: Actor): number {
 function swarm(world: World, monster: MonsterState, behaviour: SwarmBehaviour, skill: SkillDef, foe: Actor, dt: number): void {
   const gap: number = distance(monster.pos, foe.pos) - foe.radius;
   const sight: boolean = canReach(world, monster.pos, foe.pos);
-  if (sight && gap <= skill.engageRange && attack(world, monster, skill, foe)) return;
+  if (sight && gap <= skill.engageRange && attack(world, monster, skill, foe, dt)) return;
   if (!sight || gap > behaviour.ring + MONSTERS.orbitBand) {
     monster.stance = 'approach';
     approach(world, monster, sight ? flankOf(world, monster, foe, behaviour.ring) : foe.pos, dt);
@@ -244,7 +248,7 @@ function swarm(world: World, monster: MonsterState, behaviour: SwarmBehaviour, s
 function lurk(world: World, monster: MonsterState, behaviour: AmbushBehaviour, skill: SkillDef, foe: Actor, dt: number): void {
   const gap: number = distance(monster.pos, foe.pos) - foe.radius;
   const sight: boolean = canReach(world, monster.pos, foe.pos);
-  if (sight && gap <= skill.engageRange && attack(world, monster, skill, foe)) return;
+  if (sight && gap <= skill.engageRange && attack(world, monster, skill, foe, dt)) return;
   const ready: boolean = blockedReason(monster, skill) === null;
   if (!sight || gap > skill.engageRange || (ready && gap > behaviour.spring)) {
     monster.stance = 'approach';

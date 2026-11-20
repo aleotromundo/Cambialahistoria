@@ -25,6 +25,9 @@ import { feedMomentum, glidesWith, MOMENTUM, momentumOf, momentumStep, settleTur
 import type { MomentumStep } from './momentum.ts';
 import { resolveBeam, resolveBlink, resolveChain } from './shapes.ts';
 import { beginChannel, endChannels } from './channels.ts';
+import { needsPivot, turnInPlace, turnRateOf } from './pivot.ts';
+import type { PivotState } from './pivot.ts';
+import { turnToward } from './movement.ts';
 import type { ActionState, Actor, EchoState, NoticeReason, PlayerState, ProjectileState, QueuedShot, Team, World } from './types.ts';
 
 export const SKILLS = {
@@ -151,6 +154,11 @@ function clearReach(world: World, actor: Actor, aim: ReadonlyVec2, wanted: numbe
 }
 
 export function startSkill(world: World, actor: Actor, requested: SkillDef, direction: ReadonlyVec2, slot: number | null = null): void {
+  if (needsPivot(actor, requested, direction)) {
+    actor.pivot = { skill: requested, at: { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z }, slot };
+    return;
+  }
+  actor.pivot = null;
   const hits: number = comboHits(actor, requested);
   const skill: SkillDef = bodySized(actor, chainedSkill(actor, requested));
   const speed: number = actor.kind === 'player' && skill.scalesWithAttackSpeed ? effectiveAttackSpeed(actor.stats) : 1;
@@ -168,7 +176,7 @@ export function startSkill(world: World, actor: Actor, requested: SkillDef, dire
   const travelSpeed: number = skill.leap === null ? 0 : reach / Math.min(windup, skill.leap.airTime);
   const goal: Vec2 | null = glidesWith(skill.press) ? { x: actor.pos.x + direction.x, z: actor.pos.z + direction.z } : null;
   if (actor.kind === 'monster') braceThrough(actor, windup);
-  const action: ActionState = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0 };
+  const action: ActionState = { skill, phase: 'windup', timeLeft: windup, windup, recovery, direction: aim, target, travelSpeed, travelLeft: skill.leap === null ? 0 : reach, slot, elapsed: 0, goal, turned: 0, steeredAt: 0 };
   actor.action = action;
   actor.combo = requested.combo === null ? null : { skill: requested.id, hits: hits + 1, timeLeft: windup + recovery + requested.combo.window };
   endChannels(world);
@@ -388,6 +396,7 @@ function finishWindup(world: World, actor: Actor, action: ActionState): void {
     action.phase = 'channel';
     action.timeLeft = Math.max(0, action.timeLeft) + channelInterval(actor, action.skill, hold.interval);
     action.elapsed = 0;
+    action.steeredAt = 0;
   } else {
     settleTurn(actor, action);
     action.phase = 'recovery';
@@ -395,6 +404,20 @@ function finishWindup(world: World, actor: Actor, action: ActionState): void {
   }
   resolveImpact(world, actor, action, skill);
   if (actor.kind === 'player' && firePowers(world, actor, { on: 'use', skill: action.skill, target: null, at: from })) refreshHero(world, actor);
+}
+
+export function stepPivot(world: World, actor: Actor, dt: number): void {
+  const pivot: PivotState | null = actor.pivot;
+  if (pivot === null) return;
+  if (!actor.alive || actor.action !== null || actor.stagger > 0) {
+    actor.pivot = null;
+    return;
+  }
+  const direction: Vec2 = { x: pivot.at.x - actor.pos.x, z: pivot.at.z - actor.pos.z };
+  turnInPlace(world, actor, direction, dt);
+  if (needsPivot(actor, pivot.skill, direction)) return;
+  actor.pivot = null;
+  if (blockedReason(actor, pivot.skill) === null) startSkill(world, actor, pivot.skill, direction, pivot.slot);
 }
 
 export function stepAction(world: World, actor: Actor, dt: number): void {
@@ -432,9 +455,12 @@ export function steerAction(world: World, actor: Actor, aim: ReadonlyVec2): void
   const action: ActionState | null = actor.action;
   if (action === null || action.skill.press === null || action.phase === 'recovery') return;
   const offset: Vec2 = { x: aim.x - actor.pos.x, z: aim.z - actor.pos.z };
-  const toward: Vec2 = normalize(offset, action.direction);
+  const wanted: number = facingOf(normalize(offset, action.direction));
+  const turned: number = turnToward(facingOf(action.direction), wanted, turnRateOf(world, actor) * Math.max(0, action.elapsed - action.steeredAt));
+  action.steeredAt = action.elapsed;
+  const toward: Vec2 = directionOf(turned);
   action.direction = toward;
-  actor.facing = facingOf(toward);
+  actor.facing = turned;
   if (action.goal !== null) action.goal = { x: aim.x, z: aim.z };
   if (action.target === null || action.skill.leap !== null) return;
   const planned: number = reachOf(action.skill, null, Math.hypot(offset.x, offset.z));

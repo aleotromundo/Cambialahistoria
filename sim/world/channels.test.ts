@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { must } from '../../test/support.ts';
 import { shapeArena } from '../../test/shape-support.ts';
 import { loadContent } from '../content/content.ts';
@@ -23,6 +24,7 @@ function holder(held: string): World {
   world.player.bar = [held, null, null, null, null, 'dodge_roll'];
   refreshPlayer(world);
   world.player.mana = world.player.stats.maxMana;
+  faceAt(world.player, aimAhead(world, 1));
   return world;
 }
 

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { offset, shapeArena } from '../../test/shape-support.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
@@ -55,6 +56,7 @@ void test('a command for a hero who is not in the world changes nothing', (): vo
 void test('a skill that names the second hero starts that hero swinging', (): void => {
   const world: World = shapeArena([]);
   const second: PlayerState = joined(world, offset(-3, 0), ['cleave']);
+  faceAt(second, offset(-3, 2));
   stepWorld(world, [{ type: 'skill', slot: 0, aim: offset(-3, 2), targetId: null, by: second.id }], WALK.dt);
   assert.notEqual(second.action, null);
   assert.equal(world.player.action, null);

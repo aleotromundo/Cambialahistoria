@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { offset, SHAPE_DT, shapeArena } from '../../test/shape-support.ts';
 import { stepWorld } from '../world/step.ts';
 import type { PlayerState, World } from '../world/types.ts';
@@ -20,6 +21,7 @@ void test('a rival hero winding up a blow at a hero is danger to that hero, and 
   world.player.pos = offset(0, 0);
   const rival: PlayerState = rivalOf(world, DUEL.rival);
   assert.equal(dangerAround(world, world.player)[0], 0);
+  faceAt(rival, world.player.pos);
   stepWorld(world, [{ type: 'skill', slot: 0, aim: world.player.pos, targetId: world.player.id, by: rival.id }], SHAPE_DT);
   assert.equal(rival.action?.phase, 'windup');
   assert.equal(dangerAround(world, world.player)[0], 1);

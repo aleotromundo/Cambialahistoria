@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { sceneZone } from '../../test/motion-support.ts';
 import { standAt } from '../../test/moment-support.ts';
 import { SCENE_BASE } from '../../test/road-support.ts';
+import { faceAt } from '../../test/facing-support.ts';
 import { must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, SkillDef } from '../content/types.ts';
@@ -138,13 +139,23 @@ void test('clicking only on the first fire\'s thrower clears it from every beari
   }
 });
 
-void test('a click on a far target turns the hero toward it on the same frame', (): void => {
+void test('a click on a far target starts turning the hero toward it on that frame and he faces it once his walking turn rate has carried him round', (): void => {
   const world: World = openScene();
   const target: MonsterState = spawnAt(world, 'unfinished_thrower', SCENE.target);
-  world.player.facing = Math.atan2(-1, 0);
-  handleCommand(world, world.player, { type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id });
+  const start: number = Math.atan2(-1, 0);
+  const wanted: number = Math.atan2(target.pos.x - world.player.pos.x, target.pos.z - world.player.pos.z);
+  const rate: number = world.content.player.walkTurnRate;
+  world.player.facing = start;
+  stepWorld(world, [{ type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id }], PROBE.dt);
   assert.equal(world.player.intent.type, 'attack');
-  assert.ok(Math.abs(world.player.facing - Math.atan2(target.pos.x - world.player.pos.x, target.pos.z - world.player.pos.z)) < PROBE.turnSlack, `facing ${world.player.facing.toFixed(3)}`);
+  const first: number = Math.abs(world.player.facing - start);
+  assert.ok(first > PROBE.turnSlack && first <= rate * PROBE.dt + PROBE.turnSlack, `turned ${first.toFixed(3)} on the first frame`);
+  const frames: number = Math.ceil(Math.abs(wanted - start) / (rate * PROBE.dt));
+  for (let tick: number = 1; tick < frames; tick += 1) {
+    hold([target]);
+    stepWorld(world, [], PROBE.dt);
+  }
+  assert.ok(Math.abs(world.player.facing - wanted) < rate * PROBE.dt * 2, `facing ${world.player.facing.toFixed(3)}`);
 });
 
 void test('clicking the same target again while he chases it leaves his turn to the steering, so he keeps walking round what is in the way', (): void => {
@@ -213,6 +224,7 @@ void test('after a swing at a blocker he goes back to his target even when the s
   world.player.skills[0] = { ...skill, cooldown: PROBE.longCooldown };
   const target: MonsterState = spawnAt(world, 'unfinished_thrower', SCENE.target);
   const body: MonsterState = spawnAt(world, 'unfinished_brute', SCENE.touching);
+  faceAt(world.player, target.pos);
   handleCommand(world, world.player, { type: 'skill', slot: 0, aim: { x: target.pos.x, z: target.pos.z }, targetId: target.id });
   world.player.chase = { mark: { x: world.player.pos.x, z: world.player.pos.z }, still: CHASE.patience };
   hold([body, target]);

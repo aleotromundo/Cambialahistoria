@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { shapeArena } from '../../test/shape-support.ts';
 import type { Vec2 } from '../math.ts';
 import { refreshPlayer } from './character.ts';
@@ -72,7 +73,10 @@ function play(first: Kind, second: Kind): Outcome {
   for (let step: number = 0; step < steps; step += 1) {
     const time: number = step * DT;
     const commands: Command[] = [];
-    if (step === 0) commands.push(...pressOf(world, first, 1));
+    if (step === 0) {
+      if (first === 'skill' || first === 'held' || first === 'channel') faceAt(world.player, toward(world, 4));
+      commands.push(...pressOf(world, first, 1));
+    }
     const pressing: boolean = step === Math.round(PRESSES.first / DT);
     if (pressing) commands.push(...pressOf(world, second, -1));
     if (step === Math.round(PRESSES.release / DT)) commands.push({ type: 'hold', slot: 1, down: false }, { type: 'hold', slot: 2, down: false });

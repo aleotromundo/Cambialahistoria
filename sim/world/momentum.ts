@@ -8,6 +8,7 @@ import { lengthened, widenedSkill } from '../widen.ts';
 import type { MomentumState } from './momentum-types.ts';
 import { mendActor } from './mend.ts';
 import type { ActionState, Actor, PlayerState, World } from './types.ts';
+import { turnToward } from './movement.ts';
 
 export const MOMENTUM = {
   arrive: 0.5,
@@ -122,7 +123,7 @@ export function aimGlide(player: PlayerState, dest: ReadonlyVec2): boolean {
   return true;
 }
 
-export function glide(grid: NavGrid, player: PlayerState, dt: number, pace: number = 1): boolean {
+export function glide(grid: NavGrid, player: PlayerState, dt: number, turnRate: number, pace: number = 1): boolean {
   const action: ActionState | null = player.action;
   if (action === null || action.goal === null || player.root > 0 || player.tempo <= 0) return false;
   const share: number = glideSpeed(action);
@@ -134,7 +135,7 @@ export function glide(grid: NavGrid, player: PlayerState, dt: number, pace: numb
   const toward: Vec2 = { x: (goal.x - from.x) / gap, z: (goal.z - from.z) / gap };
   moveWithCollision(grid, player.pos, toward.x * step, toward.z * step);
   if (distance(from, player.pos) <= MOMENTUM.moved) return false;
-  player.facing = facingOf(toward);
+  player.facing = turnToward(player.facing, facingOf(toward), turnRate * dt);
   return true;
 }
 

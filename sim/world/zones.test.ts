@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { OUTPOST_CONTENT, OUTPOST_ZONE } from '../../test/road-support.ts';
 import { armed, finishQuests, must, withoutGlitches, worldIn } from '../../test/support.ts';
 import type { Content, ZoneDef, ZoneExit } from '../content/types.ts';
@@ -220,6 +221,7 @@ void test('a respawn id that no longer exists falls back to the zone start', ():
 
 void test('travel is queued behind an attack in progress and ignored while dead', (): void => {
   const world: World = finishQuests(createWorld(shipped, { seed: 11, save: null }));
+  faceAt(world.player, { x: 22, z: 10 });
   run(world, 0.02, [{ type: 'skill', slot: 0, aim: { x: 22, z: 10 }, targetId: null }]);
   assert.notEqual(world.player.action, null);
   stepWorld(world, [{ type: 'travel', exit: 'outpost_stair' }], DT);

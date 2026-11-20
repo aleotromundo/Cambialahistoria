@@ -15,7 +15,7 @@ const claw: SkillDef = must(ARENA_CONTENT.skills.get('mended_rhythm'), 'claw');
 const AT = { x: ARENA_CENTRE.x, z: ARENA_CENTRE.z + 3 } as const;
 
 function windingUp(monster: MonsterState): void {
-  monster.action = { skill: claw, phase: 'windup', timeLeft: 0.5, windup: 1, recovery: 1, direction: { x: 0, z: -1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0.5, goal: null, turned: 0 };
+  monster.action = { skill: claw, phase: 'windup', timeLeft: 0.5, windup: 1, recovery: 1, direction: { x: 0, z: -1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: null, elapsed: 0.5, goal: null, turned: 0 , steeredAt: 0};
 }
 
 function stepFor(world: World, seconds: number): void {

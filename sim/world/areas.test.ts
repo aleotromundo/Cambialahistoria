@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { cast, damageTo, dummy, offset, run, shapeArena } from '../../test/shape-support.ts';
 import type { Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
@@ -10,6 +11,7 @@ void test('a lingering area pulses on everything inside it for its whole duratio
   const world: World = shapeArena(['test_squall']);
   const inside: MonsterState = dummy(world, offset(5, 0));
   const outside: MonsterState = dummy(world, offset(5, 8));
+  faceAt(world.player, offset(5, 0));
   const events: WorldEvent[] = [...cast(world, 0, offset(5, 0)), ...run(world, 1.5)];
   assert.equal(damageTo(events, inside.id).length, 4);
   assert.equal(damageTo(events, outside.id).length, 0);
@@ -22,6 +24,7 @@ void test('a pulling area drags enemies toward its centre and strikes once at th
   const left: MonsterState = dummy(world, offset(1, 0));
   const right: MonsterState = dummy(world, offset(9, 0));
   const before: number = distance(left.pos, right.pos);
+  faceAt(world.player, offset(5, 0));
   const events: WorldEvent[] = [...cast(world, 0, offset(5, 0)), ...run(world, 0.8)];
   assert.ok(distance(left.pos, right.pos) < before * 0.5);
   assert.equal(damageTo(events, left.id).length, 1);
@@ -34,6 +37,7 @@ void test('a pull moves a monster only as far as its knockback poise lets it, so
   const steady: MonsterState = { ...placed, def: { ...placed.def, poise: { ...placed.def.poise, knockback: 0 } } };
   world.monsters = world.monsters.map((monster: MonsterState): MonsterState => (monster === placed ? steady : monster));
   const before: Vec2 = { ...steady.pos };
+  faceAt(world.player, offset(5, 0));
   cast(world, 0, offset(5, 0));
   run(world, 0.8);
   assert.ok(distance(steady.pos, before) < 1e-6);
@@ -43,6 +47,7 @@ void test('a slowing area around the caster slows enemies inside it and never th
   const world: World = shapeArena(['test_hush']);
   const near: MonsterState = dummy(world, offset(4, 0));
   const far: MonsterState = dummy(world, offset(0, 12));
+  faceAt(world.player, offset(1, 0));
   cast(world, 0, offset(1, 0));
   run(world, 0.15);
   assert.equal(timeScaleOf(world, near), 0.25);
@@ -52,6 +57,7 @@ void test('a slowing area around the caster slows enemies inside it and never th
 
 void test('a area anchored to its caster follows the caster', (): void => {
   const world: World = shapeArena(['test_hush']);
+  faceAt(world.player, offset(1, 0));
   cast(world, 0, offset(1, 0));
   run(world, 0.15);
   world.player.pos = offset(3, 3);
@@ -65,6 +71,7 @@ void test('a slowed enemy winds up its attack more slowly', (): void => {
   const brute: MonsterState = dummy(world, offset(2, 0));
   brute.cooldowns['test_grab'] = 0;
   brute.aggro = true;
+  faceAt(world.player, offset(1, 0));
   cast(world, 0, offset(1, 0));
   run(world, 0.15);
   for (let step: number = 0; step < 120 && brute.action === null; step += 1) run(world, 1 / 60);
@@ -78,6 +85,7 @@ void test('a slowed enemy winds up its attack more slowly', (): void => {
 void test('the weapon damage of a stoked area grows with every pulse up to its cap, and a new cast starts cold', (): void => {
   const world: World = shapeArena(['test_banked']);
   dummy(world, offset(5, 0));
+  faceAt(world.player, offset(5, 0));
   cast(world, 0, offset(5, 0));
   run(world, 0.12);
   const area: AreaState | undefined = world.areas[0];

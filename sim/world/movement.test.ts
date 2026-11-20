@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { armed, must, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
@@ -385,6 +386,7 @@ void test('a skill pressed late in a hold starts in its wind-up, stays frozen th
   stepWorld(world, [], MOTION_DT);
   lateInStun(world, 'hold');
   const slot: number = slotOf(world, 'cleave');
+  faceAt(player, { x: player.pos.x + 2, z: player.pos.z });
   stepWorld(world, [{ type: 'skill', slot, aim: { x: player.pos.x + 2, z: player.pos.z }, targetId: null }], MOTION_DT);
   const action = must(player.action, 'the skill pressed during the hold was dropped');
   assert.equal(action.phase, 'windup');

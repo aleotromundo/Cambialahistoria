@@ -13,7 +13,7 @@ const SPIN: SkillDef = { ...shapeSkill('test_wire'), id: 'test_spin', animation:
 
 function spinning(world: World): void {
   world.player.skills = [SPIN];
-  world.player.action = { skill: SPIN, phase: 'channel', timeLeft: 0.2, windup: 0.1, recovery: 0.1, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: 0, elapsed: 0, goal: null, turned: 0 };
+  world.player.action = { skill: SPIN, phase: 'channel', timeLeft: 0.2, windup: 0.1, recovery: 0.1, direction: { x: 0, z: 1 }, target: null, travelSpeed: 0, travelLeft: 0, slot: 0, elapsed: 0, goal: null, turned: 0 , steeredAt: 0};
 }
 
 void test('the spin reads its turn rate, reach, momentum share and steadiness from the sim, and nothing while the hero is not spinning', (): void => {

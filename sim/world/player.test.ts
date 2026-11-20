@@ -474,7 +474,7 @@ void test('an empty key slot does nothing when pressed, aimed at the ground or a
   assert.ok(distance(world.player.pos, at) < 0.01);
 });
 
-const BUFFERED = { hero: { x: 14, z: 14 }, first: 1, second: 2, reach: 3, seconds: 4 } as const;
+const BUFFERED = { hero: { x: 14, z: 14 }, first: 1, second: 2, reach: 3, side: 0.5, seconds: 4 } as const;
 
 function castingScene(): World {
   const world: World = worldIn(content, content.world.start, 5);
@@ -491,7 +491,7 @@ void test('a skill pressed during another skill is kept through a held walk, a h
   const world: World = castingScene();
   const at: Vec2 = world.player.pos;
   assert.equal(must(world.player.action, 'first cast').slot, BUFFERED.first);
-  const next: Command = { type: 'skill', slot: BUFFERED.second, aim: { x: at.x, z: at.z + BUFFERED.reach }, targetId: null };
+  const next: Command = { type: 'skill', slot: BUFFERED.second, aim: { x: at.x + BUFFERED.reach, z: at.z + BUFFERED.side }, targetId: null };
   const ahead: Vec2 = { x: at.x - BUFFERED.reach, z: at.z };
   stepWorld(world, [next], MOTION_DT);
   assert.deepEqual(world.player.buffered.skill?.command, next);

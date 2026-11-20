@@ -14,7 +14,7 @@ export const BEHAVIOUR_ORDER: Readonly<Record<MonsterBehaviour['type'], number>>
 export const BEHAVIOUR_NAMES: readonly MonsterBehaviour['type'][] = ['chaser', 'ranged', 'stalker', 'swarm', 'ambush', 'fixed'];
 
 export const RL = {
-  version: 5,
+  version: 6,
   tick: 1 / 30,
   ticksPerDecision: 4,
   actionParts: 4,
@@ -43,7 +43,7 @@ export const RL = {
   recentWindow: 1,
   memoryWindow: 5,
   clip: 5,
-  spareSelf: 8,
+  spareSelf: 5,
   spareSlot: 4,
   spareEntity: 4,
 } as const;
@@ -121,6 +121,9 @@ export const SELF_FEATURES: readonly string[] = [
   'bag_free',
   ...STATUS_FEATURES,
   'targeted_by',
+  'facing_x',
+  'facing_z',
+  'turning',
   ...spare('', RL.spareSelf),
 ];
 

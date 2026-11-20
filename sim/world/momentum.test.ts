@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { isEmpty } from './press-buffer.ts';
 import { test } from 'node:test';
+import { faceAt } from '../../test/facing-support.ts';
 import { must } from '../../test/support.ts';
 import { damageTo, dummy, offset, run, shapeArena, shapeSkill, SHAPE_DT } from '../../test/shape-support.ts';
 import type { MomentumDef, MomentumSpend } from '../content/shape-types.ts';
@@ -251,11 +252,13 @@ void test('a spending skill spends all the momentum the spin built, and from a c
   const world: World = spinner();
   world.player.skills = [SPIN, WAVE];
   world.player.momentum = { skill: 'test_spin', value: 10, quiet: 0 };
+  faceAt(world.player, offset(0, 8));
   const hot: ProjectileState = launched(run(world, 0.2, [{ type: 'skill', slot: 1, aim: offset(0, 8), targetId: null }]));
   assert.equal(world.player.momentum.value, 0);
   assert.equal(hot.skill.spent, 1);
   assert.ok(hot.skill.delivery.type === 'projectile' && Math.abs(hot.skill.delivery.range - 9) < 1e-9);
   run(world, 1);
+  faceAt(world.player, offset(0, 8));
   const cold: ProjectileState = launched(run(world, 0.2, [{ type: 'skill', slot: 1, aim: offset(0, 8), targetId: null }]));
   assert.equal(cold.skill.spent, 0);
   assert.ok(cold.skill.delivery.type === 'projectile' && cold.skill.delivery.range === 6);

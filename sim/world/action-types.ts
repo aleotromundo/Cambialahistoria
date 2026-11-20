@@ -17,6 +17,7 @@ export interface ActionState {
   elapsed: number;
   goal: Vec2 | null;
   turned: number;
+  steeredAt: number;
 }
 
 export interface ChannelState {

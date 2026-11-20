@@ -15,7 +15,7 @@ const MOVEMENT = {
   separationPasses: 2,
   slideAlong: 0.76,
   wallLean: 0.2,
-  turnOut: [0.35, -0.35, 0.7, -0.7],
+  turnOut: [0.35, -0.35, 0.7, -0.7, 1.05, -1.05],
   headOut: [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.5, -1.5],
   strideCos: 0.76,
   glance: 0.5,
