@@ -20,11 +20,26 @@
 .chart-card.visible {
   opacity: 1;
   transform: translateY(0);
-  pointer-events: auto;
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
     transform var(--spring-smooth-ms) var(--spring-smooth),
     box-shadow var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.chart-card.touch.visible {
+  pointer-events: auto;
+}
+
+.chart-card:not(.visible) .chart-action.shown {
+  pointer-events: none;
+}
+
+.chart-card:not(.touch) .chart-action.shown {
+  padding-left: 0;
+  color: var(--text-dim);
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
 }
 
 .chart-card.gliding {
