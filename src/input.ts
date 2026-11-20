@@ -34,7 +34,7 @@ import type { SkillDef } from '../sim/content/types.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import { CAMERA } from './render/iso-camera.ts';
 import { clickThrough } from './render/prop-cutaway.ts';
-import { clickFloor, clickHeight } from './render/terrain-sight.ts';
+import { clickFloor, clickHeight, sightReady } from './render/terrain-sight.ts';
 import type { ActionId } from './settings/bindings.ts';
 import { flaskAction, slotAction } from './settings/bindings.ts';
 import type { SettingsStore } from './settings/store.ts';
@@ -395,7 +395,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
         pressedPlayer = false;
       }
       overUi = hud.isPointerOverUi();
-      const raised: boolean = terrainMap(world.zone) !== null;
+      const raised: boolean = terrainMap(world.zone) !== null && sightReady(world.zone);
       const groundHit: Vector3 | null = camera.groundPoint(pointer, raised ? clickHeight(world.zone) : undefined, clickThrough(pointer), raised ? clickFloor(world.zone) : null);
       const picked: PickCandidate | null = pickActors(groundHit);
       const target: MonsterState | null = picked?.kind === 'monster' ? (world.monsters.find((monster: MonsterState): boolean => monster.id === picked.id) ?? null) : null;

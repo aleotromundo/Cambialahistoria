@@ -65,6 +65,10 @@ export function keepTerrainSightOf(kept: ReadonlySet<ZoneDef>): void {
   for (const zone of made.keys()) if (!kept.has(zone)) made.delete(zone);
 }
 
+export function sightReady(zone: ZoneDef): boolean {
+  return !drawsTerrain(zone) || made.has(zone);
+}
+
 export function createTerrainSight(zone: ZoneDef): TerrainSight | null {
   if (!drawsTerrain(zone)) return null;
   const known: TerrainSight | undefined = made.get(zone);
