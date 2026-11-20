@@ -13,6 +13,7 @@ export interface RainBudget {
 export interface QualityTier {
   readonly name: QualityName;
   readonly maxPixelRatio: number;
+  readonly frameRate: number | null;
   readonly pixelBudget: number | null;
   readonly bloom: boolean;
   readonly shadows: boolean;
@@ -40,6 +41,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
   desktop: {
     name: 'desktop',
     maxPixelRatio: 1.5,
+    frameRate: null,
     pixelBudget: null,
     bloom: true,
     shadows: true,
@@ -65,6 +67,7 @@ export const QUALITY_TIERS: Readonly<Record<QualityName, QualityTier>> = {
   mobile: {
     name: 'mobile',
     maxPixelRatio: 1.25,
+    frameRate: 30,
     pixelBudget: 900_000,
     bloom: false,
     shadows: false,

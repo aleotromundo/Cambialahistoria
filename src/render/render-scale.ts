@@ -24,14 +24,20 @@ export interface RenderScale {
   readonly scale: number;
   fit(pixelRatio: number): boolean;
   observe(sample: FrameSample): boolean;
+  pace(fps: number | null): void;
 }
 
 export function scaleSteps(pixelRatio: number): readonly number[] {
   return RENDER_SCALE.steps.filter((step: number): boolean => step === 1 || pixelRatio * step >= RENDER_SCALE.floorRatio);
 }
 
-export function createRenderScale(pixelRatio: number): RenderScale {
+export function frameBudgetMs(fps: number | null): number {
+  return fps === null || !(fps > 0) ? RENDER_SCALE.budgetMs : Math.max(RENDER_SCALE.budgetMs, 1000 / fps);
+}
+
+export function createRenderScale(pixelRatio: number, fps: number | null = null): RenderScale {
   let base: number = pixelRatio;
+  let budgetMs: number = frameBudgetMs(fps);
   let steps: readonly number[] = scaleSteps(base);
   let level: number = 0;
   let frame: number = 0;
@@ -72,8 +78,8 @@ export function createRenderScale(pixelRatio: number): RenderScale {
         settle -= 1;
         return false;
       }
-      const missed: boolean = sample.intervalMs > RENDER_SCALE.budgetMs * RENDER_SCALE.missedAfter;
-      const onGpu: boolean = missed && sample.workMs < RENDER_SCALE.budgetMs * RENDER_SCALE.gpuWorkShare;
+      const missed: boolean = sample.intervalMs > budgetMs * RENDER_SCALE.missedAfter;
+      const onGpu: boolean = missed && sample.workMs < budgetMs * RENDER_SCALE.gpuWorkShare;
       windowFrames += 1;
       if (onGpu) windowMisses += 1;
       calmFrames += 1;
@@ -101,6 +107,12 @@ export function createRenderScale(pixelRatio: number): RenderScale {
         }
       }
       return false;
+    },
+    pace(next: number | null): void {
+      const wanted: number = frameBudgetMs(next);
+      if (wanted === budgetMs) return;
+      budgetMs = wanted;
+      restart();
     },
   };
 }

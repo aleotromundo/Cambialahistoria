@@ -59,6 +59,8 @@ import type { Input } from './input.ts';
 import { createInput } from './input.ts';
 import { createPauseMenu } from './hud/pause-menu.ts';
 import { frameGate } from './frame-gate.ts';
+import { createFramePace } from './frame-pace.ts';
+import type { FramePace } from './frame-pace.ts';
 import type { FrameGate } from './frame-gate.ts';
 import type { PauseMenu } from './hud/pause-menu.ts';
 import type { GraphicsPreset, GraphicsSettings, SettingsSection } from './settings/settings.ts';
@@ -68,7 +70,7 @@ import { createObjectiveMarker } from './objective/objective-marker.ts';
 import { createBrowserStore } from './storage.ts';
 import type { Mobile } from './mobile/mobile.ts';
 import { startMobile } from './mobile/mobile.ts';
-import type { QualityName } from './mobile/quality.ts';
+import type { QualityName, QualityTier } from './mobile/quality.ts';
 import { mountGameBoard } from './lobby/game-board.ts';
 import type { GameBoard } from './lobby/game-board.ts';
 import { createLobbyFlow } from './lobby/lobby-flow.ts';
@@ -247,7 +249,7 @@ async function start(): Promise<void> {
     rain.setWeather(zone.weather);
   };
   applyWeather(world.zone);
-  const renderScale: RenderScale = createRenderScale(stage.renderer.getPixelRatio());
+  const renderScale: RenderScale = createRenderScale(stage.renderer.getPixelRatio(), mobile.quality.tier.frameRate);
   const effects: MomentEffects = momentEffects(createEffects(stage.scene, particles, camera, (power: number): void => weather.pulse(power), (): boolean => !gameSettings.get().graphics.streakEffects), { scene: stage.scene, loader, content, library, dresser: propDresser, tier: mobile.quality.tier, particles, flash: (power: number): void => weather.strike(power), trauma: (amount: number): void => camera.addTrauma(amount) }, stage.renderer, stage.camera);
   effects.setTorches(zoneView.torches);
   const ward: Ward = createWard(stage.scene);
@@ -466,7 +468,13 @@ async function start(): Promise<void> {
     },
   });
 
+  const pace: FramePace = createFramePace(mobile.quality.tier.frameRate);
+  mobile.quality.subscribe((tier: QualityTier): void => {
+    pace.setRate(tier.frameRate);
+    renderScale.pace(tier.frameRate);
+  });
   const frame = (now: number): void => {
+    if (!pace.due(now)) return;
     const interval: number = last > 0 ? now - last : 0;
     const dt: number = Math.min(GAME.maxFrame, Math.max(0, (now - last) / 1000));
     if (last > 0) transition.frame(now - last);
