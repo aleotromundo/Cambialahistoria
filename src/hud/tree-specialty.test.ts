@@ -33,17 +33,19 @@ void test('a card names a common place as Common, a specialty place by its speci
   assert.equal(placeHome(content, placeOf('blade_gate')), 'The Turning Tide');
 });
 
-void test('only a specialty place says that one specialty can be followed', (): void => {
-  assert.match(specialtyLine(content, placeOf('maelstrom_1')) ?? '', /^A specialty of The Turning Tide\. Only one specialty/);
+void test('only a specialty place says how many specialties can be followed', (): void => {
+  assert.equal(specialtyLine(content, placeOf('maelstrom_1')), 'A specialty of The Turning Tide. Up to three specialties can be followed across the whole tree.');
   assert.equal(specialtyLine(content, placeOf('blade_gate')), null);
   assert.equal(specialtyLine(content, placeOf('common_blade_wind_1')), null);
 });
 
-void test('the chosen specialty is marked chosen and every other one closed; with none chosen nothing is closed', (): void => {
+void test('followed specialties are marked chosen; the rest close only once three are followed', (): void => {
   const marks: Map<string, boolean> = new Map<string, boolean>();
-  const names: readonly SpecialtyName[] = [recordingName('maelstrom', marks), recordingName('kiln', marks)];
+  const names: readonly SpecialtyName[] = [recordingName('maelstrom', marks), recordingName('spring_tide', marks), recordingName('kiln', marks)];
   markSpecialtyNames(content, names, ['maelstrom_1']);
-  assert.deepEqual(Object.fromEntries(marks), { 'maelstrom.closed': false, 'maelstrom.chosen': true, 'kiln.closed': true, 'kiln.chosen': false });
+  assert.deepEqual(Object.fromEntries(marks), { 'maelstrom.closed': false, 'maelstrom.chosen': true, 'spring_tide.closed': false, 'spring_tide.chosen': false, 'kiln.closed': false, 'kiln.chosen': false });
+  markSpecialtyNames(content, names, ['maelstrom_1', 'spring_tide_1', 'tidal_bore_1']);
+  assert.deepEqual(Object.fromEntries(marks), { 'maelstrom.closed': false, 'maelstrom.chosen': true, 'spring_tide.closed': false, 'spring_tide.chosen': true, 'kiln.closed': true, 'kiln.chosen': false });
   markSpecialtyNames(content, names, []);
   assert.equal(marks.get('kiln.closed'), false);
   assert.equal(marks.get('maelstrom.chosen'), false);

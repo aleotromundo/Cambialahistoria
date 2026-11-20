@@ -36,13 +36,14 @@ function routeTo(target: string, start: string): string[] {
   return route;
 }
 
-void test('a place of another specialty reads as closed, names the chosen one, and is never reachable', (): void => {
-  const held: readonly string[] = routeTo('maelstrom_1', 'blade_thunderhead');
-  const status = treeNodeStatus(CONTENT, held, 4, node('spring_tide_1'));
-  assert.deepEqual(status, { kind: 'closed', chosen: 'The Maelstrom' });
-  assert.equal(statusLine(status, false), 'Closed · you chose The Maelstrom · start over to choose again');
-  assert.equal(lockedLine(status, 6, false), 'Closed · you chose The Maelstrom · start over to choose again');
+void test('a place of a fourth specialty reads as closed, names the three followed, and is never reachable', (): void => {
+  const held: readonly string[] = [...routeTo('maelstrom_1', 'blade_thunderhead'), 'spring_tide_1', 'tidal_bore_1'];
+  const status = treeNodeStatus(CONTENT, held, 4, node('hailfall_1'));
+  assert.deepEqual(status, { kind: 'closed', chosen: ['The Maelstrom', 'The Spring Tide', 'The Tidal Bore'] });
+  assert.equal(statusLine(status, false), 'Closed · you follow The Maelstrom, The Spring Tide and The Tidal Bore · give one up to follow this');
+  assert.equal(lockedLine(status, 6, false), statusLine(status, false));
   assert.equal(reachable(status), false);
   assert.deepEqual(treeNodeStatus(CONTENT, held, 4, node('maelstrom_2')), { kind: 'available' });
-  assert.deepEqual(treeNodeStatus(CONTENT, held.slice(0, -1), 4, node('spring_tide_1')), { kind: 'available' });
+  assert.deepEqual(treeNodeStatus(CONTENT, held.slice(0, -1), 4, node('tidal_bore_1')), { kind: 'available' });
+  assert.notEqual(treeNodeStatus(CONTENT, held.slice(0, -1), 4, node('hailfall_1')).kind, 'closed');
 });

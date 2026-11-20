@@ -48,15 +48,15 @@ void test('a chart without commons or specialties reads as empty, and the conten
   assert.deepEqual(chartProblems(content), []);
 });
 
-void test('the chart reports a specialty on the wrong path, an unknown specialty and a specialty with no single keystone', (): void => {
+void test('the chart reports a specialty on the wrong path, an unknown specialty and a specialty with no keystone', (): void => {
   const kiln: SpecialtyDef | undefined = content.chart.specialties.find((entry: SpecialtyDef): boolean => entry.id === 'kiln');
   assert.ok(kiln !== undefined);
   const moved: Content = { ...content, chart: { ...content.chart, specialties: [...content.chart.specialties.filter((entry: SpecialtyDef): boolean => entry.id !== 'kiln'), { id: kiln.id, name: kiln.name, description: kiln.description, path: 'storm' }] } };
   assert.ok(chartProblems(moved).some((problem: string): boolean => problem.includes('of specialty kiln is on path stone')));
   const stray: Content = withPlace({ ...place('stone_gate'), specialty: 'nowhere' });
   assert.ok(chartProblems(stray).includes('tree node stone_gate belongs to unknown specialty nowhere'));
-  const keystone: SkillTreeNodeDef | undefined = content.skillTree.find((node: SkillTreeNodeDef): boolean => node.specialty === 'kiln' && node.kind === 'keystone');
-  assert.ok(keystone !== undefined);
-  const flat: Content = withPlace({ ...keystone, kind: 'notable' });
-  assert.ok(chartProblems(flat).includes('specialty kiln has no single keystone'));
+  const flat: Content = { ...content, skillTree: content.skillTree.map((node: SkillTreeNodeDef): SkillTreeNodeDef => (node.specialty === 'kiln' && node.kind === 'keystone' ? { ...node, kind: 'notable' } : node)) };
+  assert.ok(chartProblems(flat).includes('specialty kiln has no keystone'));
+  assert.equal(chartDef({ title: 'T', pointsPerLevel: 2, revision: 1, respec: { goldPerPoint: 1, goldPerLevel: 1 }, grants: [], twist: 0, paths: [], groups: [], weaponGroups: [] }, 'chart').specialtyLimit, 1);
+  assert.equal(content.chart.specialtyLimit, 3);
 });

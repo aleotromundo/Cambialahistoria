@@ -1,6 +1,6 @@
 import type { Content, SkillTreeNodeDef, SpecialtyDef } from '../../sim/content/types.ts';
 import { canAllocate, joinBlock } from '../../sim/progression.ts';
-import { closingSpecialty } from '../../sim/specialty.ts';
+import { closingSpecialties } from '../../sim/specialty.ts';
 import type { JoinBlock, RefundBlock } from '../../sim/progression.ts';
 import { promptText, use } from './prompts.ts';
 
@@ -11,12 +11,12 @@ export type TreeNodeStatus =
   | { readonly kind: 'available' }
   | { readonly kind: 'no_points' }
   | { readonly kind: 'locked'; readonly needs: JoinBlock }
-  | { readonly kind: 'closed'; readonly chosen: string };
+  | { readonly kind: 'closed'; readonly chosen: readonly string[] };
 
 export function treeNodeStatus(content: Content, allocated: readonly string[], skillPoints: number, node: SkillTreeNodeDef): TreeNodeStatus {
   if (allocated.includes(node.id)) return { kind: 'allocated' };
-  const closing: SpecialtyDef | null = closingSpecialty(content, allocated, node);
-  if (closing !== null) return { kind: 'closed', chosen: closing.name };
+  const closing: readonly SpecialtyDef[] = closingSpecialties(content, allocated, node);
+  if (closing.length > 0) return { kind: 'closed', chosen: closing.map((entry: SpecialtyDef): string => entry.name) };
   const needs: JoinBlock | null = joinBlock(content, allocated, node);
   if (needs !== null) return { kind: 'locked', needs };
   return canAllocate(content, allocated, skillPoints, node.id) ? { kind: 'available' } : { kind: 'no_points' };
@@ -38,8 +38,13 @@ const LOCKED_LINES: Readonly<Record<JoinBlock, string>> = {
   branch: 'Only your largest group of places can grow',
 };
 
-export function closedLine(chosen: string): string {
-  return `Closed · you chose ${chosen} · start over to choose again`;
+function spokenList(names: readonly string[]): string {
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''}`;
+}
+
+export function closedLine(chosen: readonly string[]): string {
+  return `Closed · you follow ${spokenList(chosen)} · give one up to follow this`;
 }
 
 export function statusLine(status: TreeNodeStatus, touch: boolean): string {

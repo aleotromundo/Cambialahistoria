@@ -4,7 +4,7 @@ import { armed, worldIn } from '../../test/support.ts';
 import { loadContent } from '../content/content.ts';
 import type { Content, SkillTreeNodeDef } from '../content/types.ts';
 import { placeLinks } from '../progression.ts';
-import { heldSpecialty, specialtyPlaces } from '../specialty.ts';
+import { heldSpecialties, specialtyPlaces } from '../specialty.ts';
 import { stepWorld } from './step.ts';
 import type { Command, World } from './types.ts';
 
@@ -43,20 +43,21 @@ function entryOf(id: string): string {
   return entry.id;
 }
 
-void test('a hero who takes one specialty cannot take a second, and starting over opens all of them again', (): void => {
+void test('a hero follows three specialties of one arm, cannot open a fourth, and starting over opens all of them again', (): void => {
   const world: World = armed(worldIn(content, 'hall_of_time', 1));
   const route: readonly string[] = routeTo(entryOf('maelstrom'), 'blade_thunderhead');
-  world.player.skillPoints = route.length + 2;
-  for (const node of route) send(world, { type: 'allocate', node });
-  assert.deepEqual(world.player.allocated, route);
-  assert.equal(heldSpecialty(content, world.player.allocated), 'maelstrom');
-  send(world, { type: 'allocate', node: entryOf('tidal_bore') });
-  assert.equal(world.player.allocated.includes(entryOf('tidal_bore')), false);
-  assert.equal(world.player.skillPoints, 2);
+  const fourth: readonly string[] = routeTo(entryOf('hailfall'), 'blade_thunderhead').filter((id: string): boolean => !route.includes(id));
+  world.player.skillPoints = route.length + fourth.length + 4;
+  for (const node of [...route, entryOf('spring_tide'), entryOf('tidal_bore'), ...fourth.slice(0, -1)]) send(world, { type: 'allocate', node });
+  assert.deepEqual(heldSpecialties(content, world.player.allocated), ['maelstrom', 'spring_tide', 'tidal_bore']);
+  const spent: number = world.player.allocated.length;
+  send(world, { type: 'allocate', node: entryOf('hailfall') });
+  assert.equal(world.player.allocated.includes(entryOf('hailfall')), false);
+  assert.equal(world.player.allocated.length, spent);
   world.player.freeReset = true;
   send(world, { type: 'respec' });
   assert.deepEqual(world.player.allocated, []);
-  const again: readonly string[] = routeTo(entryOf('tidal_bore'), 'blade_thunderhead');
+  const again: readonly string[] = routeTo(entryOf('hailfall'), 'blade_thunderhead');
   for (const node of again) send(world, { type: 'allocate', node });
-  assert.equal(heldSpecialty(content, world.player.allocated), 'tidal_bore');
+  assert.deepEqual(heldSpecialties(content, world.player.allocated), ['hailfall']);
 });

@@ -1,5 +1,5 @@
 import type { ChartPath, Content, SkillTreeNodeDef, SpecialtyDef } from '../../sim/content/types.ts';
-import { heldSpecialty, specialtyOf } from '../../sim/specialty.ts';
+import { heldSpecialties, specialtyOf } from '../../sim/specialty.ts';
 import { createNameView } from './chart-label.ts';
 import type { NameView } from './chart-label.ts';
 import { specialtyLabels } from './chart-model.ts';
@@ -29,10 +29,16 @@ export function placeHome(content: Content, node: SkillTreeNodeDef): string {
   return pathOf(content, node)?.name ?? node.kind;
 }
 
+const COUNT_WORDS: readonly string[] = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+
+function countWord(count: number): string {
+  return COUNT_WORDS[count] ?? String(count);
+}
+
 export function specialtyLine(content: Content, node: SkillTreeNodeDef): string | null {
   const path: ChartPath | undefined = pathOf(content, node);
   if (specialtyFor(content, node) === null || path === undefined) return null;
-  return `A specialty of ${path.name}. Only one specialty can be followed in the whole tree.`;
+  return `A specialty of ${path.name}. Up to ${countWord(content.chart.specialtyLimit)} specialties can be followed across the whole tree.`;
 }
 
 export function createSpecialtyNames(content: Content, host: HTMLElement, place: (point: ChartPoint) => ChartPoint): SpecialtyName[] {
@@ -40,9 +46,10 @@ export function createSpecialtyNames(content: Content, host: HTMLElement, place:
 }
 
 export function markSpecialtyNames(content: Content, names: readonly SpecialtyName[], allocated: readonly string[]): void {
-  const chosen: string | null = heldSpecialty(content, allocated);
+  const chosen: readonly string[] = heldSpecialties(content, allocated);
+  const full: boolean = chosen.length >= content.chart.specialtyLimit;
   for (const entry of names) {
-    entry.view.mark('closed', chosen !== null && chosen !== entry.id);
-    entry.view.mark('chosen', chosen === entry.id);
+    entry.view.mark('closed', full && !chosen.includes(entry.id));
+    entry.view.mark('chosen', chosen.includes(entry.id));
   }
 }

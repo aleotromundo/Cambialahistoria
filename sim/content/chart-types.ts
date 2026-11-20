@@ -83,4 +83,5 @@ export interface ChartDef {
   readonly retired: ChartRetired;
   readonly common: ChartCommon;
   readonly specialties: readonly SpecialtyDef[];
+  readonly specialtyLimit: number;
 }

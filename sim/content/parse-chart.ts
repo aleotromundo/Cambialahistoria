@@ -99,6 +99,13 @@ function retired(value: unknown, where: string): ChartRetired {
   return { places: renames(source['places'], `${where}.places`), skills: renames(source['skills'], `${where}.skills`) };
 }
 
+function specialtyLimit(source: Fields, where: string): number {
+  if (source['specialtyLimit'] === undefined) return 1;
+  const limit: number = positive(source, 'specialtyLimit', where);
+  if (!Number.isInteger(limit)) throw new ContentError(`${where}.specialtyLimit`, 'expected a whole number');
+  return limit;
+}
+
 export function chartDef(value: unknown, where: string): ChartDef {
   const source: Fields = fields(value, where);
   const respec: unknown = source['respec'];
@@ -120,6 +127,7 @@ export function chartDef(value: unknown, where: string): ChartDef {
     retired: retired(source['retired'], `${where}.retired`),
     common: chartCommon(source['common'], `${where}.common`),
     specialties: source['specialties'] === undefined ? [] : each(source['specialties'], `${where}.specialties`, specialtyDef),
+    specialtyLimit: specialtyLimit(source, where),
   };
 }
 
@@ -189,7 +197,7 @@ function specialtyProblems(content: Content): string[] {
   for (const specialty of specialties) {
     if (!content.chart.paths.some((path: ChartPath): boolean => path.id === specialty.path)) problems.push(`specialty ${specialty.id} belongs to unknown path ${specialty.path}`);
     const own: readonly SkillTreeNodeDef[] = content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.specialty === specialty.id);
-    if (own.filter((node: SkillTreeNodeDef): boolean => node.kind === 'keystone').length !== 1) problems.push(`specialty ${specialty.id} has no single keystone`);
+    if (!own.some((node: SkillTreeNodeDef): boolean => node.kind === 'keystone')) problems.push(`specialty ${specialty.id} has no keystone`);
     for (const node of own) {
       if (node.path !== specialty.path) problems.push(`tree node ${node.id} of specialty ${specialty.id} is on path ${node.path}`);
       if (node.requires.length === 0) problems.push(`tree node ${node.id} of specialty ${specialty.id} is a starting place`);

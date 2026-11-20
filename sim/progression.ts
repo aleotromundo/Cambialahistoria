@@ -1,5 +1,5 @@
 import type { Content, SkillTreeNodeDef, SkillVariant, XpAfter, XpCurve, XpGap, XpReduction } from './content/types.ts';
-import { specialtyClosed, withOneSpecialty } from './specialty.ts';
+import { specialtyClosed, withinSpecialtyLimit } from './specialty.ts';
 
 export interface XpResult {
   readonly level: number;
@@ -212,9 +212,8 @@ export function bankedReset(revision: number, seen: unknown, banked: unknown): b
 }
 
 export function reachablePlaces(content: Content, listed: readonly string[]): string[] {
-  const allocated: readonly string[] = withOneSpecialty(content, listed);
-  const kept: ReadonlySet<string> = new Set<string>(holdingParts(content, allocated).filter((part: readonly string[]): boolean => rooted(content, part)).flat());
-  return allocated.filter((id: string): boolean => kept.has(id));
+  const kept: ReadonlySet<string> = new Set<string>(holdingParts(content, listed).filter((part: readonly string[]): boolean => rooted(content, part)).flat());
+  return withinSpecialtyLimit(content, listed.filter((id: string): boolean => kept.has(id)));
 }
 
 export interface AdoptedPlaces {
@@ -230,7 +229,7 @@ export function adoptLearned(content: Content, learned: unknown, allocated: read
     const node: SkillTreeNodeDef | undefined = content.skillTree.find((entry: SkillTreeNodeDef): boolean => entry.unlock !== null && entry.unlock === skill);
     if (node === undefined || taken.includes(node.id) || saved.includes(node.id)) continue;
     const near: readonly string[] = placeLinks(content).get(node.id) ?? [];
-    if (isStartingPlace(node) || near.some((id: string): boolean => taken.includes(id))) taken.push(node.id);
+    if (!specialtyClosed(content, taken, node) && (isStartingPlace(node) || near.some((id: string): boolean => taken.includes(id)))) taken.push(node.id);
     else refund += 1;
   }
   return { allocated: taken, refund };

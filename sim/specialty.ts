@@ -4,34 +4,56 @@ export function specialtyOf(content: Content, id: string): SpecialtyDef | null {
   return content.chart.specialties.find((entry: SpecialtyDef): boolean => entry.id === id) ?? null;
 }
 
-export function heldSpecialty(content: Content, allocated: readonly string[]): string | null {
-  const taken: ReadonlySet<string> = new Set<string>(allocated);
-  for (const node of content.skillTree) if (node.specialty !== null && taken.has(node.id)) return node.specialty;
-  return null;
+const SPECIALTY_INDEX: WeakMap<Content, ReadonlyMap<string, string>> = new WeakMap<Content, ReadonlyMap<string, string>>();
+
+function specialtyIndex(content: Content): ReadonlyMap<string, string> {
+  const held: ReadonlyMap<string, string> | undefined = SPECIALTY_INDEX.get(content);
+  if (held !== undefined) return held;
+  const index: Map<string, string> = new Map<string, string>();
+  for (const node of content.skillTree) if (node.specialty !== null) index.set(node.id, node.specialty);
+  SPECIALTY_INDEX.set(content, index);
+  return index;
 }
 
-export function closingSpecialty(content: Content, allocated: readonly string[], node: SkillTreeNodeDef): SpecialtyDef | null {
-  if (node.specialty === null) return null;
-  const held: string | null = heldSpecialty(content, allocated);
-  if (held === null || held === node.specialty) return null;
-  return specialtyOf(content, held);
+function specialtyAt(content: Content, id: string): string | null {
+  return specialtyIndex(content).get(id) ?? null;
+}
+
+export function heldSpecialties(content: Content, allocated: readonly string[]): string[] {
+  const held: string[] = [];
+  for (const id of allocated) {
+    const specialty: string | null = specialtyAt(content, id);
+    if (specialty !== null && !held.includes(specialty)) held.push(specialty);
+  }
+  return held;
+}
+
+export function closingSpecialties(content: Content, allocated: readonly string[], node: SkillTreeNodeDef): SpecialtyDef[] {
+  if (node.specialty === null) return [];
+  const held: readonly string[] = heldSpecialties(content, allocated);
+  if (held.includes(node.specialty) || held.length < content.chart.specialtyLimit) return [];
+  return held.flatMap((id: string): SpecialtyDef[] => {
+    const found: SpecialtyDef | null = specialtyOf(content, id);
+    return found === null ? [] : [found];
+  });
 }
 
 export function specialtyClosed(content: Content, allocated: readonly string[], node: SkillTreeNodeDef): boolean {
-  return closingSpecialty(content, allocated, node) !== null;
+  return closingSpecialties(content, allocated, node).length > 0;
 }
 
 export function specialtyPlaces(content: Content, id: string): SkillTreeNodeDef[] {
   return content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.specialty === id);
 }
 
-export function withOneSpecialty(content: Content, allocated: readonly string[]): string[] {
-  let chosen: string | null = null;
+export function withinSpecialtyLimit(content: Content, allocated: readonly string[]): string[] {
+  const chosen: string[] = [];
   return allocated.filter((id: string): boolean => {
-    const specialty: string | null = content.skillTree.find((node: SkillTreeNodeDef): boolean => node.id === id)?.specialty ?? null;
-    if (specialty === null) return true;
-    chosen ??= specialty;
-    return specialty === chosen;
+    const specialty: string | null = specialtyAt(content, id);
+    if (specialty === null || chosen.includes(specialty)) return true;
+    if (chosen.length >= content.chart.specialtyLimit) return false;
+    chosen.push(specialty);
+    return true;
   });
 }
 
