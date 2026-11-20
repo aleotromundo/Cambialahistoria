@@ -336,16 +336,22 @@ export interface GroundBatches {
   readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, ShapedBatch>>;
 }
 
-const builtBatches: WeakMap<Content, WeakMap<ZoneDef, GroundBatches>> = new WeakMap<Content, WeakMap<ZoneDef, GroundBatches>>();
+const builtBatches: WeakMap<Content, Map<ZoneDef, GroundBatches>> = new WeakMap<Content, Map<ZoneDef, GroundBatches>>();
 
 export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
-  const forContent: WeakMap<ZoneDef, GroundBatches> = builtBatches.get(content) ?? new WeakMap<ZoneDef, GroundBatches>();
+  const forContent: Map<ZoneDef, GroundBatches> = builtBatches.get(content) ?? new Map<ZoneDef, GroundBatches>();
   builtBatches.set(content, forContent);
   const found: GroundBatches | undefined = forContent.get(zone);
   if (found !== undefined) return found;
   const made: GroundBatches = shapeGround(content, zone);
   forContent.set(zone, made);
   return made;
+}
+
+export function keepGroundOf(content: Content, kept: ReadonlySet<ZoneDef>): void {
+  const forContent: Map<ZoneDef, GroundBatches> | undefined = builtBatches.get(content);
+  if (forContent === undefined) return;
+  for (const zone of forContent.keys()) if (!kept.has(zone)) forContent.delete(zone);
 }
 
 function shapeGround(content: Content, zone: ZoneDef): GroundBatches {

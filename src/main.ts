@@ -141,8 +141,8 @@ import { createPlaceMarkers, settledMarkers } from './render/place-markers.ts';
 import type { PlaceRef } from '../sim/content/markers.ts';
 import { dressed, dressedProp, propDressing } from './render/surfaces.ts';
 import type { ZoneView } from './render/zone-view.ts';
-import { buildZoneView, preloadZones, releaseOtherZones } from './render/zone-view.ts';
-import { neighbourZones } from './render/zone-assets.ts';
+import { buildZoneView, keepZoneCaches, preloadZones, releaseOtherZones } from './render/zone-view.ts';
+import { cachedZones, neighbourZones } from './render/zone-assets.ts';
 import { createBrowserTimers } from './browser-timers.ts';
 import { readServerUrl } from './backend/server-url.ts';
 import { followSync } from './title-sync.ts';
@@ -224,6 +224,7 @@ async function start(): Promise<void> {
   })));
   const loot: LootView = await createLootView(loader, stage.scene, library);
   let zoneView: ZoneView = firstView;
+  keepZoneCaches(content, world.zone, cachedZones(content, world.zone, mobile.quality.tier.releaseOtherZones));
   let markers: PlaceMarkers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
   const placeRay: Raycaster = new Raycaster();
   stage.setAmbience(world.zone.ambience);
@@ -418,6 +419,7 @@ async function start(): Promise<void> {
     const bodiesIn: Promise<void> = waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
+    keepZoneCaches(content, world.zone, cachedZones(content, world.zone, mobile.quality.tier.releaseOtherZones));
     preloadNearZones();
     markers = createPlaceMarkers(stage.scene, loader, content, world.zone, world);
     const markersReady: Promise<void> = settledMarkers(markers, warnInConsole);

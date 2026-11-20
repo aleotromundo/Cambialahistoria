@@ -17,6 +17,9 @@ export interface MemoryReport {
   readonly heapMegabytes: number | null;
   readonly pixelRatio: number;
   readonly drawCalls: number;
+  readonly liveTextures: number;
+  readonly liveGeometries: number;
+  readonly programs: number;
 }
 
 export function textureBytes(width: number, height: number, mipmapped: boolean): number {
@@ -97,5 +100,8 @@ export function measureMemory(renderer: WebGLRenderer, scene: Scene): MemoryRepo
     heapMegabytes: heap === null ? null : megabytes(heap * MEMORY.megabyte),
     pixelRatio: renderer.getPixelRatio(),
     drawCalls: renderer.info.render.calls,
+    liveTextures: renderer.info.memory.textures,
+    liveGeometries: renderer.info.memory.geometries,
+    programs: renderer.info.programs?.length ?? 0,
   };
 }

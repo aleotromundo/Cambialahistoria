@@ -62,3 +62,7 @@ export function neighbourZones(content: Content, zone: ZoneDef): ZoneDef[] {
   ids.delete(zone.id);
   return [...ids].map((id: string): ZoneDef | undefined => content.zones.get(id)).filter((found: ZoneDef | undefined): found is ZoneDef => found !== undefined);
 }
+
+export function cachedZones(content: Content, zone: ZoneDef, releaseOthers: boolean): Set<ZoneDef> {
+  return new Set<ZoneDef>(releaseOthers ? [] : [zone, ...neighbourZones(content, zone)]);
+}

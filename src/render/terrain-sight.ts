@@ -59,7 +59,11 @@ function heightIn(drawn: Drawn, x: number, z: number): number | null {
   return top + (bottom - top) * tz;
 }
 
-const made: WeakMap<ZoneDef, TerrainSight> = new WeakMap<ZoneDef, TerrainSight>();
+const made: Map<ZoneDef, TerrainSight> = new Map<ZoneDef, TerrainSight>();
+
+export function keepTerrainSightOf(kept: ReadonlySet<ZoneDef>): void {
+  for (const zone of made.keys()) if (!kept.has(zone)) made.delete(zone);
+}
 
 export function createTerrainSight(zone: ZoneDef): TerrainSight | null {
   if (!drawsTerrain(zone)) return null;
