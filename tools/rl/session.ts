@@ -3,18 +3,18 @@ import { fields, text } from '../../sim/content/read.ts';
 import type { Fields } from '../../sim/content/read.ts';
 import { createRng } from '../../sim/rng.ts';
 import type { Rng } from '../../sim/rng.ts';
-import { ARENA } from '../../sim/rl/arena.ts';
 import type { Build } from '../../sim/rl/build.ts';
-import { BUILD, buildProblems, mustBeLegal, readBuild } from '../../sim/rl/build.ts';
+import { BUILD, buildProblems, checkedLevel, mustBeLegal, readBuild } from '../../sim/rl/build.ts';
 import { DUEL } from '../../sim/rl/duel.ts';
 import { DUEL_KIT } from '../../sim/rl/kit.ts';
 import type { ArenaOptions } from '../../sim/rl/arena.ts';
 import { contractShape, LAYOUT, RL } from '../../sim/rl/contract.ts';
-import { CURRICULUM, pickLevel, readLevelWeights } from '../../sim/rl/curriculum.ts';
+import type { LevelRange } from '../../sim/rl/curriculum.ts';
+import { CURRICULUM, levelIn, rangeProblems, readLevelRange, readLevelWeights } from '../../sim/rl/curriculum.ts';
 import type { DemoEpisode, Demonstration } from '../../sim/rl/demo.ts';
 import { demonstrate } from '../../sim/rl/demo.ts';
 import type { Pool, PoolOptions, PoolStep } from '../../sim/rl/pool.ts';
-import { createPool, poolObservations, setLevels, stepPool } from '../../sim/rl/pool.ts';
+import { createPool, poolBuildLevel, poolObservations, poolRange, setLevels, stepPool } from '../../sim/rl/pool.ts';
 import type { KeptReplay } from '../../sim/rl/duel-replay.ts';
 import type { Frame } from './frames.ts';
 import { demonstrationFrame, frame, FRAME, jsonPart, observationFrame, readActions, readJson } from './frames.ts';
@@ -73,17 +73,31 @@ function builds(source: Fields): Pick<PoolOptions, 'build' | 'rivals' | 'seats'>
   return { ...(build === null ? {} : { build }), ...(rivals.length === 0 ? {} : { rivals }), ...(source['seats'] === undefined ? {} : { seats }) };
 }
 
+function levelChoice(source: Fields): Pick<PoolOptions, 'range' | 'buildLevel'> {
+  const range: LevelRange | null = source['levelRange'] === undefined ? null : readLevelRange(source['levelRange']);
+  const level: number | null = source['buildLevel'] === undefined ? null : count(source, 'buildLevel', BUILD.level);
+  return { ...(range === null ? {} : { range }), ...(level === null ? {} : { buildLevel: level }) };
+}
+
 export function readPoolOptions(raw: unknown): PoolOptions {
   const source: Fields = fields(raw, 'hello');
-  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels']), ...builds(source) };
+  const choice: Pick<PoolOptions, 'range' | 'buildLevel'> = levelChoice(source);
+  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels'], choice.range), ...builds(source), ...choice };
 }
 
 export function legalPool(content: Content, options: PoolOptions): PoolOptions {
-  const build: Build | undefined = options.build === undefined ? undefined : mustBeLegal(content, DUEL_KIT, options.build, 'build');
-  const seats: (Build | null)[] | undefined = options.seats?.map((seat: Build | null, index: number): Build | null => (seat === null ? null : mustBeLegal(content, DUEL_KIT, seat, `seat ${index + 1} build`)));
-  const rivals: Build[] = (options.rivals ?? []).filter((rival: Build): boolean => buildProblems(content, DUEL_KIT, rival).length === 0);
+  const level: number = checkedLevel(content, poolBuildLevel(options));
+  checkedRange(content, poolRange(options));
+  const build: Build | undefined = options.build === undefined ? undefined : mustBeLegal(content, DUEL_KIT, options.build, 'build', level);
+  const seats: (Build | null)[] | undefined = options.seats?.map((seat: Build | null, index: number): Build | null => (seat === null ? null : mustBeLegal(content, DUEL_KIT, seat, `seat ${index + 1} build`, level)));
+  const rivals: Build[] = (options.rivals ?? []).filter((rival: Build): boolean => buildProblems(content, DUEL_KIT, rival, level).length === 0);
   const rest: PoolOptions = { seed: options.seed, envs: options.envs, duels: options.duels, jitter: options.jitter, waves: options.waves, keepEvery: options.keepEvery, levels: options.levels };
-  return { ...rest, ...(build === undefined ? {} : { build }), ...(seats === undefined ? {} : { seats }), ...(rivals.length === 0 ? {} : { rivals }) };
+  return { ...rest, ...(build === undefined ? {} : { build }), ...(seats === undefined ? {} : { seats }), ...(rivals.length === 0 ? {} : { rivals }), ...(options.range === undefined ? {} : { range: options.range }), ...(options.buildLevel === undefined ? {} : { buildLevel: options.buildLevel }) };
+}
+
+function checkedRange(content: Content, range: LevelRange): void {
+  const problems: readonly string[] = rangeProblems(range, content.player.xp.maxLevel);
+  if (problems.length > 0) throw new Error(problems.join('; '));
 }
 
 function buildName(build: Build | null | undefined): string | null {
@@ -99,7 +113,7 @@ export interface BuiltShape {
 
 export function builtShape(options: PoolOptions): BuiltShape {
   if (options.build === undefined && options.rivals === undefined && options.seats === undefined) return {};
-  return { duelLevel: BUILD.level, build: buildName(options.build), rivals: (options.rivals ?? []).map((rival: Build): string => rival.name), seats: (options.seats ?? []).map(buildName) };
+  return { duelLevel: poolBuildLevel(options), build: buildName(options.build), rivals: (options.rivals ?? []).map((rival: Build): string => rival.name), seats: (options.seats ?? []).map(buildName) };
 }
 
 function observations(step: PoolStep, envs: number): Buffer {
@@ -115,6 +129,8 @@ interface DemoRequest {
   readonly levels: readonly number[];
   readonly samples: boolean;
   readonly build: Build | null;
+  readonly range: LevelRange;
+  readonly buildLevel: number;
 }
 
 function seedList(raw: unknown): number[] {
@@ -125,16 +141,17 @@ function seedList(raw: unknown): number[] {
 
 export function readDemoRequest(raw: unknown): DemoRequest {
   const source: Fields = fields(raw, 'demo');
+  const range: LevelRange = readLevelRange(source['levelRange']);
   const seeds: number[] = seedList(source['seeds']);
   const samples: unknown = source['samples'];
   if (samples !== undefined && typeof samples !== 'boolean') throw new Error('samples must be true or false');
-  return { seed: seedOf(source), episodes: seeds.length > 0 ? seeds.length : Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), seeds, levels: readLevelWeights(source['levels']), samples: samples !== false, build: optionalBuild(source['build'], 'build') };
+  return { seed: seedOf(source), episodes: seeds.length > 0 ? seeds.length : Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), seeds, levels: readLevelWeights(source['levels'], range), samples: samples !== false, build: optionalBuild(source['build'], 'build'), range, buildLevel: count(source, 'buildLevel', BUILD.level) };
 }
 
 export function demoOptions(request: DemoRequest, rng: Rng, index: number): ArenaOptions {
   const options: ArenaOptions = { seed: request.seeds[index] ?? request.seed + index, jitter: request.jitter, waves: request.waves };
-  if (request.build !== null) return { ...options, build: request.build };
-  const level: number | null = pickLevel(rng, request.levels);
+  if (request.build !== null) return { ...options, build: request.build, level: request.buildLevel };
+  const level: number | null = levelIn(rng, request.levels, request.range);
   return level === null ? options : { ...options, level };
 }
 
@@ -154,7 +171,8 @@ function episodeFrame(episode: DemoEpisode | null, keepSamples: boolean): Buffer
 
 function* demonstrations(session: Session, request: DemoRequest): Generator<Buffer> {
   try {
-    if (request.build !== null) mustBeLegal(session.content, DUEL_KIT, request.build, 'build');
+    checkedRange(session.content, request.range);
+    if (request.build !== null) mustBeLegal(session.content, DUEL_KIT, request.build, 'build', checkedLevel(session.content, request.buildLevel));
     const rng: Rng = createRng(request.seed + CURRICULUM.seedSalt);
     for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, demoOptions(request, rng, index)), request.samples);
     yield episodeFrame(null, request.samples);
@@ -178,7 +196,7 @@ function answer(session: Session, received: Frame): Reply {
     case FRAME.hello: {
       const options: PoolOptions = legalPool(session.content, readPoolOptions(readJson(received.payload)));
       session.pool = createPool(session.content, options);
-      return { frames: [frame(FRAME.hello, jsonPart({ ...contractShape(), envs: options.envs, levels: ARENA.levels, ...builtShape(options) }))], keep: [], quit: false };
+      return { frames: [frame(FRAME.hello, jsonPart({ ...contractShape(), envs: options.envs, levels: poolRange(options), ...builtShape(options) }))], keep: [], quit: false };
     }
     case FRAME.reset: {
       const pool: Pool = needPool(session);
@@ -196,7 +214,7 @@ function answer(session: Session, received: Frame): Reply {
     }
     case FRAME.levels: {
       const pool: Pool = needPool(session);
-      setLevels(pool, readLevelWeights(fields(readJson(received.payload), 'levels')['weights']));
+      setLevels(pool, readLevelWeights(fields(readJson(received.payload), 'levels')['weights'], poolRange(pool.options)));
       return { frames: [frame(FRAME.levels, [])], keep: [], quit: false };
     }
     case FRAME.demo:

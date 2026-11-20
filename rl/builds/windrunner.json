@@ -27,7 +27,23 @@
     "wind_12",
     "wind_13",
     "never_still",
-    "wind_17"
+    "wind_17",
+    "wind_stone_near",
+    "wind_stone_mid",
+    "wind_stone_far",
+    "fanned_shot",
+    "shadow_dancer",
+    "wind_15",
+    "wind_16",
+    "wind_11",
+    "heavy_shot",
+    "wind_9",
+    "wind_19",
+    "common_wind_stone_1",
+    "common_wind_stone_2",
+    "common_wind_stone_3",
+    "common_wind_stone_4",
+    "common_wind_stone_5"
   ],
   "hero": "woman"
 }

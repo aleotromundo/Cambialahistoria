@@ -21,7 +21,7 @@ const BULWARK: Build = {
 
 function readied(build: Build, seed: number): PlayerState {
   const world: World = emptyArena(CONTENT, seed, BUILD.level);
-  readyBuild(world, build, DUEL_KIT, seed);
+  readyBuild(world, build, DUEL_KIT, seed, BUILD.level);
   return world.player;
 }
 
@@ -58,6 +58,6 @@ void test('the same build on any seed gives the same hero', (): void => {
 
 void test('an illegal build is refused before any hero is readied, with what is wrong', (): void => {
   const world: World = emptyArena(CONTENT, 4, BUILD.level);
-  assert.throws((): void => readyBuild(world, { ...BULWARK, weapon: 'gullwing_blade' }, DUEL_KIT, 4), /gullwing_blade is not a standard weapon/);
+  assert.throws((): void => readyBuild(world, { ...BULWARK, weapon: 'gullwing_blade' }, DUEL_KIT, 4, BUILD.level), /gullwing_blade is not a standard weapon/);
   assert.equal(world.player.level, 1);
 });

@@ -37,8 +37,13 @@ class BestKeeper:
         return True
 
 
+def high_band(report: dict[str, Any]) -> str:
+    named = report.get("high")
+    return named if isinstance(named, str) else HIGH_BAND
+
+
 def band(report: dict[str, Any], key: str) -> float:
-    levels = report["by_level"].get(HIGH_BAND)
+    levels = report["by_level"].get(high_band(report))
     return float(levels[key]) if isinstance(levels, dict) else float("nan")
 
 

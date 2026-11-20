@@ -15,7 +15,7 @@ import numpy as np
 import torch
 
 from .anchor import HEAD_NAMES, BotBuffer, LevelCurriculum, bot_weight, imitation_loss, paired
-from .best import BestKeeper, best_check, note_best, saved_rate
+from .best import BestKeeper, best_check, high_band, note_best, saved_rate
 from .bridge import MAX_SEED, WORKER_SEED_STRIDE, ArenaEnvs, BridgeError, demonstrations
 from .builds import build_name, example_builds, load_optional, seat_builds
 from .match import MATCH_DUELS_AT_ONCE, play_match, score
@@ -27,6 +27,7 @@ SEED_SPACE = 2**32
 HELD_OUT_SEED = 3_000_000_000
 BEST_SEED = HELD_OUT_SEED + 1_000_000
 MATCH_SEED = HELD_OUT_SEED + 2_000_000
+HIGH_LEVEL = 9
 
 RUNS = Path(__file__).resolve().parents[1] / "runs"
 
@@ -167,6 +168,8 @@ class PpoArgs:
     best_episodes: int = 64
     best_seed: int = BEST_SEED
     build: str | None = None
+    level: int | None = None
+    levels: tuple[int, int] | None = None
 
 
 def refresh_bot(envs: ArenaEnvs, buffer: BotBuffer, args: PpoArgs, update: int, weights: list[float]) -> None:
@@ -187,19 +190,22 @@ def ppo(args: PpoArgs) -> Path:
     replays = folder / "replays"
     folder.mkdir(parents=True, exist_ok=True)
     learner = load_optional(args.build)
-    envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays, args.duels, build=learner, rivals=example_builds() if learner is not None else None)
+    envs = ArenaEnvs(args.workers, args.envs, args.seed, args.jitter, args.waves, args.keep_every, replays, args.duels, build=learner, rivals=example_builds() if learner is not None else None, level=args.level, span=args.levels)
     contract = envs.contract
+    levels = contract["levels"]
     if learner is not None:
         print(f"build {contract.get('build')} at level {contract.get('duelLevel')} in every arena and the first duel seat; duel rivals {', '.join(contract.get('rivals') or []) or 'random bench heroes'}", flush=True)
-    levels = contract["levels"]
-    curriculum = LevelCurriculum(int(levels["min"]), int(levels["max"]), args.curriculum)
+    else:
+        print(f"arena and duel levels {levels['min']}-{levels['max']}", flush=True)
+    bottom, top = (int(contract["duelLevel"]), int(contract["duelLevel"])) if learner is not None else (int(levels["min"]), int(levels["max"]))
+    curriculum = LevelCurriculum(bottom, top, args.curriculum)
     if args.curriculum > 0 and learner is None:
         envs.set_levels(curriculum.weights())
     buffer = BotBuffer(args.bot_keep)
     keeper = BestKeeper(args.best_every, best_so_far(folder / "best.pt"))
     sampler = np.random.default_rng(args.seed)
     if args.bot_coef > 0:
-        refresh_bot(envs, buffer, args, 0, curriculum.weights())
+        refresh_bot(envs, buffer, args, 0, curriculum.weights() if learner is None else [])
     device = pick_device(args.device)
     policy = load(args.start, contract, device) if args.start else Policy(contract, width=args.width).to(device)
     actor = Policy(contract, width=policy.width)
@@ -307,8 +313,8 @@ def ppo(args: PpoArgs) -> Path:
                 if learner is None:
                     envs.set_levels(curriculum.weights())
             if args.bot_coef > 0 and update % args.bot_every == 0:
-                refresh_bot(envs, buffer, args, update, curriculum.weights())
-            win_high = curriculum.win_between(9, int(levels["max"]))
+                refresh_bot(envs, buffer, args, update, curriculum.weights() if learner is None else [])
+            win_high = curriculum.win_between(min(HIGH_LEVEL, top), top)
             bot_loss = stats["bot"] / n if anchored else float("nan")
             episodes = len(arena)
             win = sum(1 for episode in arena if episode["outcome"] == "won") / max(1, episodes)
@@ -336,15 +342,16 @@ def ppo(args: PpoArgs) -> Path:
 
 def keep_best(actor: Policy, policy: Policy, keeper: BestKeeper, args: PpoArgs, folder: Path, update: int) -> None:
     started = time.time()
-    finished, bot = play_against_bot(actor, args.best_episodes, args.best_seed, args.jitter, args.waves, True, None, load_optional(args.build))
-    check = best_check(update, sum(1 for episode in finished if episode["outcome"] == "won"), paired(finished, bot))
+    finished, bot = play_against_bot(actor, args.best_episodes, args.best_seed, args.jitter, args.waves, True, None, load_optional(args.build), args.level, args.levels)
+    report = paired(finished, bot)
+    check = best_check(update, sum(1 for episode in finished if episode["outcome"] == "won"), report)
     kept = keeper.offer(check)
     if kept:
         part = folder / "best.pt.part"
         save(policy, str(part), {"stage": "ppo", "update": update, "best": asdict(check), "args": asdict(args)})
         os.replace(part, folder / "best.pt")
     note_best(folder / "best.csv", check, kept)
-    print(f"best check u{update}: model {check.model_won:.0%} bot {check.bot_won:.0%}, levels 9-12 {check.model_high:.0%} against {check.bot_high:.0%} in {time.time() - started:.0f}s{'; kept as best.pt' if kept else f'; best stays at {float(keeper.best):.0%}'}", flush=True)
+    print(f"best check u{update}: model {check.model_won:.0%} bot {check.bot_won:.0%}, {high_band(report)} {check.model_high:.0%} against {check.bot_high:.0%} in {time.time() - started:.0f}s{'; kept as best.pt' if kept else f'; best stays at {float(keeper.best):.0%}'}", flush=True)
 
 
 def best_so_far(path: Path) -> Fraction:
@@ -355,8 +362,8 @@ def best_so_far(path: Path) -> Fraction:
     return saved_rate(extra) if isinstance(extra, dict) else Fraction(-1)
 
 
-def play_against_bot(policy: Policy, episodes: int, seed: int, jitter: float, waves: int, greedy: bool, replays: Path | None, build: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    envs = ArenaEnvs(1, min(episodes, 16), seed, jitter, waves, keep_every=1 if replays is not None else 0, replays=replays, build=build)
+def play_against_bot(policy: Policy, episodes: int, seed: int, jitter: float, waves: int, greedy: bool, replays: Path | None, build: dict[str, Any] | None = None, level: int | None = None, span: tuple[int, int] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    envs = ArenaEnvs(1, min(episodes, 16), seed, jitter, waves, keep_every=1 if replays is not None else 0, replays=replays, build=build, level=level, span=span)
     try:
         envs.tag("eval")
         batch = envs.reset()
@@ -373,19 +380,19 @@ def play_against_bot(policy: Policy, episodes: int, seed: int, jitter: float, wa
     return finished, bot
 
 
-def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves: int, greedy: bool, build_path: str | None = None) -> None:
+def evaluate(path: str, run: str, episodes: int, seed: int, jitter: float, waves: int, greedy: bool, build_path: str | None = None, level: int | None = None, span: tuple[int, int] | None = None) -> None:
     folder = RUNS / run / "eval"
     build = load_optional(build_path)
-    probe = ArenaEnvs(1, 1, seed, jitter, waves, build=build)
+    probe = ArenaEnvs(1, 1, seed, jitter, waves, build=build, level=level, span=span)
     contract = probe.contract
     probe.close()
     policy = load(path, contract, torch.device("cpu"))
     policy.eval()
-    finished, bot = play_against_bot(policy, episodes, seed, jitter, waves, greedy, folder, build)
+    finished, bot = play_against_bot(policy, episodes, seed, jitter, waves, greedy, folder, build, level, span)
     outcomes: dict[str, int] = {}
     for episode in finished:
         outcomes[episode["outcome"]] = outcomes.get(episode["outcome"], 0) + 1
-    print(json.dumps({"build": build_name(build), "episodes": len(finished), "greedy": greedy, "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "against_bot": paired(finished, bot), "replays": str(folder)}, indent=2))
+    print(json.dumps({"build": build_name(build), "level": contract.get("duelLevel") if build is not None else contract["levels"], "episodes": len(finished), "greedy": greedy, "outcomes": outcomes, "mean_return": float(np.mean([e["total"] for e in finished])), "mean_waves": float(np.mean([e["waves"] for e in finished])), "against_bot": paired(finished, bot), "replays": str(folder)}, indent=2))
 
 
 EVAL_DUELS_AT_ONCE = 8
@@ -398,11 +405,11 @@ def tally_outcomes(seats: list[dict[str, Any]]) -> dict[str, int]:
     return outcomes
 
 
-def evaluate_duels(path: str, run: str, duels: int, seed: int, jitter: float, greedy: bool, build_path: str | None = None) -> None:
+def evaluate_duels(path: str, run: str, duels: int, seed: int, jitter: float, greedy: bool, build_path: str | None = None, level: int | None = None, span: tuple[int, int] | None = None) -> None:
     folder = RUNS / run / "eval"
     at_once = min(duels, EVAL_DUELS_AT_ONCE)
     build = load_optional(build_path)
-    envs = ArenaEnvs(1, at_once * 2, seed, jitter, 1, keep_every=1, replays=folder, duels=at_once, build=build, rivals=example_builds() if build is not None else None)
+    envs = ArenaEnvs(1, at_once * 2, seed, jitter, 1, keep_every=1, replays=folder, duels=at_once, build=build, rivals=example_builds() if build is not None else None, level=level, span=span)
     policy = load(path, envs.contract, torch.device("cpu"))
     policy.eval()
     envs.tag("eval-duel")
@@ -414,32 +421,49 @@ def evaluate_duels(path: str, run: str, duels: int, seed: int, jitter: float, gr
         batch = envs.step(action.numpy())
         seats.extend(episode for episode in batch.finished if episode["situation"] == "duel")
     rivals = envs.contract.get("rivals") or []
+    duel_level = envs.contract.get("duelLevel") if build is not None else envs.contract["levels"]
     envs.close()
     seats = seats[: duels * 2]
     decided = sum(1 for seat in seats if seat["outcome"] != "timeout") / len(seats)
-    print(json.dumps({"build": build_name(build), "rivals": rivals, "duels": len(seats) // 2, "seat_outcomes": tally_outcomes(seats), "first_seat_outcomes": tally_outcomes([seat for seat in seats if int(seat["env"]) % 2 == 0]), "decided": decided, "mean_return": float(np.mean([seat["total"] for seat in seats])), "replays": str(folder)}, indent=2))
+    print(json.dumps({"build": build_name(build), "level": duel_level, "rivals": rivals, "duels": len(seats) // 2, "seat_outcomes": tally_outcomes(seats), "first_seat_outcomes": tally_outcomes([seat for seat in seats if int(seat["env"]) % 2 == 0]), "decided": decided, "mean_return": float(np.mean([seat["total"] for seat in seats])), "replays": str(folder)}, indent=2))
 
 
-def match(first_path: str, second_path: str, run: str, duels: int, seed: int, jitter: float, greedy: bool, first_build_path: str | None = None, second_build_path: str | None = None) -> None:
+def match(first_path: str, second_path: str, run: str, duels: int, seed: int, jitter: float, greedy: bool, first_build_path: str | None = None, second_build_path: str | None = None, level: int | None = None) -> None:
     folder = RUNS / run / "match"
     first_build = load_optional(first_build_path)
     second_build = load_optional(second_build_path)
-    probe = ArenaEnvs(1, 1, seed, jitter, 1, seats=seat_builds(first_build, second_build, 0))
+    probe = ArenaEnvs(1, 1, seed, jitter, 1, seats=seat_builds(first_build, second_build, 0), level=level)
     contract = probe.contract
     probe.close()
     first = load(first_path, contract, torch.device("cpu"))
     second = load(second_path, contract, torch.device("cpu"))
     first.eval()
     second.eval()
-    played = play_match(first, second, duels, seed, jitter, greedy, folder, first_build, second_build)
-    print(json.dumps({"first": first_path, "first_build": build_name(first_build), "second": second_path, "second_build": build_name(second_build), "greedy": greedy, "seed": seed, **score(played), "replays": str(folder)}, indent=2))
+    played = play_match(first, second, duels, seed, jitter, greedy, folder, first_build, second_build, level)
+    built = first_build is not None or second_build is not None
+    print(json.dumps({"first": first_path, "first_build": build_name(first_build), "second": second_path, "second_build": build_name(second_build), "level": contract.get("duelLevel") if built else contract["levels"], "greedy": greedy, "seed": seed, **score(played), "replays": str(folder)}, indent=2))
 
 
-def check_build(parser: argparse.ArgumentParser, flag: str, path: str | None) -> None:
+def parse_span(text: str) -> tuple[int, int]:
+    low, dash, high = text.partition("-")
+    if not dash or not low.strip().isdigit() or not high.strip().isdigit() or int(low) < 1 or int(high) < int(low):
+        raise argparse.ArgumentTypeError(f"{text} is not a level range like 1-20")
+    return int(low), int(high)
+
+
+def check_level(parser: argparse.ArgumentParser, level: int | None, span: tuple[int, int] | None) -> None:
+    try:
+        probe = ArenaEnvs(1, 1, 1, 0.0, 1, level=level, span=span)
+    except BridgeError as error:
+        parser.error(str(error).removeprefix("worker 0: "))
+    probe.close()
+
+
+def check_build(parser: argparse.ArgumentParser, flag: str, path: str | None, level: int | None = None) -> None:
     if path is None:
         return
     try:
-        probe = ArenaEnvs(1, 1, 1, 0.0, 1, build=load_optional(path))
+        probe = ArenaEnvs(1, 1, 1, 0.0, 1, build=load_optional(path), level=level)
     except (BridgeError, ValueError, OSError) as error:
         parser.error(f"{flag} {path}: {str(error).removeprefix('worker 0: ')}")
     probe.close()
@@ -549,14 +573,19 @@ def main() -> None:
     ppo_cmd.add_argument("--best-episodes", type=int, default=64)
     ppo_cmd.add_argument("--best-seed", type=int, default=BEST_SEED)
     ppo_cmd.add_argument("--build", default=None)
+    ppo_cmd.add_argument("--level", type=int, default=None)
+    ppo_cmd.add_argument("--levels", type=parse_span, default=None)
     eval_cmd = sub.choices["eval"]
     eval_cmd.add_argument("--policy", required=True)
     eval_cmd.add_argument("--episodes", type=int, default=16)
     eval_cmd.add_argument("--sample", action="store_true")
     eval_cmd.add_argument("--duels", action="store_true")
     eval_cmd.add_argument("--build", default=None)
+    eval_cmd.add_argument("--level", type=int, default=None)
+    eval_cmd.add_argument("--levels", type=parse_span, default=None)
     check_cmd = sub.add_parser("check")
     check_cmd.add_argument("--build", required=True)
+    check_cmd.add_argument("--level", type=int, default=None)
     match_cmd = sub.add_parser("match")
     match_cmd.add_argument("--run", default="match")
     match_cmd.add_argument("--seed", type=int, default=MATCH_SEED)
@@ -565,6 +594,7 @@ def main() -> None:
     match_cmd.add_argument("--second", required=True)
     match_cmd.add_argument("--first-build", default=None)
     match_cmd.add_argument("--second-build", default=None)
+    match_cmd.add_argument("--level", type=int, default=None)
     match_cmd.add_argument("--duels", type=int, default=128)
     match_cmd.add_argument("--sample", action="store_true")
     parsed = parser.parse_args()
@@ -574,12 +604,19 @@ def main() -> None:
         parser.error("--episodes must be 1 or more")
     if parsed.command == "match":
         check_match(parser, parsed.duels, parsed.seed)
-        check_build(parser, "--first-build", parsed.first_build)
-        check_build(parser, "--second-build", parsed.second_build)
+        check_build(parser, "--first-build", parsed.first_build, parsed.level)
+        check_build(parser, "--second-build", parsed.second_build, parsed.level)
+    if parsed.command in ("ppo", "eval", "match", "check"):
+        check_level(parser, parsed.level, getattr(parsed, "levels", None))
+        built = parsed.build is not None if parsed.command != "match" else parsed.first_build is not None or parsed.second_build is not None
+        if parsed.level is not None and not built:
+            parser.error("--level sets the level builds play at, so it needs a build; use --levels for a range of bench heroes")
     if parsed.command in ("ppo", "eval", "check"):
-        check_build(parser, "--build", parsed.build)
+        check_build(parser, "--build", parsed.build, parsed.level)
     if parsed.command == "check":
-        print(f"{parsed.build}: {build_name(load_optional(parsed.build))} is a legal build")
+        probe = ArenaEnvs(1, 1, 1, 0.0, 1, build=load_optional(parsed.build), level=parsed.level)
+        print(f"{parsed.build}: {build_name(load_optional(parsed.build))} is a legal build at level {probe.contract.get('duelLevel')}")
+        probe.close()
         return
     if parsed.command == "ppo":
         check_minibatches(parser, parsed.minibatches, parsed.steps, parsed.envs * parsed.workers)
@@ -599,13 +636,13 @@ def main() -> None:
     elif parsed.command == "imitate":
         imitate(ImitateArgs(parsed.run, parsed.episodes, parsed.workers, parsed.seed, parsed.jitter, parsed.waves, parsed.epochs, parsed.batch, parsed.lr, parsed.width, parsed.device))
     elif parsed.command == "ppo":
-        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum, parsed.best_every, parsed.best_episodes, parsed.best_seed, parsed.build))
+        ppo(PpoArgs(parsed.run, parsed.start, parsed.workers, parsed.envs, parsed.seed, parsed.jitter, parsed.waves, parsed.updates, parsed.steps, parsed.epochs, parsed.minibatches, parsed.lr, parsed.gamma, parsed.lam, parsed.clip, parsed.entropy, parsed.value_coef, parsed.value_warmup, parsed.save_every, parsed.keep_every, parsed.width, parsed.device, parsed.duels, parsed.bot_coef, parsed.bot_floor, parsed.bot_decay, parsed.bot_every, parsed.bot_episodes, parsed.bot_keep, parsed.curriculum, parsed.best_every, parsed.best_episodes, parsed.best_seed, parsed.build, parsed.level, parsed.levels))
     elif parsed.command == "match":
-        match(parsed.first, parsed.second, parsed.run, parsed.duels, parsed.seed, parsed.jitter, not parsed.sample, parsed.first_build, parsed.second_build)
+        match(parsed.first, parsed.second, parsed.run, parsed.duels, parsed.seed, parsed.jitter, not parsed.sample, parsed.first_build, parsed.second_build, parsed.level)
     elif parsed.duels:
-        evaluate_duels(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, not parsed.sample, parsed.build)
+        evaluate_duels(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, not parsed.sample, parsed.build, parsed.level, parsed.levels)
     else:
-        evaluate(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, parsed.waves, not parsed.sample, parsed.build)
+        evaluate(parsed.policy, parsed.run, parsed.episodes, parsed.seed, parsed.jitter, parsed.waves, not parsed.sample, parsed.build, parsed.level, parsed.levels)
 
 
 if __name__ == "__main__":

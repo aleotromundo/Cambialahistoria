@@ -3,6 +3,7 @@ import { DAMAGE_TYPES, SKILL_CATEGORIES } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
 import { directionOf } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
+import { armourReduction } from '../stats.ts';
 import { mayStrike } from '../world/factions.ts';
 import { hostileFrom, isPrimary, partyOf } from '../world/heroes.ts';
 import { blockedFlask } from '../world/flasks.ts';
@@ -142,7 +143,7 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   put(writer, player.stats.maxMana / RL.manaScale);
   put(writer, player.level / RL.levelScale);
   put(writer, player.stats.moveSpeed / RL.speedScale);
-  put(writer, player.stats.armour / RL.damageScale);
+  put(writer, armourReduction(player.stats.armour, world.content.player.resistance.armourCap));
   put(writer, player.stats.critChance);
   put(writer, (player.stats.damageMin + player.stats.damageMax) / 2 / RL.damageScale);
   put(writer, player.stats.attackSpeed);

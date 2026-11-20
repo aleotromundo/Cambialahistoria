@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { loadContent } from '../content/content.ts';
 import type { Content } from '../content/types.ts';
 import type { Build } from './build.ts';
-import { legalBuild } from './build.ts';
+import { BUILD, legalBuild } from './build.ts';
 import { DUEL_KIT } from './kit.ts';
 
 const CONTENT: Content = loadContent();
@@ -14,7 +14,7 @@ const EXAMPLES = { atLeast: 4 } as const;
 function examples(): Build[] {
   return readdirSync(FOLDER).filter((name: string): boolean => name.endsWith('.json')).toSorted().map((name: string): Build => {
     const raw: unknown = JSON.parse(readFileSync(`${FOLDER}/${name}`, 'utf8'));
-    return legalBuild(CONTENT, DUEL_KIT, raw, name);
+    return legalBuild(CONTENT, DUEL_KIT, raw, name, BUILD.level);
   });
 }
 

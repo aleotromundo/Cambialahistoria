@@ -140,8 +140,17 @@ class Worker:
                 self.process.kill()
 
 
-def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_every: int, levels: list[float], build: dict[str, Any] | None, rivals: list[dict[str, Any]] | None, seats: list[dict[str, Any] | None] | None) -> dict[str, Any]:
-    said: dict[str, Any] = {"seed": seed, "envs": envs, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels}
+def level_fields(level: int | None, span: tuple[int, int] | None) -> dict[str, Any]:
+    said: dict[str, Any] = {}
+    if level is not None:
+        said["buildLevel"] = level
+    if span is not None:
+        said["levelRange"] = {"min": span[0], "max": span[1]}
+    return said
+
+
+def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_every: int, levels: list[float], build: dict[str, Any] | None, rivals: list[dict[str, Any]] | None, seats: list[dict[str, Any] | None] | None, level: int | None = None, span: tuple[int, int] | None = None) -> dict[str, Any]:
+    said: dict[str, Any] = {"seed": seed, "envs": envs, "duels": duels, "jitter": jitter, "waves": waves, "keepEvery": keep_every, "levels": levels, **level_fields(level, span)}
     if build is not None:
         said["build"] = build
     if rivals:
@@ -152,7 +161,7 @@ def hello(seed: int, envs: int, duels: int, jitter: float, waves: int, keep_ever
 
 
 class ArenaEnvs:
-    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None, build: dict[str, Any] | None = None, rivals: list[dict[str, Any]] | None = None, seats: list[dict[str, Any] | None] | None = None) -> None:
+    def __init__(self, workers: int, envs_per_worker: int, seed: int, jitter: float, waves: int, keep_every: int = 0, replays: Path | None = None, duels: int = 0, levels: list[float] | None = None, build: dict[str, Any] | None = None, rivals: list[dict[str, Any]] | None = None, seats: list[dict[str, Any] | None] | None = None, level: int | None = None, span: tuple[int, int] | None = None) -> None:
         self.workers: list[Worker] = []
         self.envs_per_worker = envs_per_worker
         self.count = workers * envs_per_worker
@@ -160,13 +169,15 @@ class ArenaEnvs:
             for index in range(workers):
                 self.workers.append(Worker(index, replays))
             for index, worker in enumerate(self.workers):
-                worker.send_json(HELLO, hello(seed + index * WORKER_SEED_STRIDE, envs_per_worker, duels, jitter, waves, keep_every, levels or [], build, rivals, seats))
+                worker.send_json(HELLO, hello(seed + index * WORKER_SEED_STRIDE, envs_per_worker, duels, jitter, waves, keep_every, levels or [], build, rivals, seats, level, span))
             hellos = [json.loads(worker.receive(HELLO)[WORD:].decode("utf-8")) for worker in self.workers]
         except BaseException:
             self.close()
             raise
         self.contract: dict[str, Any] = hellos[0]
         self.build = build
+        self.level = level
+        self.span = span
 
     def _gather(self) -> Batch:
         parts = [read_batch(worker.receive(OBSERVATIONS)) for worker in self.workers]
@@ -207,7 +218,7 @@ class ArenaEnvs:
             worker.receive(LEVELS)
 
     def bot(self, seed: int, episodes: int, jitter: float, waves: int, levels: list[float] | None = None, seeds: list[int] | None = None, samples: bool = True) -> Demonstrations:
-        return _gather_demos(self.workers, seed, episodes, jitter, waves, levels or [], seeds, samples, self.build)
+        return _gather_demos(self.workers, seed, episodes, jitter, waves, levels or [], seeds, samples, self.build, self.level, self.span)
 
     def close(self) -> None:
         for worker in self.workers:
@@ -225,11 +236,11 @@ def _shares(count: int, workers: int) -> list[tuple[int, int]]:
     return spans
 
 
-def _gather_demos(workers: list["Worker"], seed: int, episodes: int, jitter: float, waves: int, levels: list[float], seeds: list[int] | None, samples: bool, build: dict[str, Any] | None = None) -> Demonstrations:
+def _gather_demos(workers: list["Worker"], seed: int, episodes: int, jitter: float, waves: int, levels: list[float], seeds: list[int] | None, samples: bool, build: dict[str, Any] | None = None, level: int | None = None, span: tuple[int, int] | None = None) -> Demonstrations:
     asked = workers[: max(1, min(len(workers), len(seeds) if seeds is not None else episodes))]
     total = len(seeds) if seeds is not None else episodes
     for index, ((at, size), worker) in enumerate(zip(_shares(total, len(asked)), asked)):
-        request: dict[str, Any] = {"seed": seed + at + index * WORKER_SEED_STRIDE, "episodes": size, "jitter": jitter, "waves": waves, "levels": levels, "samples": samples}
+        request: dict[str, Any] = {"seed": seed + at + index * WORKER_SEED_STRIDE, "episodes": size, "jitter": jitter, "waves": waves, "levels": levels, "samples": samples, **level_fields(level, span)}
         if seeds is not None:
             request["seeds"] = seeds[at : at + size]
         if build is not None:

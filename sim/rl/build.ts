@@ -9,7 +9,7 @@ import { RL } from './contract.ts';
 import type { DuelKit } from './kit.ts';
 
 export const BUILD = {
-  level: 12,
+  level: 20,
   basicSlot: 0,
   slots: [1, 2, 3, 4],
   rollSlot: 5,
@@ -38,8 +38,18 @@ export function readBuild(raw: unknown, where: string): Build {
   };
 }
 
-export function buildPoints(content: Content): number {
-  return (BUILD.level - 1) * content.chart.pointsPerLevel;
+export function buildPoints(content: Content, level: number): number {
+  return (level - 1) * content.chart.pointsPerLevel;
+}
+
+export function levelProblems(content: Content, level: number): string[] {
+  return Number.isInteger(level) && level >= 1 && level <= content.player.xp.maxLevel ? [] : [`level ${level} is not a whole number from 1 to ${content.player.xp.maxLevel}`];
+}
+
+export function checkedLevel(content: Content, level: number): number {
+  const problems: readonly string[] = levelProblems(content, level);
+  if (problems.length > 0) throw new Error(problems.join('; '));
+  return level;
 }
 
 export function basicSkill(content: Content): string | null {
@@ -50,11 +60,11 @@ export function rollSkill(content: Content): string | null {
   return content.player.skillBook[1]?.skill ?? null;
 }
 
-function routeProblems(content: Content, route: readonly string[]): string[] {
-  const points: number = buildPoints(content);
+function routeProblems(content: Content, route: readonly string[], level: number): string[] {
+  const points: number = buildPoints(content, level);
   const problems: string[] = [];
   const held: string[] = [];
-  if (route.length > points) problems.push(`the route takes ${route.length} points, but level ${BUILD.level} gives ${points}`);
+  if (route.length > points) problems.push(`the route takes ${route.length} points, but level ${level} gives ${points}`);
   route.forEach((id: string, index: number): void => {
     const step: string = `route place ${index + 1} (${id})`;
     const node: SkillTreeNodeDef | null = findNode(content, id);
@@ -75,15 +85,15 @@ function routeProblems(content: Content, route: readonly string[]): string[] {
   return problems;
 }
 
-function bookSkills(content: Content): string[] {
-  return content.player.skillBook.filter((unlock: SkillUnlock): boolean => unlock.level <= BUILD.level).map((unlock: SkillUnlock): string => unlock.skill);
+function bookSkills(content: Content, level: number): string[] {
+  return content.player.skillBook.filter((unlock: SkillUnlock): boolean => unlock.level <= level).map((unlock: SkillUnlock): string => unlock.skill);
 }
 
-function skillProblems(content: Content, build: Build): string[] {
+function skillProblems(content: Content, build: Build, level: number): string[] {
   const problems: string[] = [];
   if (build.skills.length > BUILD.slots.length) problems.push(`the bar holds ${BUILD.slots.length} skills besides the basic attack and the roll, but the build lists ${build.skills.length}`);
   const always: ReadonlySet<string | null> = new Set<string | null>([basicSkill(content), rollSkill(content)]);
-  const unlocked: ReadonlySet<string> = new Set<string>([...bookSkills(content), ...build.route.flatMap((id: string): string[] => {
+  const unlocked: ReadonlySet<string> = new Set<string>([...bookSkills(content, level), ...build.route.flatMap((id: string): string[] => {
     const unlock: string | null = findNode(content, id)?.unlock ?? null;
     return unlock === null ? [] : [unlock];
   })]);
@@ -101,19 +111,19 @@ function heroProblems(content: Content, hero: string | null): string[] {
   return [`hero ${hero} is not one of ${content.player.heroes.map((def: HeroDef): string => def.id).join(', ')}`];
 }
 
-export function buildProblems(content: Content, kit: DuelKit, build: Build): string[] {
+export function buildProblems(content: Content, kit: DuelKit, build: Build, level: number): string[] {
   const named: string[] = build.name === '' ? ['the build needs a name'] : [];
   const armed: string[] = kit.weapons.includes(build.weapon) ? [] : [`weapon ${build.weapon} is not a standard weapon; pick one of ${kit.weapons.join(', ')}`];
-  return [...named, ...armed, ...heroProblems(content, build.hero), ...routeProblems(content, build.route), ...skillProblems(content, build)];
+  return [...levelProblems(content, level), ...named, ...armed, ...heroProblems(content, build.hero), ...routeProblems(content, build.route, level), ...skillProblems(content, build, level)];
 }
 
-export function legalBuild(content: Content, kit: DuelKit, raw: unknown, where: string): Build {
-  return mustBeLegal(content, kit, readBuild(raw, where), where);
+export function legalBuild(content: Content, kit: DuelKit, raw: unknown, where: string, level: number): Build {
+  return mustBeLegal(content, kit, readBuild(raw, where), where, level);
 }
 
-export function mustBeLegal(content: Content, kit: DuelKit, build: Build, where: string): Build {
-  const problems: readonly string[] = buildProblems(content, kit, build);
-  if (problems.length > 0) throw new Error(`${where} ${build.name === '' ? '' : `"${build.name}" `}is not a legal build:\n- ${problems.join('\n- ')}`);
+export function mustBeLegal(content: Content, kit: DuelKit, build: Build, where: string, level: number): Build {
+  const problems: readonly string[] = buildProblems(content, kit, build, level);
+  if (problems.length > 0) throw new Error(`${where} ${build.name === '' ? '' : `"${build.name}" `}is not a legal build at level ${level}:\n- ${problems.join('\n- ')}`);
   return build;
 }
 

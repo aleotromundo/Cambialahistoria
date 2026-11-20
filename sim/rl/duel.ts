@@ -30,6 +30,7 @@ export interface DuelOptions {
   readonly seed: number;
   readonly jitter: number;
   readonly builds?: readonly (Build | null)[];
+  readonly level?: number;
 }
 
 export interface DuelSeat {
@@ -62,7 +63,7 @@ function seatOf(hero: PlayerState): DuelSeat {
 
 function readySeat(world: World, rng: Rng, seed: number, level: number, build: Build | null): void {
   if (build === null) stepWorld(world, [{ type: 'bench', hero: benchHero(world.content, rng, level) }], RL.tick);
-  else readyBuild(world, build, DUEL_KIT, ARENA.benchSeed + seed);
+  else readyBuild(world, build, DUEL_KIT, ARENA.benchSeed + seed, level);
 }
 
 function benchedRival(content: Content, rng: Rng, seed: number, level: number, build: Build | null): PlayerState {
@@ -75,7 +76,7 @@ export function createDuel(content: Content, options: DuelOptions): Duel {
   const rng: Rng = createRng(options.seed);
   const played: Content = jitterContent(content, rng, options.jitter);
   const rolled: number = rng.int(ARENA.levels.min, ARENA.levels.max);
-  const level: number = options.builds === undefined ? rolled : BUILD.level;
+  const level: number = options.level ?? (options.builds === undefined ? rolled : BUILD.level);
   const world: World = emptyArena(played, options.seed, level);
   readySeat(world, rng, options.seed, level, options.builds?.[0] ?? null);
   const benched: PlayerState = benchedRival(played, rng, options.seed, level, options.builds?.[1] ?? null);

@@ -211,11 +211,11 @@ export function createArena(content: Content, options: ArenaOptions): Arena {
   const rng: Rng = createRng(options.seed);
   const played: Content = jitterContent(content, rng, options.jitter);
   const rolled: number = rng.int(ARENA.levels.min, ARENA.levels.max);
-  const level: number = options.build === undefined ? (options.level ?? rolled) : BUILD.level;
+  const level: number = options.level ?? (options.build === undefined ? rolled : BUILD.level);
   const spread: number = rng.int(-ARENA.levelSpread, ARENA.levelSpread);
   const world: World = emptyArena(played, options.seed, options.build === undefined ? Math.max(1, level + spread) : level);
   if (options.build === undefined) stepWorld(world, [{ type: 'bench', hero: benchHero(played, rng, level) }], RL.tick);
-  else readyBuild(world, options.build, DUEL_KIT, ARENA.benchSeed + options.seed);
+  else readyBuild(world, options.build, DUEL_KIT, ARENA.benchSeed + options.seed, level);
   const arena: Arena = { options, level, world, rng, pool: arenaPool(played), lives: new Map<number, number>(), tally: emptyTally(), start: world.time, wave: 0, nextWaveAt: null, clearedAt: null, recall: createRecall(), pickup: rollRule(played, rng), outcome: 'running', total: 0, decisions: 0 };
   spawnWave(arena);
   return arena;

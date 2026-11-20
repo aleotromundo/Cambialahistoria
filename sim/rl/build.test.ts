@@ -18,7 +18,7 @@ const LEGAL: Build = {
 };
 
 function problems(change: Partial<Build>): readonly string[] {
-  return buildProblems(CONTENT, DUEL_KIT, { ...LEGAL, ...change });
+  return buildProblems(CONTENT, DUEL_KIT, { ...LEGAL, ...change }, BUILD.level);
 }
 
 function oneProblem(change: Partial<Build>, pattern: RegExp): void {
@@ -42,8 +42,8 @@ void test('a build file with a wrong shape or an unknown field is refused', (): 
 
 void test('a legal build has no problems and the duel level gives every build the same points', (): void => {
   assert.deepEqual(problems({}), []);
-  assert.equal(BUILD.level, 12);
-  assert.equal(buildPoints(CONTENT), (BUILD.level - 1) * CONTENT.chart.pointsPerLevel);
+  assert.equal(BUILD.level, 20);
+  assert.equal(buildPoints(CONTENT, BUILD.level), (BUILD.level - 1) * CONTENT.chart.pointsPerLevel);
 });
 
 void test('a route must start at a starting place and join each place to the ones before it', (): void => {
@@ -54,8 +54,8 @@ void test('a route must start at a starting place and join each place to the one
 });
 
 void test('a route that takes more points than the duel level gives is refused', (): void => {
-  const long: readonly string[] = Array.from({ length: buildPoints(CONTENT) + 1 }, (): string => 'blade_thunderhead');
-  assert.ok(problems({ route: long }).some((problem: string): boolean => /takes \d+ points, but level 12 gives 22/.test(problem)));
+  const long: readonly string[] = Array.from({ length: buildPoints(CONTENT, BUILD.level) + 1 }, (): string => 'blade_thunderhead');
+  assert.ok(problems({ route: long }).some((problem: string): boolean => /takes \d+ points, but level 20 gives 38/.test(problem)));
 });
 
 void test('bar skills must exist, be unlocked, appear once and fit the four free slots', (): void => {
@@ -73,8 +73,8 @@ void test('the weapon must be a standard one, the hero must exist and the build 
 });
 
 void test('an illegal build file fails with every problem it has', (): void => {
-  assert.throws((): unknown => legalBuild(CONTENT, DUEL_KIT, { ...LEGAL, weapon: 'gullwing_blade', skills: ['storm_bolt'] }, 'a.json'), (error: unknown): boolean => error instanceof Error && /a\.json "Spin" is not a legal build/.test(error.message) && /gullwing_blade/.test(error.message) && /storm_bolt/.test(error.message));
-  assert.deepEqual(legalBuild(CONTENT, DUEL_KIT, LEGAL, 'a.json'), LEGAL);
+  assert.throws((): unknown => legalBuild(CONTENT, DUEL_KIT, { ...LEGAL, weapon: 'gullwing_blade', skills: ['storm_bolt'] }, 'a.json', BUILD.level), (error: unknown): boolean => error instanceof Error && /a\.json "Spin" is not a legal build at level 20/.test(error.message) && /gullwing_blade/.test(error.message) && /storm_bolt/.test(error.message));
+  assert.deepEqual(legalBuild(CONTENT, DUEL_KIT, LEGAL, 'a.json', BUILD.level), LEGAL);
 });
 
 void test('the bar keeps the basic attack first, the roll last and the build skills between', (): void => {

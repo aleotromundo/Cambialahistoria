@@ -27,6 +27,8 @@ void test('a learner build sits in the first seat against the rivals in turn, or
 
 void test('fixed seat builds win over the learner build', (): void => {
   assert.deepEqual(duelBuilds({ ...BASE, build: SPIN, seats: [WALL, SPIN] }, 5), [WALL, SPIN]);
+  assert.deepEqual(duelBuilds({ ...BASE, seats: [null, WALL] }, 5), [null, WALL]);
+  assert.deepEqual(duelBuilds({ ...BASE, build: SPIN, seats: [null, null] }, 5), [null, null]);
 });
 
 void test('a pool with a learner build plays it in every arena and in the first duel seat', (): void => {

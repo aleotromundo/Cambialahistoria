@@ -112,10 +112,19 @@ def bot_weight(start: float, floor: float, decay: int, update: int) -> float:
     return max(min(floor, start), start * left)
 
 
+BAND_WIDTH = 4
+LOWEST_TOP = 12
+
+
+def level_bands(top: int) -> list[tuple[int, int]]:
+    reach = max(LOWEST_TOP, -(-top // BAND_WIDTH) * BAND_WIDTH)
+    return [(low, low + BAND_WIDTH - 1) for low in range(1, reach + 1, BAND_WIDTH)]
+
+
 def paired(model: list[dict[str, Any]], bot: list[dict[str, Any]]) -> dict[str, Any]:
     by_seed = {episode["seed"]: episode for episode in bot}
     pairs = [(episode, by_seed[episode["seed"]]) for episode in model if episode["seed"] in by_seed]
-    bands = ((1, 4), (5, 8), (9, 12))
+    bands = level_bands(max((int(theirs["level"]) for _, theirs in pairs), default=LOWEST_TOP))
     table: dict[str, Any] = {}
     for low, high in bands:
         picked = [(mine, theirs) for mine, theirs in pairs if low <= theirs["level"] <= high]
@@ -128,4 +137,5 @@ def paired(model: list[dict[str, Any]], bot: list[dict[str, Any]]) -> dict[str, 
         "bot_only": sum(1 for mine, theirs in pairs if theirs["outcome"] == "won" and mine["outcome"] != "won"),
         "model_only": sum(1 for mine, theirs in pairs if mine["outcome"] == "won" and theirs["outcome"] != "won"),
         "by_level": table,
+        "high": f"levels {bands[-1][0]}-{bands[-1][1]}",
     }

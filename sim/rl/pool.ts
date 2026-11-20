@@ -6,8 +6,11 @@ import { createRng } from '../rng.ts';
 import type { Arena, ArenaOptions, ArenaOutcome } from './arena.ts';
 import { arenaObservation, createArena, stepArena } from './arena.ts';
 import type { Build } from './build.ts';
+import { BUILD } from './build.ts';
+import { ARENA } from './arena.ts';
 import type { Action } from './contract.ts';
-import { CURRICULUM, pickLevel } from './curriculum.ts';
+import type { LevelRange } from './curriculum.ts';
+import { CURRICULUM, levelIn } from './curriculum.ts';
 import { LAYOUT, RL } from './contract.ts';
 import type { Duel, DuelOptions, DuelSeat } from './duel.ts';
 import { createDuel, duelObservation, stepDuel } from './duel.ts';
@@ -29,6 +32,8 @@ export interface PoolOptions {
   readonly build?: Build;
   readonly rivals?: readonly Build[];
   readonly seats?: readonly (Build | null)[];
+  readonly range?: LevelRange;
+  readonly buildLevel?: number;
 }
 
 export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel };
@@ -85,10 +90,18 @@ function observeSeats(match: Match): Observation[] {
   return duel.seats.map((seat: DuelSeat): Observation => duelObservation(duel, seat));
 }
 
+export function poolRange(options: PoolOptions): LevelRange {
+  return options.range ?? ARENA.levels;
+}
+
+export function poolBuildLevel(options: PoolOptions): number {
+  return options.buildLevel ?? BUILD.level;
+}
+
 function arenaOptions(pool: Pool, seed: number): ArenaOptions {
-  const level: number | null = pickLevel(pool.levelRng, pool.levels);
   const options: ArenaOptions = { seed, jitter: pool.options.jitter, waves: pool.options.waves };
-  if (pool.options.build !== undefined) return { ...options, build: pool.options.build };
+  if (pool.options.build !== undefined) return { ...options, build: pool.options.build, level: poolBuildLevel(pool.options) };
+  const level: number | null = levelIn(pool.levelRng, pool.levels, poolRange(pool.options));
   return level === null ? options : { ...options, level };
 }
 
@@ -101,7 +114,10 @@ export function duelBuilds(options: PoolOptions, seed: number): readonly (Build 
 
 function duelOptions(pool: Pool, seed: number): DuelOptions {
   const builds: readonly (Build | null)[] | undefined = duelBuilds(pool.options, seed);
-  return builds === undefined ? { seed, jitter: pool.options.jitter } : { seed, jitter: pool.options.jitter, builds };
+  const options: DuelOptions = builds === undefined ? { seed, jitter: pool.options.jitter } : { seed, jitter: pool.options.jitter, builds };
+  if (builds?.some((build: Build | null): boolean => build !== null) === true) return { ...options, level: poolBuildLevel(pool.options) };
+  const level: number | null = levelIn(pool.levelRng, [], poolRange(pool.options));
+  return level === null ? options : { ...options, level };
 }
 
 export function setLevels(pool: Pool, weights: readonly number[]): void {

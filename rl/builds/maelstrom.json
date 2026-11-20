@@ -27,6 +27,22 @@
     "blade_12",
     "blade_13",
     "blade_9",
-    "wind_12"
+    "wind_12",
+    "long_wake",
+    "deep_water",
+    "blade_gate",
+    "maelstrom_1",
+    "maelstrom_2",
+    "maelstrom_gyre",
+    "maelstrom_3",
+    "maelstrom_4",
+    "maelstrom_sucking_water",
+    "maelstrom_5",
+    "maelstrom_6",
+    "maelstrom_maelstrom",
+    "maelstrom_7",
+    "maelstrom_still_centre",
+    "blade_2",
+    "blade_3"
   ]
 }
