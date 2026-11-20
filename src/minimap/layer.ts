@@ -3,15 +3,30 @@ import type { ExploreGrid } from '../../sim/world/exploration.ts';
 import { exploreGrid } from '../../sim/world/exploration.ts';
 import type { World } from '../../sim/world/types.ts';
 
+type Rgba = readonly [number, number, number, number];
+
+export interface LayerLook {
+  readonly floor: Rgba;
+  readonly wall: Rgba;
+  readonly rubble: Rgba;
+  readonly wallCells: number;
+}
+
 export const LAYER = {
   floor: [112, 118, 126, 84],
   wall: [214, 204, 184, 235],
   rubble: [84, 80, 76, 96],
+  wallCells: 1,
   channels: 4,
   softCells: 1,
 } as const;
 
-type Rgba = readonly [number, number, number, number];
+export const TOUCH_LOOK: LayerLook = {
+  floor: [124, 132, 144, 108],
+  wall: [240, 230, 206, 255],
+  rubble: [100, 96, 90, 132],
+  wallCells: 2,
+};
 
 export interface LayerRect {
   readonly column: number;
@@ -39,14 +54,17 @@ function solidAt(grid: NavGrid, column: number, row: number): boolean {
   return grid.solid[row * grid.columns + column] === 1;
 }
 
-function edgeOf(grid: NavGrid, column: number, row: number): boolean {
-  return !solidAt(grid, column - 1, row) || !solidAt(grid, column + 1, row) || !solidAt(grid, column, row - 1) || !solidAt(grid, column, row + 1);
+function edgeOf(grid: NavGrid, column: number, row: number, reach: number): boolean {
+  for (let step: number = 1; step <= reach; step += 1) {
+    if (!solidAt(grid, column - step, row) || !solidAt(grid, column + step, row) || !solidAt(grid, column, row - step) || !solidAt(grid, column, row + step)) return true;
+  }
+  return false;
 }
 
-function paint(grid: NavGrid, column: number, row: number): Rgba | null {
+function paint(grid: NavGrid, column: number, row: number, look: LayerLook): Rgba | null {
   const index: number = row * grid.columns + column;
-  if (grid.solid[index] === 1) return edgeOf(grid, column, row) ? LAYER.wall : null;
-  return grid.walkable[index] === 1 ? LAYER.floor : LAYER.rubble;
+  if (grid.solid[index] === 1) return edgeOf(grid, column, row, look.wallCells) ? look.wall : null;
+  return grid.walkable[index] === 1 ? look.floor : look.rubble;
 }
 
 function seenAround(seen: Uint8Array, explore: ExploreGrid, column: number, row: number): number {
@@ -92,7 +110,7 @@ function navRect(cells: LayerRect, nav: NavGrid, explore: ExploreGrid): LayerRec
   return { column: left, row: top, columns: Math.max(0, right - left), rows: Math.max(0, bottom - top) };
 }
 
-export function createLayerPixels(): LayerPixels {
+export function createLayerPixels(look: LayerLook = LAYER): LayerPixels {
   let grid: NavGrid | null = null;
   let revision: number = -1;
   let stamp: GridStamp | null = null;
@@ -108,7 +126,7 @@ export function createLayerPixels(): LayerPixels {
       for (let column: number = rect.column; column < rect.column + rect.columns; column += 1) {
         const at: number = (row * nav.columns + column) * LAYER.channels;
         const light: number = seenAround(seen, explore, Math.floor(column * ratio), exploreRow);
-        const colour: Rgba | null = light <= 0 ? null : paint(nav, column, row);
+        const colour: Rgba | null = light <= 0 ? null : paint(nav, column, row, look);
         if (colour === null) {
           data.fill(0, at, at + LAYER.channels);
           continue;
@@ -162,9 +180,9 @@ export function createLayerPixels(): LayerPixels {
   };
 }
 
-export function createMapLayer(): MapLayer {
+export function createMapLayer(look: LayerLook = LAYER): MapLayer {
   const canvas: HTMLCanvasElement = document.createElement('canvas');
-  const pixels: LayerPixels = createLayerPixels();
+  const pixels: LayerPixels = createLayerPixels(look);
   let image: ImageData | null = null;
   let width: number = 0;
   let height: number = 0;

@@ -295,7 +295,7 @@ async function start(): Promise<void> {
   const hideout = startHideout(serverUrl, { scene: stage.scene, library, content, feather: mobile.quality.tier.msaaSamples > 0, camera, labels: element('overlays', HTMLDivElement), hud: element('hud', HTMLDivElement), loader, dresser, gate: loadGate, sight: cameraSight(stage.camera), screen: hud, sync: (): Promise<void> => { dirty = true; saveNow(); return backend.sync(); }, openProfile: lobby === null ? null : (name: string): void => lobby.profiles.open(name) });
   const objectiveMarker: ObjectiveMarker = createObjectiveMarker(stage.scene, camera, element('hud', HTMLDivElement), hud.targets);
   const ladder: GameBoard | null = lobby === null ? null : mountGameBoard(element('hud', HTMLDivElement), lobby, { isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'ladder', overlays: overlayManager });
-  const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
+  const minimap: Minimap = createMinimap(element('hud', HTMLDivElement), { world, touch: mobile.touch, send, clickMarker: (x: number, z: number, hostile: boolean): void => effects.clickMarker(x, z, hostile), isToggleKey: (code: string): boolean => gameSettings.keys().actionOf(code) === 'minimap' });
   const input: Input = createInput(canvas, window, world, camera, hud, gameSettings, {
     ...playerHooks(hideout),
     heightOf: (id: number): number => actors.heightOf(id),

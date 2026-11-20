@@ -11,10 +11,15 @@ export const PHONE = {
   minimapPortrait: 96,
   minimapLandscape: 104,
   minimapMin: 64,
+  minimapRailShare: 0.32,
+  minimapRailMin: 96,
+  minimapRailMax: 136,
+  caption: 18,
   zoneLabel: 20,
   zoneWidth: 160,
   zoneRoomyWidth: 360,
   questWidth: 150,
+  questMinWidth: 90,
   questZoom: 0.72,
   questMinHeight: 40,
   questHeightShare: 0.4,
@@ -77,6 +82,7 @@ export interface MenuPlacement {
   readonly rect: Rect;
   readonly button: number;
   readonly gap: number;
+  readonly rail: boolean;
 }
 
 export interface PhoneLayout {
@@ -85,6 +91,7 @@ export interface PhoneLayout {
   readonly menu: MenuPlacement;
   readonly zone: Rect;
   readonly minimap: Rect;
+  readonly caption: Rect | null;
   readonly quests: Rect | null;
   readonly hint: Rect;
   readonly toast: Rect;
@@ -116,11 +123,26 @@ export function overlaps(a: Rect, b: Rect): boolean {
 function placeMenu(count: number, top: number, spanLeft: number, spanRight: number, belowRight: number, belowTop: number, left: number): MenuPlacement {
   const width = (button: number): number => count * button + Math.max(0, count - 1) * PHONE.menuGap;
   const full: number = width(PHONE.menuButton);
-  if (full <= spanRight - spanLeft) return { rect: { x: Math.round(spanLeft + (spanRight - spanLeft - full) / 2), y: top, w: full, h: PHONE.menuButton }, button: PHONE.menuButton, gap: PHONE.menuGap };
+  if (full <= spanRight - spanLeft) return { rect: { x: Math.round(spanLeft + (spanRight - spanLeft - full) / 2), y: top, w: full, h: PHONE.menuButton }, button: PHONE.menuButton, gap: PHONE.menuGap, rail: false };
   const room: number = belowRight - left;
   const button: number = Math.min(PHONE.menuButton, Math.floor((room - Math.max(0, count - 1) * PHONE.menuGap) / Math.max(1, count)));
-  return { rect: { x: left, y: belowTop, w: width(button), h: button }, button, gap: PHONE.menuGap };
+  return { rect: { x: left, y: belowTop, w: width(button), h: button }, button, gap: PHONE.menuGap, rail: false };
 }
+
+interface Corner {
+  readonly zone: Rect;
+  readonly minimap: Rect;
+  readonly caption: Rect;
+}
+
+function cornerAt(mapSize: number, rightEdge: number, top: number, zoneRoom: number): Corner {
+  const zoneWidth: number = Math.max(mapSize, Math.min(PHONE.zoneWidth, zoneRoom));
+  const zone: Rect = { x: rightEdge - zoneWidth, y: top, w: zoneWidth, h: PHONE.zoneLabel };
+  const minimap: Rect = { x: rightEdge - mapSize, y: bottom(zone), w: mapSize, h: mapSize };
+  return { zone, minimap, caption: { x: minimap.x, y: bottom(minimap), w: mapSize, h: PHONE.caption } };
+}
+
+const sharesColumns = (a: Rect, from: number, to: number): boolean => a.x < to && from < right(a);
 
 interface SkillGrid {
   readonly columns: number;
@@ -193,13 +215,7 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const life: Rect = { x: left, y: top, w: globe, h: globe };
   const mana: Rect = { x: right(life) + PHONE.gap, y: top, w: globe, h: (PHONE.globeNatural + PHONE.goldNatural) * PHONE.globeZoom };
   const clusterBottom: number = Math.max(bottom(life), bottom(mana));
-
-  const menuWidth: number = counts.menu * PHONE.menuButton + Math.max(0, counts.menu - 1) * PHONE.menuGap;
-  const mapSize: number = Math.max(PHONE.minimapMin, Math.min(landscape ? PHONE.minimapLandscape : PHONE.minimapPortrait, rightEdge - left - menuWidth - PHONE.gap));
-  const zoneWidth: number = Math.max(mapSize, Math.min(PHONE.zoneWidth, rightEdge - right(mana) - PHONE.gap));
-  const zone: Rect = { x: rightEdge - zoneWidth, y: top, w: zoneWidth, h: PHONE.zoneLabel };
-  const minimap: Rect = { x: rightEdge - mapSize, y: bottom(zone), w: mapSize, h: mapSize };
-  const menu: MenuPlacement = placeMenu(counts.menu, top, right(mana) + PHONE.gap, zone.x - PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
+  const zoneRoom: number = rightEdge - right(mana) - PHONE.gap;
 
   const xpWidth: number = Math.min(rightEdge - left, PHONE.xpMaxWidth);
   const xpBottom: number = height - safe.bottom - PHONE.xpLift;
@@ -222,11 +238,28 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
     w: PHONE.flaskButton,
     h: PHONE.flaskButton,
   }));
-
   const controls: readonly Rect[] = [stick, attack, ...skills, ...flasks];
   const inBand: boolean = grid.band >= PHONE.hintMinWidth;
+
+  const railMap: number = Math.round(Math.min(PHONE.minimapRailMax, zoneRoom, Math.max(PHONE.minimapRailMin, width * PHONE.minimapRailShare)));
+  const railCorner: Corner = cornerAt(railMap, rightEdge, top, zoneRoom);
+  const railLength: number = counts.menu * PHONE.menuButton + Math.max(0, counts.menu - 1) * PHONE.menuGap;
+  const railRect: Rect = { x: rightEdge - PHONE.menuButton, y: bottom(railCorner.caption) + PHONE.gap, w: PHONE.menuButton, h: railLength };
+  const railFloor: number = Math.min(...controls.filter((rect: Rect): boolean => sharesColumns(rect, railRect.x, right(railRect))).map((rect: Rect): number => rect.y));
+  const railFits: boolean = !landscape && !inBand && bottom(railRect) + PHONE.gap <= railFloor && railRect.x - PHONE.gap - left >= PHONE.hintMinWidth;
+
+  const menuWidth: number = counts.menu * PHONE.menuButton + Math.max(0, counts.menu - 1) * PHONE.menuGap;
+  const rowMap: number = Math.max(PHONE.minimapMin, Math.min(landscape ? PHONE.minimapLandscape : PHONE.minimapPortrait, rightEdge - left - menuWidth - PHONE.gap));
+  const corner: Corner = railFits ? railCorner : cornerAt(rowMap, rightEdge, top, zoneRoom);
+  const { zone, minimap } = corner;
+  const caption: Rect | null = railFits ? corner.caption : null;
+  const mapFoot: Rect = caption ?? minimap;
+  const menu: MenuPlacement = railFits
+    ? { rect: railRect, button: PHONE.menuButton, gap: PHONE.menuGap, rail: true }
+    : placeMenu(counts.menu, top, right(mana) + PHONE.gap, zone.x - PHONE.gap, minimap.x - PHONE.gap, Math.ceil(clusterBottom + PHONE.gap), left);
+
   const bandLeft: number = inBand ? right(stick) + PHONE.gap : left;
-  const bandRight: number = inBand ? grid.left - PHONE.gap : rightEdge;
+  const bandRight: number = inBand ? grid.left - PHONE.gap : menu.rail ? menu.rect.x - PHONE.gap : rightEdge;
   const hintWidth: number = Math.min(bandRight - bandLeft, PHONE.hintMaxWidth);
   const hintBottom: number = inBand ? baseline : Math.min(...controls.map((rect: Rect): number => rect.y)) - PHONE.gap;
   const hint: Rect = { x: Math.round(bandLeft + (bandRight - bandLeft - hintWidth) / 2), y: hintBottom - PHONE.hintHeight, w: hintWidth, h: PHONE.hintHeight };
@@ -234,22 +267,25 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const toastWidth: number = Math.min(bandRight - bandLeft, PHONE.toastMaxWidth);
   const toast: Rect = { x: Math.round(bandLeft + (bandRight - bandLeft - toastWidth) / 2), y: hint.y - PHONE.gap - PHONE.toastHeight, w: toastWidth, h: PHONE.toastHeight };
 
-  const column: Rect = { x: rightEdge - PHONE.questWidth, y: 0, w: PHONE.questWidth, h: height };
-  const below: number = Math.min(height, ...[toast, hint, ...controls].filter((rect: Rect): boolean => rect.x < right(column) && column.x < right(rect)).map((rect: Rect): number => rect.y));
+  const questRight: number = menu.rail ? menu.rect.x - PHONE.gap : rightEdge;
+  const questWidth: number = menu.rail ? Math.min(PHONE.questWidth, questRight - PHONE.gap - left - PHONE.meterMinWidth - PHONE.gap) : PHONE.questWidth;
+  const column: Rect = { x: questRight - questWidth, y: 0, w: questWidth, h: height };
+  const below: number = Math.min(height, ...[toast, hint, ...controls].filter((rect: Rect): boolean => sharesColumns(rect, column.x, right(column))).map((rect: Rect): number => rect.y));
   const dialogueRight: number = attack.x - PHONE.gap;
-  const dialogueTop: number = Math.max(baseline - PHONE.dialogueMaxHeight, Math.ceil(Math.max(clusterBottom, bottom(menu.rect), bottom(minimap)) + PHONE.gap));
+  const overhead: readonly Rect[] = [life, mana, menu.rect, zone, mapFoot].filter((rect: Rect): boolean => sharesColumns(rect, left, dialogueRight));
+  const dialogueTop: number = Math.max(baseline - PHONE.dialogueMaxHeight, Math.ceil(Math.max(clusterBottom, ...overhead.map(bottom)) + PHONE.gap));
   const dialogue: Rect = { x: left, y: dialogueTop, w: dialogueRight - left, h: baseline - dialogueTop };
 
   const cardWidth: number = Math.min(PHONE.cardWidth, width - safe.left - safe.right - PHONE.cardInset * 2);
   const cardHeight: number = height - safe.top - safe.bottom - PHONE.cardInset * 2;
   const card: Rect = { x: safe.left + (width - safe.left - safe.right - cardWidth) / 2, y: safe.top + PHONE.cardInset, w: cardWidth, h: cardHeight };
 
-  const sharesColumn: boolean = menu.rect.x < right(column) && column.x < right(menu.rect);
-  const questTop: number = Math.max(bottom(minimap), sharesColumn ? bottom(menu.rect) : 0) + PHONE.gap;
-  const quests: Rect | null = questsRect(column, questTop, below, height);
+  const sharesColumn: boolean = !menu.rail && sharesColumns(menu.rect, column.x, right(column));
+  const questTop: number = menu.rail ? menu.rect.y : Math.max(bottom(mapFoot), sharesColumn ? bottom(menu.rect) : 0) + PHONE.gap;
+  const quests: Rect | null = questWidth < PHONE.questMinWidth ? null : questsRect(column, questTop, below, height);
 
-  const taken: readonly Rect[] = [life, mana, menu.rect, zone, minimap, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
-  const underCluster: number = Math.ceil(Math.max(clusterBottom, bottom(menu.rect)) + PHONE.gap);
+  const taken: readonly Rect[] = [life, mana, menu.rect, zone, minimap, mapFoot, hint, toast, dialogue, ...controls, ...(quests === null ? [] : [quests])];
+  const underCluster: number = Math.ceil(Math.max(clusterBottom, menu.rail ? 0 : bottom(menu.rect)) + PHONE.gap);
   const banner: Rect = freeRow([underCluster, top], PHONE.bannerHeight, PHONE.bannerMinWidth, PHONE.bannerMaxWidth, left, rightEdge, taken);
   const open: readonly Rect[] = [...taken.filter((rect: Rect): boolean => rect !== dialogue), banner];
   const targetOf = (rowHeight: number): Rect => freeRow([top, underCluster, bottom(banner) + PHONE.gap], rowHeight, PHONE.targetMinWidth, PHONE.targetMaxWidth, left, rightEdge, open);
@@ -263,7 +299,7 @@ export function phoneLayout(screen: PhoneScreen, counts: PhoneCounts): PhoneLayo
   const standing: readonly Rect[] = [...open, target, meter];
   const bark: Rect = aboveToast.y >= top && !standing.some((rect: Rect): boolean => overlaps(rect, aboveToast)) ? aboveToast : toast;
 
-  return { life, mana, menu, zone, minimap, quests, hint, toast, bark, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
+  return { life, mana, menu, zone, minimap, caption, quests, hint, toast, bark, dialogue, card, banner, target, meter, xp, stick, attack, skills, flasks };
 }
 
 export function layoutRects(layout: PhoneLayout): NamedRect[] {
@@ -282,6 +318,7 @@ export function layoutRects(layout: PhoneLayout): NamedRect[] {
     { name: 'stick', rect: layout.stick },
     { name: 'attack', rect: layout.attack },
   ];
+  if (layout.caption !== null) named.push({ name: 'caption', rect: layout.caption });
   if (layout.quests !== null) named.push({ name: 'quests', rect: layout.quests });
   layout.skills.forEach((rect: Rect, index: number): void => {
     named.push({ name: `skill${index}`, rect });

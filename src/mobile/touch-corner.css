@@ -1,0 +1,89 @@
+.tc-menu {
+  position: absolute;
+  top: var(--ph-menu-y, 8px);
+  left: var(--ph-menu-x, 8px);
+  display: flex;
+  flex-direction: var(--ph-menu-flow, row);
+  gap: var(--ph-menu-gap, 2px);
+  pointer-events: auto;
+  transition:
+    left var(--spring-smooth-ms) var(--spring-smooth),
+    top var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+body.touch .minimap-frame {
+  background: radial-gradient(circle at 50% 50%, rgba(10, 13, 18, 0.88), rgba(3, 4, 7, 0.95));
+}
+
+body.touch .hud.ph-map-caption .minimap-level {
+  position: relative;
+  top: auto;
+  right: auto;
+  align-self: flex-end;
+  margin-top: 3px;
+}
+
+body.touch .minimap-overlay {
+  background: radial-gradient(ellipse at 50% 50%, rgba(4, 6, 10, 0.62), rgba(4, 6, 10, 0.4));
+}
+
+body.touch .minimap-close {
+  position: absolute;
+  top: calc(var(--minimap-top) + var(--minimap-label));
+  right: var(--minimap-right);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(239, 230, 214, 0.82);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.8);
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-snappy-ms);
+}
+
+body.touch .minimap.overlay .minimap-close {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s;
+}
+
+body.touch .hud.hud-covered-side .minimap-close,
+body.touch .hud.hud-covered-full .minimap-close {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.touch .minimap-close:active {
+  transform: scale(0.9);
+  color: var(--storm);
+}
+
+body.touch .minimap-close svg {
+  width: 18px;
+  height: 18px;
+  padding: 5px;
+  border-radius: 6px;
+  background: rgba(10, 16, 24, 0.42);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}

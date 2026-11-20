@@ -154,19 +154,6 @@ body.touch .tree-viewport {
   opacity: 1;
 }
 
-.tc-menu {
-  position: absolute;
-  top: var(--ph-menu-y, 8px);
-  left: var(--ph-menu-x, 8px);
-  display: flex;
-  gap: var(--ph-menu-gap, 2px);
-  pointer-events: auto;
-  transition:
-    left var(--spring-smooth-ms) var(--spring-smooth),
-    top var(--spring-smooth-ms) var(--spring-smooth),
-    opacity var(--spring-snappy-ms) var(--spring-snappy);
-}
-
 .tc-menu-btn,
 .tc-close {
   display: grid;
@@ -562,7 +549,7 @@ body[data-hud-gate='closed'] .tc-stick.intro {
 
 .tc-stick-hint {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 8px + var(--ph-stick-hint-rise, 0px));
   left: calc(50% + 8px);
   width: max-content;
   max-width: 200px;
@@ -575,7 +562,8 @@ body[data-hud-gate='closed'] .tc-stick.intro {
   transform: translateY(6px);
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
-    transform var(--spring-bouncy-ms) var(--spring-bouncy);
+    transform var(--spring-bouncy-ms) var(--spring-bouncy),
+    bottom var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .tc-stick.intro .tc-stick-hint {

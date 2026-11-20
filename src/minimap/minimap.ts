@@ -8,7 +8,7 @@ import { zoneLevelText } from './caption.ts';
 import { shapedLine } from '../hud/run-table-model.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { MapLayer } from './layer.ts';
-import { createMapLayer } from './layer.ts';
+import { createMapLayer, LAYER, TOUCH_LOOK } from './layer.ts';
 import { drawMarks } from './marks.ts';
 import { exitUnder } from '../../sim/world/exits.ts';
 import { partShown } from '../../sim/world/hud.ts';
@@ -20,12 +20,14 @@ import { watchSize } from '../render/element-size.ts';
 
 export const MINIMAP = {
   zoomStart: 3.6,
+  touchZoom: 3,
   zoomMin: 1.6,
   zoomMax: 9,
   zoomStep: 0.0018,
   zoomRate: 14,
   overlayExtent: 0.86,
   overlayAlpha: 0.6,
+  touchOverlayAlpha: 0.92,
   overlayUnit: 1.6,
   holdInterval: 0.09,
   snapRadius: 5,
@@ -37,6 +39,7 @@ export type MinimapMode = 'corner' | 'overlay';
 
 export interface MinimapHooks {
   readonly world: World;
+  readonly touch: boolean;
   send(command: Command): void;
   clickMarker(x: number, z: number, hostile: boolean): void;
   isToggleKey(code: string): boolean;
@@ -74,6 +77,8 @@ function fit(target: Surface): void {
   target.canvas.height = Math.max(1, Math.round(height * ratio));
 }
 
+const CLOSE_ICON: string = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
 const SQUASH: number = Math.sin((CAMERA.pitchDegrees * Math.PI) / 180);
 
 export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
@@ -85,16 +90,22 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   const zoneName: HTMLDivElement = el('div', 'minimap-zone', corner);
   const frame: HTMLDivElement = el('div', 'minimap-frame', corner);
   const cornerSurface: Surface = surface(el('canvas', 'minimap-canvas', frame));
-  const zoneLevel: HTMLDivElement = el('div', 'minimap-level', frame);
+  const zoneLevel: HTMLDivElement = el('div', 'minimap-level', corner);
   const shaped: HTMLDivElement = el('div', 'minimap-shaped', corner);
   const overlay: HTMLDivElement = el('div', 'minimap-overlay', holder);
   tagPart(overlay, 'minimap');
   const overlaySurface: Surface = surface(el('canvas', 'minimap-canvas', overlay));
-  const layer: MapLayer = createMapLayer();
+  const close: HTMLButtonElement = el('button', 'minimap-close', holder);
+  tagPart(close, 'minimap');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close map');
+  close.innerHTML = CLOSE_ICON;
+  const layer: MapLayer = createMapLayer(hooks.touch ? TOUCH_LOOK : LAYER);
   const world: World = hooks.world;
+  const overlayAlpha: number = hooks.touch ? MINIMAP.touchOverlayAlpha : MINIMAP.overlayAlpha;
   let mode: MinimapMode = 'corner';
-  let zoom: number = MINIMAP.zoomStart;
-  let wantedZoom: number = MINIMAP.zoomStart;
+  let zoom: number = hooks.touch ? MINIMAP.touchZoom : MINIMAP.zoomStart;
+  let wantedZoom: number = zoom;
   let shapedShown: string = '';
   let settling: number = 0;
   let cornerMatrix: MapMatrix | null = null;
@@ -153,9 +164,15 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
     if (!held) hooks.clickMarker(dest.x, dest.z, false);
   };
 
+  close.addEventListener('click', (): void => setMode('corner'));
+
   frame.addEventListener('pointerdown', (event: PointerEvent): void => {
     if (event.button !== 0 || mode !== 'corner') return;
     event.preventDefault();
+    if (hooks.touch) {
+      setMode('overlay');
+      return;
+    }
     frame.setPointerCapture(event.pointerId);
     dragging = event.pointerId;
     lastPointer = { x: event.clientX, y: event.clientY };
@@ -199,7 +216,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
     const extent: number = Math.max(layer.width, layer.height, 1);
     const scale: number = (Math.min(width, height) * MINIMAP.overlayExtent) / extent;
     const matrix: MapMatrix = mapMatrix({ scale, squash: SQUASH, centreX: width / 2, centreY: height / 2, focusX: world.player.pos.x, focusZ: world.player.pos.z });
-    paint(overlaySurface, matrix, MINIMAP.overlayUnit, false, MINIMAP.overlayAlpha);
+    paint(overlaySurface, matrix, MINIMAP.overlayUnit, false, overlayAlpha);
   };
 
   return {

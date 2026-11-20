@@ -29,6 +29,7 @@ import { startRotateHint } from './rotate-hint.ts';
 import touchCss from './touch.css?inline';
 import touchSheetCss from './touch-sheet.css?inline';
 import touchHeldCss from './touch-held.css?inline';
+import touchCornerCss from './touch-corner.css?inline';
 
 export interface TouchSetup {
   readonly canvas: HTMLCanvasElement;
@@ -107,6 +108,8 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-menu-y', layout.menu.rect.y);
   set('--ph-menu-btn', layout.menu.button);
   set('--ph-menu-gap', layout.menu.gap);
+  vars.setProperty('--ph-menu-flow', layout.menu.rail ? 'column' : 'row');
+  hudRoot.classList.toggle('ph-map-caption', layout.caption !== null);
   set('--ph-map-size', layout.minimap.w);
   set('--ph-map-top', layout.zone.y);
   set('--ph-map-right', width - layout.minimap.x - layout.minimap.w);
@@ -151,6 +154,7 @@ function applyPhoneLayout(target: HTMLElement, hudRoot: HTMLElement, layout: Pho
   set('--ph-notice-bottom', xpBottom - layout.toast.y - layout.toast.h);
   set('--ph-stick-x', layout.stick.x + layout.stick.w / 2);
   set('--ph-stick-y', layout.stick.y + layout.stick.h / 2);
+  set('--ph-stick-hint-rise', Math.max(0, ...layout.flasks.map((flask: Rect): number => layout.stick.y - flask.y)));
 }
 
 const signature = (buttons: readonly TouchButton[]): string => buttons.map((button: TouchButton): string => `${button.kind}${button.slot}${button.kind === 'flask' || button.filled ? '' : '-'}`).join('|');
@@ -166,7 +170,7 @@ function retire(root: HTMLElement): void {
 
 export function createTouchControls(setup: TouchSetup): TouchControls {
   const style: HTMLStyleElement = document.createElement('style');
-  style.textContent = touchCss + touchSheetCss + touchHeldCss;
+  style.textContent = touchCss + touchSheetCss + touchHeldCss + touchCornerCss;
   document.head.append(style);
   const { canvas, hudRoot, world, input, hud } = setup;
   document.body.classList.add('touch');
