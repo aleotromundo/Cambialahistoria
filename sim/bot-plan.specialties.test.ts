@@ -45,6 +45,19 @@ void test('a route to a specialty keystone walks its own arm and its own special
   }
 });
 
+void test('a build that names no cluster place never takes one, and a route to a cluster keystone reaches it', (): void => {
+  for (const id of spend({ ...PLAN, paths: ['stone'] }, 60)) assert.equal(placeOf(id).cluster, null, id);
+  const taken: readonly string[] = spend({ ...PLAN, paths: ['stone'], route: ['stone_anvil'] }, 60);
+  assert.ok(taken.includes('stone_anvil'));
+});
+
+void test('a route to a cluster that hangs off a common spur crosses the spur to reach its keystone', (): void => {
+  for (const [path, keystone] of [['storm', 'storm_running_storm'], ['blade', 'blade_unbroken_wave'], ['wind', 'wind_first_cut'], ['echo', 'echo_quiet_hour']] as const) {
+    const taken: readonly string[] = spend({ ...PLAN, paths: [path], route: [keystone] }, 60);
+    assert.ok(taken.includes(keystone), keystone);
+  }
+});
+
 void test('a route that names a common place reaches it through the common places beside it', (): void => {
   const taken: readonly string[] = spend({ ...PLAN, route: ['common_blade_wind_3'] }, 60);
   assert.ok(taken.includes('common_blade_wind_3'));

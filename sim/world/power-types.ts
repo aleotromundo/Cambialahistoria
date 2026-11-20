@@ -1,4 +1,4 @@
-import type { EmpowerLook, SkillMod, StatMod } from '../content/types.ts';
+import type { EmpowerLook, SkillMod, Stance, StatMod } from '../content/types.ts';
 
 export interface BuffState {
   readonly key: string;
@@ -19,4 +19,5 @@ export interface PowerState {
   empowers: EmpowerState[];
   cooldowns: Record<string, number>;
   counts: Record<string, number>;
+  stances: Stance[];
 }

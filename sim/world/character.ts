@@ -8,6 +8,7 @@ import { assignSlot, chartSkills } from '../skill-book.ts';
 import { computeStats, modTargets, resolveSkillBar, variantChain } from '../stats.ts';
 import { heldGroup } from '../weapons.ts';
 import { buffMods, heldPowers, wornVariants, wouldPassLimit } from '../powers.ts';
+import { heroStanceMods } from '../stances.ts';
 import { fits, placeIn } from '../stacks.ts';
 import { dropOnGround } from './ground.ts';
 import { forget, learn } from './learn.ts';
@@ -19,7 +20,7 @@ export function refreshPlayer(world: World): void {
 
 export function refreshHero(world: World, player: PlayerState): void {
   player.wielding = heldGroup(world.content, player.equipped);
-  player.stats = computeStats(world.content, player.level, player.equipped, player.allocated, buffMods(player.powers), player.wielding);
+  player.stats = computeStats(world.content, player.level, player.equipped, player.allocated, [...buffMods(player.powers), ...heroStanceMods(world.content, player)], player.wielding);
   player.skills = resolveSkillBar(world.content, player.bar, player.allocated, heldPowers(world.content, player.equipped, player.powers), wornVariants(world.content, player.equipped), player.wielding, player.changes);
   player.maxLife = player.stats.maxLife;
   player.life = Math.min(player.life, player.maxLife);

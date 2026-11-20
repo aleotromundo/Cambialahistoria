@@ -3,6 +3,7 @@
   "pointsPerLevel": 2,
   "revision": 9,
   "specialtyLimit": 3,
+  "lowLife": 0.35,
   "twist": 0.08,
   "respec": {
     "goldPerPoint": 10,

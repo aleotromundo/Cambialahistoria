@@ -44,5 +44,5 @@ export function placeBound(node: SkillTreeNodeDef): boolean {
 
 export function heldPlace(node: SkillTreeNodeDef, held: string | null): SkillTreeNodeDef {
   if (placeLive(node, held)) return node;
-  return { ...node, statMods: node.statMods.filter(liveStatMod) };
+  return { ...node, statMods: node.statMods.filter(liveStatMod), stances: [] };
 }

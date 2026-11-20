@@ -1,4 +1,4 @@
-import type { BuffEffect, CastEffect, Content, EmpowerEffect, FamilyDef, ItemBaseDef, ItemSlot, PowerDef, PowerTrigger, PowerTriggerDef, RarityDef, SkillDef, SkillMod, SkillTarget, SkillTreeNodeDef, SkillVariant, StatMod } from './content/types.ts';
+import type { BuffEffect, CastEffect, Content, EmpowerEffect, FamilyDef, ItemBaseDef, ItemSlot, PowerDef, PowerTrigger, PowerTriggerDef, RarityDef, RestoreEffect, SkillDef, SkillMod, SkillTarget, SkillTreeNodeDef, SkillVariant, StatMod } from './content/types.ts';
 import { ITEM_SLOTS } from './content/types.ts';
 import { familyPieces } from './content/power-rules.ts';
 import { baseOf, rarityOf } from './items.ts';
@@ -21,7 +21,7 @@ export interface PowerEvent {
 }
 
 export function emptyPowerState(): PowerState {
-  return { buffs: [], empowers: [], cooldowns: {}, counts: {} };
+  return { buffs: [], empowers: [], cooldowns: {}, counts: {}, stances: [] };
 }
 
 export function wornPowerList(content: Content, equipped: Equipment): WornPower[] {
@@ -109,6 +109,12 @@ function cast(world: World, player: PlayerState, effect: CastEffect, at: Readonl
   });
 }
 
+function restore(player: PlayerState, effect: RestoreEffect): void {
+  if (!player.alive) return;
+  player.life = Math.min(player.maxLife, player.life + effect.life);
+  player.mana = Math.min(player.stats.maxMana, player.mana + effect.mana);
+}
+
 function buff(state: PowerState, key: string, effect: BuffEffect): void {
   const held: BuffState | undefined = state.buffs.find((entry: BuffState): boolean => entry.key === key);
   if (held !== undefined) {
@@ -191,6 +197,9 @@ export function firePowers(world: World, player: PlayerState, event: PowerEvent)
           return;
         case 'flask':
           addFlaskCharges(player, effect.charges);
+          return;
+        case 'restore':
+          restore(player, effect);
           return;
       }
     });

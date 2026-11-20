@@ -108,7 +108,13 @@ export interface FlaskEffect {
   readonly charges: number;
 }
 
-export type PowerEffect = CastEffect | BuffEffect | EmpowerEffect | FlaskEffect;
+export interface RestoreEffect {
+  readonly type: 'restore';
+  readonly life: number;
+  readonly mana: number;
+}
+
+export type PowerEffect = CastEffect | BuffEffect | EmpowerEffect | FlaskEffect | RestoreEffect;
 
 export interface PowerTriggerDef {
   readonly on: PowerTrigger;

@@ -31,6 +31,9 @@ function triggerProblems(content: Content, owner: string, trigger: PowerTriggerD
     case 'flask':
       if (!Number.isInteger(effect.charges)) problems.push(`${owner} gives ${effect.charges} flask charges, which is not a whole count`);
       break;
+    case 'restore':
+      if (effect.life <= 0 && effect.mana <= 0) problems.push(`${owner} restores nothing`);
+      break;
   }
   return problems;
 }

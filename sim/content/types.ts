@@ -271,7 +271,15 @@ export interface WearableDef {
 }
 
 export { ARMOUR_MATERIALS, CAST_ORIGINS, GROUND_KEEPS, GROUND_MODELS, ITEM_STATS, POWER_TARGETS, POWER_TRIGGERS, RARITY_MARKERS, WEAPON_KINDS } from './item-types.ts';
-export type { AffixDef, ArmourMaterial, DropLean, BuffEffect, CastEffect, EmpowerEffect, EmpowerLook, FlaskEffect, CastOrigin, FamilyDef, GroundKeep, GroundLook, GroundModel, ItemBaseDef, ItemScaling, ItemStat, PowerDef, PowerEffect, PowerTarget, PowerTrigger, PowerTriggerDef, RarityDef, RarityMarker, ItemUse, PortalUse } from './item-types.ts';
+export type { AffixDef, ArmourMaterial, DropLean, BuffEffect, CastEffect, EmpowerEffect, EmpowerLook, FlaskEffect, RestoreEffect, CastOrigin, FamilyDef, GroundKeep, GroundLook, GroundModel, ItemBaseDef, ItemScaling, ItemStat, PowerDef, PowerEffect, PowerTarget, PowerTrigger, PowerTriggerDef, RarityDef, RarityMarker, ItemUse, PortalUse } from './item-types.ts';
+
+export const STANCES = ['moving', 'still', 'low_life', 'full_life'] as const;
+export type Stance = (typeof STANCES)[number];
+
+export interface StanceMod {
+  readonly when: Stance;
+  readonly statMods: readonly StatMod[];
+}
 
 export const TREE_NODE_KINDS = ['minor', 'notable', 'keystone'] as const;
 export type TreeNodeKind = (typeof TREE_NODE_KINDS)[number];
@@ -292,6 +300,8 @@ export interface SkillTreeNodeDef {
   readonly unlock: string | null;
   readonly weapon: string | null;
   readonly triggers: readonly PowerTriggerDef[];
+  readonly stances: readonly StanceMod[];
+  readonly cluster: string | null;
   readonly common: string | null;
   readonly specialty: string | null;
 }

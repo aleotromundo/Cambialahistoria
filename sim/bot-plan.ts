@@ -126,12 +126,13 @@ function placeOf(content: Content, id: string): SkillTreeNodeDef | undefined {
 }
 
 function sideBranch(node: SkillTreeNodeDef): boolean {
-  return node.common !== null || node.specialty !== null;
+  return node.common !== null || node.specialty !== null || node.cluster !== null;
 }
 
 function passable(node: SkillTreeNodeDef | undefined, goal: SkillTreeNodeDef | undefined): boolean {
   if (node === undefined || goal === undefined) return true;
-  if (node.common !== null && goal.common === null) return false;
+  if (node.common !== null && goal.common === null && goal.cluster === null) return false;
+  if (node.cluster !== null && goal.cluster === null) return false;
   return node.specialty === null || node.specialty === goal.specialty;
 }
 

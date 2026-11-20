@@ -13,7 +13,7 @@ function empowerLook(value: unknown, where: string): EmpowerLook | null {
 
 function powerEffect(value: unknown, where: string): PowerEffect {
   const source: Fields = fields(value, where);
-  const type: PowerEffect['type'] = choice(source, 'type', ['cast', 'buff', 'empower', 'flask'] as const, where);
+  const type: PowerEffect['type'] = choice(source, 'type', ['cast', 'buff', 'empower', 'flask', 'restore'] as const, where);
   switch (type) {
     case 'cast':
       return { type, skill: text(source, 'skill', where), at: choice(source, 'at', CAST_ORIGINS, where) };
@@ -23,6 +23,8 @@ function powerEffect(value: unknown, where: string): PowerEffect {
       return { type, skillMods: each(source['skillMods'], `${where}.skillMods`, skillMod), duration: positive(source, 'duration', where), look: empowerLook(source['look'], `${where}.look`) };
     case 'flask':
       return { type, charges: positive(source, 'charges', where) };
+    case 'restore':
+      return { type, life: source['life'] === undefined ? 0 : nonNegative(source, 'life', where), mana: source['mana'] === undefined ? 0 : nonNegative(source, 'mana', where) };
   }
   return { type: 'cast', skill: text(source, 'skill', where), at: 'target' };
 }

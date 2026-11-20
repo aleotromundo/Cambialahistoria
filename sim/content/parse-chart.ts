@@ -4,14 +4,23 @@ import { powerTrigger } from './parse-powers.ts';
 import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, choiceList, ContentError, each, fields, isFields, nonNegative, numeric, positive, text, textList } from './read.ts';
-import type { Content, SkillDef, SkillMod, SkillTreeNodeDef, WeaponKind } from './types.ts';
-import { TREE_NODE_KINDS, WEAPON_KINDS } from './types.ts';
+import type { Content, SkillDef, SkillMod, SkillTreeNodeDef, StanceMod, WeaponKind } from './types.ts';
+import { STANCES, TREE_NODE_KINDS, WEAPON_KINDS } from './types.ts';
 
 const TINT: RegExp = /^#[0-9a-f]{6}$/i;
+
+const CHART_DEFAULTS = {
+  lowLife: 0.35,
+} as const;
 
 function variant(value: unknown, where: string): SkillVariant {
   const source: Fields = fields(value, where);
   return { skill: text(source, 'skill', where), becomes: text(source, 'becomes', where) };
+}
+
+function stanceMod(value: unknown, where: string): StanceMod {
+  const source: Fields = fields(value, where);
+  return { when: choice(source, 'when', STANCES, where), statMods: each(source['statMods'], `${where}.statMods`, statMod) };
 }
 
 function nodeFields(source: Fields, where: string): Pick<SkillTreeNodeDef, 'id' | 'path' | 'column' | 'row' | 'requires'> {
@@ -22,7 +31,7 @@ function commonNode(source: Fields, where: string, places: readonly CommonPlace[
   const common: string = text(source, 'common', where);
   const place: CommonPlace | undefined = places.find((entry: CommonPlace): boolean => entry.id === common);
   if (place === undefined) throw new ContentError(`${where}.common`, `unknown common place ${common}`);
-  return { ...nodeFields(source, where), name: place.name, description: place.description, icon: place.icon, kind: 'minor', statMods: place.statMods, skillMods: [], variants: [], unlock: null, weapon: null, triggers: [], common, specialty: null };
+  return { ...nodeFields(source, where), name: place.name, description: place.description, icon: place.icon, kind: 'minor', statMods: place.statMods, skillMods: [], variants: [], unlock: null, weapon: null, triggers: [], stances: [], cluster: null, common, specialty: null };
 }
 
 export function treeNode(value: unknown, where: string, places: readonly CommonPlace[] = []): SkillTreeNodeDef {
@@ -40,6 +49,8 @@ export function treeNode(value: unknown, where: string, places: readonly CommonP
     unlock: source['unlock'] === undefined ? null : text(source, 'unlock', where),
     weapon: source['weapon'] === undefined ? null : text(source, 'weapon', where),
     triggers: source['triggers'] === undefined ? [] : each(source['triggers'], `${where}.triggers`, powerTrigger),
+    stances: source['stances'] === undefined ? [] : each(source['stances'], `${where}.stances`, stanceMod),
+    cluster: source['cluster'] === undefined ? null : text(source, 'cluster', where),
     common: null,
     specialty: source['specialty'] === undefined ? null : text(source, 'specialty', where),
   };
@@ -99,6 +110,13 @@ function retired(value: unknown, where: string): ChartRetired {
   return { places: renames(source['places'], `${where}.places`), skills: renames(source['skills'], `${where}.skills`) };
 }
 
+function lowLife(source: Fields, where: string): number {
+  if (source['lowLife'] === undefined) return CHART_DEFAULTS.lowLife;
+  const share: number = positive(source, 'lowLife', where);
+  if (share >= 1) throw new ContentError(`${where}.lowLife`, 'expected a share of life below 1');
+  return share;
+}
+
 function specialtyLimit(source: Fields, where: string): number {
   if (source['specialtyLimit'] === undefined) return 1;
   const limit: number = positive(source, 'specialtyLimit', where);
@@ -128,6 +146,7 @@ export function chartDef(value: unknown, where: string): ChartDef {
     common: chartCommon(source['common'], `${where}.common`),
     specialties: source['specialties'] === undefined ? [] : each(source['specialties'], `${where}.specialties`, specialtyDef),
     specialtyLimit: specialtyLimit(source, where),
+    lowLife: lowLife(source, where),
   };
 }
 

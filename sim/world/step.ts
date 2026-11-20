@@ -30,6 +30,7 @@ import { stepScene } from './scene.ts';
 import { stepDrifts, stepTriggers } from './terrain.ts';
 import { acceptsCommand, hurryWake } from './wake.ts';
 import { stepPowerState } from '../powers.ts';
+import { stepStances } from '../stances.ts';
 import { refreshHero } from './character.ts';
 import { heroFor, isPrimary } from './heroes.ts';
 import { stepTally } from '../tally.ts';
@@ -60,7 +61,8 @@ export function stepWorld(world: World, commands: readonly Command[], dt: number
     stepPlayer(world, hero, dt);
     strides.set(hero, strideOf(hero, from));
     stepFlasks(world, hero, dt);
-    if (stepPowerState(hero.powers, dt)) refreshHero(world, hero);
+    const faded: boolean = stepPowerState(hero.powers, dt);
+    if (stepStances(world.content, hero) || faded) refreshHero(world, hero);
   }
   stepVoid(world, dt);
   stepExploration(world);

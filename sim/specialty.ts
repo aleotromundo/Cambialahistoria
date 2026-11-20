@@ -58,7 +58,7 @@ export function withinSpecialtyLimit(content: Content, allocated: readonly strin
 }
 
 export function armPlaces(content: Content, path: string): SkillTreeNodeDef[] {
-  return content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path && node.specialty === null && node.common === null);
+  return content.skillTree.filter((node: SkillTreeNodeDef): boolean => node.path === path && node.specialty === null && node.common === null && node.cluster === null);
 }
 
 export function opensSpecialty(content: Content, node: SkillTreeNodeDef): boolean {
