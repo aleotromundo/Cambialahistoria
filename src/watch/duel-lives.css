@@ -1,0 +1,193 @@
+.duel-lives {
+  position: absolute;
+  left: 50%;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  z-index: 80;
+  width: min(620px, calc(100% - 32px));
+  translate: -50% -10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  padding: 10px 14px 8px;
+  border-radius: 6px;
+  background: var(--panel-bg, rgba(12, 16, 24, 0.82));
+  color: var(--text, #e8e4dc);
+  font: 15px/1.2 var(--sans, sans-serif);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.duel-lives.on {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.duel-life {
+  --seat: #e2aa62;
+  --seat-soft: rgba(226, 170, 98, 0.32);
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.duel-life.side-1 {
+  --seat: #82b6e6;
+  --seat-soft: rgba(130, 182, 230, 0.32);
+}
+
+.duel-life-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.duel-life.side-1 .duel-life-head {
+  flex-direction: row-reverse;
+}
+
+.duel-life-name {
+  color: var(--seat);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.duel-life-result {
+  color: var(--text-dim, rgba(239, 230, 214, 0.58));
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    color var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.duel-life-result.on {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.duel-life.won .duel-life-result {
+  color: var(--text, #e8e4dc);
+}
+
+.duel-life.down,
+.duel-life.time {
+  opacity: 0.72;
+}
+
+.duel-life-track {
+  position: relative;
+  height: 10px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.duel-life-trail,
+.duel-life-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  transform-origin: left center;
+}
+
+.duel-life.side-1 .duel-life-trail,
+.duel-life.side-1 .duel-life-fill {
+  transform-origin: right center;
+}
+
+.duel-life-trail {
+  background: var(--seat-soft);
+  transition: transform var(--spring-bouncy-ms) var(--spring-smooth);
+}
+
+.duel-life-fill {
+  background: var(--seat);
+  transition: transform var(--spring-snappy-ms) var(--spring-snappy);
+}
+
+.duel-lives .watch-caption {
+  position: static;
+  grid-column: 1 / -1;
+  justify-self: center;
+  max-width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text-dim, rgba(239, 230, 214, 0.58));
+  font-size: 12px;
+  translate: 0 0;
+}
+
+.duel-verdict {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: var(--panel-bg, rgba(12, 16, 24, 0.82));
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  translate: -50% -6px;
+  scale: 0.96;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.duel-verdict.on {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+}
+
+#hud.duel-watching > :not(.duel-lives):not(.duel-tag) {
+  visibility: hidden;
+}
+
+.duel-tag {
+  --seat: #e2aa62;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(12, 16, 24, 0.66);
+  color: var(--seat);
+  font: 700 12px/1.2 var(--sans, sans-serif);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.duel-tag.side-1 {
+  --seat: #82b6e6;
+}
+
+.duel-tag.on {
+  opacity: 1;
+}
+
+.duel-tag.on.down {
+  opacity: 0.45;
+}

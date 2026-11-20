@@ -46,6 +46,7 @@ export interface IsoCamera {
   shift(byX: number, byZ: number): void;
   frame(shot: CameraShot | null): void;
   zoomBy(wheelDelta: number): void;
+  holdDistance(reach: number): void;
   addTrauma(amount: number): void;
   punch(dirX: number, dirZ: number, amount: number): void;
   groundPoint(pointer: Vector2, heightOf?: (x: number, z: number) => number, through?: PassThrough | null, isFloor?: FloorTest | null): Vector3 | null;
@@ -152,6 +153,10 @@ export function createIsoCamera(camera: PerspectiveCamera, canvas: HTMLCanvasEle
     zoomBy(wheelDelta: number): void {
       zoomRate = CAMERA.zoomRate;
       wantedDistance = zoomTarget(wantedDistance, wheelDelta);
+    },
+    holdDistance(reach: number): void {
+      wantedDistance = reach;
+      distance = reach;
     },
     addTrauma(amount: number): void {
       shaking = addTrauma(shaking, amount);

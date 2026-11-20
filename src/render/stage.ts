@@ -112,6 +112,7 @@ export interface Stage {
   setAmbience(ambience: ZoneAmbience): void;
   setHeroLight(light: ZoneHeroLight): void;
   follow(x: number, z: number, floor: number, dt: number): void;
+  pushFog(by: number): void;
   setFlash(light: SkyFlash): void;
   applyGraphics(preset: GraphicsPreset): void;
   resize(): void;
@@ -166,6 +167,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
   let keyIntensity: number = 0;
   let fogNear: number = 1;
   let fogFar: number = 2;
+  let fogPush: number = 0;
   const rimBase: Color = new Color(0x000000);
 
   const camera: PerspectiveCamera = new PerspectiveCamera(30, 1, 1, 220);
@@ -272,8 +274,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       fog.color.copy(background);
       fogNear = ambience.fogNear;
       fogFar = ambience.fogFar;
-      fog.near = fogNear;
-      fog.far = fogFar;
+      fog.near = fogNear + fogPush;
+      fog.far = fogFar + fogPush;
       sky.color.set(ambience.skyColor);
       sky.groundColor.set(ambience.groundColor);
       storm.color.set(ambience.keyColor);
@@ -308,6 +310,9 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       heroAt.set(x, z);
       heroFloor = floor;
     },
+    pushFog(by: number): void {
+      fogPush = Math.max(0, by);
+    },
     setFlash(light: SkyFlash): void {
       const amount: number = light.amount;
       const aimed: number = amount * (1 - light.sheet);
@@ -321,8 +326,8 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       swingZ = light.dirZ * STAGE.flashSwing;
       placeStorm();
       shownBackground.copy(background).lerp(flashBackground, amount);
-      fog.near = fogNear + (Math.max(fogNear, STAGE.flashFogNear) - fogNear) * amount;
-      fog.far = fogFar + (Math.max(fogFar, STAGE.flashFogFar) - fogFar) * amount;
+      fog.near = fogPush + fogNear + (Math.max(fogNear, STAGE.flashFogNear) - fogNear) * amount;
+      fog.far = fogPush + fogFar + (Math.max(fogFar, STAGE.flashFogFar) - fogFar) * amount;
       renderer.toneMappingExposure = STAGE.exposure * (1 + STAGE.flashExposure * amount - STAGE.flashDip * light.dip);
       RIM_LIGHT.value.copy(rimBase).multiplyScalar(1 + STAGE.rimFlash * amount);
     },

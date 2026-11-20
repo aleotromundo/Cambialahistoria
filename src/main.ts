@@ -43,6 +43,9 @@ import type { WatchRequest, Watching } from './watch/replay-watch.ts';
 import { fetchWatching, watchCaption, watchedWorld, watchRequest, watchTicks } from './watch/replay-watch.ts';
 import type { WatchCaption } from './watch/watch-caption.ts';
 import { createWatchCaption } from './watch/watch-caption.ts';
+import type { DuelWatch } from './watch/duel-watch.ts';
+import { createDuelWatch } from './watch/duel-watch.ts';
+import type { GroundSpot } from './watch/duel-frame.ts';
 import { attachDebug } from './debug-handle.ts';
 import type { Command, ItemInstance, PlayerState, World, WorldEvent } from '../sim/world/types.ts';
 import { voiceAudible } from './audio/settings.ts';
@@ -340,6 +343,7 @@ async function start(): Promise<void> {
   let failed: boolean = false;
   let saveHeld: boolean = false;
   let watchCaptionView: WatchCaption | null = null;
+  const duelWatch: DuelWatch | null = watching === null ? null : createDuelWatch({ watching, world, camera, lens: stage.camera, hud: element('hud', HTMLDivElement), pushFog: (by: number): void => stage.pushFog(by) });
   let moment: Moment = NO_MOMENT;
   let dirty: boolean = false;
   let urgent: boolean = false;
@@ -523,10 +527,12 @@ async function start(): Promise<void> {
       loot.sync(world);
       opening.update();
       journalCount?.update();
-      camera.update(dt, world.player.pos.x, world.player.pos.z, liftAt(world.zone, world.player.pos.x, world.player.pos.z));
+      const aim: GroundSpot = duelWatch?.aim(dt) ?? world.player.pos;
+      camera.update(dt, aim.x, aim.z, liftAt(world.zone, aim.x, aim.z));
+      duelWatch?.show();
       effects.update(worldDt, world);
       ward.update(dt, world);
-      stage.follow(world.player.pos.x, world.player.pos.z, world.zone.floorHeight + liftAt(world.zone, world.player.pos.x, world.player.pos.z), dt);
+      stage.follow(aim.x, aim.z, world.zone.floorHeight + liftAt(world.zone, aim.x, aim.z), dt);
       setCutawayCompany(cutawayCompany({ x: world.player.pos.x, z: world.player.pos.z, floor: 0 }, world.monsters, (x: number, z: number): number => world.zone.floorHeight + liftAt(world.zone, x, z)));
       overlays.update(dt, world, input.hoveredId);
       weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);
@@ -567,7 +573,8 @@ async function start(): Promise<void> {
   window.addEventListener('resize', (): void => stage.resize());
   window.addEventListener('beforeunload', saveNow);
   const elsewhere: Elsewhere = watchElsewhere(element('hud', HTMLDivElement), pagePlay(), reloadPage);
-  camera.snap(world.player.pos.x, world.player.pos.z, liftAt(world.zone, world.player.pos.x, world.player.pos.z));
+  const firstAim: GroundSpot = duelWatch?.aim(0) ?? world.player.pos;
+  camera.snap(firstAim.x, firstAim.z, liftAt(world.zone, firstAim.x, firstAim.z));
   const keeper: FrameKeeper = keepFrames({
     hud: element('hud', HTMLDivElement),
     frame,
@@ -657,7 +664,7 @@ async function start(): Promise<void> {
   whenIdle((): void => void flow.warm());
   const openLobby = (): void => void flow.open();
   if (watching !== null) {
-    watchCaptionView = createWatchCaption(element('hud', HTMLDivElement));
+    watchCaptionView = createWatchCaption(duelWatch?.captionHolder ?? element('hud', HTMLDivElement));
     entered = true;
     begin();
   }

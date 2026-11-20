@@ -6,6 +6,8 @@ import { createDuelReplayer, duelReplayerDone, duelReplayTick, readKeptReplay } 
 import type { Replayer } from '../../sim/rl/replayer.ts';
 import { createReplayer, replayerDone, replayTick } from '../../sim/rl/replayer.ts';
 import type { DuelSeat } from '../../sim/rl/duel.ts';
+import type { LifeRow, SeatLife } from './duel-lives.ts';
+import { duelLives, duelVerdict } from './duel-lives.ts';
 import type { World, WorldEvent } from '../../sim/world/types.ts';
 
 export const WATCH = {
@@ -97,10 +99,25 @@ function labelOf(label: string): string {
   return label === '' ? 'replay' : label;
 }
 
+export function duelRows(replayer: DuelReplayer): LifeRow[] {
+  return duelLives(replayer.replay.label, replayer.duel.seats.map((seat: DuelSeat): SeatLife => ({ life: seat.hero.life, maxLife: seat.hero.maxLife, outcome: seat.outcome })));
+}
+
+export function watchedSeats(watching: Watching): readonly DuelSeat[] | null {
+  const watched: Watched = watching.watched;
+  return watched.kind === 'duel' ? watched.replayer.duel.seats : null;
+}
+
+export function watchLives(watching: Watching): LifeRow[] | null {
+  const watched: Watched = watching.watched;
+  return watched.kind === 'duel' ? duelRows(watched.replayer) : null;
+}
+
 function duelCaption(replayer: DuelReplayer, done: boolean): string {
   const label: string = labelOf(replayer.replay.label);
   if (!done) return `Model duel ${label} · seed ${replayer.replay.options.seed} · ${Math.ceil(Math.max(0, DUEL.timeLimit - (replayer.duel.world.time - replayer.duel.start)))} s left`;
-  return `Model duel ${label} · ${replayer.duel.seats.map((seat: DuelSeat): string => seat.outcome).join(' · ')}`;
+  const verdict: string | null = duelVerdict(duelRows(replayer));
+  return `Model duel ${label} · ${verdict ?? replayer.duel.seats.map((seat: DuelSeat): string => seat.outcome).join(' · ')}`;
 }
 
 export function watchCaption(watching: Watching): string {
