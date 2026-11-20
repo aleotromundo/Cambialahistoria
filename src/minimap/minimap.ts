@@ -9,6 +9,9 @@ import { shapedLine } from '../hud/run-table-model.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { MapLayer } from './layer.ts';
 import { createMapLayer, LAYER, TOUCH_LOOK } from './layer.ts';
+import type { MapFit, WorldBox } from './zone-fit.ts';
+import { easeFit, fitBox, seenBox } from './zone-fit.ts';
+import { exploreGrid } from '../../sim/world/exploration.ts';
 import { drawMarks } from './marks.ts';
 import { exitUnder } from '../../sim/world/exits.ts';
 import { partShown } from '../../sim/world/hud.ts';
@@ -27,8 +30,15 @@ export const MINIMAP = {
   zoomRate: 14,
   overlayExtent: 0.86,
   overlayAlpha: 0.6,
-  touchOverlayAlpha: 0.92,
+  touchOverlayAlpha: 1,
   overlayUnit: 1.6,
+  touchOverlayUnit: 2.2,
+  touchFitTop: 0.11,
+  touchFitBottom: 0.25,
+  touchFitSide: 0.14,
+  touchFitMinScale: 3.4,
+  touchFitMaxScale: 7,
+  touchFitKeepMargin: 0.75,
   holdInterval: 0.09,
   snapRadius: 5,
   maxPixelRatio: 2,
@@ -101,6 +111,10 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   close.setAttribute('aria-label', 'Close map');
   close.innerHTML = CLOSE_ICON;
   const layer: MapLayer = createMapLayer(hooks.touch ? TOUCH_LOOK : LAYER);
+  let seenKey: string = '';
+  let seen: WorldBox | null = null;
+  let shownFit: MapFit | null = null;
+  let shownZone: string = '';
   const world: World = hooks.world;
   const overlayAlpha: number = hooks.touch ? MINIMAP.touchOverlayAlpha : MINIMAP.overlayAlpha;
   let mode: MinimapMode = 'corner';
@@ -202,7 +216,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
     context.drawImage(layer.canvas, 0, 0, layer.width, layer.height);
     context.globalAlpha = 1;
     context.setTransform(target.ratio, 0, 0, target.ratio, 0, 0);
-    drawMarks(context, matrix, world, { width: target.width, height: target.height, unit, edgeArrows });
+    drawMarks(context, matrix, world, { width: target.width, height: target.height, unit, edgeArrows, labels: !edgeArrows && hooks.touch });
   };
 
   const drawCorner = (): void => {
@@ -210,13 +224,36 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
     paint(cornerSurface, cornerMatrix, 1, true, 1);
   };
 
-  const drawOverlay = (): void => {
+  const touchFit = (width: number, height: number): MapFit | null => {
+    const key: string = `${world.zone.id}:${world.exploredRevision}`;
+    if (key !== seenKey) {
+      seenKey = key;
+      const cells: Uint8Array | undefined = world.explored[world.zone.id];
+      seen = cells === undefined ? null : seenBox(cells, exploreGrid(world.zone));
+    }
+    if (seen === null) return null;
+    return fitBox(seen, { width, height, squash: SQUASH, top: height * MINIMAP.touchFitTop, bottom: height * MINIMAP.touchFitBottom, side: width * MINIMAP.touchFitSide, minScale: MINIMAP.touchFitMinScale, maxScale: MINIMAP.touchFitMaxScale, keepMargin: MINIMAP.touchFitKeepMargin }, world.player.pos);
+  };
+
+  const glideFit = (target: MapFit | null, dt: number): MapFit | null => {
+    if (target === null || mode !== 'overlay' || shownZone !== world.zone.id) {
+      shownZone = world.zone.id;
+      shownFit = mode === 'overlay' ? target : null;
+      return target;
+    }
+    shownFit = easeFit(shownFit, target, 1 - Math.exp(-MINIMAP.zoomRate * dt));
+    return shownFit;
+  };
+
+  const drawOverlay = (dt: number): void => {
     const width: number = overlaySurface.size.width;
     const height: number = overlaySurface.size.height;
     const extent: number = Math.max(layer.width, layer.height, 1);
-    const scale: number = (Math.min(width, height) * MINIMAP.overlayExtent) / extent;
-    const matrix: MapMatrix = mapMatrix({ scale, squash: SQUASH, centreX: width / 2, centreY: height / 2, focusX: world.player.pos.x, focusZ: world.player.pos.z });
-    paint(overlaySurface, matrix, MINIMAP.overlayUnit, false, overlayAlpha);
+    const whole: number = (Math.min(width, height) * MINIMAP.overlayExtent) / extent;
+    const fitted: MapFit | null = hooks.touch ? glideFit(touchFit(width, height), dt) : null;
+    const view: MapFit = fitted ?? { scale: whole, focusX: world.player.pos.x, focusZ: world.player.pos.z, centreX: width / 2, centreY: height / 2 };
+    const matrix: MapMatrix = mapMatrix({ scale: view.scale, squash: SQUASH, centreX: view.centreX, centreY: view.centreY, focusX: view.focusX, focusZ: view.focusZ });
+    paint(overlaySurface, matrix, hooks.touch ? MINIMAP.touchOverlayUnit : MINIMAP.overlayUnit, false, overlayAlpha);
   };
 
   return {
@@ -250,7 +287,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
         }
       }
       if (mode === 'corner' || settling > 0) drawCorner();
-      if (mode === 'overlay' || settling > 0) drawOverlay();
+      if (mode === 'overlay' || settling > 0) drawOverlay(dt);
     },
   };
 }

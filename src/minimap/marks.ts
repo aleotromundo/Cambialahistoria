@@ -46,6 +46,10 @@ export const MARKS = {
   labelInset: 15,
   labelFont: '"Alegreya Sans", system-ui, sans-serif',
   labelOutline: 3,
+  placeLabelSize: 6,
+  placeLabelGap: 1.6,
+  placeLabelColour: '#efe6d6',
+  waypointLabel: 'Waypoint',
 } as const;
 
 export interface MarkOptions {
@@ -53,6 +57,7 @@ export interface MarkOptions {
   readonly height: number;
   readonly unit: number;
   readonly edgeArrows: boolean;
+  readonly labels: boolean;
 }
 
 function dot(context: CanvasRenderingContext2D, at: MapPoint, radius: number, colour: string): void {
@@ -152,8 +157,56 @@ function lootColour(world: World, ground: GroundItem): string {
   return world.content.rarities.find((candidate: RarityDef): boolean => candidate.id === rarity)?.color ?? MARKS.goldColour;
 }
 
+export type LabelSide = 'above' | 'below';
+
+export interface LabelSpot {
+  readonly x: number;
+  readonly y: number;
+  readonly side: LabelSide;
+}
+
+export interface LabelSize {
+  readonly width: number;
+  readonly height: number;
+  readonly offset: number;
+}
+
+export function labelSpot(at: MapPoint, size: LabelSize, side: LabelSide, options: MarkOptions): LabelSpot {
+  const half: number = size.width / 2;
+  const x: number = half * 2 >= options.width ? options.width / 2 : Math.min(options.width - half, Math.max(half, at.x));
+  const fitsBelow: boolean = at.y + size.offset + size.height <= options.height;
+  const fitsAbove: boolean = at.y - size.offset - size.height >= 0;
+  const chosen: LabelSide = side === 'below' ? (fitsBelow || !fitsAbove ? 'below' : 'above') : fitsAbove || !fitsBelow ? 'above' : 'below';
+  return { x, y: chosen === 'below' ? at.y + size.offset : at.y - size.offset, side: chosen };
+}
+
+function placeLabel(context: CanvasRenderingContext2D, at: MapPoint, reach: number, side: LabelSide, text: string, options: MarkOptions): void {
+  const unit: number = options.unit;
+  context.save();
+  context.font = `600 ${MARKS.placeLabelSize * unit}px ${MARKS.labelFont}`;
+  context.textAlign = 'center';
+  const size: LabelSize = { width: context.measureText(text).width + MARKS.labelOutline * 2, height: MARKS.placeLabelSize * unit, offset: reach + MARKS.placeLabelGap * unit };
+  const spot: LabelSpot = labelSpot(at, size, side, options);
+  context.textBaseline = spot.side === 'below' ? 'top' : 'bottom';
+  context.lineWidth = MARKS.labelOutline;
+  context.strokeStyle = MARKS.shadowColour;
+  context.strokeText(text, spot.x, spot.y);
+  context.fillStyle = MARKS.placeLabelColour;
+  context.fillText(text, spot.x, spot.y);
+  context.restore();
+}
+
+function pointTo(context: CanvasRenderingContext2D, at: MapPoint, options: MarkOptions, colour: string): void {
+  const pinned = edgeMark(at, options.width, options.height, MARKS.edgeMargin * options.unit);
+  arrow(context, pinned, pinned.angle, MARKS.questArrow * options.unit, colour);
+}
+
 function visible(at: MapPoint, options: MarkOptions, pad: number): boolean {
   return at.x > -pad && at.y > -pad && at.x < options.width + pad && at.y < options.height + pad;
+}
+
+export function placeShown(at: MapPoint, options: MarkOptions, radius: number): boolean {
+  return visible(at, options, options.labels ? -radius : radius);
 }
 
 export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, world: World, options: MarkOptions): void {
@@ -171,11 +224,21 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
     if (!exitShown(world, exit)) continue;
     const open: boolean = allHold(world, exit.requires);
     const at: MapPoint = toMap(matrix, exit.x, exit.z);
-    if (visible(at, options, MARKS.exit * unit)) gate(context, at, MARKS.exit * unit, open ? MARKS.exitColour : MARKS.lockedExitColour);
+    if (!placeShown(at, options, MARKS.exit * unit)) {
+      if (options.labels) pointTo(context, at, options, open ? MARKS.exitColour : MARKS.lockedExitColour);
+      continue;
+    }
+    gate(context, at, MARKS.exit * unit, open ? MARKS.exitColour : MARKS.lockedExitColour);
+    const name: string | undefined = world.content.zones.get(exit.to)?.name;
+    if (options.labels && name !== undefined) placeLabel(context, at, MARKS.exit * unit * 0.55, 'below', name, options);
   }
   const waypoint = zone.waypoint;
   if (waypoint !== null && (isExplored(world, waypoint.x, waypoint.z) || world.waypoints.includes(zone.id))) {
-    diamond(context, toMap(matrix, waypoint.x, waypoint.z), MARKS.waypoint * unit, MARKS.waypointColour);
+    const at: MapPoint = toMap(matrix, waypoint.x, waypoint.z);
+    if (placeShown(at, options, MARKS.waypoint * unit)) {
+      diamond(context, at, MARKS.waypoint * unit, MARKS.waypointColour);
+      if (options.labels) placeLabel(context, at, MARKS.waypoint * unit, 'above', MARKS.waypointLabel, options);
+    } else if (options.labels) pointTo(context, at, options, MARKS.waypointColour);
   }
   for (const moment of world.moments) drawMoment(context, matrix, world, moment);
   for (const ground of world.ground) {

@@ -25,7 +25,7 @@ body.touch .hud.ph-map-caption .minimap-level {
 }
 
 body.touch .minimap-overlay {
-  background: radial-gradient(ellipse at 50% 50%, rgba(4, 6, 10, 0.62), rgba(4, 6, 10, 0.4));
+  background: radial-gradient(ellipse at 50% 45%, rgba(5, 7, 11, 0.9), rgba(3, 4, 7, 0.84));
 }
 
 body.touch .minimap-close {
