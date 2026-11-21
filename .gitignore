@@ -4,6 +4,8 @@ dist-portal
 the-lost-storm-portal.zip
 dist-gamepix
 the-lost-storm-gamepix.zip
+dist-y8
+the-lost-storm-y8.zip
 .DS_Store
 *.blend1
 __pycache__

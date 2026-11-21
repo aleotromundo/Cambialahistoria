@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import type { Plugin, ResolvedConfig, Rollup } from 'vite';
+import { Y8_SDK } from '../src/portal-sdk-y8.ts';
 
 export const PORTAL = {
   mode: 'portal',
@@ -21,6 +22,8 @@ export interface PortalTarget {
   readonly sealed: boolean;
   readonly leftOut: readonly string[];
   readonly swaps: Readonly<Record<string, string>>;
+  readonly hostAddresses?: readonly string[];
+  readonly buildEnv?: readonly string[];
 }
 
 export const GAMEPIX: PortalTarget = {
@@ -38,7 +41,18 @@ export const GAMEPIX: PortalTarget = {
   },
 };
 
-export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX];
+export const Y8: PortalTarget = {
+  mode: 'y8',
+  outDir: 'dist-y8',
+  zip: 'the-lost-storm-y8.zip',
+  sealed: true,
+  leftOut: GAMEPIX.leftOut,
+  swaps: { ...GAMEPIX.swaps, 'src/portal-sdk.ts': 'src/portal-sdk-y8.ts' },
+  hostAddresses: [Y8_SDK.script],
+  buildEnv: [Y8_SDK.appIdEnv],
+};
+
+export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8];
 
 export const INERT_ADDRESSES: Readonly<Record<string, string>> = {
   'http://www.w3.org/2000/svg': 'the SVG namespace, a name and never fetched',
@@ -103,8 +117,58 @@ export function addressesIn(text: string): readonly string[] {
   return [...new Set<string>(text.match(ADDRESS) ?? [])];
 }
 
-export function outsideAddresses(text: string): readonly string[] {
-  return addressesIn(text).filter((address: string): boolean => !Object.hasOwn(INERT_ADDRESSES, address));
+export function outsideAddresses(text: string, hostAddresses: readonly string[] = []): readonly string[] {
+  return addressesIn(text).filter((address: string): boolean => !Object.hasOwn(INERT_ADDRESSES, address) && !hostAddresses.includes(address));
+}
+
+export function missingBuildEnv(target: PortalTarget, env: Readonly<Record<string, unknown>>): readonly string[] {
+  return (target.buildEnv ?? []).filter((key: string): boolean => {
+    const value: unknown = env[key];
+    return typeof value !== 'string' || value.trim() === '';
+  });
+}
+
+export const GLB = {
+  extension: '.glb',
+  magic: 0x46_54_6c_67,
+  jsonChunk: 0x4e_4f_53_4a,
+  chunkLengthAt: 12,
+  chunkTypeAt: 16,
+  jsonAt: 20,
+  fetched: ['buffers', 'images'],
+} as const;
+
+function glbJson(bytes: Uint8Array): unknown {
+  if (bytes.byteLength < GLB.jsonAt) return null;
+  const view: DataView = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (view.getUint32(0, true) !== GLB.magic || view.getUint32(GLB.chunkTypeAt, true) !== GLB.jsonChunk) return null;
+  const length: number = view.getUint32(GLB.chunkLengthAt, true);
+  try {
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes.subarray(GLB.jsonAt, GLB.jsonAt + length)));
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function fetchedUris(json: unknown): readonly string[] {
+  if (typeof json !== 'object' || json === null) return [];
+  return GLB.fetched.flatMap((key: string): string[] => {
+    const list: unknown = Reflect.get(json, key);
+    if (!Array.isArray(list)) return [];
+    return list.flatMap((entry: unknown): string[] => {
+      const uri: unknown = typeof entry === 'object' && entry !== null ? Reflect.get(entry, 'uri') : undefined;
+      return typeof uri === 'string' ? [uri] : [];
+    });
+  });
+}
+
+export function scannedText(path: string, bytes: Uint8Array): string {
+  if (path.endsWith(GLB.extension)) {
+    const json: unknown = glbJson(bytes);
+    if (json !== null) return fetchedUris(json).join('\n');
+  }
+  return new TextDecoder('latin1').decode(bytes);
 }
 
 function closingEnd(html: string, tag: string, from: number): number {

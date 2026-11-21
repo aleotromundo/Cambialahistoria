@@ -120,6 +120,18 @@ The same offline build for a host that forbids any address outside its own domai
 
 The pack script then reads every file in `dist-gamepix/` and fails on any `http://` or `https://` address. The only ones it lets through are listed with their reasons in `INERT_ADDRESSES`: the SVG and XHTML namespaces, and a citation in a comment inside a three.js shader. None is ever fetched.
 
+### Y8 build
+
+```bash
+VITE_Y8_APP_ID=<app id> npm run build:y8
+```
+
+The GamePix build for y8.com: the folder `dist-y8/` and the zip `the-lost-storm-y8.zip`, made by the Vite mode `y8` (`Y8` in `tools/portal.ts`). It has every GamePix difference above, and these:
+
+- It loads the Y8 SDK from `https://cdn.y8.com/minimal-sdk/2-0/y8.min.js` and initialises it with the App ID from the game's SDK Initialization tab in the Y8 Developer Portal, passed in `VITE_Y8_APP_ID`. `src/portal-sdk-y8.ts` does this in place of the quiet `src/portal-sdk.ts`. There are no ads and no Y8 sign-in. Built without the App ID, the SDK stays off and the pack script says so. A blocked or broken SDK never stops the game.
+- The world also pauses when the game loses focus, a click outside the frame included, and moves again when it gets focus back (`paused()` in `src/portal-sdk-y8.ts`), as Y8 asks.
+- The pack script lets through the SDK address and nothing else outside.
+
 The overlay state machine (which panel, screen or card may be up, in what order, and what Escape closes) is specified in TLA+ in `spec/Overlays.tla`. Check it with `spec/run-tlc.sh`; [spec/README.md](spec/README.md) says how to get TLC.
 
 ## Layout

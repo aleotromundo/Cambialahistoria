@@ -9,6 +9,8 @@ import { heroRig } from '../sim/hero.ts';
 import { noteInConsole, warnInConsole } from './backend/console-log.ts';
 import { keepFrames } from './frame-keeper.ts';
 import { HOST } from './host.ts';
+import { startPortalSdk } from './portal-sdk.ts';
+import type { PortalSdk } from './portal-sdk.ts';
 import type { WatchEffect } from './frame-watch.ts';
 import { startPerfReports } from './perf/perf-start.ts';
 import type { PerfReports } from './perf/perf-start.ts';
@@ -193,6 +195,7 @@ async function start(): Promise<void> {
   const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
   const hurtVignette: HurtVignette = createHurtVignette(vignette);
   statusLine.show('Loading…');
+  const portalSdk: Promise<PortalSdk> = startPortalSdk();
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);
   const { content, backend, account, showSync, loadingSave, minter, lobby, gameSettings, titleBar, drawTitleKeys }: GameServices = startGameServices({ title, serverUrl, watching: watchAsked !== null });
@@ -203,6 +206,7 @@ async function start(): Promise<void> {
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
 
   const save: SaveData | null = await loadingSave;
+  const portal: PortalSdk = await portalSdk;
   if (save !== null) {
     titleBar.current = save.bar;
     drawTitleKeys();
@@ -494,7 +498,7 @@ async function start(): Promise<void> {
     last = now;
     let events: WorldEvent[] = [];
     const worldDt: number = dt * momentScale(moment, now / 1000);
-    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, hidden: HOST.pauseWhenHidden && document.hidden, presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
+    const gate: FrameGate = frameGate({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, hidden: (HOST.pauseWhenHidden && document.hidden) || portal.paused(), presenting: transition.presenting, covered: lobbyFlow?.active === true, gpuQueued: stage.gpuQueued() });
     if (gate.present) {
       overlays.readHud(dt);
       objectiveMarker.readHud(dt);
@@ -571,6 +575,7 @@ async function start(): Promise<void> {
     hurtVignette.show(effects.hurt);
     if (presentNow) glitches.update(now / 1000, dt, gate.queue && !transition.blocking ? worldDt : 0);
     perf.frame(now);
+    portal.gameplay(gate.queue && lobbyFlow?.active !== true);
     tracker.frame(now, playing && !elsewhere.replaced && !transition.blocking && lobbyFlow?.active !== true && document.visibilityState === 'visible');
     if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);
@@ -639,6 +644,7 @@ async function start(): Promise<void> {
   enter.textContent = save === null ? 'Enter' : 'Continue';
   reset.hidden = true;
   title.classList.add('ready');
+  portal.ready();
   const begin = (): void => {
     dirty = true;
     title.classList.add('gone');

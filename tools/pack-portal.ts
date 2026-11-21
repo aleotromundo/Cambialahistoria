@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { INERT_ADDRESSES, PORTAL, addressesIn, checkLimits, describeReport, filesUnder, localRefs, megabytes, outsideAddresses, portalTarget } from './portal.ts';
+import { INERT_ADDRESSES, PORTAL, addressesIn, checkLimits, describeReport, filesUnder, localRefs, megabytes, missingBuildEnv, outsideAddresses, portalTarget, scannedText } from './portal.ts';
 import type { PortalFile, PortalReport, PortalTarget } from './portal.ts';
 
 function fail(message: string): never {
@@ -27,13 +27,15 @@ process.stdout.write(`portal: ${target.outDir}/ holds ${describeReport(report)}\
 if (report.problems.length > 0) fail(`over the portal limits:\n  ${report.problems.join('\n  ')}`);
 
 if (target.sealed) {
-  const texts: readonly string[] = files.map((file: PortalFile): string => readFileSync(join(OUT, file.path), 'latin1'));
-  const outside: readonly string[] = files.flatMap((file: PortalFile, index: number): string[] => outsideAddresses(texts[index] ?? '').map((address: string): string => `${file.path}: ${address}`));
+  const texts: readonly string[] = files.map((file: PortalFile): string => scannedText(file.path, readFileSync(join(OUT, file.path))));
+  const outside: readonly string[] = files.flatMap((file: PortalFile, index: number): string[] => outsideAddresses(texts[index] ?? '', target.hostAddresses).map((address: string): string => `${file.path}: ${address}`));
   if (outside.length > 0) fail(`the ${target.mode} build names outside addresses:\n  ${outside.join('\n  ')}`);
   const inert: readonly string[] = [...new Set<string>(texts.flatMap((text: string): readonly string[] => addressesIn(text)))];
-  for (const address of inert) process.stdout.write(`portal: kept ${address}: ${INERT_ADDRESSES[address] ?? ''}\n`);
+  for (const address of inert) process.stdout.write(`portal: kept ${address}: ${INERT_ADDRESSES[address] ?? `served by the ${target.mode} host`}\n`);
   process.stdout.write(`portal: no outside address in ${target.outDir}/\n`);
 }
+
+for (const key of missingBuildEnv(target, process.env)) process.stdout.write(`portal: built without ${key}; set it and build again before upload\n`);
 
 execFileSync('zip', ZIP_ARGS, { cwd: OUT, stdio: 'inherit' });
 process.stdout.write(`portal: wrote ${target.zip} (${megabytes(statSync(ZIP).size)})\n`);
