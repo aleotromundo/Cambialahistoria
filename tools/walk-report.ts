@@ -15,8 +15,8 @@ export const PROFILE = {
   hashLength: 10,
 } as const;
 
-export function profileFor(checkout: string): string {
-  return `${PROFILE.base}-${createHash('sha256').update(checkout).digest('hex').slice(0, PROFILE.hashLength)}`;
+export function profileFor(checkout: string, base: string = PROFILE.base): string {
+  return `${base}-${createHash('sha256').update(checkout).digest('hex').slice(0, PROFILE.hashLength)}`;
 }
 
 export const SLOW_WAIT = {

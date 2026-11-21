@@ -1,0 +1,40 @@
+name: Soak walk
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      laps:
+        description: Laps to walk
+        required: false
+        default: "8"
+
+concurrency:
+  group: soak
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  soak:
+    name: Soak walk at phone settings
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - name: Walk every zone, lap after lap
+        env:
+          LAPS: ${{ github.event.inputs.laps || '8' }}
+        run: node tools/soak-walk.ts --chrome "$(command -v google-chrome)" --laps "$LAPS" --out soak.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-${{ github.run_id }}
+          path: soak.json
+          if-no-files-found: ignore

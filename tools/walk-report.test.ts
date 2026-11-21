@@ -52,6 +52,7 @@ void test('each checkout walks with its own fixed Chrome profile, so two walks n
   assert.equal(profileFor('/work/the-lost-storm/'), here);
   assert.notEqual(profileFor('/work/the-lost-storm/.claude/worktrees/other/'), here);
   assert.match(here, new RegExp(`^${PROFILE.base}-[0-9a-f]{${PROFILE.hashLength}}$`));
+  assert.equal(profileFor('/work/the-lost-storm/', 'soak-walk-profile'), here.replace(PROFILE.base, 'soak-walk-profile'));
 });
 
 void test('a slowed walk waits longer for the world: the slowed factor times the CPU rate, plus every held file', (): void => {

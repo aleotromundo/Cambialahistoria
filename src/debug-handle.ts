@@ -6,7 +6,8 @@ import type { EventWatcher, FightPlan, FightRaw } from './bench/fight-bench.ts';
 import type { MeasureRecorder } from './measure-recorder.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
 import type { MemoryReport } from './mobile/memory.ts';
-import type { WalkReport } from './walk/body-walk.ts';
+import type { WalkDeps, WalkReport } from './walk/body-walk.ts';
+import type { SoakLap } from './walk/soak-walk.ts';
 import { measureMemory } from './mobile/memory.ts';
 
 export interface DebugHandle {
@@ -20,6 +21,7 @@ export interface DebugHandle {
   glitch(kind: GlitchKind): void;
   spawn(monster: string, count: number): void;
   walk(): Promise<WalkReport>;
+  soak(): Promise<SoakLap>;
   bench(plan: FightPlan): Promise<FightRaw>;
   saveMeasurements(): void;
 }
@@ -56,7 +58,8 @@ export function attachDebug(deps: DebugDeps): DebugHooks {
       if (window.storm !== undefined) window.storm = { ...window.storm, saveMeasurements: (): void => module.saveRecording(made) };
     };
     void attachRecorder();
-    window.storm = { world, scene, audio, sounds, camera, send, memory: (): MemoryReport => measureMemory(renderer, scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }), spawn: (monster: string, count: number): void => send({ type: 'spawn', monster, count }), walk: async (): Promise<WalkReport> => (await import('./walk/body-walk.ts')).walkBodies({ world, scene, send, sleep: (ms: number): Promise<void> => new Promise<void>((resolve: () => void): void => void window.setTimeout(resolve, ms)) }), bench: async (plan: FightPlan): Promise<FightRaw> => (await import('./bench/fight-bench.ts')).runFightBench({ world, scene, renderer, send, watch: (next: EventWatcher | null): void => void (watcher = next) }, plan), saveMeasurements: (): void => undefined };
+    const walkDeps: WalkDeps = { world, scene, send, sleep: (ms: number): Promise<void> => new Promise<void>((resolve: () => void): void => void window.setTimeout(resolve, ms)) };
+    window.storm = { world, scene, audio, sounds, camera, send, memory: (): MemoryReport => measureMemory(renderer, scene), glitch: (kind: GlitchKind): void => send({ type: 'glitch', kind }), spawn: (monster: string, count: number): void => send({ type: 'spawn', monster, count }), walk: async (): Promise<WalkReport> => (await import('./walk/body-walk.ts')).walkBodies(walkDeps), soak: async (): Promise<SoakLap> => (await import('./walk/soak-walk.ts')).soakLap(walkDeps), bench: async (plan: FightPlan): Promise<FightRaw> => (await import('./bench/fight-bench.ts')).runFightBench({ world, scene, renderer, send, watch: (next: EventWatcher | null): void => void (watcher = next) }, plan), saveMeasurements: (): void => undefined };
   }
   return {
     record: (events: readonly WorldEvent[]): void => {
