@@ -6,6 +6,7 @@ import { barrierPieces, sizedProp } from './barrier.ts';
 import { cliffRocks } from './cliff-rocks.ts';
 import { standsAt, surfacesMeet } from './terrain.ts';
 import { CORNER_PILLAR_RADIUS, isFloorCell, tileAtCell, wallCorners } from './layout.ts';
+import { zoneCache, type ZoneCache } from '../zone-cache.ts';
 
 export interface NavGrid {
   readonly cellSize: number;
@@ -219,7 +220,7 @@ interface GridTemplate {
   readonly grid: NavGrid;
 }
 
-const TEMPLATES: WeakMap<ZoneDef, GridTemplate> = new WeakMap<ZoneDef, GridTemplate>();
+const TEMPLATES: ZoneCache<GridTemplate> = zoneCache<GridTemplate>('nav grids');
 
 function copyGrid(grid: NavGrid): NavGrid {
   return { ...grid, walkable: grid.walkable.slice(), solid: grid.solid.slice(), ground: grid.ground.slice(), drifts: grid.drifts.map((drift: DriftCells): DriftCells => ({ ...drift })) };

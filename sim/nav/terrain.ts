@@ -3,6 +3,7 @@ import type { ReadonlyVec2 } from '../math.ts';
 import type { TerrainRough, ZoneTerrain } from '../content/terrain-types.ts';
 import { TERRAIN_MARKS } from '../content/terrain-types.ts';
 import { isFloorCell } from './layout.ts';
+import { zoneCache, type ZoneCache } from '../zone-cache.ts';
 
 export const TERRAIN = {
   meet: 0.05,
@@ -87,7 +88,7 @@ export function buildTerrain(terrain: ZoneTerrain, tiles: readonly string[], cel
   return { ok: true, map: { columns, rows, cellSize, surfaces } };
 }
 
-const MAPS: WeakMap<ZoneDef, TerrainMap | null> = new WeakMap<ZoneDef, TerrainMap | null>();
+const MAPS: ZoneCache<TerrainMap | null> = zoneCache<TerrainMap | null>('terrain maps');
 
 export function terrainMap(zone: ZoneDef): TerrainMap | null {
   const known: TerrainMap | null | undefined = MAPS.get(zone);
@@ -186,7 +187,7 @@ interface CalmTiles {
   readonly quiet: Uint8Array;
 }
 
-const CALM: WeakMap<ZoneDef, CalmTiles> = new WeakMap<ZoneDef, CalmTiles>();
+const CALM: ZoneCache<CalmTiles> = zoneCache<CalmTiles>('calm tiles');
 
 function calmTilesOf(zone: ZoneDef, calm: readonly string[]): CalmTiles {
   const known: CalmTiles | undefined = CALM.get(zone);

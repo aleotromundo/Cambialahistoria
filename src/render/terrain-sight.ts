@@ -7,6 +7,7 @@ import { CAMERA } from './iso-camera.ts';
 import { CUTAWAY, frontWeight, highWeight, ringWeight, terrainHides, throughWindow } from './prop-cutaway.ts';
 import type { FloorTest, PassThrough } from './terrain-lift.ts';
 import { climbHere, liftAt, rayToFloor, rayToSurface } from './terrain-lift.ts';
+import { zoneCache, type ZoneCache } from '../../sim/zone-cache.ts';
 
 export const TERRAIN_SIGHT = {
   march: 0.1,
@@ -59,11 +60,12 @@ function heightIn(drawn: Drawn, x: number, z: number): number | null {
   return top + (bottom - top) * tz;
 }
 
-const made: Map<ZoneDef, TerrainSight> = new Map<ZoneDef, TerrainSight>();
-
-export function keepTerrainSightOf(kept: ReadonlySet<ZoneDef>): void {
-  for (const zone of made.keys()) if (!kept.has(zone)) made.delete(zone);
+interface MadeSight {
+  readonly sight: TerrainSight;
+  readonly drawn: Drawn;
 }
+
+const made: ZoneCache<MadeSight> = zoneCache<MadeSight>('terrain sight');
 
 export function sightReady(zone: ZoneDef): boolean {
   return !drawsTerrain(zone) || made.has(zone);
@@ -71,8 +73,8 @@ export function sightReady(zone: ZoneDef): boolean {
 
 export function createTerrainSight(zone: ZoneDef): TerrainSight | null {
   if (!drawsTerrain(zone)) return null;
-  const known: TerrainSight | undefined = made.get(zone);
-  if (known !== undefined) return known;
+  const known: MadeSight | undefined = made.get(zone);
+  if (known !== undefined) return known.sight;
   const drawn: Drawn = {
     field: sampleField(zone),
     shown: shownTiles(zone, Math.ceil(zone.outside?.reach ?? TERRAIN_SIGHT.reach)),
@@ -99,7 +101,7 @@ export function createTerrainSight(zone: ZoneDef): TerrainSight | null {
       return false;
     },
   };
-  made.set(zone, sight);
+  made.set(zone, { sight, drawn });
   return sight;
 }
 

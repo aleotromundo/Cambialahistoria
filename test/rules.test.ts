@@ -197,6 +197,27 @@ void test('only the decal pass decides the floor a ground effect stands on', ():
   assert.deepEqual(found, [], 'a ground effect takes its floor from the terrain under it, set by setLevel in src/render/ground-decal.ts');
 });
 
+const ZONE_KEYED_STORE: RegExp = /^(export )?(const|let) [^=]*\b(WeakMap|Map)<[^=]*\bZoneDef\b/;
+
+void test('the zone-keyed store guard catches a module cache keyed by zone and passes locals and the shared helper', (): void => {
+  assert.ok(ZONE_KEYED_STORE.test('const MAPS: WeakMap<ZoneDef, TerrainMap | null> = new WeakMap<ZoneDef, TerrainMap | null>();'));
+  assert.ok(ZONE_KEYED_STORE.test('const built: WeakMap<Content, Map<ZoneDef, GroundBatches>> = new WeakMap<Content, Map<ZoneDef, GroundBatches>>();'));
+  assert.ok(ZONE_KEYED_STORE.test('export let seen: Map<Readonly<ZoneDef>, number> = new Map();'));
+  assert.ok(!ZONE_KEYED_STORE.test("const MAPS: ZoneCache<TerrainMap | null> = zoneCache<TerrainMap | null>('terrain maps');"));
+  assert.ok(!ZONE_KEYED_STORE.test('  const byZone: Map<ZoneDef, number> = new Map<ZoneDef, number>();'));
+});
+
+void test('a cache kept per zone goes through the zone cache, which lets zones go when the hero leaves them', (): void => {
+  const found: string[] = [];
+  for (const source of typescript) {
+    if (source.path.endsWith('.test.ts') || source.path === join('sim', 'zone-cache.ts')) continue;
+    source.lines.forEach((line: string, index: number): void => {
+      if (ZONE_KEYED_STORE.test(line)) found.push(`${source.path}:${index + 1}`);
+    });
+  }
+  assert.deepEqual(found, [], 'keep a per-zone cache with zoneCache in sim/zone-cache.ts, never a module-level Map or WeakMap keyed by ZoneDef');
+});
+
 void test('every test file sits beside the file it tests', (): void => {
   for (const { path } of typescript.filter((source: SourceFile): boolean => source.path.endsWith('.test.ts') && !source.path.startsWith('test'))) {
     assert.ok(testedSource(path, (candidate: string): boolean => existsSync(candidate) && statSync(candidate).isFile()) !== null, `${path} has no source file`);

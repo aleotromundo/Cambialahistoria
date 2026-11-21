@@ -1,5 +1,6 @@
 import type { PropClimb, PropDef, ZoneDef } from '../content/types.ts';
 import { heightAt } from './terrain.ts';
+import { zoneCache, type ZoneCache } from '../zone-cache.ts';
 
 export const CLIMB = {
   band: 0.32,
@@ -16,7 +17,7 @@ export interface PlacedClimb {
   readonly climb: PropClimb;
 }
 
-const PLACED: WeakMap<ZoneDef, readonly PlacedClimb[]> = new WeakMap<ZoneDef, readonly PlacedClimb[]>();
+const PLACED: ZoneCache<readonly PlacedClimb[]> = zoneCache<readonly PlacedClimb[]>('climbs');
 
 export function zoneClimbs(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): readonly PlacedClimb[] {
   const known: readonly PlacedClimb[] | undefined = PLACED.get(zone);

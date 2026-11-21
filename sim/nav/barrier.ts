@@ -5,6 +5,7 @@ import type { WallEdge } from './layout.ts';
 import { isFloorCell, wallEdges } from './layout.ts';
 import { outlineGap } from './outline.ts';
 import { tileHeight } from './terrain.ts';
+import { zoneCache, type ZoneCache } from '../zone-cache.ts';
 
 export const BARRIER = {
   tolerance: 0.25,
@@ -337,12 +338,11 @@ function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: 
   return placed;
 }
 
-const placedCache: WeakMap<ZoneDef, WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>> = new WeakMap<ZoneDef, WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>>();
-
+const placedCache: ZoneCache<WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>> = zoneCache<WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>>('barriers');
 
 export function barrierPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): readonly BarrierPiece[] {
   const byProps: WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]> = placedCache.get(zone) ?? new WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>();
-  placedCache.set(zone, byProps);
+  if (!placedCache.has(zone)) placedCache.set(zone, byProps);
   const known: readonly BarrierPiece[] | undefined = byProps.get(props);
   if (known !== undefined) return known;
   const made: readonly BarrierPiece[] = placeBarrier(zone, props);

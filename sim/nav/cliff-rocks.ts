@@ -2,6 +2,7 @@ import type { PropDef, ZoneDef } from '../content/types.ts';
 import type { CliffRule, TerrainCliff } from '../content/terrain-types.ts';
 import { zoneColumns, zoneRows } from './layout.ts';
 import { floorAt, heightAt, rampAt, terrainHash, terrainNoise } from './terrain.ts';
+import { zoneCache, type ZoneCache } from '../zone-cache.ts';
 
 export const CLIFF_ROCKS = {
   reach: 1.6,
@@ -98,7 +99,7 @@ function rocksOf(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, rule: Terra
   });
 }
 
-const placedRocks: WeakMap<ZoneDef, readonly CliffRock[]> = new WeakMap<ZoneDef, readonly CliffRock[]>();
+const placedRocks: ZoneCache<readonly CliffRock[]> = zoneCache<readonly CliffRock[]>('cliff rocks');
 
 export function cliffRocks(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): readonly CliffRock[] {
   const known: readonly CliffRock[] | undefined = placedRocks.get(zone);

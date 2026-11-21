@@ -7,6 +7,12 @@ import type { FloorGrid, GroundBatches, SpillGrid } from './ground.ts';
 import { coverLines, floorGrid, GROUND, groundBatches, growAt, occlusionAt, spillGrid } from './ground.ts';
 import { isFloorCell, tileAtCell, zoneColumns, zoneRows } from '../../sim/nav/layout.ts';
 import { loadContent } from '../../sim/content/content.ts';
+import { heldBytes, keepZones } from '../../sim/zone-cache.ts';
+
+const PHONE_BUDGET = {
+  megabyte: 1024 * 1024,
+  zoneGroundBytes: 96 * 1024 * 1024,
+} as const;
 
 const DRIFT: ZoneDrift = { id: 'drift', column: 1, row: 1, columns: 1, rows: 1, period: 10, open: 0.5, offset: 0, fade: 1 };
 const STRIP: ZoneDef = { ...SCENE_BASE, tiles: ['   ', '.,.', '   '], walls: null };
@@ -69,13 +75,17 @@ void test('a spill grid names the same surface as the tile map, inside the zone 
   }
 });
 
-void test('a zone ground is shaped once and reused when the zone is entered again', (): void => {
+void test('a zone ground is shaped once, reused when the zone is entered again, and fits the memory a phone gives one zone', (): void => {
   const content = loadContent();
   for (const zone of content.zones.values()) {
     const first: GroundBatches = groundBatches(content, zone);
     assert.equal(groundBatches(content, zone), first);
     assert.ok(first.solid.size + first.overlay.size > 0, zone.id);
+    keepZones(null, new Set<ZoneDef>([zone]));
+    const bytes: number = heldBytes([content]).get('ground') ?? 0;
+    assert.ok(bytes <= PHONE_BUDGET.zoneGroundBytes, `${zone.id} holds ${(bytes / PHONE_BUDGET.megabyte).toFixed(1)} MB of ground, over the ${PHONE_BUDGET.zoneGroundBytes / PHONE_BUDGET.megabyte} MB a phone gives one zone`);
   }
+  keepZones(null, new Set<ZoneDef>());
 });
 
 void test('a zone ground shaped for one load of the content is never handed to another', (): void => {

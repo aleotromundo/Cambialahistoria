@@ -12,6 +12,7 @@ import { wetGround } from './wet-ground.ts';
 import { fringeShare, spreadsOnto } from './ground-spill.ts';
 import type { SurfaceUse } from './surfaces.ts';
 import type { GroundLayer } from './ground-terrain.ts';
+import { zoneCache, type ZoneCache } from '../../sim/zone-cache.ts';
 
 export const GROUND = {
   divisions: 8,
@@ -336,22 +337,19 @@ export interface GroundBatches {
   readonly drifting: ReadonlyMap<ZoneDrift, ReadonlyMap<string, ShapedBatch>>;
 }
 
-const builtBatches: WeakMap<Content, Map<ZoneDef, GroundBatches>> = new WeakMap<Content, Map<ZoneDef, GroundBatches>>();
-
-export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
-  const forContent: Map<ZoneDef, GroundBatches> = builtBatches.get(content) ?? new Map<ZoneDef, GroundBatches>();
-  builtBatches.set(content, forContent);
-  const found: GroundBatches | undefined = forContent.get(zone);
-  if (found !== undefined) return found;
-  const made: GroundBatches = shapeGround(content, zone);
-  forContent.set(zone, made);
-  return made;
+interface BuiltGround {
+  readonly content: Content;
+  readonly batches: GroundBatches;
 }
 
-export function keepGroundOf(content: Content, kept: ReadonlySet<ZoneDef>): void {
-  const forContent: Map<ZoneDef, GroundBatches> | undefined = builtBatches.get(content);
-  if (forContent === undefined) return;
-  for (const zone of forContent.keys()) if (!kept.has(zone)) forContent.delete(zone);
+const builtBatches: ZoneCache<BuiltGround> = zoneCache<BuiltGround>('ground', { keepsStanding: false });
+
+export function groundBatches(content: Content, zone: ZoneDef): GroundBatches {
+  const found: BuiltGround | undefined = builtBatches.get(zone);
+  if (found !== undefined && found.content === content) return found.batches;
+  const batches: GroundBatches = shapeGround(content, zone);
+  builtBatches.set(zone, { content, batches });
+  return batches;
 }
 
 function shapeGround(content: Content, zone: ZoneDef): GroundBatches {

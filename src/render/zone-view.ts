@@ -11,8 +11,8 @@ import { allHold } from '../../sim/world/conditions.ts';
 import type { ShoreState, World } from '../../sim/world/types.ts';
 import { forgetModel, loadModel } from './character-loader.ts';
 import type { TerrainSight } from './terrain-sight.ts';
-import { createTerrainSight, keepTerrainSightOf } from './terrain-sight.ts';
-import { buildGround, keepGroundOf } from './ground.ts';
+import { createTerrainSight } from './terrain-sight.ts';
+import { buildGround } from './ground.ts';
 import type { MistWallView } from './mist-wall.ts';
 import { buildMistWall } from './mist-wall.ts';
 import { buildVoidView } from './void-view.ts';
@@ -156,11 +156,6 @@ export function releaseOtherZones(content: Content, kept: ZoneDef): void {
     if (zone.id === kept.id) continue;
     for (const model of zoneModels(content, zone)) if (!keep.has(model)) forgetModel(model);
   }
-}
-
-export function keepZoneCaches(content: Content, standing: ZoneDef, kept: ReadonlySet<ZoneDef>): void {
-  keepGroundOf(content, kept);
-  keepTerrainSightOf(new Set<ZoneDef>([standing, ...kept]));
 }
 
 function lightSource(light: PropLight, x: number, y: number, z: number, yaw: number, conditional: Conditional | null): Source {
