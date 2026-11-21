@@ -1,10 +1,12 @@
 import type { WebGLInfo, WebGLRenderer } from 'three';
-import type { PerfEnd, PerfFactsBody, PerfWindowBody } from '../backend/api.ts';
+import type { PerfEnd, PerfFactsBody, PerfWindowBody, PlayerEventBody } from '../backend/api.ts';
 import { createBrowserPerfClient, pagePlay } from '../backend/browser.ts';
 import type { PerfClient, PerfOutcome } from '../backend/perf-api.ts';
 import type { GraphicsSettings } from '../settings/settings.ts';
 import type { QualityName } from '../mobile/quality.ts';
 import type { World } from '../../sim/world/types.ts';
+import { startCrashWatch } from './crash-start.ts';
+import type { CrashWatch } from './crash-start.ts';
 import { buildId, readDeviceFacts } from './device-facts.ts';
 import { createFrameSampler } from './frame-sampler.ts';
 import type { FrameSampler, PerfEvent } from './frame-sampler.ts';
@@ -20,6 +22,7 @@ export interface PerfDeps {
   tier(): QualityName;
   graphics(): GraphicsSettings;
   inPlay(): boolean;
+  report(events: readonly PlayerEventBody[]): void;
 }
 
 export interface PerfReports {
@@ -43,6 +46,7 @@ function liveMonsters(world: World): number {
 export function startPerfReports(deps: PerfDeps): PerfReports {
   const client: PerfClient | null = createBrowserPerfClient(deps.serverUrl);
   if (client === null) return SILENT;
+  const crashes: CrashWatch = startCrashWatch({ serverUrl: deps.serverUrl, build: deps.build, renderer: deps.renderer, world: deps.world, tier: (): string => deps.tier(), report: (events: readonly PlayerEventBody[]): void => deps.report(events) });
   const info: WebGLInfo = deps.renderer.info;
   const canvas: HTMLCanvasElement = deps.renderer.domElement;
   let box: PerfOutbox = emptyOutbox(performance.now());
@@ -81,6 +85,7 @@ export function startPerfReports(deps: PerfDeps): PerfReports {
   return {
     frame(now: number): void {
       sampler.frame(now, deps.inPlay() && document.visibilityState === 'visible', deps.world.zone.id, liveMonsters(deps.world));
+      crashes.frame(now);
       if (box.queue.length > 0) pump(false);
     },
     beforeRender(now: number): void {

@@ -99,7 +99,7 @@ import { createHeroPick } from './lobby/hero-pick.ts';
 import type { HeroPick } from './lobby/hero-pick.ts';
 import type { Minimap } from './minimap/minimap.ts';
 import { createMinimap } from './minimap/minimap.ts';
-import type { Leaderboard } from './backend/api.ts';
+import type { Leaderboard, PlayerEventBody } from './backend/api.ts';
 import type { NameVoiceClient, SpokenName } from './backend/name-voice.ts';
 import { createBrowserNameVoice } from './opening/browser-voice.ts';
 import type { Opening } from './opening/opening.ts';
@@ -347,7 +347,7 @@ async function start(): Promise<void> {
   const glitches: GlitchView = startGameGlitches({ world, stage, glitchSettings, actors, send });
   const journalCountClient: JournalCountClient | null = createBrowserJournalCountClient(serverUrl);
   const journalCount: JournalCount | null = journalCountClient === null ? null : createJournalCount({ world, hud: element('hud', HTMLDivElement), client: journalCountClient, lines: loadCountLines(), store: createBrowserStore(), onScreen: (): boolean => playing && !pauseMenu.isOpen });
-  const perf: PerfReports = startPerfReports({ serverUrl, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true });
+  const perf: PerfReports = startPerfReports({ serverUrl, build: import.meta.env.VITE_BUILD_ID, renderer: stage.renderer, world, touch: mobile.touch, tier: (): QualityName => mobile.quality.tier.name, graphics: (): GraphicsSettings => gameSettings.get().graphics, inPlay: (): boolean => playing && !elsewhere.replaced && !transition.blocking && !touch.lost && lobbyFlow?.active !== true, report: (events: readonly PlayerEventBody[]): void => tracker.report(events) });
   const debug: DebugHooks = attachDebug({ world, scene: stage.scene, renderer: stage.renderer, audio, sounds, camera, send });
 
   let playing: boolean = false;

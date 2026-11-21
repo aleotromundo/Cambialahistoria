@@ -150,7 +150,7 @@ export const EVENTS_PROTOCOL = {
   textChars: 64,
 } as const;
 
-export const PLAYER_EVENT_KINDS = ['entered', 'pulse', 'panel', 'zone', 'level', 'died', 'boss', 'quest', 'skill', 'flask', 'waypoint', 'run', 'allocate', 'refund', 'respec', 'slot', 'equip', 'trade', 'travel'] as const;
+export const PLAYER_EVENT_KINDS = ['entered', 'pulse', 'panel', 'zone', 'level', 'died', 'boss', 'quest', 'skill', 'flask', 'waypoint', 'run', 'allocate', 'refund', 'respec', 'slot', 'equip', 'trade', 'travel', 'crashed', 'error'] as const;
 
 export type PlayerEventKind = (typeof PLAYER_EVENT_KINDS)[number];
 

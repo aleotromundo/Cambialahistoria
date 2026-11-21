@@ -23,11 +23,12 @@ export interface Tracker {
   command(command: Command): void;
   overlays(visible: readonly OverlayId[]): void;
   frame(now: number, inPlay: boolean): void;
+  report(events: readonly PlayerEventBody[]): void;
 }
 
 function nothing(): void {}
 
-const SILENT: Tracker = { entered: nothing, world: nothing, command: nothing, overlays: nothing, frame: nothing };
+const SILENT: Tracker = { entered: nothing, world: nothing, command: nothing, overlays: nothing, frame: nothing, report: nothing };
 
 export function startTracking(deps: TrackDeps): Tracker {
   const client: EventsClient | null = createBrowserEventsClient(deps.serverUrl);
@@ -81,6 +82,10 @@ export function startTracking(deps: TrackDeps): Tracker {
         add([pulseEvent(deps.world, Date.now(), now - lastCommand)]);
       }
       if (box.queue.length > 0) pump(false);
+    },
+    report(events: readonly PlayerEventBody[]): void {
+      add(events);
+      pump(true);
     },
   };
 }
