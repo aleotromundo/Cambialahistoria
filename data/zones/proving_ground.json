@@ -1,0 +1,260 @@
+{
+  "id": "proving_ground",
+  "name": "The Proving Ground",
+  "kind": "wild",
+  "level": 1,
+  "cellSize": 4,
+  "floorHeight": 0,
+  "tiles": [
+    "         ",
+    "  rrrrr  ",
+    " rrsssrr ",
+    " rsssssr ",
+    "rrsssssrr",
+    " rsssssr ",
+    " rrsssrr ",
+    "  rrrrr  ",
+    "         "
+  ],
+  "floors": {
+    "s": "black_ledge",
+    "r": "black_rock",
+    "p": "ruined_road"
+  },
+  "outside": {
+    "surface": "crag_ground",
+    "reach": 6,
+    "barrier": {
+      "nearSides": [
+        "south",
+        "east"
+      ],
+      "exitClear": 3,
+      "rows": [
+        {
+          "far": {
+            "props": [
+              "crag_a_wide",
+              "crag_b_wide",
+              "crag_spire_wide"
+            ],
+            "out": -0.9,
+            "step": 2.6,
+            "turn": 70
+          },
+          "near": {
+            "props": [
+              "edge_low_a_wide",
+              "edge_low_b_wide"
+            ],
+            "out": -0.6,
+            "step": 1.1,
+            "turn": 90
+          },
+          "collide": true,
+          "shadow": true
+        },
+        {
+          "far": {
+            "props": [
+              "ridge_a_wide",
+              "ridge_b_wide"
+            ],
+            "out": 4,
+            "step": 5,
+            "turn": 120
+          },
+          "near": {
+            "props": [
+              "crag_low_wide"
+            ],
+            "out": 2.2,
+            "step": 2.6,
+            "turn": 90
+          },
+          "collide": false,
+          "shadow": false
+        },
+        {
+          "far": {
+            "props": [
+              "ridge_far_wide"
+            ],
+            "out": 10,
+            "step": 9,
+            "turn": 180
+          },
+          "near": {
+            "props": [
+              "crag_a_wide",
+              "crag_b_wide"
+            ],
+            "out": 3.6,
+            "step": 4,
+            "turn": 120
+          },
+          "collide": false,
+          "shadow": false
+        }
+      ]
+    }
+  },
+  "walls": null,
+  "scatter": [
+    {
+      "type": "open",
+      "props": [
+        "hideout_puddle_a",
+        "hideout_puddle_b"
+      ],
+      "count": 8,
+      "clump": 3,
+      "spread": 2.6,
+      "size": {
+        "least": 0.8,
+        "most": 1.2
+      },
+      "clear": 1.8
+    }
+  ],
+  "playerStart": {
+    "x": 10,
+    "z": 18
+  },
+  "props": [
+    {
+      "prop": "crag_a_wide",
+      "x": -2,
+      "z": 6,
+      "y": -0.05,
+      "rotationDegrees": 30
+    },
+    {
+      "prop": "crag_spire_wide",
+      "x": 10,
+      "z": -2,
+      "y": -0.05,
+      "rotationDegrees": 120
+    },
+    {
+      "prop": "crag_low_wide",
+      "x": 24,
+      "z": -2,
+      "y": -0.05,
+      "rotationDegrees": 40
+    },
+    {
+      "prop": "crag_spire_wide",
+      "x": 38,
+      "z": 8,
+      "y": -0.05,
+      "rotationDegrees": 10
+    },
+    {
+      "prop": "crag_b_wide",
+      "x": 38,
+      "z": 26,
+      "y": -0.05,
+      "rotationDegrees": 300
+    },
+    {
+      "prop": "crag_a_wide",
+      "x": 24,
+      "z": 38,
+      "y": -0.05,
+      "rotationDegrees": 160
+    },
+    {
+      "prop": "crag_spire_wide",
+      "x": 8,
+      "z": 38,
+      "y": -0.05,
+      "rotationDegrees": 220
+    },
+    {
+      "prop": "crag_b_wide",
+      "x": -3,
+      "z": 30,
+      "y": -0.05,
+      "rotationDegrees": 200
+    },
+    {
+      "prop": "crag_low_wide",
+      "x": 17,
+      "z": 11,
+      "y": -0.05,
+      "rotationDegrees": 65
+    },
+    {
+      "prop": "hideout_rock_mass_b",
+      "x": 31,
+      "z": 27,
+      "y": 0,
+      "rotationDegrees": 324
+    },
+    {
+      "prop": "hideout_rock_mass_a",
+      "x": 12,
+      "z": 31,
+      "y": 0,
+      "rotationDegrees": 140
+    }
+  ],
+  "packs": [],
+  "surge": null,
+  "exits": [
+    {
+      "id": "hideout",
+      "x": 1.6,
+      "z": 18,
+      "radius": 2.2,
+      "to": "hideout",
+      "toExit": "proving",
+      "arrival": {
+        "x": 10,
+        "z": 18
+      },
+      "requires": [],
+      "marker": "way_up"
+    }
+  ],
+  "checkpoints": [],
+  "waypoint": null,
+  "markerSurfaces": {
+    "stone": "hall_stone"
+  },
+  "portalSpot": null,
+  "deathReturn": null,
+  "duel": {
+    "rival": {
+      "x": 19,
+      "z": 18
+    },
+    "home": {
+      "zone": "hideout",
+      "exit": "proving"
+    }
+  },
+  "npcs": [],
+  "ambience": {
+    "background": "#0a0e16",
+    "abyss": "#05070b",
+    "fogNear": 26,
+    "fogFar": 92,
+    "skyColor": "#5a6f94",
+    "groundColor": "#344057",
+    "skyIntensity": 6.8,
+    "keyColor": "#b9cbe8",
+    "keyIntensity": 4.8
+  },
+  "weather": {
+    "lightning": {
+      "first": 3,
+      "min": 7,
+      "max": 14
+    },
+    "rain": 0,
+    "wet": 0.35,
+    "mistWall": null
+  }
+}

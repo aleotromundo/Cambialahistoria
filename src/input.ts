@@ -15,7 +15,7 @@ import { chestNear, chestSpot } from '../sim/world/moment-chest.ts';
 import type { Station } from '../sim/world/trade.ts';
 import { cacheNear } from '../sim/world/caches.ts';
 import type { Cache } from '../sim/world/caches.ts';
-import type { Command, GroundItem, MomentState, MonsterState, NpcState, World } from '../sim/world/types.ts';
+import type { Command, GroundItem, MomentState, MonsterState, NpcState, PlayerState, World } from '../sim/world/types.ts';
 import { waypointAt } from '../sim/world/waypoints.ts';
 import { portalNear } from '../sim/world/portal.ts';
 import type { PortalEnd } from '../sim/world/portal-types.ts';
@@ -293,6 +293,9 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
     for (const monster of world.monsters) {
       if (monster.alive) candidates.push(candidateFor('monster', monster.id, monster.pos.x, monster.pos.z, hit));
     }
+    for (const hero of world.heroes) {
+      if (hero.alive && hero.party !== world.player.party) candidates.push(candidateFor('monster', hero.id, hero.pos.x, hero.pos.z, hit));
+    }
     for (const npc of world.npcs) candidates.push(candidateFor('npc', npc.id, npc.pos.x, npc.pos.z, hit));
     return pickActor(candidates, point, null);
   };
@@ -398,7 +401,7 @@ export function createInput(canvas: InputSurface, windowEvents: KeySource, world
       const raised: boolean = terrainMap(world.zone) !== null && sightReady(world.zone);
       const groundHit: Vector3 | null = camera.groundPoint(pointer, raised ? clickHeight(world.zone) : undefined, clickThrough(pointer), raised ? clickFloor(world.zone) : null);
       const picked: PickCandidate | null = pickActors(groundHit);
-      const target: MonsterState | null = picked?.kind === 'monster' ? (world.monsters.find((monster: MonsterState): boolean => monster.id === picked.id) ?? null) : null;
+      const target: MonsterState | PlayerState | null = picked?.kind === 'monster' ? (world.monsters.find((monster: MonsterState): boolean => monster.id === picked.id) ?? world.heroes.find((hero: PlayerState): boolean => hero.id === picked.id) ?? null) : null;
       const person: NpcState | null = picked?.kind === 'npc' ? (world.npcs.find((npc: NpcState): boolean => npc.id === picked.id) ?? null) : null;
       hoveredId = target?.id ?? person?.id ?? null;
       const other: string | null = target === null && person === null ? playerAt() : null;

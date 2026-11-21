@@ -43,6 +43,11 @@ import type { WatchRequest, Watching } from './watch/replay-watch.ts';
 import { fetchWatching, watchCaption, watchedWorld, watchRequest, watchTicks } from './watch/replay-watch.ts';
 import type { WatchCaption } from './watch/watch-caption.ts';
 import { createWatchCaption } from './watch/watch-caption.ts';
+import type { RivalPlay } from './rival/rival-play.ts';
+import { createRivalPlay } from './rival/rival-play.ts';
+import { fetchRivalPilot } from './rival/rival-model.ts';
+import { openRivalLives } from './rival/rival-lives-view.ts';
+import type { DuelLivesView } from './watch/duel-lives-view.ts';
 import type { DuelWatch } from './watch/duel-watch.ts';
 import { createDuelWatch } from './watch/duel-watch.ts';
 import type { GroundSpot } from './watch/duel-frame.ts';
@@ -172,6 +177,7 @@ const GAME = {
   saveEvery: 2,
   idleWaitMs: 1500,
   titleArrivalMs: 1000,
+  rivalSeeds: 2147483647,
 } as const;
 
 const titleLines: { current: StatusLine | null } = { current: null };
@@ -345,6 +351,7 @@ async function start(): Promise<void> {
   let saveHeld: boolean = false;
   let watchCaptionView: WatchCaption | null = null;
   const duelWatch: DuelWatch | null = watching === null ? null : createDuelWatch({ watching, world, camera, lens: stage.camera, hud: element('hud', HTMLDivElement), pushFog: (by: number): void => stage.pushFog(by) });
+  const rivalPlay: RivalPlay | null = watching === null ? createRivalPlay({ world, camera, lens: stage.camera, openLives: (): DuelLivesView => openRivalLives(element('hud', HTMLDivElement)), pushFog: (by: number): void => stage.pushFog(by), loadPilot: fetchRivalPilot, seed: (): number => Math.floor(Math.random() * GAME.rivalSeeds), warn: warnInConsole }) : null;
   let moment: Moment = NO_MOMENT;
   let dirty: boolean = false;
   let urgent: boolean = false;
@@ -420,7 +427,8 @@ async function start(): Promise<void> {
     particles.clear();
     markers.dispose();
     zoneView.dispose();
-    const bodies: Promise<void> = loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, world.player.equipped, world.player.hero), loadGate).catch((error: unknown): void => {
+    rivalPlay?.enter();
+    const bodies: Promise<void> = Promise.all(world.heroes.map((hero: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, hero.equipped, hero.hero), loadGate))).then((): void => undefined).catch((error: unknown): void => {
       warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
     });
     const bodiesIn: Promise<void> = waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
@@ -505,7 +513,9 @@ async function start(): Promise<void> {
         let remaining: number = worldDt;
         while (remaining > 1e-5 && !events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
           const step: number = Math.min(MAX_STEP, remaining);
-          events = events.concat(stepWorld(world, queue.splice(0, queue.length), step));
+          const stepped: WorldEvent[] = stepWorld(world, [...queue.splice(0, queue.length), ...(rivalPlay?.commands(step) ?? [])], step);
+          rivalPlay?.heard(stepped);
+          events = events.concat(stepped);
           remaining -= step;
         }
       }
@@ -528,9 +538,10 @@ async function start(): Promise<void> {
       loot.sync(world);
       opening.update();
       journalCount?.update();
-      const aim: GroundSpot = duelWatch?.aim(dt) ?? world.player.pos;
+      const aim: GroundSpot = duelWatch?.aim(dt) ?? rivalPlay?.aim(dt) ?? world.player.pos;
       camera.update(dt, aim.x, aim.z, standLift(world.zone, world.content.props, aim.x, aim.z));
       duelWatch?.show();
+      rivalPlay?.show(!transition.blocking);
       effects.update(worldDt, world);
       ward.update(dt, world);
       stage.follow(aim.x, aim.z, world.zone.floorHeight + standLift(world.zone, world.content.props, aim.x, aim.z), dt);

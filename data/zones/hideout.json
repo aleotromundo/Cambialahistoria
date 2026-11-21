@@ -85,7 +85,8 @@
   "packs": [],
   "surge": null,
   "exits": [
-    {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 11, "z": 20}, "requires": []}
+    {"id": "west", "x": 1.6, "z": 20, "radius": 2.2, "to": "hall_of_time", "toExit": "east", "arrival": {"x": 11, "z": 20}, "requires": []},
+    {"id": "proving", "x": 46.4, "z": 20, "radius": 2.2, "to": "proving_ground", "toExit": "hideout", "arrival": {"x": 41.5, "z": 17.5}, "requires": [], "marker": "way_duel"}
   ],
   "checkpoints": [],
   "waypoint": {"x": 24, "z": 14.5, "radius": 1.8},

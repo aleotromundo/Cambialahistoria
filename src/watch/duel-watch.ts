@@ -3,9 +3,9 @@ import { Vector2 } from 'three';
 import type { DuelSeat } from '../../sim/rl/duel.ts';
 import type { PlayerState, World } from '../../sim/world/types.ts';
 import type { IsoCamera } from '../render/iso-camera.ts';
-import { CAMERA, liftAt } from '../render/iso-camera.ts';
-import type { DuelFraming, DuelShot, FrameView, GroundHeight, GroundSpot } from './duel-frame.ts';
-import { createDuelFraming, DUEL_FRAME, stepDuelFraming } from './duel-frame.ts';
+import { liftAt } from '../render/iso-camera.ts';
+import type { DuelFraming, DuelShot, GroundHeight, GroundSpot } from './duel-frame.ts';
+import { createDuelFraming, DUEL_FRAME, lensView, stepDuelFraming } from './duel-frame.ts';
 import type { LifeRow } from './duel-lives.ts';
 import { duelVerdict } from './duel-lives.ts';
 import type { DuelLivesView, TagSpot } from './duel-lives-view.ts';
@@ -21,10 +21,6 @@ export interface DuelWatch {
   readonly captionHolder: HTMLElement;
   aim(dt: number): GroundSpot;
   show(): void;
-}
-
-function viewOf(lens: PerspectiveCamera, topCover: number): FrameView {
-  return { aspect: lens.aspect, fovDegrees: lens.fov, yawDegrees: CAMERA.yawDegrees, pitchDegrees: CAMERA.pitchDegrees, lookHeight: CAMERA.lookHeight, topCover };
 }
 
 export interface DuelWatchDeps {
@@ -50,7 +46,7 @@ export function createDuelWatch(deps: DuelWatchDeps): DuelWatch | null {
   return {
     captionHolder: lives.panel,
     aim: (dt: number): GroundSpot => {
-      const shot: DuelShot = stepDuelFraming(framing, first.hero.pos, second.hero.pos, viewOf(lens, lives.cover()), ground, dt);
+      const shot: DuelShot = stepDuelFraming(framing, first.hero.pos, second.hero.pos, lensView(lens, lives.cover()), ground, dt);
       camera.holdDistance(shot.distance);
       pushFog(shot.distance - DUEL_FRAME.nearest);
       return { x: shot.x, z: shot.z };

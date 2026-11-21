@@ -60,7 +60,7 @@ function levelGatedZones(): ReadonlySet<string> {
 void test('the bot plays the whole act from a fresh save: every quest, in the time and at the level it is tuned for', (): void => {
   const townQuests: string[] = [...content.quests.values()].filter((quest: QuestDef): boolean => !waitsOnFlag(quest.when) && !quest.objectives.some((objective): boolean => waitsOnFlag(objective.when) || waitsOnLevel(objective.when))).map((quest: QuestDef): string => quest.id).toSorted();
   const gated: ReadonlySet<string> = levelGatedZones();
-  const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void' && !gated.has(zone.id)).map((zone): string => zone.id).toSorted();
+  const needed: string[] = [...content.zones.values()].filter((zone): boolean => zone.kind !== 'void' && zone.duel === null && !gated.has(zone.id)).map((zone): string => zone.id).toSorted();
   for (const seed of ACT.seeds) {
     const world: World = createWorld(content, { seed, save: null });
     const report: BotReport = botPlay(createBot(world));

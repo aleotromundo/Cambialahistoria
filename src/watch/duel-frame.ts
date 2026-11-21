@@ -1,3 +1,5 @@
+import { CAMERA } from '../render/iso-camera.ts';
+
 export const DUEL_FRAME = {
   nearest: 28,
   farthest: 84,
@@ -27,6 +29,15 @@ export interface FrameView {
   readonly pitchDegrees: number;
   readonly lookHeight: number;
   readonly topCover: number;
+}
+
+export interface FrameLens {
+  readonly aspect: number;
+  readonly fov: number;
+}
+
+export function lensView(lens: FrameLens, topCover: number): FrameView {
+  return { aspect: lens.aspect, fovDegrees: lens.fov, yawDegrees: CAMERA.yawDegrees, pitchDegrees: CAMERA.pitchDegrees, lookHeight: CAMERA.lookHeight, topCover };
 }
 
 export interface DuelShot {

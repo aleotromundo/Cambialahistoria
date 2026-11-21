@@ -1,0 +1,16 @@
+.duel-lives.beside-hud {
+  width: min(460px, calc(100% - 340px));
+}
+
+@media (max-width: 600px) {
+  body.touch .duel-lives.beside-hud {
+    left: 16px;
+    top: calc(176px + env(safe-area-inset-top, 0px));
+    width: calc(100% - 116px);
+    translate: 0 -10px;
+  }
+
+  body.touch .duel-lives.beside-hud.on {
+    translate: 0 0;
+  }
+}

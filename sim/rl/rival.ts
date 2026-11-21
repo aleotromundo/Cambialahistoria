@@ -32,7 +32,7 @@ export interface RivalDuel {
   readonly rivalId: number;
   readonly build: Build;
   readonly level: number;
-  readonly start: number;
+  start: number;
   readonly recall: Recall;
   outcome: RivalOutcome;
   endedAt: number | null;
@@ -55,6 +55,11 @@ export function startRivalDuel(world: World, seed: number): RivalDuel | null {
   world.nextId += 1;
   world.heroes.push(rival);
   return { rivalId: rival.id, build, level, start: world.time + RIVAL.startIn, recall: createRecall(), outcome: 'fighting', endedAt: null, clock: RIVAL.decisionTime, left: false };
+}
+
+export function beginRivalDuel(duel: RivalDuel, world: World): void {
+  duel.start = world.time + RIVAL.startIn;
+  duel.clock = RIVAL.decisionTime;
 }
 
 export function rivalOf(duel: RivalDuel, world: World): PlayerState | null {

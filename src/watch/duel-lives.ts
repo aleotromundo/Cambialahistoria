@@ -14,6 +14,11 @@ export interface SeatLife {
 
 export type LifeStanding = 'fighting' | 'won' | 'down' | 'time';
 
+export interface SeatNames {
+  readonly names: readonly string[];
+  readonly tags: readonly string[];
+}
+
 export interface LifeRow {
   readonly name: string;
   readonly tag: string;
@@ -47,12 +52,12 @@ function nameOf(side: number, names: readonly string[]): string {
   return names[side] ?? `Model ${side + 1}`;
 }
 
-export function duelLives(label: string, seats: readonly SeatLife[]): LifeRow[] {
+export function duelLives(label: string, seats: readonly SeatLife[], named: SeatNames = DUEL_LIVES): LifeRow[] {
   const first: number = firstSeatOf(label, seats.length);
   return seats.map((seat: SeatLife, index: number): LifeRow => {
     const side: number = sideOf(index, first);
     const standing: LifeStanding = STANDING_OF[seat.outcome];
-    return { name: nameOf(side, DUEL_LIVES.names), tag: nameOf(side, DUEL_LIVES.tags), side, fraction: fractionOf(seat), standing, result: RESULT_OF[standing] };
+    return { name: nameOf(side, named.names), tag: nameOf(side, named.tags), side, fraction: fractionOf(seat), standing, result: RESULT_OF[standing] };
   });
 }
 

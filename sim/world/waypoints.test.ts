@@ -147,7 +147,7 @@ void test('every town and wild zone on the main path has a waypoint the hero can
   assert.ok(path.some((zone: ZoneDef): boolean => zone.id === 'under_hall'));
   for (const zone of path) {
     const mark = zoneMark(shipped, zone);
-    if (mark === 'void' || mark === 'boss') continue;
+    if (mark === 'void' || mark === 'boss' || zone.duel !== null) continue;
     const point: ZoneWaypoint = must(zone.waypoint, `${zone.id} has no waypoint`);
     const grid: NavGrid = buildNavGrid(zone, shipped.props, shipped.surfaces, shipped.player.radius);
     const arrivals: Vec2[] = [zone.playerStart, ...zone.exits.map((exit: ZoneExit): Vec2 => exit.arrival)];

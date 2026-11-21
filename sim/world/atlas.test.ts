@@ -72,7 +72,7 @@ void test('a zone is marked by its kind, and a zone with a boss pack is a boss z
 });
 
 void test('a zone belongs to the act that places it', (): void => {
-  for (const zone of [...content.zones.values()].filter((def): boolean => def.kind !== 'void').map((def): string => def.id)) assert.ok(must(actOf(content, zone), 'act').atlas.places.some((place: MapPlace): boolean => place.zone === zone), zone);
+  for (const zone of [...content.zones.values()].filter((def): boolean => def.kind !== 'void' && def.duel === null).map((def): string => def.id)) assert.ok(must(actOf(content, zone), 'act').atlas.places.some((place: MapPlace): boolean => place.zone === zone), zone);
   const first: ActDef = { ...act, atlas };
   const without = (zone: string): ActDef => ({ ...first, atlas: { ...atlas, places: atlas.places.filter((place: MapPlace): boolean => place.zone !== zone) } });
   const second: ActDef = { ...first, id: 'act_2', atlas: { ...atlas, places: atlas.places.filter((place: MapPlace): boolean => place.zone === 'vale') } };

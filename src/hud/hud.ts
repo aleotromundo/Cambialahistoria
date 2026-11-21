@@ -345,7 +345,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
       if (isLive('character')) characterPanel.update(dt);
       if (world.player.alive !== alive) {
         alive = world.player.alive;
-        overlays.send({ type: alive ? 'respawn' : 'death' });
+        if (alive || world.zone.duel === null) overlays.send({ type: alive ? 'respawn' : 'death' });
       }
       trade.update();
       if (mapWanted && onWaypoint(world)) {

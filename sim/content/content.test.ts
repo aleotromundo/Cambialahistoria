@@ -169,9 +169,9 @@ void test('every exit out of a place leads to an exit that leads back, and every
   assert.deepEqual([...reached].toSorted(), [...content.zones.keys()].toSorted());
 });
 
-void test('towns and voids are safe and wild zones have something to fight', (): void => {
+void test('towns, voids and duel grounds are safe and wild zones have something to fight', (): void => {
   for (const zone of content.zones.values()) {
-    if (zone.kind === 'town' || zone.kind === 'void') {
+    if (zone.kind === 'town' || zone.kind === 'void' || zone.duel !== null) {
       assert.equal(zone.packs.length, 0, `${zone.id} packs`);
       assert.equal(zone.surge, null, `${zone.id} surge`);
     } else {
@@ -283,9 +283,9 @@ void test('every talk objective has someone to talk to and a conversation of its
   }
 });
 
-void test('every zone, the void included, has one place in one act of the world map and no two share one', (): void => {
+void test('every zone but a duel ground, the void included, has one place in one act of the world map and no two share one', (): void => {
   const placed: string[] = content.world.acts.flatMap((act): string[] => act.atlas.places.map((place): string => place.zone));
-  const mapped: string[] = [...content.zones.values()].map((zone: ZoneDef): string => zone.id);
+  const mapped: string[] = [...content.zones.values()].filter((zone: ZoneDef): boolean => zone.duel === null).map((zone: ZoneDef): string => zone.id);
   assert.deepEqual(placed.toSorted(), mapped.toSorted());
   for (const act of content.world.acts) {
     const spots: string[] = act.atlas.places.map((place): string => `${place.x},${place.y}`);

@@ -9,7 +9,10 @@ export function leaveDuel(world: World): void {
   const home: ZoneDef | undefined = world.content.zones.get(duel.home.zone);
   if (home === undefined) return;
   const from: string = world.zone.id;
-  if (!world.player.alive) revive(world);
+  if (!world.player.alive) {
+    revive(world);
+    world.events.push({ type: 'player_respawn' });
+  }
   enterZone(world, home, { type: 'exit', exit: duel.home.exit }, true);
   world.events.push({ type: 'zone_changed', from, to: home.id });
 }

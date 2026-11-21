@@ -127,6 +127,23 @@
       "levels": { "dormant": 0, "awake": 0.8, "aimed": 1.1, "used": 1.8 }
     },
     {
+      "id": "way_duel",
+      "model": "models/world/way_up.glb",
+      "surfaces": { "stone": "ashlar", "monument": "ashlar" },
+      "solid": [],
+      "color": "#ff7a6a",
+      "glow": ["glyph"],
+      "focal": null,
+      "seal": { "node": "seal", "sink": 3.6 },
+      "veil": { "node": "veil", "shape": "arch", "flow": "rise", "edge": "#d0443a", "core": "#ffc0b0" },
+      "light": { "intensity": 1.4, "distance": 4.5, "height": 1.0 },
+      "shadow": 0,
+      "pick": { "radius": 1.9, "height": 4.2 },
+      "label": 4.6,
+      "facing": "arrival",
+      "levels": { "dormant": 0, "awake": 0.8, "aimed": 1.1, "used": 1.8 }
+    },
+    {
       "id": "checkpoint",
       "model": "models/world/checkpoint_stone.glb",
       "surfaces": { "stone": "ashlar", "monument": "ashlar" },

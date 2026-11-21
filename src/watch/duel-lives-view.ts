@@ -4,6 +4,7 @@ import type { LifeRow, LifeStanding } from './duel-lives.ts';
 export const DUEL_LIVES_VIEW = {
   shownClass: 'on',
   hudClass: 'duel-watching',
+  besideHudClass: 'beside-hud',
   verdictRoom: 52,
   measureEvery: 30,
   standings: ['won', 'down', 'time'],
@@ -21,6 +22,11 @@ export interface DuelLivesView {
   show(rows: readonly LifeRow[], verdict: string | null): void;
   place(spots: readonly TagSpot[]): void;
   cover(): number;
+  close(): void;
+}
+
+export interface DuelLivesOptions {
+  readonly hideHud: boolean;
 }
 
 interface SeatView {
@@ -42,10 +48,12 @@ function part<K extends keyof HTMLElementTagNameMap>(tag: K, className: string):
   return made;
 }
 
-function showLater(element: HTMLElement): void {
-  window.requestAnimationFrame((): void => {
+function showLater(element: HTMLElement, pending: Set<number>): void {
+  const frame: number = window.requestAnimationFrame((): void => {
+    pending.delete(frame);
     element.classList.add(DUEL_LIVES_VIEW.shownClass);
   });
+  pending.add(frame);
 }
 
 function seatView(side: number, panel: HTMLDivElement, parent: HTMLElement): SeatView {
@@ -69,7 +77,7 @@ function scaled(fraction: number): string {
   return `scaleX(${fraction.toFixed(4)})`;
 }
 
-function showSeat(seat: SeatView, row: LifeRow): void {
+function showSeat(seat: SeatView, row: LifeRow, pending: Set<number>): void {
   if (row.name !== seat.named) {
     seat.named = row.name;
     seat.name.textContent = row.name;
@@ -89,22 +97,24 @@ function showSeat(seat: SeatView, row: LifeRow): void {
     return;
   }
   seat.result.textContent = row.result;
-  showLater(seat.result);
+  showLater(seat.result, pending);
 }
 
-export function createDuelLivesView(parent: HTMLElement): DuelLivesView {
+export function createDuelLivesView(parent: HTMLElement, options: DuelLivesOptions = { hideHud: true }): DuelLivesView {
   const style: HTMLStyleElement = document.createElement('style');
   style.textContent = livesCss;
   document.head.append(style);
   const panel: HTMLDivElement = part('div', 'duel-lives');
   parent.append(panel);
-  parent.classList.add(DUEL_LIVES_VIEW.hudClass);
+  if (options.hideHud) parent.classList.add(DUEL_LIVES_VIEW.hudClass);
+  else panel.classList.add(DUEL_LIVES_VIEW.besideHudClass);
   const seats: SeatView[] = [];
   for (let side: number = 0; side < DUEL_LIVES_VIEW.sides; side += 1) seats.push(seatView(side, panel, parent));
   const verdictLine: HTMLDivElement = part('div', 'duel-verdict');
   verdictLine.setAttribute('role', 'status');
   panel.append(verdictLine);
   let verdictShown: string | null = null;
+  const pending: Set<number> = new Set<number>();
   let opened: boolean = false;
   let covered: number = 0;
   let sinceMeasure: number = DUEL_LIVES_VIEW.measureEvery;
@@ -122,11 +132,11 @@ export function createDuelLivesView(parent: HTMLElement): DuelLivesView {
     show: (rows: readonly LifeRow[], verdict: string | null): void => {
       for (const row of rows) {
         const seat: SeatView | undefined = seats[row.side];
-        if (seat !== undefined) showSeat(seat, row);
+        if (seat !== undefined) showSeat(seat, row, pending);
       }
       if (!opened) {
         opened = true;
-        showLater(panel);
+        showLater(panel, pending);
       }
       if (verdict === verdictShown) return;
       verdictShown = verdict;
@@ -135,7 +145,19 @@ export function createDuelLivesView(parent: HTMLElement): DuelLivesView {
         return;
       }
       verdictLine.textContent = verdict;
-      showLater(verdictLine);
+      showLater(verdictLine, pending);
+    },
+    close: (): void => {
+      for (const frame of pending) window.cancelAnimationFrame(frame);
+      pending.clear();
+      opened = false;
+      verdictShown = null;
+      panel.classList.remove(DUEL_LIVES_VIEW.shownClass);
+      verdictLine.classList.remove(DUEL_LIVES_VIEW.shownClass);
+      for (const seat of seats) {
+        seat.tagShown = false;
+        seat.tag.classList.remove(DUEL_LIVES_VIEW.shownClass);
+      }
     },
     place: (spots: readonly TagSpot[]): void => {
       spots.forEach((spot: TagSpot, side: number): void => {
