@@ -92,6 +92,7 @@ export interface AudioSystem {
   stopAmbience(fadeOut: number): void;
   update(dt: number): void;
   setMuffled(on: boolean): void;
+  setHeld(on: boolean): void;
   onTrigger(listener: (trigger: Trigger) => void): void;
 }
 
@@ -194,6 +195,11 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
   });
   let graph: Graph | null = null;
   let muffled: boolean = false;
+  let pageHeld: boolean = false;
+  const syncRunning = (context: AudioContext): void => {
+    const action: Promise<void> = document.hidden || pageHeld ? context.suspend() : context.resume();
+    action.catch((): void => undefined);
+  };
   let voicesPlaying: number = 0;
   let echoes: number = 0;
   const zoneLoops: AmbienceTracker<AmbienceLoop> = createAmbienceTracker<AmbienceLoop>();
@@ -554,7 +560,7 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
     unlock(): void {
       if (base === null) return;
       if (graph !== null) {
-        if (graph.context.state === 'suspended' && !document.hidden) graph.context.resume().catch((): void => undefined);
+        if (graph.context.state === 'suspended' && !document.hidden && !pageHeld) graph.context.resume().catch((): void => undefined);
         return;
       }
       try {
@@ -572,11 +578,8 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         master.connect(context.destination);
         graph = { context, master, effects, voice, ambience, muffle };
         applySettings(controls.get());
-        context.resume().catch((): void => undefined);
-        document.addEventListener('visibilitychange', (): void => {
-          const action: Promise<void> = document.hidden ? context.suspend() : context.resume();
-          action.catch((): void => undefined);
-        });
+        syncRunning(context);
+        document.addEventListener('visibilitychange', (): void => syncRunning(context));
         loader.ensure();
       } catch {
         graph = null;
@@ -657,6 +660,11 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
       muffled = on;
       if (graph === null) return;
       graph.muffle.frequency.setTargetAtTime(on ? SYSTEM.muffleClosedHz : SYSTEM.muffleOpenHz, graph.context.currentTime, SYSTEM.muffleSmoothing);
+    },
+    setHeld(on: boolean): void {
+      if (on === pageHeld) return;
+      pageHeld = on;
+      if (graph !== null) syncRunning(graph.context);
     },
     update(dt: number): void {
       ensureManifest();

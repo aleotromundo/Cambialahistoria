@@ -17,6 +17,7 @@
     "build": "tsc -p tsconfig.json && vite build",
     "build:portal": "tsc -p tsconfig.json && vite build --mode portal && node tools/pack-portal.ts",
     "build:gamepix": "tsc -p tsconfig.json && vite build --mode gamepix && node tools/pack-portal.ts gamepix",
+    "build:yandex": "tsc -p tsconfig.json && vite build --mode yandex && node tools/pack-portal.ts yandex",
     "build:y8": "tsc -p tsconfig.json && vite build --mode y8 && node tools/pack-portal.ts y8",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",

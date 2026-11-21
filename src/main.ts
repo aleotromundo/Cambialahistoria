@@ -566,6 +566,7 @@ async function start(): Promise<void> {
       minimap.update(dt);
     }
     audio.setMuffled(insideAwakeMoment(world));
+    audio.setHeld(portal.paused());
     audio.update(dt);
     particles.update(worldDt);
     hud.update(dt, transition.blocking ? 'veiled' : 'shown');
@@ -577,7 +578,7 @@ async function start(): Promise<void> {
     perf.frame(now);
     portal.gameplay(gate.queue && lobbyFlow?.active !== true);
     tracker.frame(now, playing && !elsewhere.replaced && !transition.blocking && lobbyFlow?.active !== true && document.visibilityState === 'visible');
-    if (lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
+    if (!portal.paused() && lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);
       stage.render();
       perf.afterRender();

@@ -52,7 +52,16 @@ export const Y8: PortalTarget = {
   buildEnv: [Y8_SDK.appIdEnv],
 };
 
-export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8];
+export const YANDEX: PortalTarget = {
+  mode: 'yandex',
+  outDir: 'dist-yandex',
+  zip: 'the-lost-storm-yandex.zip',
+  sealed: true,
+  leftOut: GAMEPIX.leftOut,
+  swaps: { ...GAMEPIX.swaps, 'src/portal-sdk.ts': 'src/portal-sdk-yandex.ts' },
+};
+
+export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX];
 
 export const INERT_ADDRESSES: Readonly<Record<string, string>> = {
   'http://www.w3.org/2000/svg': 'the SVG namespace, a name and never fetched',
