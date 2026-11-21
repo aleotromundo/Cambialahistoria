@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { INERT_ADDRESSES, PORTAL, addressesIn, checkLimits, describeReport, filesUnder, localRefs, megabytes, missingBuildEnv, outsideAddresses, portalTarget, scannedText } from './portal.ts';
+import { INERT_ADDRESSES, PORTAL, addressesIn, checkLimits, describeReport, filesUnder, localRefs, megabytes, missingBuildEnv, outsideAddresses, portalTarget, scannedText, targetLimits } from './portal.ts';
 import type { PortalFile, PortalReport, PortalTarget } from './portal.ts';
 
 function fail(message: string): never {
@@ -22,7 +22,7 @@ const missing: readonly string[] = localRefs(page).filter((path: string): boolea
 if (missing.length > 0) fail(`${PORTAL.page.to} points at files the build did not ship: ${missing.join(', ')}`);
 
 const files: readonly PortalFile[] = filesUnder(OUT);
-const report: PortalReport = checkLimits(files, PORTAL.limits);
+const report: PortalReport = checkLimits(files, targetLimits(target));
 process.stdout.write(`portal: ${target.outDir}/ holds ${describeReport(report)}\n`);
 if (report.problems.length > 0) fail(`over the portal limits:\n  ${report.problems.join('\n  ')}`);
 

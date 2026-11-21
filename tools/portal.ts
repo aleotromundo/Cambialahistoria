@@ -25,6 +25,9 @@ export interface PortalTarget {
   readonly swaps: Readonly<Record<string, string>>;
   readonly hostAddresses?: readonly string[];
   readonly buildEnv?: readonly string[];
+  readonly keptIn?: readonly string[];
+  readonly headScripts?: readonly string[];
+  readonly limits?: PortalLimits;
 }
 
 export const GAMEPIX: PortalTarget = {
@@ -72,7 +75,26 @@ export const GAMEDISTRIBUTION: PortalTarget = {
   hostAddresses: [GD_SDK.sdkUrl],
 };
 
-export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX, GAMEDISTRIBUTION];
+const CRAZYGAMES_SCRIPT: string = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
+
+export const CRAZYGAMES: PortalTarget = {
+  mode: 'crazygames',
+  outDir: 'dist-crazygames',
+  zip: 'the-lost-storm-crazygames.zip',
+  sealed: true,
+  leftOut: ['landing/', 'textures/'],
+  keptIn: ['textures/half/'],
+  swaps: {
+    ...GAMEPIX.swaps,
+    'src/render/texture-set.ts': 'src/render/texture-set-half.ts',
+    'src/portal-sdk.ts': 'src/portal-sdk-crazygames.ts',
+  },
+  headScripts: [CRAZYGAMES_SCRIPT],
+  hostAddresses: [CRAZYGAMES_SCRIPT],
+  limits: { files: 1500, totalBytes: 50 * 1000 * 1000, fileBytes: 50 * 1000 * 1000 },
+};
+
+export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX, GAMEDISTRIBUTION, CRAZYGAMES];
 
 export const INERT_ADDRESSES: Readonly<Record<string, string>> = {
   'http://www.w3.org/2000/svg': 'the SVG namespace, a name and never fetched',
@@ -112,6 +134,7 @@ const ADDRESS: RegExp = /https?:\/\/[^\s"'`<>()\\]+/g;
 const OUTSIDE_OPEN: RegExp = /<([a-z]+)\b[^>]*\sdata-outside\b[^>]*>/;
 const OUTSIDE_META: RegExp = /\s*<meta\b[^>]*\scontent="https?:\/\/[^"]*"[^>]*>/g;
 const OUTSIDE_LINK: RegExp = /\s*<link\b[^>]*\shref="https?:\/\/[^"]*"[^>]*>/g;
+const HEAD_END: RegExp = /<\/head>/;
 const BODY_CLASS: RegExp = /<body\b([^>]*?)\sclass="([^"]*)"/;
 export const STILL_CLASS: string = 'still';
 
@@ -191,6 +214,17 @@ export function scannedText(path: string, bytes: Uint8Array): string {
   return new TextDecoder('latin1').decode(bytes);
 }
 
+export function targetLimits(target: PortalTarget): PortalLimits {
+  return target.limits ?? PORTAL.limits;
+}
+
+export function withHeadScripts(html: string, scripts: readonly string[]): string {
+  if (scripts.length === 0) return html;
+  if (!HEAD_END.test(html)) throw new Error('the portal page has no </head> to load its scripts in');
+  const tags: string = scripts.map((src: string): string => `<script src="${src}"></script>`).join('');
+  return html.replace(HEAD_END, `${tags}</head>`);
+}
+
 function closingEnd(html: string, tag: string, from: number): number {
   const edge: RegExp = new RegExp(`<(/?)${tag}\\b[^>]*>`, 'g');
   edge.lastIndex = from;
@@ -221,9 +255,10 @@ export function sealPage(html: string): string {
   return sealed;
 }
 
-export function shipsInPortal(path: string, leftOut: readonly string[] = []): boolean {
+export function shipsInPortal(path: string, leftOut: readonly string[] = [], keptIn: readonly string[] = []): boolean {
   if (PORTAL.privateFolders.some((folder: string): boolean => path.startsWith(folder))) return false;
-  if (leftOut.some((folder: string): boolean => path.startsWith(folder))) return false;
+  const kept: boolean = keptIn.some((folder: string): boolean => path.startsWith(folder));
+  if (!kept && leftOut.some((folder: string): boolean => path.startsWith(folder))) return false;
   if (PORTAL.siteOnlyPage.test(path)) return false;
   return !PORTAL.siteOnly.some((file: string): boolean => path === file);
 }
@@ -306,7 +341,7 @@ export function portalPage(publicDir: string, site: string, target: PortalTarget
       refuseWithheld(config.env);
     },
     transformIndexHtml(html: string): string {
-      return target.sealed ? sealPage(html) : siteAnchors(html, site);
+      return withHeadScripts(target.sealed ? sealPage(html) : siteAnchors(html, site), target.headScripts ?? []);
     },
     generateBundle(_options: Rollup.NormalizedOutputOptions, bundle: Rollup.OutputBundle): void {
       const page: Rollup.OutputAsset | Rollup.OutputChunk | undefined = bundle[PORTAL.page.from];
@@ -315,7 +350,7 @@ export function portalPage(publicDir: string, site: string, target: PortalTarget
       Reflect.deleteProperty(bundle, PORTAL.page.from);
       this.emitFile({ type: 'asset', fileName: PORTAL.page.to, source: liftPage(source) });
       for (const file of filesUnder(publicDir)) {
-        if (shipsInPortal(file.path, target.leftOut)) this.emitFile({ type: 'asset', fileName: file.path, source: readFileSync(join(publicDir, file.path)) });
+        if (shipsInPortal(file.path, target.leftOut, target.keptIn ?? [])) this.emitFile({ type: 'asset', fileName: file.path, source: readFileSync(join(publicDir, file.path)) });
       }
     },
   };

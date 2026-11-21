@@ -30,7 +30,7 @@
     { "kind": "importers", "paths": ["src/input.ts"], "alsoRun": ["src/input.test.ts"] },
     { "kind": "importers", "paths": ["src/three-kit/**"], "alsoRun": ["src/three-kit/**/*.test.ts"] },
     { "kind": "only", "paths": ["index.html", "play/**"], "run": ["src/launch/data.test.ts", "tools/site/head.test.ts"] },
-    { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts", "sim/content/bodies.test.ts", "sim/content/bodies.clips.test.ts"] },
+    { "kind": "only", "paths": ["public/**"], "run": ["sim/content/content.test.ts", "sim/content/bodies.test.ts", "sim/content/bodies.clips.test.ts", "tools/portal.crazygames.test.ts"] },
     { "kind": "only", "paths": ["public/*.html", "public/landing/**"], "run": ["tools/site/head.test.ts"] },
     { "kind": "only", "paths": ["index.html", "play/index.html", "public/*.webmanifest", "public/*.png", "public/*.svg", "public/*.ico", "public/landing/**"], "run": ["tools/site/head.manifest.test.ts"] },
     { "kind": "only", "paths": ["guide/**"], "run": ["tools/guide/site.test.ts", "tools/site/head.test.ts"] },

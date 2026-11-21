@@ -146,6 +146,18 @@ The GamePix build with the GameDistribution HTML5 SDK added: the folder `dist-ga
 - A preroll plays when Enter or Continue is pressed on the title, before the lobby opens. A midroll plays when the player picks a way back on the death screen, before the respawn, and when the player changes zone. Midrolls keep at least `GD_SDK.breakGapMs` after any ad.
 - No ad ever holds the game: a break waits at most `GD_SDK.readyWaitMs` for `SDK_READY` and at most `GD_SDK.adLongestMs` for the ad, and a blocked or failing SDK is skipped.
 
+### CrazyGames build
+
+```bash
+npm run build:crazygames
+```
+
+The GamePix build made for CrazyGames: the folder `dist-crazygames/` and the zip `the-lost-storm-crazygames.zip`, from the Vite mode `crazygames` (`CRAZYGAMES` in `tools/portal.ts`). It has every GamePix difference above, and these:
+
+- It fits CrazyGames' 50 MB limit for the initial download. Only the half-size textures in `public/textures/half/` ship, and every surface loads from them (`src/render/texture-set-half.ts` stands in for `texture-set.ts`). The pack script fails if the folder is over 50 MB or 1,500 files.
+- The page head loads the CrazyGames HTML5 SDK v3 from `https://sdk.crazygames.com/crazygames-sdk-v3.js`, the one outside address the pack script lets through for this build. `src/portal-sdk-crazygames.ts` stands in for the quiet `src/portal-sdk.ts`: it waits for `init()`, talks to the SDK only where its environment is `crazygames` or `local`, and leaves the game running if the script is blocked or throws. It reports `loadingStart` at boot, `loadingStop` once the title is ready, `gameplayStart` when the player is in play, and `gameplayStop` on the title, the lobby, the pause menu and a change of zone; a hidden page is left to CrazyGames.
+- Like every portal build it plays without sound, so the SDK's `muteAudio` setting has nothing to mute.
+
 The overlay state machine (which panel, screen or card may be up, in what order, and what Escape closes) is specified in TLA+ in `spec/Overlays.tla`. Check it with `spec/run-tlc.sh`; [spec/README.md](spec/README.md) says how to get TLC.
 
 ## Layout

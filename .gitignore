@@ -10,6 +10,8 @@ dist-y8
 the-lost-storm-y8.zip
 dist-gamedistribution
 the-lost-storm-gamedistribution.zip
+dist-crazygames
+the-lost-storm-crazygames.zip
 .DS_Store
 *.blend1
 __pycache__

@@ -20,6 +20,7 @@
     "build:yandex": "tsc -p tsconfig.json && vite build --mode yandex && node tools/pack-portal.ts yandex",
     "build:y8": "tsc -p tsconfig.json && vite build --mode y8 && node tools/pack-portal.ts y8",
     "build:gamedistribution": "tsc -p tsconfig.json && vite build --mode gamedistribution && node tools/pack-portal.ts gamedistribution",
+    "build:crazygames": "tsc -p tsconfig.json && vite build --mode crazygames && node tools/pack-portal.ts crazygames",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint --type-aware --deny-warnings",

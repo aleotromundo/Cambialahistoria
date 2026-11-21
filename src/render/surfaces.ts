@@ -6,6 +6,7 @@ import { shrinkTexture } from '../mobile/textures.ts';
 import type { BitmapTextures } from './bitmap-texture.ts';
 import { browserBitmaps, browserImageLoad, createBitmapTextures } from './bitmap-texture.ts';
 import { assetUrl } from './asset-url.ts';
+import { TEXTURE_SET } from './texture-set.ts';
 import { PROP_SURFACE, withPropLook } from './prop-surface.ts';
 import { glowingGround } from './surface-glow.ts';
 
@@ -59,7 +60,7 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   const done: Promise<void> = new Promise<void>((resolve: () => void): void => {
     started.push(
       bitmaps.load(
-        assetUrl(texturePath(path, renderBudget().halfTextures)),
+        assetUrl(texturePath(path, TEXTURE_SET.halfOnly || renderBudget().halfTextures)),
         (loaded: Texture): void => {
           shrinkTexture(loaded, renderBudget().maxTextureSize);
           resolve();
