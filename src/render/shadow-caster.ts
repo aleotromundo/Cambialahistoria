@@ -1,11 +1,17 @@
 import type { BufferGeometry, InterleavedBufferAttribute, Matrix4 } from 'three';
 import { BufferAttribute, BufferGeometry as Geometry, DoubleSide, Matrix4 as Transform, MeshDepthMaterial, ShaderMaterial, SkinnedMesh, Sphere, Vector3 } from 'three';
+import { MeshoptSimplifier } from 'meshoptimizer/simplifier';
 
 export const SHADOW_CASTER = {
   mark: 'shadowCaster',
   jointsPerVertex: 4,
   drawNothing: -1,
   idleKept: 6,
+  keepShare: 0.15,
+  keepError: 0.02,
+  simplifyFrom: 64,
+  verticesPerTriangle: 3,
+  boundsPadding: 1.5,
   offScreen: 'void main() {\n  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);\n}',
   noColour: 'void main() {\n  gl_FragColor = vec4(0.0);\n}',
 } as const;
@@ -53,6 +59,71 @@ function drawnIndices(geometry: BufferGeometry, vertices: number, ranges: readon
   return drawn;
 }
 
+export interface CasterArrays {
+  readonly positions: Float32Array;
+  readonly joints: Uint16Array;
+  readonly weights: Float32Array;
+  readonly indices: Uint32Array;
+}
+
+const simplifier: { ready: boolean } = { ready: false };
+
+export async function casterSimplifierReady(): Promise<boolean> {
+  if (!MeshoptSimplifier.supported) return false;
+  try {
+    await MeshoptSimplifier.ready;
+  } catch {
+    return false;
+  }
+  simplifier.ready = true;
+  return true;
+}
+
+function vertexKey(arrays: CasterArrays, vertex: number): string {
+  const width: number = SHADOW_CASTER.jointsPerVertex;
+  const parts: number[] = [];
+  for (let axis: number = 0; axis < 3; axis += 1) parts.push(arrays.positions[vertex * 3 + axis] ?? 0);
+  for (let joint: number = 0; joint < width; joint += 1) parts.push(arrays.joints[vertex * width + joint] ?? 0, arrays.weights[vertex * width + joint] ?? 0);
+  return parts.join(',');
+}
+
+export function weldCaster(arrays: CasterArrays): CasterArrays {
+  const width: number = SHADOW_CASTER.jointsPerVertex;
+  const count: number = arrays.positions.length / 3;
+  const first: Map<string, number> = new Map<string, number>();
+  const remap: Uint32Array = new Uint32Array(count);
+  const kept: number[] = [];
+  for (let vertex: number = 0; vertex < count; vertex += 1) {
+    const key: string = vertexKey(arrays, vertex);
+    const found: number | undefined = first.get(key);
+    if (found !== undefined) {
+      remap[vertex] = found;
+      continue;
+    }
+    first.set(key, kept.length);
+    remap[vertex] = kept.length;
+    kept.push(vertex);
+  }
+  const positions: Float32Array = new Float32Array(kept.length * 3);
+  const joints: Uint16Array = new Uint16Array(kept.length * width);
+  const weights: Float32Array = new Float32Array(kept.length * width);
+  kept.forEach((vertex: number, at: number): void => {
+    positions.set(arrays.positions.subarray(vertex * 3, vertex * 3 + 3), at * 3);
+    joints.set(arrays.joints.subarray(vertex * width, vertex * width + width), at * width);
+    weights.set(arrays.weights.subarray(vertex * width, vertex * width + width), at * width);
+  });
+  const indices: Uint32Array = arrays.indices.map((vertex: number): number => remap[vertex] ?? 0);
+  return { positions, joints, weights, indices };
+}
+
+export function simplifiedIndex(indices: Uint32Array, positions: Float32Array): Uint32Array {
+  const triangles: number = indices.length / SHADOW_CASTER.verticesPerTriangle;
+  if (!simplifier.ready || triangles < SHADOW_CASTER.simplifyFrom) return indices;
+  const target: number = Math.max(1, Math.floor(triangles * SHADOW_CASTER.keepShare)) * SHADOW_CASTER.verticesPerTriangle;
+  const [kept]: [Uint32Array, number] = MeshoptSimplifier.simplify(indices, positions, 3, target, SHADOW_CASTER.keepError);
+  return kept.length === 0 ? indices : kept;
+}
+
 export function casterGeometry(pieces: readonly CasterPiece[], anchorBind: Matrix4): BufferGeometry {
   const usable: { readonly piece: CasterPiece; readonly parts: Skinned }[] = pieces.flatMap((piece: CasterPiece): { readonly piece: CasterPiece; readonly parts: Skinned }[] => {
     const parts: Skinned | null = skinned(piece.geometry);
@@ -83,11 +154,13 @@ export function casterGeometry(pieces: readonly CasterPiece[], anchorBind: Matri
     for (const drawn of drawnIndices(piece.geometry, parts.position.count, piece.ranges)) indices.push(offset + drawn);
     offset += parts.position.count;
   }
+  const welded: CasterArrays = weldCaster({ positions, joints, weights, indices: new Uint32Array(indices) });
   const merged: Geometry = new Geometry();
-  merged.setAttribute('position', new BufferAttribute(positions, 3));
-  merged.setAttribute('skinIndex', new BufferAttribute(joints, SHADOW_CASTER.jointsPerVertex));
-  merged.setAttribute('skinWeight', new BufferAttribute(weights, SHADOW_CASTER.jointsPerVertex));
-  merged.setIndex(new BufferAttribute(new Uint32Array(indices), 1));
+  merged.setAttribute('position', new BufferAttribute(welded.positions, 3));
+  merged.setAttribute('skinIndex', new BufferAttribute(welded.joints, SHADOW_CASTER.jointsPerVertex));
+  merged.setAttribute('skinWeight', new BufferAttribute(welded.weights, SHADOW_CASTER.jointsPerVertex));
+  merged.setIndex(new BufferAttribute(simplifiedIndex(welded.indices, welded.positions), 1));
+  merged.computeBoundingSphere();
   return merged;
 }
 
@@ -124,7 +197,6 @@ export function createShadowCaster(anchor: SkinnedMesh): SkinnedMesh {
   caster.castShadow = true;
   caster.customDepthMaterial = casterDepth();
   caster.receiveShadow = false;
-  caster.frustumCulled = false;
   caster.raycast = (): void => undefined;
   caster.onBeforeShadow = (): void => drawWhole(caster.geometry);
   caster.onBeforeRender = (): void => drawNothing(caster.geometry);
@@ -132,9 +204,19 @@ export function createShadowCaster(anchor: SkinnedMesh): SkinnedMesh {
   caster.quaternion.copy(anchor.quaternion);
   caster.scale.copy(anchor.scale);
   caster.bind(anchor.skeleton, anchor.bindMatrix);
+  caster.frustumCulled = false;
   const bounds: unknown = anchor.boundingSphere;
   if (bounds instanceof Sphere) caster.boundingSphere = bounds.clone();
   return caster;
+}
+
+export function fitCaster(caster: SkinnedMesh, geometry: BufferGeometry): void {
+  caster.geometry = geometry;
+  const bounds: Sphere | null = geometry.boundingSphere;
+  caster.frustumCulled = bounds !== null && bounds.radius > 0;
+  if (bounds === null) return;
+  caster.boundingSphere = bounds.clone();
+  caster.boundingSphere.radius *= SHADOW_CASTER.boundsPadding;
 }
 
 export interface CasterCache {

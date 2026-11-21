@@ -19,7 +19,7 @@ import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, Rig
 import { RestingGroup } from '../three-kit/resting-group.ts';
 import { markSeeThrough } from './see-through.ts';
 import type { CasterCache, CasterPiece, CasterRange } from './shadow-caster.ts';
-import { casterGeometry, castsTogether, createCasterCache, createShadowCaster } from './shadow-caster.ts';
+import { casterGeometry, castsTogether, createCasterCache, createShadowCaster, fitCaster } from './shadow-caster.ts';
 
 export type { ActionClip, CharacterLibrary, Dresser, GaitClip, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
 export { forgetModel, hasWear, loadCharacters, loadKeptModel, loadModel, loadNeeds, loadRemainingCharacters, usePrivateClips } from './character-library.ts';
@@ -287,7 +287,7 @@ export function instantiateRig(rig: LoadedRig, library: CharacterLibrary, look: 
         pieces.push({ geometry: mesh.geometry, bindMatrix: mesh.bindMatrix, ranges: null });
       }
     }
-    caster.geometry = castersOf(rig).take(key, (): BufferGeometry => casterGeometry(pieces, anchor.bindMatrix));
+    fitCaster(caster, castersOf(rig).take(key, (): BufferGeometry => casterGeometry(pieces, anchor.bindMatrix)));
     if (before !== null) castersOf(rig).leave(before);
   };
   const hide = (parts: readonly string[]): void => {

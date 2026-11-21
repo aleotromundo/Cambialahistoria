@@ -23,6 +23,7 @@ import type { KeepLoadingDeps, NamedLoad } from './keep-loading.ts';
 import { loadAllKeepTrying } from './keep-loading.ts';
 import type { TurnGate } from './paced-work.ts';
 import { eachInTurn, OPEN_GATE } from './paced-work.ts';
+import { casterSimplifierReady } from './shadow-caster.ts';
 
 export interface ActionClip {
   readonly clip: AnimationClip;
@@ -306,10 +307,11 @@ function everyWearable(content: Content): FramedWearable[] {
 }
 
 export async function loadCharacters(loader: GLTFLoader, content: Content, dresser: Dresser, needs: CharacterNeeds): Promise<CharacterLibrary> {
-  const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[]] = await Promise.all([
+  const [rigs, attachments, wearables]: [LoadedRig[], LoadedAttachment[], LoadedWearable[], boolean] = await Promise.all([
     Promise.all(rigDefs(content, needs.rigs).map((def: RigDef): Promise<LoadedRig> => loadRig(loader, def))),
     Promise.all(attachmentDefs(content, needs.attachments).map((def: AttachmentDef): Promise<LoadedAttachment> => loadAttachment(loader, dresser, def))),
     Promise.all(framedWearables(content, needs.wearables).map((worn: FramedWearable): Promise<LoadedWearable> => loadWearable(loader, dresser, worn.def, worn.frame))),
+    casterSimplifierReady(),
   ]);
   return {
     rigs: new Map<string, LoadedRig>(rigs.map((rig: LoadedRig): [string, LoadedRig] => [rig.def.id, rig])),
