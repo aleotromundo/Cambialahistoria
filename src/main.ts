@@ -35,7 +35,7 @@ import { startGameServices } from './game-services.ts';
 import { createPlayOverlays } from './play-overlays.ts';
 import { startGameGlitches } from './game-glitches.ts';
 import { createGameAudio } from './game-audio.ts';
-import type { HeroDef, LineDef } from '../sim/content/types.ts';
+import type { HeroDef, LineDef, ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import type { SaveData } from '../sim/save.ts';
 import { toSave } from '../sim/save.ts';
 import { createWorld } from '../sim/world/create.ts';
@@ -58,7 +58,6 @@ import type { GroundSpot } from './watch/duel-frame.ts';
 import { attachDebug } from './debug-handle.ts';
 import type { Command, ItemInstance, PlayerState, World, WorldEvent } from '../sim/world/types.ts';
 import { voiceAudible } from './audio/settings.ts';
-import type { ZoneAmbience as ZoneLight } from '../sim/content/types.ts';
 import { pagePlay } from './backend/browser.ts';
 import { watchElsewhere } from './hud/elsewhere-card.ts';
 import type { Elsewhere } from './hud/elsewhere-card.ts';
@@ -79,7 +78,7 @@ import type { GraphicsPreset, GraphicsSettings, SettingsSection } from './settin
 import { createHintStore } from './hints-store.ts';
 import type { ObjectiveMarker } from './objective/objective-marker.ts';
 import { createObjectiveMarker } from './objective/objective-marker.ts';
-import { createBrowserStore } from './storage.ts';
+import { createBrowserStore, storageReady } from './storage.ts';
 import type { Mobile } from './mobile/mobile.ts';
 import { startMobile } from './mobile/mobile.ts';
 import type { QualityName, QualityTier } from './mobile/quality.ts';
@@ -580,7 +579,7 @@ async function start(): Promise<void> {
     hurtVignette.show(effects.hurt);
     if (presentNow) glitches.update(now / 1000, dt, gate.queue && !transition.blocking ? worldDt : 0);
     perf.frame(now);
-    portal.gameplay(gate.queue && lobbyFlow?.active !== true);
+    portal.gameplay(gate.queue && lobbyFlow?.active !== true, !touch.lost && !elsewhere.replaced);
     tracker.frame(now, playing && !elsewhere.replaced && !transition.blocking && lobbyFlow?.active !== true && document.visibilityState === 'visible');
     if (!portal.paused() && lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);
@@ -695,6 +694,6 @@ async function start(): Promise<void> {
 }
 
 document.documentElement.dataset['boot'] = RETRY.started;
-runStart(start, (): void => {
+runStart((): Promise<void> => storageReady().then(start), (): void => {
   titleLines.current?.freeze();
 });

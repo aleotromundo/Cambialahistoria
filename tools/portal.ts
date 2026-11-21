@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import type { Plugin, ResolvedConfig, Rollup } from 'vite';
+import { BRIDGE } from '../src/playgama/bridge.ts';
 import { Y8_SDK } from '../src/portal-sdk-y8.ts';
 import { GD_SDK } from '../src/portal-sdk-gamedistribution.ts';
 
@@ -27,6 +28,8 @@ export interface PortalTarget {
   readonly buildEnv?: readonly string[];
   readonly keptIn?: readonly string[];
   readonly headScripts?: readonly string[];
+  readonly firstScripts?: readonly string[];
+  readonly hostFiles?: Readonly<Record<string, string>>;
   readonly limits?: PortalLimits;
 }
 
@@ -94,7 +97,28 @@ export const CRAZYGAMES: PortalTarget = {
   limits: { files: 1500, totalBytes: 50 * 1000 * 1000, fileBytes: 50 * 1000 * 1000 },
 };
 
-export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX, GAMEDISTRIBUTION, CRAZYGAMES];
+export const PLAYGAMA_BRIDGE_CONFIG = {
+  advertisement: { interstitial: { preloadOnStart: true } },
+} as const;
+
+export const PLAYGAMA: PortalTarget = {
+  mode: 'playgama',
+  outDir: 'dist-playgama',
+  zip: 'the-lost-storm-playgama.zip',
+  sealed: true,
+  leftOut: GAMEPIX.leftOut,
+  swaps: {
+    ...GAMEPIX.swaps,
+    'src/host.ts': 'src/host-playgama.ts',
+    'src/portal-sdk.ts': 'src/portal-sdk-playgama.ts',
+    'src/storage.ts': 'src/storage-playgama.ts',
+  },
+  hostAddresses: [BRIDGE.script],
+  firstScripts: [BRIDGE.script],
+  hostFiles: { [BRIDGE.config]: `${JSON.stringify(PLAYGAMA_BRIDGE_CONFIG, null, 2)}\n` },
+};
+
+export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX, GAMEDISTRIBUTION, CRAZYGAMES, PLAYGAMA];
 
 export const INERT_ADDRESSES: Readonly<Record<string, string>> = {
   'http://www.w3.org/2000/svg': 'the SVG namespace, a name and never fetched',
@@ -136,6 +160,7 @@ const OUTSIDE_META: RegExp = /\s*<meta\b[^>]*\scontent="https?:\/\/[^"]*"[^>]*>/
 const OUTSIDE_LINK: RegExp = /\s*<link\b[^>]*\shref="https?:\/\/[^"]*"[^>]*>/g;
 const HEAD_END: RegExp = /<\/head>/;
 const BODY_CLASS: RegExp = /<body\b([^>]*?)\sclass="([^"]*)"/;
+const HEAD_OPEN: RegExp = /<head\b[^>]*>/;
 export const STILL_CLASS: string = 'still';
 
 export function liftPage(html: string): string {
@@ -162,6 +187,15 @@ export function addressesIn(text: string): readonly string[] {
 
 export function outsideAddresses(text: string, hostAddresses: readonly string[] = []): readonly string[] {
   return addressesIn(text).filter((address: string): boolean => !Object.hasOwn(INERT_ADDRESSES, address) && !hostAddresses.includes(address));
+}
+
+export function withFirstScripts(html: string, scripts: readonly string[]): string {
+  if (scripts.length === 0) return html;
+  const head: RegExpExecArray | null = HEAD_OPEN.exec(html);
+  if (head === null) throw new Error('the portal page has no <head> for its host scripts');
+  const at: number = head.index + head[0].length;
+  const tags: string = scripts.map((script: string): string => `<script src="${script}"></script>`).join('');
+  return `${html.slice(0, at)}${tags}${html.slice(at)}`;
 }
 
 export function missingBuildEnv(target: PortalTarget, env: Readonly<Record<string, unknown>>): readonly string[] {
@@ -341,7 +375,7 @@ export function portalPage(publicDir: string, site: string, target: PortalTarget
       refuseWithheld(config.env);
     },
     transformIndexHtml(html: string): string {
-      return withHeadScripts(target.sealed ? sealPage(html) : siteAnchors(html, site), target.headScripts ?? []);
+      return withFirstScripts(withHeadScripts(target.sealed ? sealPage(html) : siteAnchors(html, site), target.headScripts ?? []), target.firstScripts ?? []);
     },
     generateBundle(_options: Rollup.NormalizedOutputOptions, bundle: Rollup.OutputBundle): void {
       const page: Rollup.OutputAsset | Rollup.OutputChunk | undefined = bundle[PORTAL.page.from];
@@ -352,6 +386,7 @@ export function portalPage(publicDir: string, site: string, target: PortalTarget
       for (const file of filesUnder(publicDir)) {
         if (shipsInPortal(file.path, target.leftOut, target.keptIn ?? [])) this.emitFile({ type: 'asset', fileName: file.path, source: readFileSync(join(publicDir, file.path)) });
       }
+      for (const [fileName, text] of Object.entries(target.hostFiles ?? {})) this.emitFile({ type: 'asset', fileName, source: text });
     },
   };
 }

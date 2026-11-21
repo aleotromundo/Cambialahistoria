@@ -3,7 +3,7 @@ export type AdMoment = 'start' | 'respawn' | 'travel';
 export interface PortalSdk {
   paused(): boolean;
   ready(): void;
-  gameplay(active: boolean): void;
+  gameplay(active: boolean, atBreak?: boolean): void;
   readonly adBreak?: (moment: AdMoment) => Promise<void>;
 }
 

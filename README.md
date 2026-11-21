@@ -118,7 +118,21 @@ The same offline build for a host that forbids any address outside its own domai
 - `touch-action: none` on the body on every device; the viewport is `user-scalable=no` as in every build.
 - The landing films in `public/landing/` are left out.
 
-The pack script then reads every file in `dist-gamepix/` and fails on any `http://` or `https://` address. The only ones it lets through are listed with their reasons in `INERT_ADDRESSES`: the SVG and XHTML namespaces, and a citation in a comment inside a three.js shader. None is ever fetched.
+The pack script then reads every file in `dist-gamepix/` and fails on any `http://` or `https://` address. The only ones it lets through are listed with their reasons in `INERT_ADDRESSES`: the SVG and XHTML namespaces, and a citation in a comment inside a three.js shader. None is ever fetched. A `.glb` model is checked only for the addresses it would fetch, the `uri` of its buffers and images, not for the author and licence links in its metadata.
+
+### Playgama build
+
+```bash
+npm run build:playgama
+```
+
+The GamePix build made for Playgama, which requires its Bridge SDK: the folder `dist-playgama/` and the zip `the-lost-storm-playgama.zip`. The Vite mode `playgama` (`PLAYGAMA` in `tools/portal.ts`) takes every GamePix swap and adds these:
+
+- The Bridge script from `bridge.playgama.com` is the first script in `<head>`, and `playgama-bridge-config.json` sits beside `index.html`. It is the only outside address the pack script lets through in this build.
+- `start()` first awaits `storageReady()` from `src/storage.ts`, which resolves at once in every other build. In this build it waits for `bridge.initialize()` and one `storage.get`, for 8 seconds at most. If the Bridge is missing, fails or is slow, the game runs on `localStorage` as before.
+- Everything the game stores goes through Bridge storage: `src/storage-playgama.ts` replaces `src/storage.ts` with a store kept in memory. All its keys are written together in one `storage.set`, 1.5 seconds after the last change and when the page hides (`src/playgama/bridge-store.ts`).
+- `src/portal-sdk-playgama.ts` fills the portal SDK seam (`src/portal-sdk.ts`). `game_ready` is sent once, when the title can be used. `showInterstitial()` is called each time active play stops (a change of zone, the menu), unless the page is hidden or the Bridge has paused the game, and the Bridge decides whether an ad shows. The world stops while an ad is open or the Bridge reports a pause.
+- The Menu action is also bound to P (`src/host-playgama.ts`), because Playgama keeps Esc for leaving full screen.
 
 ### Y8 build
 

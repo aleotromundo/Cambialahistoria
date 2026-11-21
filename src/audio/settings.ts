@@ -1,3 +1,6 @@
+import type { KeyValueStore } from '../backend/backend.ts';
+import { createBrowserStore } from '../storage.ts';
+
 export const AUDIO_CATEGORIES = ['master', 'effects', 'voice', 'ambience'] as const;
 export type AudioCategory = (typeof AUDIO_CATEGORIES)[number];
 
@@ -92,20 +95,11 @@ export function createSettingsStore(storage: SettingsStorage): AudioControls {
 }
 
 export function browserSettingsStorage(): SettingsStorage {
+  const store: KeyValueStore = createBrowserStore();
   return {
-    read(): string | null {
-      try {
-        return window.localStorage.getItem(SETTINGS_KEY);
-      } catch {
-        return null;
-      }
-    },
+    read: (): string | null => store.read(SETTINGS_KEY),
     write(text: string): void {
-      try {
-        window.localStorage.setItem(SETTINGS_KEY, text);
-      } catch {
-        return;
-      }
+      store.write(SETTINGS_KEY, text);
     },
   };
 }

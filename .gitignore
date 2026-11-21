@@ -12,6 +12,8 @@ dist-gamedistribution
 the-lost-storm-gamedistribution.zip
 dist-crazygames
 the-lost-storm-crazygames.zip
+dist-playgama
+the-lost-storm-playgama.zip
 .DS_Store
 *.blend1
 __pycache__

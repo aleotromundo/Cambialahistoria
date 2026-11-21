@@ -1,3 +1,5 @@
+import { HOST } from '../host.ts';
+
 export const FIXED_ACTIONS = ['inventory', 'character', 'tree', 'map', 'minimap', 'ladder', 'flask1', 'flask2', 'flask3', 'flask4', 'flask5', 'pause', 'frameRate', 'names'] as const;
 export type FixedAction = (typeof FIXED_ACTIONS)[number];
 export const FLASK_ACTIONS: readonly FixedAction[] = ['flask1', 'flask2', 'flask3', 'flask4', 'flask5'];
@@ -78,7 +80,7 @@ const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: Action
   { id: 'map', label: 'World map', group: 'Panels', defaults: ['KeyM'] },
   { id: 'minimap', label: 'Minimap', group: 'Panels', defaults: ['Tab'] },
   { id: 'ladder', label: 'Ladder', group: 'Panels', defaults: ['KeyL'] },
-  { id: 'pause', label: 'Menu', group: 'System', defaults: [BINDING.escape] },
+  { id: 'pause', label: 'Menu', group: 'System', defaults: [BINDING.escape, ...HOST.menuKeys] },
   { id: 'frameRate', label: 'Frame rate', group: 'System', defaults: ['F3'] },
   { id: 'names', label: 'Show item names', group: 'System', defaults: ['AltLeft', 'AltRight'] },
 ];
