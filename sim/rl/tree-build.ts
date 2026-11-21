@@ -76,10 +76,10 @@ function takePlace(content: Content, rng: Rng, route: readonly string[], group: 
   return pickWeighted(rng, options)?.node.id ?? null;
 }
 
-export function growRoute(content: Content, rng: Rng, start: readonly string[], points: number, group: string | null): string[] {
+export function growRoute(content: Content, rng: Rng, start: readonly string[], points: number, group: string | null, skip: string | null = null): string[] {
   const route: string[] = [...start];
   while (route.length < points) {
-    const next: string | null = takePlace(content, rng, route, group, null);
+    const next: string | null = takePlace(content, rng, route, group, skip);
     if (next === null) break;
     route.push(next);
   }
@@ -142,7 +142,7 @@ function swapPlace(content: Content, rng: Rng, build: Build, level: number): Bui
   if (rest === null) return null;
   const taken: string | null = takePlace(content, rng, rest, weaponGroupId(content, build.weapon), dropped);
   if (taken === null) return null;
-  const route: string[] = growRoute(content, rng, [...rest, taken], buildPoints(content, level), weaponGroupId(content, build.weapon));
+  const route: string[] = growRoute(content, rng, [...rest, taken], buildPoints(content, level), weaponGroupId(content, build.weapon), dropped);
   return { ...build, route, skills: keptSkills(content, build.skills, route, level) };
 }
 

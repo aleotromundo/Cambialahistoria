@@ -57,6 +57,10 @@ def test_the_search_resumes_from_its_log_without_scoring_twice(tmp_path: Path) -
     assert [candidate.index for candidate in read_log(log)] == [1, 2, 3, 4, 5, 6]
 
 
+def test_a_search_with_nothing_to_start_from_ends_empty(tmp_path: Path) -> None:
+    assert search(FakeBuilds(), SearchPlan(20, 3, 0, 2, 1), [], strength, tmp_path / "search.csv", quiet) == []
+
+
 def test_ties_go_to_the_better_measured_and_then_the_earlier() -> None:
     first = Candidate(1, "a", {}, Score(1, 2, 0, 0))
     wider = Candidate(2, "b", {}, Score(2, 4, 0, 0))

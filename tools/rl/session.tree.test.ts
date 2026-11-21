@@ -45,6 +45,12 @@ void test('the pool and demo requests read treeBuilds', (): void => {
   assert.equal(readDemoRequest({ seed: 1, treeBuilds: true }).treeBuilds, true);
 });
 
+void test('a demo request for tree builds refuses a fixed build beside them', (): void => {
+  const answer: Buffer[] = [...handle({ content: CONTENT, pool: null }, { kind: FRAME.demo, payload: frame(FRAME.demo, jsonPart({ seed: 1, episodes: 1, treeBuilds: true, build: SPIN })).subarray(FRAME.header + FRAME.word) }).frames];
+  assert.equal(answer.length, 1);
+  assert.equal(answer[0]?.readUInt8(FRAME.word), FRAME.error);
+});
+
 void test('the bot demonstrates tree builds at a level from the range', (): void => {
   const request = readDemoRequest({ seed: 7, episodes: 3, treeBuilds: true, levelRange: { min: 22, max: 30 } });
   const options: ArenaOptions = demoOptions(CONTENT, request, createRng(1), 0);

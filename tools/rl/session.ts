@@ -192,6 +192,7 @@ function episodeFrame(episode: DemoEpisode | null, keepSamples: boolean): Buffer
 function* demonstrations(session: Session, request: DemoRequest): Generator<Buffer> {
   try {
     checkedRange(session.content, request.range);
+    if (request.treeBuilds && request.build !== null) throw new Error('treeBuilds draws every build itself, so it takes no build');
     if (request.build !== null) mustBeLegal(session.content, DUEL_KIT, request.build, 'build', checkedLevel(session.content, request.buildLevel));
     const rng: Rng = createRng(request.seed + CURRICULUM.seedSalt);
     for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, demoOptions(session.content, request, rng, index)), request.samples);

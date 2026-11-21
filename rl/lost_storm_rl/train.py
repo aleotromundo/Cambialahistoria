@@ -480,6 +480,8 @@ def build_search(args: SearchArgs) -> Path:
     print(f"searching builds at level {args.level} for {args.policy}: {args.budget} candidates, each against {', '.join(str(rival['name']) for rival in rivals) or 'no rival'} ({args.duels} duels a seat) and {args.arenas} arenas, seeds from {args.seed}", flush=True)
     plan = SearchPlan(args.level, args.budget, args.randoms, args.keep, args.workers)
     found = search(source, plan, examples, model_scorer(policy, rivals, args.level, args.seed, args.duels, args.arenas, args.jitter, args.waves), folder / "search.csv", lambda line: print(line, flush=True))
+    if not found:
+        raise SystemExit(f"no candidate to score at level {args.level}: no example build is legal there and --randoms is 0")
     best = found[0]
     out = folder / "best.json"
     out.write_text(json.dumps(named(best.build, f"Search L{args.level}: {best.score.value:.0%} won"), indent=2) + "\n", encoding="utf-8")
