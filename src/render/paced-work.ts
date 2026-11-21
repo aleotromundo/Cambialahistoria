@@ -1,3 +1,4 @@
+import type { Work } from '../../sim/work.ts';
 import { BOUNDED_WAIT, nextFrameWithin } from '../bounded-wait.ts';
 import { createBrowserFrames, createBrowserTimers } from '../browser-timers.ts';
 
@@ -39,6 +40,30 @@ export function heldWhile(pacer: FramePacer, held: () => boolean): FramePacer {
         tick();
       });
     },
+  };
+}
+
+export function stepPaced(work: Work, pacer: FramePacer, budgetMs: number, live: () => boolean): Promise<void> {
+  const run = async (): Promise<void> => {
+    if (!live()) return;
+    const started: number = pacer.now();
+    let done: boolean = false;
+    while (!done && pacer.now() - started < budgetMs) done = work.next().done === true;
+    if (done) return;
+    await pacer.next();
+    await run();
+  };
+  return run();
+}
+
+export type LatestPaced = (work: Work) => Promise<void>;
+
+export function latestPaced(pacer: FramePacer, budgetMs: number): LatestPaced {
+  let generation: number = 0;
+  return (work: Work): Promise<void> => {
+    generation += 1;
+    const mine: number = generation;
+    return stepPaced(work, pacer, budgetMs, (): boolean => mine === generation);
   };
 }
 

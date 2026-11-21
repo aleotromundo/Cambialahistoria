@@ -6,6 +6,8 @@ import { isFloorCell, wallEdges } from './layout.ts';
 import { outlineGap } from './outline.ts';
 import { tileHeight } from './terrain.ts';
 import { zoneCache, type ZoneCache } from '../zone-cache.ts';
+import type { Work } from '../work.ts';
+import { drained } from '../work.ts';
 
 export const BARRIER = {
   tolerance: 0.25,
@@ -303,7 +305,7 @@ function firstFit(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, keep: Keep
   return null;
 }
 
-function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: ZoneBarrier, keep: Keepout, row: BarrierRow, rowIndex: number, run: BarrierRun, runIndex: number): BarrierPiece[] {
+function* rowPiecesWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: ZoneBarrier, keep: Keepout, row: BarrierRow, rowIndex: number, run: BarrierRun, runIndex: number): Work<BarrierPiece[]> {
   const face: BarrierFace = barrier.nearSides.includes(run.side) ? row.near : row.far;
   if (face.props.length === 0) return [];
   const placed: BarrierPiece[] = [];
@@ -315,12 +317,14 @@ function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: 
     const first: number = Math.floor(noise(runIndex + 11, index, rowIndex + 9) * face.props.length);
     const piece: BarrierPiece | null = firstFit(zone, props, keep, face, run, along, rotationDegrees, first);
     if (piece !== null) placed.push({ ...piece, row: rowIndex, collide: row.collide, shadow: row.shadow });
+    yield;
   }
   if (!row.collide) return placed;
   const out: ReadonlyVec2 = outwardOf(run.side);
   const shapes: ReadonlyVec2[][] = placed.flatMap((piece: BarrierPiece): ReadonlyVec2[][] => pieceOutlines(props, piece));
   const boxes: Bounds[] = shapes.map(boundsOf);
   for (let along: number = run.from; along <= run.to; along += BARRIER.sample) {
+    yield;
     const base: ReadonlyVec2 = runPoint(run, along);
     const probe: ReadonlyVec2 = { x: base.x + out.x * face.out, z: base.z + out.z * face.out };
     const gap: number = Math.min(Infinity, ...shapes.filter((_outline: readonly ReadonlyVec2[], index: number): boolean => { const box: Bounds | undefined = boxes[index]; return box === undefined || boundsGap(box, probe) <= BARRIER.fill; }).map((outline: readonly ReadonlyVec2[]): number => gapAt(outline, probe.x, probe.z)));
@@ -340,23 +344,38 @@ function rowPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, barrier: 
 
 const placedCache: ZoneCache<WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>> = zoneCache<WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>>('barriers');
 
-export function barrierPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): readonly BarrierPiece[] {
+export function* barrierPiecesWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Work<readonly BarrierPiece[]> {
   const byProps: WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]> = placedCache.get(zone) ?? new WeakMap<ReadonlyMap<string, PropDef>, readonly BarrierPiece[]>();
   if (!placedCache.has(zone)) placedCache.set(zone, byProps);
   const known: readonly BarrierPiece[] | undefined = byProps.get(props);
   if (known !== undefined) return known;
-  const made: readonly BarrierPiece[] = placeBarrier(zone, props);
+  const made: readonly BarrierPiece[] = yield* placeBarrierWork(zone, props);
+  const settled: readonly BarrierPiece[] | undefined = byProps.get(props);
+  if (settled !== undefined) return settled;
   byProps.set(props, made);
   return made;
 }
 
-function placeBarrier(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): BarrierPiece[] {
+export function barrierPieces(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): readonly BarrierPiece[] {
+  return drained(barrierPiecesWork(zone, props));
+}
+
+function* placeBarrierWork(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): Work<BarrierPiece[]> {
   const barrier: ZoneBarrier | null = zone.outside?.barrier ?? null;
   if (barrier === null) return [];
   BARRIER_WORK.placements += 1;
   const runs: BarrierRun[] = barrierRuns(zone);
+  yield;
   const keep: Keepout = keepout(zone, props, barrier, runs);
-  const piecesOf = (rows: readonly BarrierRow[], drop: boolean): BarrierPiece[] =>
-    rows.flatMap((row: BarrierRow, rowIndex: number): BarrierPiece[] => runs.flatMap((run: BarrierRun, runIndex: number): BarrierPiece[] => (run.drop === drop ? rowPieces(zone, props, barrier, keep, row, rowIndex, run, runIndex) : [])));
-  return [...piecesOf(barrier.rows, false), ...piecesOf(barrier.drop, true)];
+  yield;
+  const placed: BarrierPiece[] = [];
+  for (const [rows, drop] of [[barrier.rows, false], [barrier.drop, true]] as const) {
+    for (const [rowIndex, row] of rows.entries()) {
+      for (const [runIndex, run] of runs.entries()) {
+        if (run.drop !== drop) continue;
+        placed.push(...(yield* rowPiecesWork(zone, props, barrier, keep, row, rowIndex, run, runIndex)));
+      }
+    }
+  }
+  return placed;
 }
