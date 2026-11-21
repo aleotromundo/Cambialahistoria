@@ -47,6 +47,7 @@ export function playgamaSdk(bridge: Bridge | null, hidden: () => boolean): Porta
   let adOpen: boolean = false;
   let readySent: boolean = false;
   let playing: boolean = false;
+  let owed: boolean = false;
   bridge?.onPause((paused: boolean): void => {
     platformPaused = paused;
   });
@@ -64,7 +65,17 @@ export function playgamaSdk(bridge: Bridge | null, hidden: () => boolean): Porta
     gameplay(active: boolean, atBreak: boolean = true): void {
       const stopped: boolean = playing && !active;
       playing = active;
-      if (!stopped || !atBreak || bridge === null || hidden() || paused()) return;
+      if (active) {
+        owed = false;
+        return;
+      }
+      if (stopped && !atBreak) {
+        owed = true;
+        return;
+      }
+      if (!stopped && !(owed && atBreak)) return;
+      owed = false;
+      if (bridge === null || hidden() || adOpen) return;
       quietly((): void => bridge.showInterstitial());
     },
   };

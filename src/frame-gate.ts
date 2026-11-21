@@ -26,3 +26,9 @@ export function frameGate(state: FrameState): FrameGate {
   const fed: boolean = !state.blocking || state.gpuQueued < FRAME_GATE.queuedUnderVeil;
   return { collect: state.playing && !state.hidden && (state.blocking || !state.lost), queue: step && !state.menuOpen, step, draw: state.playing && !state.hidden && state.presenting && fed, present: state.presenting && !state.covered };
 }
+
+export type BreakState = Pick<FrameState, 'playing' | 'blocking' | 'lost' | 'menuOpen' | 'covered'>;
+
+export function stoppedAtBreak(state: BreakState): boolean {
+  return !state.lost && (!state.playing || state.menuOpen || state.blocking || state.covered);
+}

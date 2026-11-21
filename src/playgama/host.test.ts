@@ -97,15 +97,47 @@ void test('each stop in play asks the bridge for an interstitial and leaves the 
   assert.equal(fake.interstitials, 2);
 });
 
-void test('a stop because the page hid or the platform paused asks for no interstitial', (): void => {
+void test('a stop because the page hid or while an interstitial is open asks for no interstitial', (): void => {
   const { sdk, fake, page }: Sdk = sdkOver();
   sdk.gameplay(true);
   page.hidden = true;
   sdk.gameplay(false);
   page.hidden = false;
   sdk.gameplay(true);
-  fake.emit(FAKE_EVENTS['PAUSE_STATE_CHANGED'] ?? '', true);
+  fake.emit(FAKE_EVENTS['INTERSTITIAL_STATE_CHANGED'] ?? '', 'opened');
   sdk.gameplay(false);
+  assert.equal(fake.interstitials, 0);
+});
+
+void test('a stop at a break asks for an interstitial even while the bridge reports a pause from a window blur', (): void => {
+  const { sdk, fake }: Sdk = sdkOver();
+  sdk.gameplay(true);
+  fake.emit(FAKE_EVENTS['PAUSE_STATE_CHANGED'] ?? '', true);
+  sdk.gameplay(false, true);
+  assert.equal(fake.interstitials, 1);
+});
+
+void test('a break that comes while play is already stopped by a pause asks once, and play resuming clears it', (): void => {
+  const { sdk, fake }: Sdk = sdkOver();
+  sdk.gameplay(true);
+  sdk.gameplay(false, false);
+  sdk.gameplay(false, false);
+  assert.equal(fake.interstitials, 0);
+  sdk.gameplay(false, true);
+  sdk.gameplay(false, true);
+  assert.equal(fake.interstitials, 1);
+  sdk.gameplay(true);
+  sdk.gameplay(false, false);
+  sdk.gameplay(true);
+  sdk.gameplay(false, false);
+  sdk.gameplay(true);
+  assert.equal(fake.interstitials, 1);
+});
+
+void test('the title and the lobby before any play ask for no interstitial', (): void => {
+  const { sdk, fake }: Sdk = sdkOver();
+  sdk.gameplay(false, true);
+  sdk.gameplay(false, true);
   assert.equal(fake.interstitials, 0);
 });
 

@@ -69,7 +69,7 @@ import { startProfile } from './profile/profile-start.ts';
 import type { Input } from './input.ts';
 import { createInput } from './input.ts';
 import { createPauseMenu } from './hud/pause-menu.ts';
-import { frameGate } from './frame-gate.ts';
+import { frameGate, stoppedAtBreak } from './frame-gate.ts';
 import { createFramePace } from './frame-pace.ts';
 import type { FramePace } from './frame-pace.ts';
 import type { FrameGate } from './frame-gate.ts';
@@ -579,7 +579,7 @@ async function start(): Promise<void> {
     hurtVignette.show(effects.hurt);
     if (presentNow) glitches.update(now / 1000, dt, gate.queue && !transition.blocking ? worldDt : 0);
     perf.frame(now);
-    portal.gameplay(gate.queue && lobbyFlow?.active !== true, !touch.lost && !elsewhere.replaced);
+    portal.gameplay(gate.queue && lobbyFlow?.active !== true, stoppedAtBreak({ playing, blocking: transition.blocking, lost: touch.lost || elsewhere.replaced, menuOpen: pauseMenu.isOpen, covered: lobbyFlow?.active === true }));
     tracker.frame(now, playing && !elsewhere.replaced && !transition.blocking && lobbyFlow?.active !== true && document.visibilityState === 'visible');
     if (!portal.paused() && lobbyFlow?.render(dt) !== true && gate.draw && !hud.coversScene()) {
       perf.beforeRender(now);
