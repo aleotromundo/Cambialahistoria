@@ -15,6 +15,7 @@ import { KEEPSAKE_MODELS } from './keepsake-models.ts';
 import type { FramePacer } from './paced-work.ts';
 import { browserPacer } from './paced-work.ts';
 import { texturesOf, uploadPaced } from './warm-up.ts';
+import { readPixelsLater, straightRows } from './pixel-readback.ts';
 
 export const THUMBNAIL = {
   size: 128,
@@ -112,6 +113,17 @@ function encode(canvas: HTMLCanvasElement): Promise<string | null> {
       resolve(blob === null ? null : URL.createObjectURL(blob));
     }, 'image/png');
   });
+}
+
+function encodePixels(canvas: HTMLCanvasElement, pixels: Uint8Array, width: number, height: number): Promise<string | null> {
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  const context: CanvasRenderingContext2D | null = canvas.getContext('2d', { willReadFrequently: true });
+  if (context === null) return Promise.resolve(null);
+  context.putImageData(new ImageData(straightRows(pixels, width, height), width, height), 0, 0);
+  return encode(canvas);
 }
 
 function pose(template: Object3D, view: PictureView): Group {
@@ -564,11 +576,14 @@ export function createThumbnailStudio(library: CharacterLibrary, skinTint: strin
       camera.top = half;
       camera.bottom = -half;
       camera.updateProjectionMatrix();
-      const region: Region = framed(renderer, THUMBNAIL.size, THUMBNAIL.size);
+      framed(renderer, THUMBNAIL.size, THUMBNAIL.size);
+      renderer.setRenderTarget(null);
       renderer.render(scene, camera);
-      const encoded: Promise<string | null> = copyRegion(renderer.domElement, region, crop) ? encode(crop) : Promise.resolve(null);
+      const gl: WebGLRenderingContext | WebGL2RenderingContext = renderer.getContext();
+      const read: Promise<Uint8Array | null> = gl instanceof WebGL2RenderingContext ? readPixelsLater(gl, { x: 0, y: 0, width: THUMBNAIL.size, height: THUMBNAIL.size }, pacer) : Promise.resolve(null);
       posed.removeFromParent();
-      const url: string | null = await encoded;
+      const pixels: Uint8Array | null = await read;
+      const url: string | null = pixels === null ? null : await encodePixels(crop, pixels, THUMBNAIL.size, THUMBNAIL.size);
       if (url !== null) images.set(shot.name, url);
     });
     for (const material of made.materials) material.dispose();
