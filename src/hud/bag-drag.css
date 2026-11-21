@@ -1,0 +1,67 @@
+.bag-drag-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.9;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.bag-drag-ghost .cell-item {
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+}
+
+.bag-drag-ghost.on {
+  opacity: 0.94;
+  scale: 1.12;
+}
+
+.bag-drag-ghost.on.outside {
+  scale: 1.2;
+}
+
+.bag-drag-ghost.returning {
+  transition:
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.bag-drag-ghost.dropped {
+  scale: 0.6;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.bag-drag-word {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 4px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: rgba(8, 10, 14, 0.78);
+  color: var(--ember);
+  font: 700 11px/1.4 var(--sans);
+  white-space: nowrap;
+  opacity: 0;
+  translate: -50% -4px;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy);
+}
+
+.bag-drag-ghost.outside .bag-drag-word {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.cell.lifted .cell-item.filled {
+  opacity: 0.3;
+  transform: scale(0.9);
+}

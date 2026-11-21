@@ -25,6 +25,10 @@ import type { ActionId } from '../settings/bindings.ts';
 import { flaskAction } from '../settings/bindings.ts';
 import characterCss from './character.css?inline';
 import contextCss from './context-notice.css?inline';
+import bagFullCss from './bag-full.css?inline';
+import bagDragCss from './bag-drag.css?inline';
+import { createBagFull } from './bag-full.ts';
+import type { BagFull } from './bag-full.ts';
 import stallCss from './stall-notice.css?inline';
 import elsewhereCss from './elsewhere-card.css?inline';
 import { createCharacterPanel } from './character-panel.ts';
@@ -133,7 +137,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   root.classList.add('hud');
   const style: HTMLStyleElement = el('style', '', root);
   watchFit(root);
-  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${menuCss}\n${weaponHudCss}`;
+  style.textContent = `${hudCss}\n${globesCss}\n${fpsCss}\n${bannersCss}\n${panelsCss}\n${volumeCss}\n${dialogueCss}\n${questsCss}\n${bossCss}\n${treeCss}\n${chartPlacesCss}\n${chartStormCss}\n${treeSpecialtyCss}\n${treeCardCss}\n${atlasCss}\n${characterCss}\n${deathCss}\n${flasksCss}\n${tradeCss}\n${runTableCss}\n${auctionCss}\n${playerTradeCss}\n${dropdownCss}\n${contextCss}\n${bagFullCss}\n${bagDragCss}\n${stallCss}\n${elsewhereCss}\n${pickerCss}\n${menuCss}\n${weaponHudCss}`;
   const hovered: Set<HTMLElement> = new Set<HTMLElement>();
   const track = (element: HTMLElement): void => {
     element.addEventListener('pointerenter', (): void => {
@@ -167,6 +171,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
 
   const bottom: HTMLDivElement = el('div', 'hud-bottom', root);
   const notices: Notices = createNotices(bottom);
+  const bagFull: BagFull = createBagFull(root);
   let bagTimer: number | null = null;
   const acknowledgeBag = (): void => {
     if (bagTimer !== null) window.clearTimeout(bagTimer);
@@ -438,7 +443,8 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             refreshOpen('tree');
             break;
           case 'notice':
-            notices.show(event.reason);
+            if (event.reason === 'inventory_full') bagFull.show();
+            else notices.show(event.reason);
             if (event.reason === 'flask_empty') flasks.refused(api.world.player);
             break;
           case 'xp':

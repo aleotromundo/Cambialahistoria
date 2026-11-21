@@ -3,9 +3,11 @@ import { test } from 'node:test';
 import { Camera, Group, Mesh, Scene, ShaderMaterial } from 'three';
 import { roadZone } from '../../test/road-support.ts';
 import { unsafeGlsl } from '../../test/glsl-support.ts';
-import type { ZoneDef } from '../../sim/content/types.ts';
+import type { PropDef, ZoneDef } from '../../sim/content/types.ts';
 import { GROUND_DECAL_FRAGMENT, GROUND_DECAL_VERTEX, awaitsDecalDraw, groundDecalBox, groundDecalsIn, groundDecalUniforms, layOnGround, liftOffGround, setLevel } from './ground-decal.ts';
 import { liftAt, useTerrain } from './terrain-lift.ts';
+
+const NO_PROPS: ReadonlyMap<string, PropDef> = new Map<string, PropDef>();
 
 const SIZE = 4;
 const STAIR: ZoneDef = roadZone({
@@ -38,7 +40,7 @@ void test('the decal shaders keep their smoothsteps in order and clamp what they
 void test('a decal stands on the floor under its centre, never at the height its mesh was given', (): void => {
   assert.doesNotMatch(GROUND_DECAL_VERTEX, /centre\.y|modelMatrix\[3\]\.y|position\.y\s*\+/);
   assert.match(GROUND_DECAL_VERTEX, /uDecalLevel/);
-  useTerrain(STAIR);
+  useTerrain(STAIR, NO_PROPS);
   for (const [x, z] of [[2, 2], [14, 2], [22, 6]] as const) {
     const mesh: Mesh = decal();
     mesh.position.set(x, 40, z);
@@ -47,7 +49,7 @@ void test('a decal stands on the floor under its centre, never at the height its
     assert.equal(levelOf(mesh), liftAt(STAIR, x, z));
     liftOffGround(mesh);
   }
-  useTerrain(FLAT);
+  useTerrain(FLAT, NO_PROPS);
   const flat: Mesh = decal();
   flat.position.set(2, 3, 2);
   flat.updateMatrixWorld();

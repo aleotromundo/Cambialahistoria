@@ -6,7 +6,7 @@ import { GROUND_TERRAIN, sampleField, shownTiles } from './ground-terrain.ts';
 import { CAMERA } from './iso-camera.ts';
 import { CUTAWAY, frontWeight, highWeight, ringWeight, terrainHides, throughWindow } from './prop-cutaway.ts';
 import type { FloorTest, PassThrough } from './terrain-lift.ts';
-import { liftAt, rayToFloor, rayToSurface } from './terrain-lift.ts';
+import { climbHere, liftAt, rayToFloor, rayToSurface } from './terrain-lift.ts';
 
 export const TERRAIN_SIGHT = {
   march: 0.1,
@@ -108,10 +108,14 @@ const centre: Vector3 = new Vector3();
 const projected: Vector3 = new Vector3();
 const toView: Vector3 = new Vector3();
 
+function footLift(zone: ZoneDef, x: number, z: number): number {
+  return withClimb(zone, liftAt(zone, x, z), x, z, true);
+}
+
 export function cameraEye(zone: ZoneDef, x: number, z: number): Vector3 {
   const yaw: number = (CAMERA.yawDegrees * Math.PI) / 180;
   const pitch: number = (CAMERA.pitchDegrees * Math.PI) / 180;
-  const lookY: number = liftAt(zone, x, z) + CAMERA.lookHeight;
+  const lookY: number = footLift(zone, x, z) + CAMERA.lookHeight;
   return new Vector3(x + Math.sin(yaw) * Math.cos(pitch) * CAMERA.distance, lookY + Math.sin(pitch) * CAMERA.distance, z + Math.cos(yaw) * Math.cos(pitch) * CAMERA.distance);
 }
 
@@ -120,7 +124,7 @@ function depthOf(x: number, y: number, z: number): number {
 }
 
 export function heroHidden(sight: TerrainSight, zone: ZoneDef, x: number, z: number, cutaway: boolean): boolean {
-  const floor: number = liftAt(zone, x, z);
+  const floor: number = footLift(zone, x, z);
   const eye: Vector3 = cameraEye(zone, x, z);
   view.position.copy(eye);
   view.lookAt(x, floor + CAMERA.lookHeight, z);
@@ -135,10 +139,16 @@ export function heroHidden(sight: TerrainSight, zone: ZoneDef, x: number, z: num
   });
 }
 
+function withClimb(zone: ZoneDef, below: number, x: number, z: number, lifted: boolean): number {
+  const climbed: number | null = climbHere(zone, x, z);
+  if (climbed === null || Number.isNaN(below)) return below;
+  return Math.max(below, lifted ? climbed - zone.floorHeight : climbed);
+}
+
 export function clickHeight(zone: ZoneDef): (x: number, z: number) => number {
   const sight: TerrainSight | null = createTerrainSight(zone);
-  if (sight === null) return (x: number, z: number): number => heightAt(zone, x, z);
-  return (x: number, z: number): number => sight.drawnHeight(x, z) ?? Number.NaN;
+  if (sight === null) return (x: number, z: number): number => withClimb(zone, heightAt(zone, x, z), x, z, false);
+  return (x: number, z: number): number => withClimb(zone, sight.drawnHeight(x, z) ?? Number.NaN, x, z, true);
 }
 
 const CELL_CORNERS: readonly (readonly [number, number])[] = [
@@ -150,7 +160,7 @@ const CELL_CORNERS: readonly (readonly [number, number])[] = [
 
 export function clickFloor(zone: ZoneDef): FloorTest {
   const drawn: boolean = drawsTerrain(zone);
-  const floorY = (x: number, z: number): number => (drawn ? liftAt(zone, x, z) : heightAt(zone, x, z));
+  const floorY = (x: number, z: number): number => withClimb(zone, drawn ? liftAt(zone, x, z) : heightAt(zone, x, z), x, z, drawn);
   const step: number = GROUND_TERRAIN.step;
   return (x: number, y: number, z: number): boolean => {
     if (!floorAt(zone, x, z)) return false;
@@ -187,8 +197,8 @@ const clickRay: Ray = new Ray();
 const landed: Vector3 = new Vector3();
 
 export function clickLanding(sight: TerrainSight, zone: ZoneDef, hero: FloorSpot, target: FloorSpot, radius: number | null, rule: ClickRule): ClickLanding {
-  const heroFloor: number = liftAt(zone, hero.x, hero.z);
-  const floor: number = liftAt(zone, target.x, target.z);
+  const heroFloor: number = footLift(zone, hero.x, hero.z);
+  const floor: number = footLift(zone, target.x, target.z);
   const eye: Vector3 = cameraEye(zone, hero.x, hero.z);
   view.position.copy(eye);
   view.lookAt(hero.x, heroFloor + CAMERA.lookHeight, hero.z);

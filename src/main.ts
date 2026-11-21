@@ -119,7 +119,8 @@ import { momentEffects } from './render/moment-effects.ts';
 import type { Ward } from './render/ward.ts';
 import { createWard } from './render/ward.ts';
 import type { IsoCamera } from './render/iso-camera.ts';
-import { createIsoCamera, liftAt } from './render/iso-camera.ts';
+import { createIsoCamera } from './render/iso-camera.ts';
+import { standLift } from './render/terrain-lift.ts';
 import { cutawayCompany, setCutawayCompany } from './render/prop-cutaway.ts';
 import { cameraSight } from './render/sight.ts';
 import { startItemPictures } from './render/item-pictures-start.ts';
@@ -439,8 +440,8 @@ async function start(): Promise<void> {
     prepareNearZones();
     startZoneAmbience();
     glitches.refresh();
-    camera.snap(world.player.pos.x, world.player.pos.z, liftAt(world.zone, world.player.pos.x, world.player.pos.z));
-    stage.follow(world.player.pos.x, world.player.pos.z, world.zone.floorHeight + liftAt(world.zone, world.player.pos.x, world.player.pos.z), 0);
+    camera.snap(world.player.pos.x, world.player.pos.z, standLift(world.zone, world.content.props, world.player.pos.x, world.player.pos.z));
+    stage.follow(world.player.pos.x, world.player.pos.z, world.zone.floorHeight + standLift(world.zone, world.content.props, world.player.pos.x, world.player.pos.z), 0);
     const hideWarm: () => void = effects.showWarm(world.player.pos.x, world.player.pos.z);
     stage.render();
     hideWarm();
@@ -528,12 +529,12 @@ async function start(): Promise<void> {
       opening.update();
       journalCount?.update();
       const aim: GroundSpot = duelWatch?.aim(dt) ?? world.player.pos;
-      camera.update(dt, aim.x, aim.z, liftAt(world.zone, aim.x, aim.z));
+      camera.update(dt, aim.x, aim.z, standLift(world.zone, world.content.props, aim.x, aim.z));
       duelWatch?.show();
       effects.update(worldDt, world);
       ward.update(dt, world);
-      stage.follow(aim.x, aim.z, world.zone.floorHeight + liftAt(world.zone, aim.x, aim.z), dt);
-      setCutawayCompany(cutawayCompany({ x: world.player.pos.x, z: world.player.pos.z, floor: 0 }, world.monsters, (x: number, z: number): number => world.zone.floorHeight + liftAt(world.zone, x, z)));
+      stage.follow(aim.x, aim.z, world.zone.floorHeight + standLift(world.zone, world.content.props, aim.x, aim.z), dt);
+      setCutawayCompany(cutawayCompany({ x: world.player.pos.x, z: world.player.pos.z, floor: 0 }, world.monsters, (x: number, z: number): number => world.zone.floorHeight + standLift(world.zone, world.content.props, x, z)));
       overlays.update(dt, world, input.hoveredId);
       weather.update(dt, world.player.pos.x, world.player.pos.z, glitchSettings.get().reduceFlashes);
       rain.update(dt, world.player.pos.x, world.player.pos.z, weather.flash, zoneView);
@@ -574,7 +575,7 @@ async function start(): Promise<void> {
   window.addEventListener('beforeunload', saveNow);
   const elsewhere: Elsewhere = watchElsewhere(element('hud', HTMLDivElement), pagePlay(), reloadPage);
   const firstAim: GroundSpot = duelWatch?.aim(0) ?? world.player.pos;
-  camera.snap(firstAim.x, firstAim.z, liftAt(world.zone, firstAim.x, firstAim.z));
+  camera.snap(firstAim.x, firstAim.z, standLift(world.zone, world.content.props, firstAim.x, firstAim.z));
   const keeper: FrameKeeper = keepFrames({
     hud: element('hud', HTMLDivElement),
     frame,

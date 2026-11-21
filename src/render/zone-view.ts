@@ -272,7 +272,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
     sources.push(lightSource(def.light, x, lifted, z, yaw, null));
   };
 
-  useTerrain(zone);
+  useTerrain(zone, content.props);
   const ground: Ground = buildGround(content, zone);
   for (const mesh of ground.meshes) group.add(mesh);
   const falls: LavaFalls = buildLavaFalls(content, zone);

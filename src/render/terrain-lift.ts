@@ -1,6 +1,7 @@
 import type { IUniform, Texture, Vector3 } from 'three';
 import { ClampToEdgeWrapping, DataTexture, DataUtils, HalfFloatType, LinearFilter, RedFormat, Vector4 } from 'three';
-import type { ZoneDef } from '../../sim/content/types.ts';
+import type { PropDef, ZoneDef } from '../../sim/content/types.ts';
+import { standHeight, zoneClimbs } from '../../sim/nav/climb.ts';
 import { heightAt, terrainMap, tileHeight } from '../../sim/nav/terrain.ts';
 
 export const TERRAIN_LIFT = {
@@ -22,10 +23,25 @@ export const LIFT_UNIFORMS: LiftUniforms = {
 
 export const LIFT_SAMPLER: readonly string[] = ['uniform sampler2D uLiftMap;', 'uniform vec4 uLiftArea;', 'uniform float uLiftOn;', 'float liftOf(vec2 xz) { return texture2D(uLiftMap, (xz - uLiftArea.xy) / uLiftArea.zw).r; }'];
 
+interface Climbing {
+  readonly zone: ZoneDef;
+  readonly props: ReadonlyMap<string, PropDef>;
+}
+
 let shownZone: ZoneDef | null = null;
+let climbing: Climbing | null = null;
+
+export function standLift(zone: ZoneDef, props: ReadonlyMap<string, PropDef>, x: number, z: number): number {
+  return standHeight(zone, props, x, z) - zone.floorHeight;
+}
 
 export function liftHere(x: number, z: number): number {
+  if (climbing !== null) return standLift(climbing.zone, climbing.props, x, z);
   return shownZone === null ? 0 : liftAt(shownZone, x, z);
+}
+
+export function climbHere(zone: ZoneDef, x: number, z: number): number | null {
+  return climbing === null || climbing.zone !== zone ? null : standHeight(zone, climbing.props, x, z);
 }
 
 export function floorUp(x: number, up: number, z: number): number {
@@ -56,7 +72,8 @@ export function liftSamples(zone: ZoneDef, texel: number): { readonly width: num
   return { width, depth, values };
 }
 
-export function useTerrain(zone: ZoneDef): void {
+export function useTerrain(zone: ZoneDef, props: ReadonlyMap<string, PropDef>): void {
+  climbing = zoneClimbs(zone, props).length > 0 ? { zone, props } : null;
   const old: Texture | null = LIFT_UNIFORMS.uLiftMap.value;
   shownZone = terrainMap(zone) === null ? null : zone;
   if (shownZone === null) {

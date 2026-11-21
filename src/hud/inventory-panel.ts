@@ -1,9 +1,11 @@
 import { bookOf } from '../../sim/content/story.ts';
 import type { ItemBaseDef, ItemSlot } from '../../sim/content/types.ts';
 import { ITEM_SLOTS } from '../../sim/content/types.ts';
-import { baseOf, rarityOf, slotOf } from '../../sim/items.ts';
+import { baseOf, isStoryItem, rarityOf, slotOf } from '../../sim/items.ts';
 import { countOf } from '../../sim/stacks.ts';
 import type { ItemInstance, PlayerState } from '../../sim/world/types.ts';
+import { attachBagDrag } from './bag-drag.ts';
+import type { BagDragHandle } from './bag-drag.ts';
 import { setCount } from './cell-count.ts';
 import type { HudContext, PanelView } from './context.ts';
 import { el, label, replay, retrigger } from './dom.ts';
@@ -144,6 +146,20 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
       const equipped: ItemInstance | null = slot === null ? null : context.api.world.player.equipped[slot];
       return itemTooltip(context.api, item, equipped, inventoryHint(context.api.world, item, context.api.touch, context.api.unverified(item)));
     });
+    const drag: BagDragHandle = attachBagDrag({
+      root: parent,
+      panel: element,
+      cell: view.cell,
+      item: view.item,
+      canDrag: (): boolean => view.current !== null && !isStoryItem(context.api.world.content, view.current),
+      started: (): void => {
+        disarm();
+        context.tooltip.hide();
+      },
+      dropped: (): void => {
+        if (view.current !== null) context.api.send({ type: 'drop', inventoryIndex: index });
+      },
+    });
     let hold: Hold | null = null;
     let held: boolean = false;
     const release = (): void => {
@@ -172,6 +188,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
     view.cell.addEventListener('pointercancel', release);
     view.cell.addEventListener('click', (event: MouseEvent): void => {
       disarm();
+      if (drag.consumeClick()) return;
       if (held) {
         held = false;
         return;

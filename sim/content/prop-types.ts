@@ -71,6 +71,14 @@ export interface PropLid {
   readonly degrees: number;
 }
 
+export interface PropClimb {
+  readonly steps: number;
+  readonly rise: number;
+  readonly depth: number;
+  readonly width: number;
+  readonly walls: readonly (readonly ReadonlyVec2[])[];
+}
+
 export interface PropDef {
   readonly id: string;
   readonly model: string;
@@ -80,6 +88,7 @@ export interface PropDef {
   readonly blockLength: number;
   readonly solid: boolean | null;
   readonly walkOn: boolean;
+  readonly climb: PropClimb | null;
   readonly shadow: boolean;
   readonly footprints: readonly (readonly ReadonlyVec2[])[];
   readonly height: number;

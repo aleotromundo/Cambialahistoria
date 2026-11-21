@@ -1,0 +1,94 @@
+.bag-full-warning {
+  position: absolute;
+  left: 50%;
+  top: 31%;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 18px 9px;
+  border-radius: 6px;
+  background: rgba(30, 10, 8, 0.72);
+  color: #ffb08a;
+  text-shadow: var(--legible-shadow);
+  opacity: 0;
+  visibility: hidden;
+  translate: -50% 10px;
+  scale: 0.92;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s linear var(--spring-smooth-ms);
+}
+
+.bag-full-warning.on {
+  opacity: 1;
+  visibility: visible;
+  translate: -50% 0;
+  scale: 1;
+  transition:
+    opacity var(--spring-snappy-ms) var(--spring-snappy),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    scale var(--spring-bouncy-ms) var(--spring-bouncy),
+    visibility 0s;
+}
+
+.bag-full-warning.shake {
+  animation: bag-full-shake var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.bag-full-title {
+  font: 600 22px/1.1 var(--serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bag-full-line {
+  font: 15px/1.2 var(--sans);
+  color: var(--text);
+  opacity: 0.86;
+}
+
+@keyframes bag-full-shake {
+  0% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-9px);
+  }
+  32% {
+    transform: translateX(8px);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+  68% {
+    transform: translateX(3px);
+  }
+  84% {
+    transform: translateX(-1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.hud.bag-full .hud-menu-btn[data-hud-part~='inventory'],
+.hud.bag-full .tc-menu-btn[data-hud-part~='inventory'] {
+  color: #ffb08a;
+  animation: bag-full-shake var(--spring-smooth-ms) var(--spring-smooth);
+}
+
+.hud.bag-full .hud-menu-btn[data-hud-part~='inventory'] {
+  background-color: rgba(255, 110, 70, 0.18);
+}
+
+body.touch .bag-full-warning {
+  top: 26%;
+}
+
+body.touch .bag-full-title {
+  font-size: 18px;
+}

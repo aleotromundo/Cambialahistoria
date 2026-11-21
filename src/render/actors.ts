@@ -1,4 +1,4 @@
-import { heightAt } from '../../sim/nav/terrain.ts';
+import { standHeight } from '../../sim/nav/climb.ts';
 import type { Sight } from './sight.ts';
 import { drawnBy, SEES_ALL } from './sight.ts';
 import type { Box3, Object3D, Scene } from 'three';
@@ -405,7 +405,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
         buildSpares(sparesDue, spareRound);
         sparesDue = null;
       }
-      const floorAt = (x: number, z: number): number => heightAt(current.zone, x, z);
+      const floorAt = (x: number, z: number): number => standHeight(current.zone, current.content.props, x, z);
       for (const id of strikes.step(dt)) fell(id, current);
       sight.refresh();
       const seen = (view: ActorView, x: number, floor: number, z: number): boolean => sight.sees(x, floor + view.height / 2, z, view.height);

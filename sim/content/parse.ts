@@ -4,6 +4,7 @@ import { packRanks, rankProblems } from './parse-ranks.ts';
 import { runTable, runTableProblems } from './parse-run-table.ts';
 import { tailwind, tailwindProblems } from './parse-tailwind.ts';
 import { propCache, propLid } from './parse-cache.ts';
+import { propClimb } from './parse-climb.ts';
 import { propLight } from './parse-light.ts';
 import { atlasProblems } from './atlas.ts';
 import { affix, dropLean, family, itemBase, rarity } from './parse-items.ts';
@@ -54,6 +55,7 @@ import type {
   NpcDef,
   FirstDropDef,
   HeroDef, PlayerDef,
+  PropClimb,
   PropDef,
   RarityDef,
   ResistanceRules,
@@ -284,6 +286,8 @@ function prop(value: unknown, where: string): PropDef {
   const walkOn: boolean = source['walkOn'] === undefined ? false : flag(source, 'walkOn', where);
   const solid: boolean | null = source['solid'] === undefined ? null : flag(source, 'solid', where);
   if (walkOn && solid !== null) throw new ContentError(`${where}.walkOn`, 'a prop the hero walks on never blocks, so it cannot also say whether it is solid');
+  const climb: PropClimb | null = propClimb(source['climb'], `${where}.climb`);
+  if (climb !== null && (walkOn || solid !== null)) throw new ContentError(`${where}.climb`, 'a prop the hero climbs is blocked only by its own walls, so it cannot also be walkOn or say whether it is solid');
   return {
     id: text(source, 'id', where),
     model,
@@ -293,6 +297,7 @@ function prop(value: unknown, where: string): PropDef {
     blockLength,
     solid,
     walkOn,
+    climb,
     shadow: source['shadow'] === undefined ? true : flag(source, 'shadow', where),
     footprints: [],
     height: 0,

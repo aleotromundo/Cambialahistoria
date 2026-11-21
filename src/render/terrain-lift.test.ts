@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Vector3 } from 'three';
 import { roadZone } from '../../test/road-support.ts';
-import type { Content, ZoneDef } from '../../sim/content/types.ts';
+import type { Content, PropDef, ZoneDef } from '../../sim/content/types.ts';
 import { loadContent } from '../../sim/content/content.ts';
 import { TERRAIN_MARKS } from '../../sim/content/terrain-types.ts';
 import { isFloorCell } from '../../sim/nav/layout.ts';
 import { heightAt } from '../../sim/nav/terrain.ts';
 import { floorUp, glideFloor, liftAt, liftHere, liftSamples, rayToFloor, rayToSurface, tileLift, useTerrain } from './terrain-lift.ts';
+
+const NO_PROPS: ReadonlyMap<string, PropDef> = new Map<string, PropDef>();
 
 const SIZE = 4;
 const STAIR: ZoneDef = roadZone({
@@ -48,10 +50,10 @@ void test('the lift map samples every texel of the zone, high on the upper terra
 });
 
 void test('a ground effect drawn on the stair rises with it, and stops rising when a flat zone is shown', (): void => {
-  useTerrain(STAIR);
+  useTerrain(STAIR, NO_PROPS);
   assert.equal(liftHere(22, 2), 2);
   assert.equal(liftHere(3 * SIZE + SIZE / 2, 2), 1);
-  useTerrain(FLAT);
+  useTerrain(FLAT, NO_PROPS);
   assert.equal(liftHere(22, 2), 0);
 });
 
@@ -106,24 +108,24 @@ void test('every effect height on a cave terrace stands on that terrace, and a f
   assert.ok(cave !== undefined && hall !== undefined);
   const terraces = caveTerraces(cave);
   assert.ok(terraces.length >= 3, `found ${terraces.length} terraces`);
-  useTerrain(cave);
+  useTerrain(cave, NO_PROPS);
   for (const terrace of terraces) {
     assert.ok(Math.abs(floorUp(terrace.x, 1.25, terrace.z) - (terrace.height + 1.25)) < 1e-6, `terrace at ${terrace.height}`);
     assert.ok(Math.abs(floorUp(terrace.x, 0, terrace.z) - heightAt(cave, terrace.x, terrace.z)) < 1e-6);
   }
-  useTerrain(hall);
+  useTerrain(hall, NO_PROPS);
   for (const terrace of terraces) assert.equal(floorUp(terrace.x, 1.25, terrace.z), 1.25);
 });
 
 void test('a bolt flying off a terrace glides down to the lower floor instead of dropping in one frame', (): void => {
-  useTerrain(STAIR);
+  useTerrain(STAIR, NO_PROPS);
   let flight: number = glideFloor(undefined, 22, 2, 1 / 60);
   assert.equal(flight, 2);
   flight = glideFloor(flight, 2, 2, 1 / 60);
   assert.ok(flight > 1.7 && flight < 2, `after one frame ${flight}`);
   for (let frame: number = 0; frame < 120; frame += 1) flight = glideFloor(flight, 2, 2, 1 / 60);
   assert.ok(flight < 0.01, `after two seconds ${flight}`);
-  useTerrain(FLAT);
+  useTerrain(FLAT, NO_PROPS);
 });
 
 function shelfBeforeFloor(x: number): number {

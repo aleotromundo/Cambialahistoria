@@ -18,8 +18,14 @@ export function pickUp(world: World, ground: GroundItem): void {
   if (ground.content.kind === 'item') world.events.push({ type: 'character_changed' });
 }
 
+function tossBack(world: World, ground: GroundItem): void {
+  ground.from = { x: world.player.pos.x, z: world.player.pos.z };
+  ground.age = 0;
+}
+
 function takePart(world: World, ground: GroundItem, item: ItemInstance): void {
   world.events.push({ type: 'notice', reason: 'inventory_full' });
+  tossBack(world, ground);
   const rest: ItemInstance | null = placeIn(world.content, world.player.inventory, item);
   if (rest === null || countOf(rest) === countOf(item)) return;
   ground.content = { kind: 'item', item: rest };
