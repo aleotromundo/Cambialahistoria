@@ -86,7 +86,20 @@
   "caps": [
     {"stat": "attackSpeed", "max": 2},
     {"stat": "critChance", "max": 0.5},
-    {"stat": "moveSpeed", "max": 10.64}
+    {"stat": "moveSpeed", "max": 10.64},
+    {"stat": "damagePercent", "max": 3}
+  ],
+  "skillCaps": [
+    {"field": "damagePercent", "max": 3},
+    {"field": "areaPercent", "max": 2},
+    {"field": "rangePercent", "max": 1.5},
+    {"field": "durationPercent", "max": 2},
+    {"field": "cooldownPercent", "min": -0.6},
+    {"field": "manaCostPercent", "min": -0.6},
+    {"field": "projectiles", "max": 4},
+    {"field": "pierce", "max": 8},
+    {"field": "chains", "max": 8},
+    {"field": "echo", "max": 1}
   ],
   "manaShows": "costly_skill",
   "tint": "#e8d2bd",

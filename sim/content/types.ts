@@ -410,6 +410,7 @@ export interface PlayerDef {
   readonly deathPenalty: DeathPenalty;
   readonly resistance: ResistanceRules;
   readonly caps: readonly StatCap[];
+  readonly skillCaps: readonly SkillCap[];
   readonly manaShows: ManaShows;
 }
 
@@ -419,6 +420,12 @@ export type ManaShows = (typeof MANA_SHOWS)[number];
 export interface StatCap {
   readonly stat: StatId;
   readonly max: number;
+}
+
+export interface SkillCap {
+  readonly field: SkillModField;
+  readonly min: number | null;
+  readonly max: number | null;
 }
 
 export interface ResistanceRules {

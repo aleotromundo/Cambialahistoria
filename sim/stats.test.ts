@@ -197,8 +197,8 @@ void test('armour cuts every hit, and storm and frost hits are cut again by thei
   assert.ok(damageTakenScale(stats, 'frost', rules, 1) > 1 - armourReduction(100, 1));
 });
 
-void test('attack speed, critical chance and movement speed stop at their caps from data', (): void => {
-  const stats: StatBlock = computeStats({ ...content, player: { ...content.player, baseStats: { ...content.player.baseStats, attackSpeed: 9, critChance: 0.9, moveSpeed: 99 } } }, 1, bare, []);
+void test('attack speed, critical chance, movement speed and increased damage stop at their caps from data', (): void => {
+  const stats: StatBlock = computeStats({ ...content, player: { ...content.player, baseStats: { ...content.player.baseStats, attackSpeed: 9, critChance: 0.9, moveSpeed: 99, damagePercent: 9 } } }, 1, bare, []);
   for (const cap of content.player.caps) assert.equal(stats[cap.stat], cap.max);
   assert.equal(armourReduction(100000, content.player.resistance.armourCap), content.player.resistance.armourCap);
 });

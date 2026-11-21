@@ -301,7 +301,7 @@ export function fightBoss(bot: Bot, lair: BossLair, origin: number): Measurement
   return measured;
 }
 
-function fightPack(bot: Bot, scenario: PackFight, origin: number): Measurement | null {
+export function fightPack(bot: Bot, scenario: PackFight, origin: number): Measurement | null {
   const world: World = bot.world;
   const zone: string | null = home(world);
   if (zone === null || (world.zone.id !== zone && !botTravelTo(bot, zone))) return null;

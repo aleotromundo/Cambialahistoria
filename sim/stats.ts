@@ -1,4 +1,4 @@
-import type { ChartGroup, Content, DamageType, Delivery, EmpoweredMod, PowerDef, ResistanceRules, ResistedType, SkillTarget, SkillDef, SkillMod, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
+import type { ChartGroup, Content, DamageType, Delivery, EmpoweredMod, PowerDef, ResistanceRules, ResistedType, SkillCap, SkillTarget, SkillDef, SkillMod, SkillModField, SkillTreeNodeDef, SkillVariant, StatBlock, StatId, StatMod } from './content/types.ts';
 import { ITEM_SLOTS, STAT_IDS } from './content/types.ts';
 import { itemMods } from './items.ts';
 import type { Equipment } from './world/types.ts';
@@ -184,13 +184,25 @@ function heldEchoScale(skill: SkillDef, share: number): number {
   return 1 + Math.min(1, share) * ADDED_ECHO.heldDamage;
 }
 
-function scaleOf(mods: readonly SkillMod[], field: SkillMod['field']): number {
-  return Math.max(0, 1 + sumSkillMod(mods, field));
+export function cappedSkillMod(caps: readonly SkillCap[], field: SkillModField, total: number): number {
+  let held: number = total;
+  for (const cap of caps) {
+    if (cap.field !== field) continue;
+    if (cap.min !== null) held = Math.max(held, cap.min);
+    if (cap.max !== null) held = Math.min(held, cap.max);
+  }
+  return held;
 }
 
-function pulled(skill: SkillDef, mods: readonly SkillMod[]): number {
-  const pull: number = sumSkillMod(mods, 'pull');
-  return pull > 0 ? -pull : skill.knockback * (1 + sumSkillMod(mods, 'knockbackPercent'));
+type FieldTotal = (field: SkillModField) => number;
+
+function scaleOf(total: number): number {
+  return Math.max(0, 1 + total);
+}
+
+function pulled(skill: SkillDef, sum: FieldTotal): number {
+  const pull: number = sum('pull');
+  return pull > 0 ? -pull : skill.knockback * (1 + sum('knockbackPercent'));
 }
 
 export function resolveSkill(content: Content, base: SkillDef, allocated: readonly string[], powers: readonly PowerDef[] = [], worn: readonly SkillVariant[] = [], held: string | null = ANY_WEAPON, chosen: ChangeChoice = {}): SkillDef {
@@ -200,31 +212,32 @@ export function resolveSkill(content: Content, base: SkillDef, allocated: readon
   const mods: SkillMod[] = [...placed.flatMap((node: SkillTreeNodeDef): readonly SkillMod[] => node.skillMods), ...powers.flatMap((power: PowerDef): readonly SkillMod[] => power.skillMods)].filter((mod: SkillMod): boolean => modTargets(content, mod, through));
   mods.push(...empowered);
   if (mods.length === 0) return skill;
-  const area: number = scaleOf(mods, 'areaPercent');
+  const sum: FieldTotal = (field: SkillModField): number => cappedSkillMod(content.player.skillCaps, field, sumSkillMod(mods, field));
+  const area: number = scaleOf(sum('areaPercent'));
   const delivery: Delivery = scaledDelivery(skill.delivery, {
     area,
-    range: scaleOf(mods, 'rangePercent'),
-    duration: scaleOf(mods, 'durationPercent'),
-    projectiles: sumSkillMod(mods, 'projectiles'),
-    pierce: sumSkillMod(mods, 'pierce'),
-    chains: sumSkillMod(mods, 'chains'),
-    falloff: sumSkillMod(mods, 'chainFalloff'),
-    spread: sumSkillMod(mods, 'spread'),
+    range: scaleOf(sum('rangePercent')),
+    duration: scaleOf(sum('durationPercent')),
+    projectiles: sum('projectiles'),
+    pierce: sum('pierce'),
+    chains: sum('chains'),
+    falloff: sum('chainFalloff'),
+    spread: sum('spread'),
   });
-  const damageScale: number = scaleOf(mods, 'damagePercent') * heldEchoScale(skill, sumSkillMod(mods, 'echo'));
+  const damageScale: number = scaleOf(sum('damagePercent')) * heldEchoScale(skill, sum('echo'));
   return {
     ...skill,
     delivery,
     vfx: widerWave(skill.vfx, area),
     damage: { type: skill.damage.type, weaponPercent: skill.damage.weaponPercent * damageScale, flatMin: skill.damage.flatMin * damageScale, flatMax: skill.damage.flatMax * damageScale },
-    cooldown: skill.cooldown * scaleOf(mods, 'cooldownPercent'),
-    manaCost: Math.round(skill.manaCost * scaleOf(mods, 'manaCostPercent')),
-    knockback: pulled(skill, mods),
-    stagger: skill.stagger * scaleOf(mods, 'staggerPercent'),
-    lifeOnHit: skill.lifeOnHit + sumSkillMod(mods, 'lifeOnHit'),
-    leech: skill.leech + sumSkillMod(mods, 'leech'),
-    ...echoOf(skill, sumSkillMod(mods, 'echo')),
-    momentum: skill.momentum === null ? null : { ...skill.momentum, cap: Math.max(skill.momentum.perHit, skill.momentum.cap * scaleOf(mods, 'momentumCapPercent')), grace: skill.momentum.grace * scaleOf(mods, 'momentumGracePercent'), lifePerHit: skill.momentum.lifePerHit + sumSkillMod(mods, 'lifePerHit') },
+    cooldown: skill.cooldown * scaleOf(sum('cooldownPercent')),
+    manaCost: Math.round(skill.manaCost * scaleOf(sum('manaCostPercent'))),
+    knockback: pulled(skill, sum),
+    stagger: skill.stagger * scaleOf(sum('staggerPercent')),
+    lifeOnHit: skill.lifeOnHit + sum('lifeOnHit'),
+    leech: skill.leech + sum('leech'),
+    ...echoOf(skill, sum('echo')),
+    momentum: skill.momentum === null ? null : { ...skill.momentum, cap: Math.max(skill.momentum.perHit, skill.momentum.cap * scaleOf(sum('momentumCapPercent'))), grace: skill.momentum.grace * scaleOf(sum('momentumGracePercent')), lifePerHit: skill.momentum.lifePerHit + sum('lifePerHit') },
   };
 }
 

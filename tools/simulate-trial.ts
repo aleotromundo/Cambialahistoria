@@ -112,7 +112,7 @@ function heldTotal(held: HeldClock, now: number): number {
   return held.from === null ? held.total : held.total + now - held.from;
 }
 
-export function runTrial(content: Content, policies: Policies, job: TrialJob): TrialAttempt {
+export function runTrial(content: Content, policies: Policies, job: TrialJob, level: number = TRIAL.level): TrialAttempt {
   const skill: SkillPolicy | undefined = policies.skills.get(job.skill);
   const build: BuildPolicy | undefined = policies.builds.get(job.build);
   const ring: TrialRing | null = trialRing(content, job.zone);
@@ -133,8 +133,8 @@ export function runTrial(content: Content, policies: Policies, job: TrialJob): T
       }
     }
   }, planFor(skill, build));
-  raiseTo(world, TRIAL.level);
-  gearUp(bot, job.weapon, TRIAL.level);
+  raiseTo(world, level);
+  gearUp(bot, job.weapon, level);
   for (let waited: number = 0; waited < TRIAL.settle; waited += BOT.step) botStep(bot, []);
   world.player.life = world.player.maxLife;
   flasks = 0;

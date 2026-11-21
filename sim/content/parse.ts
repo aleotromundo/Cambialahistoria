@@ -59,6 +59,7 @@ import type {
   PropDef,
   RarityDef,
   ResistanceRules,
+  SkillCap,
   StatCap,
   RigClips,
   RigDef,
@@ -74,7 +75,7 @@ import type {
   ZoneReturn,
   XpGap,
 } from './types.ts';
-import { BODY_MATERIALS, DAMAGE_TYPES, MANA_SHOWS, NAME_STYLES, SKILL_CATEGORIES, STAT_IDS, WEAR_REGIONS } from './types.ts';
+import { BODY_MATERIALS, DAMAGE_TYPES, MANA_SHOWS, NAME_STYLES, SKILL_CATEGORIES, SKILL_MOD_FIELDS, STAT_IDS, WEAR_REGIONS } from './types.ts';
 
 export interface RawContent {
   readonly skills: unknown;
@@ -394,7 +395,17 @@ function player(value: unknown, where: string): PlayerDef {
       const cap: Fields = fields(entry, entryWhere);
       return { stat: choice(cap, 'stat', STAT_IDS, entryWhere), max: positive(cap, 'max', entryWhere) };
     }),
+    skillCaps: each(source['skillCaps'], `${where}.skillCaps`, skillCap),
   };
+}
+
+function skillCap(entry: unknown, where: string): SkillCap {
+  const cap: Fields = fields(entry, where);
+  const min: number | null = cap['min'] === undefined ? null : numeric(cap, 'min', where);
+  const max: number | null = cap['max'] === undefined ? null : numeric(cap, 'max', where);
+  if (min === null && max === null) throw new ContentError(where, 'a skill cap needs a min or a max');
+  if (min !== null && max !== null && min > max) throw new ContentError(where, 'a skill cap\'s min is above its max');
+  return { field: choice(cap, 'field', SKILL_MOD_FIELDS, where), min, max };
 }
 
 function xpGap(value: unknown, where: string): XpGap {
