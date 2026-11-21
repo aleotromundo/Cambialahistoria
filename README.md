@@ -131,6 +131,7 @@ The overlay state machine (which panel, screen or card may be up, in what order,
 | `sim/content/` | The content schema (`types.ts`) and the readers that check every JSON file at start-up |
 | `sim/world/` | World state, the commands the player can send and the events each step returns (`types.ts`), and `stepWorld` (`step.ts`) |
 | `src/render/` | Three.js: stage and lighting, the isometric camera, character loading, the zone view and its exit and checkpoint markers, the ground (`ground.ts`) and the shared surface materials (`surfaces.ts`), effects, weather, world-anchored overlays |
+| `src/three-kit/` | Small patches and meters on three.js's own seams, each anchored to the three.js source it relies on (see its README) |
 | `src/hud/` | DOM HUD: globes, skill bar, flask belt, inventory, character sheet, skill tree, the stall, stash, auction and trade panels, volume panel, tooltips, the dialogue box, the quest tracker, the world map, the boss bar and the subtitle strip for lines spoken in a fight |
 | `src/hud/overlay-core.ts` | The overlay state machine: one request in, the phase of every panel, screen and card out. `overlay-table.ts` holds the layers, the declared pairs and the z order. It mirrors `spec/Overlays.tla` |
 | `src/minimap/` | The minimap and the Tab overlay map: the zone's explored layout from the nav grid, turned to the camera, with markers for the hero, monsters, people, exits, the waypoint, loot and the current quest. Exploration itself is world state in `sim/world/exploration.ts` |

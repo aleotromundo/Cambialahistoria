@@ -6,6 +6,8 @@ import { refillHero } from '../../sim/world/bench-hero.ts';
 import { blockedReason } from '../../sim/world/skills.ts';
 import type { Command, MonsterState, PlayerState, World, WorldEvent } from '../../sim/world/types.ts';
 import { measureMemory } from '../mobile/memory.ts';
+import type { ProgramChangeReport, ProgramChangeWatch } from '../three-kit/program-changes.ts';
+import { programChangeReport, watchProgramChanges } from '../three-kit/program-changes.ts';
 import { open } from '../walk/body-walk.ts';
 
 export const FIGHT_BENCH = {
@@ -52,6 +54,7 @@ export interface FightRaw {
   readonly drops: number;
   readonly casts: number;
   readonly heroDeaths: number;
+  readonly programChanges: ProgramChangeReport;
   readonly problems: readonly string[];
 }
 
@@ -174,7 +177,7 @@ export async function runFightBench(deps: FightDeps, plan: FightPlan): Promise<F
   const travelled: string | null = await travelTo(deps, plan.zone);
   if (travelled !== null) {
     const now: RendererCounts = counts(deps);
-    return { zone: deps.world.zone.id, frames: [], calls: [], triangles: [], longTasks: [], start: now, end: now, peakLive: 0, kills: 0, hits: 0, drops: 0, casts: 0, heroDeaths: 0, problems: [travelled] };
+    return { zone: deps.world.zone.id, frames: [], calls: [], triangles: [], longTasks: [], start: now, end: now, peakLive: 0, kills: 0, hits: 0, drops: 0, casts: 0, heroDeaths: 0, programChanges: programChangeReport({ draws: 0, changedDraws: 0, counts: new Map() }, 0), problems: [travelled] };
   }
   if (!(await stepping(deps))) problems.push(`the world never stepped in ${deps.world.zone.id}`);
   problems.push(...(await ready(deps, plan.hero)));
@@ -190,6 +193,7 @@ export async function runFightBench(deps: FightDeps, plan: FightPlan): Promise<F
   const info: WebGLInfo = deps.renderer.info;
   const endAt: number = plan.warmupMs + plan.measureMs;
   let measuring: boolean = false;
+  const meter: { watch: ProgramChangeWatch | null } = { watch: null };
   let start: RendererCounts = counts(deps);
   deps.watch((events: readonly WorldEvent[]): void => {
     if (measuring) tallyEvents(tally, events, heroId);
@@ -221,6 +225,7 @@ export async function runFightBench(deps: FightDeps, plan: FightPlan): Promise<F
         if (!measuring && elapsed >= plan.warmupMs) {
           start = counts(deps);
           observer.observe({ type: 'longtask', buffered: false });
+          meter.watch = watchProgramChanges(deps.renderer);
           measuring = true;
         }
         refillHero(deps.world);
@@ -236,8 +241,11 @@ export async function runFightBench(deps: FightDeps, plan: FightPlan): Promise<F
       };
       window.requestAnimationFrame(tick);
     });
-    return { zone: deps.world.zone.id, frames, calls, triangles, longTasks, start, end, peakLive: tally.peakLive, kills: tally.kills, hits: tally.hits, drops: tally.drops, casts: tally.casts, heroDeaths: tally.heroDeaths, problems };
+    const watched: ProgramChangeWatch | null = meter.watch;
+    const programChanges: ProgramChangeReport = programChangeReport(watched === null ? { draws: 0, changedDraws: 0, counts: new Map() } : watched.stop(), frames.length);
+    return { zone: deps.world.zone.id, frames, calls, triangles, longTasks, start, end, peakLive: tally.peakLive, kills: tally.kills, hits: tally.hits, drops: tally.drops, casts: tally.casts, heroDeaths: tally.heroDeaths, programChanges, problems };
   } finally {
+    meter.watch?.stop();
     observer.disconnect();
     deps.watch(null);
     info.autoReset = true;

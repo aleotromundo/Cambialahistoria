@@ -1,7 +1,9 @@
 import type { BufferGeometry, IUniform, Material, Object3D } from 'three';
 import { AnimationMixer, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PropertyBinding, SkinnedMesh } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { boundSkins, disposeSkeletons, poseOncePerTick, quietBones, shareSkeletons } from './skeletons.ts';
+import { boundSkins, disposeSkeletons, shareSkeletons } from './skeletons.ts';
+import { poseOncePerTick } from '../three-kit/pose-once.ts';
+import { quietBones } from '../three-kit/quiet-bones.ts';
 import type { RigDef, RigSocket } from '../../sim/content/types.ts';
 import { wearKey } from '../../sim/wear.ts';
 import { CHARACTER_INSIDE } from './character-inside.ts';
@@ -14,7 +16,7 @@ import { bindShade, seeThrough, shadedCopy, shadeHeld, SHADOW_BODY, SHADOW_LIGHT
 import type { MeshLooks, RestLooks } from './rest-looks.ts';
 import { createMeshLooks, glowAtRest, isMesh, REST_GLOW, restLook } from './rest-looks.ts';
 import type { CharacterLibrary, LoadedAttachment, LoadedRig, LoadedWearable, RigClipSet, StanceClipSet } from './character-library.ts';
-import { RestingGroup } from './resting-group.ts';
+import { RestingGroup } from '../three-kit/resting-group.ts';
 import { markSeeThrough } from './see-through.ts';
 import type { CasterCache, CasterPiece, CasterRange } from './shadow-caster.ts';
 import { casterGeometry, castsTogether, createCasterCache, createShadowCaster } from './shadow-caster.ts';

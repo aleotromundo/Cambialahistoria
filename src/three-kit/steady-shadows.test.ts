@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BoxGeometry, DataTexture, DoubleSide, Group, Mesh, MeshDepthMaterial, MeshStandardMaterial, Skeleton, SkinnedMesh } from 'three';
+import { BoxGeometry, DataTexture, DoubleSide, Group, Mesh, MeshDepthMaterial, MeshStandardMaterial, Plane, Skeleton, SkinnedMesh } from 'three';
+import { missingLines, threeFunction, threeSource } from '../../test/three-source-support.ts';
 import { createSteadyShadows, depthKey } from './steady-shadows.ts';
 import type { SteadyShadows } from './steady-shadows.ts';
 
@@ -57,4 +58,39 @@ void test('a caster keeps the depth material it was given the first time', (): v
   const first: unknown = mesh.customDepthMaterial;
   shadows.steady(mesh);
   assert.equal(mesh.customDepthMaterial, first);
+});
+
+void test('three still draws a caster\'s shadow with its own depth material and dresses it from the caster\'s material on every draw', (): void => {
+  const depth: string = threeFunction(threeSource('renderers', 'webgl', 'WebGLShadowMap.js'), 'function getDepthMaterial(');
+  assert.deepEqual(missingLines(depth, [
+    'const customMaterial = ( light.isPointLight === true ) ? object.customDistanceMaterial : object.customDepthMaterial;',
+    'if ( customMaterial !== undefined ) {',
+    'result = customMaterial;',
+    'result.side = ( material.shadowSide !== null ) ? material.shadowSide : shadowSide[ material.side ];',
+    'result.wireframe = material.wireframe;',
+    'result.map = material.map;',
+    'result.alphaMap = material.alphaMap;',
+    'result.alphaTest = ( material.alphaToCoverage === true ) ? 0.5 : material.alphaTest;',
+    'result.displacementMap = material.displacementMap;',
+    'result.clippingPlanes = material.clippingPlanes;',
+  ]), []);
+});
+
+void test('every kind of material three gives a depth material of its own is one steady shadows leaves to three', (): void => {
+  const depth: string = threeFunction(threeSource('renderers', 'webgl', 'WebGLShadowMap.js'), 'function getDepthMaterial(');
+  assert.deepEqual(missingLines(depth, [
+    '( renderer.localClippingEnabled && material.clipShadows === true && Array.isArray( material.clippingPlanes ) && material.clippingPlanes.length !== 0 ) ||',
+    '( material.displacementMap && material.displacementScale !== 0 ) ||',
+    '( material.alphaMap && material.alphaTest > 0 ) ||',
+    '( material.map && material.alphaTest > 0 ) ||',
+    '( material.alphaToCoverage === true ) ) {',
+  ]), []);
+  const left: readonly MeshStandardMaterial[] = [
+    new MeshStandardMaterial({ map: new DataTexture(), alphaTest: 0.5 }),
+    new MeshStandardMaterial({ alphaMap: new DataTexture(), alphaTest: 0.5 }),
+    new MeshStandardMaterial({ displacementMap: new DataTexture() }),
+    new MeshStandardMaterial({ alphaToCoverage: true }),
+    new MeshStandardMaterial({ clippingPlanes: [new Plane()], clipShadows: true }),
+  ];
+  for (const material of left) assert.equal(depthKey(caster(material)), null);
 });

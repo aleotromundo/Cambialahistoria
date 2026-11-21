@@ -4,7 +4,7 @@ import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Scen
 import type { ActorGuard } from './actor-guard.ts';
 import { createActorGuard, drawable, readyToInspect, setOffView, shownMaterial } from './actor-guard.ts';
 import { fadeMaterials, startSwap, stepSwap } from './body-swap.ts';
-import { RestingGroup } from './resting-group.ts';
+import { RestingGroup } from '../three-kit/resting-group.ts';
 
 function body(): { readonly root: Group; readonly mesh: Mesh<BoxGeometry, MeshStandardMaterial> } {
   const root: Group = new Group();

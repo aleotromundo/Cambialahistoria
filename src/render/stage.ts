@@ -19,12 +19,12 @@ import { aimCutaway } from './prop-cutaway.ts';
 import { ditheredOutputPass } from './output-dither.ts';
 import { GPU } from '../gpu-release.ts';
 import { unsorted } from './warm-up.ts';
-import { installDarkLightSkip } from './dark-lights.ts';
+import { installDarkLightSkip } from '../three-kit/dark-lights.ts';
 import type { GpuQueue } from './gpu-fence.ts';
 import { createGpuQueue } from './gpu-fence.ts';
-import { nextPoseTick } from './skeletons.ts';
-import type { SteadyShadows } from './steady-shadows.ts';
-import { createSteadyShadows } from './steady-shadows.ts';
+import { nextPoseTick } from '../three-kit/pose-once.ts';
+import type { SteadyShadows } from '../three-kit/steady-shadows.ts';
+import { createSteadyShadows } from '../three-kit/steady-shadows.ts';
 
 export const STAGE = {
   exposure: 1.22,

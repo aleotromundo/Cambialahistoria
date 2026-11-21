@@ -1,6 +1,6 @@
 import type { Material, Object3D } from 'three';
 import { Mesh } from 'three';
-import { RestingGroup } from './resting-group.ts';
+import { RestingGroup } from '../three-kit/resting-group.ts';
 
 export interface ActorGuard {
   keep(id: number, root: Object3D, scene: Object3D, label: string): boolean;

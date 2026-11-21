@@ -28,3 +28,9 @@ void test('the guard is applied once however often it is installed', (): void =>
 void test('a chunk without the direct light call is refused instead of left unguarded', (): void => {
   assert.throws((): string => skipDarkLights('void main() {}'), /no direct light call/);
 });
+
+void test('three still marks a light that cannot reach the pixel as not visible, which is what the guard reads', (): void => {
+  const pars: string = ShaderChunk.lights_pars_begin;
+  assert.ok(pars.includes('light.visible = ( light.color != vec3( 0.0 ) );'), 'a point or spot light out of range no longer comes back not visible');
+  assert.ok(pars.includes('light.visible = false;'), 'a spot light outside its cone no longer comes back not visible');
+});

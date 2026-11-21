@@ -47,6 +47,10 @@ Run `npm run typecheck`, `npm run lint` and `npm run test:affected` through the 
 
 A change to how damage is rolled, how a skill hits, how a monster decides, what drops or how a level is gained goes in `sim/` with a test, never in `src/`.
 
+## Patching three.js
+
+three.js is never forked and never edited in `node_modules`. Code that measures or tunes three.js itself, rather than drawing the game, lives in `src/three-kit/`: one module per file, using only the renderer instance, object hooks and `ShaderChunk`, each with an anchor test that reads the three.js source it depends on and fails when an upgrade removes it. A module that changes behaviour lands with fight bench numbers from before and after. See [src/three-kit/README.md](src/three-kit/README.md).
+
 ## Training a model
 
 The game trains its own model to play it. The game side is TypeScript in `sim/rl/` (the arena, what the model sees, what its actions do, the reward, replays) and `tools/rl/` (the process the trainer talks to over stdin and stdout). The trainer is Python in `rl/`, managed by `uv`, and is the only Python in the repository. Python there follows the same spirit: no comments, type hints on every function. See [rl/README.md](rl/README.md).

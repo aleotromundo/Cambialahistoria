@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Bone, Scene, Vector3 } from 'three';
+import { threeSource } from '../../test/three-source-support.ts';
 import { RestingGroup } from './resting-group.ts';
 
 function rig(): { readonly scene: Scene; readonly root: RestingGroup; readonly hand: Bone } {
@@ -76,4 +77,13 @@ void test('a resting group that something has made visible again updates like an
   scene.updateMatrixWorld();
   assert.deepEqual(placeOf(hand).toArray(), [4.5, 1, 2]);
   assert.equal(root.resting, true);
+});
+
+void test('three still updates the scene through each child\'s own updateMatrixWorld, which is what a resting group replaces', (): void => {
+  const object: string = threeSource('core', 'Object3D.js');
+  const renderer: string = threeSource('renderers', 'WebGLRenderer.js');
+  const start: number = object.indexOf('\tupdateMatrixWorld( force ) {');
+  const update: string = start < 0 ? '' : object.slice(start, object.indexOf('\n\t}\n', start));
+  assert.ok(update.includes('child.updateMatrixWorld( force );'), 'Object3D.updateMatrixWorld no longer calls each child\'s own method');
+  assert.ok(renderer.includes('if ( scene.matrixWorldAutoUpdate === true ) scene.updateMatrixWorld();'), 'the renderer no longer updates the scene through updateMatrixWorld');
 });

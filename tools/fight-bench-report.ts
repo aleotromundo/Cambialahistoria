@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
-import { fields, flag, items, numeric, text } from '../sim/content/read.ts';
+import { choice, each, fields, flag, items, numeric, text } from '../sim/content/read.ts';
 import type { Fields } from '../sim/content/read.ts';
 import type { FightPlan, FightRaw, FightWave, RendererCounts } from '../src/bench/fight-bench.ts';
+import { PROGRAM_CHANGE_REASONS } from '../src/three-kit/program-changes.ts';
+import type { DrawSurface, ProgramChangeReport, ProgramChangeRow, ReasonRate } from '../src/three-kit/program-changes.ts';
 
 export const FIGHT_DEFAULTS = {
   chrome: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -25,7 +27,10 @@ export const FIGHT_LIMITS = {
   percent: 100,
   msPerSecond: 1000,
   decimals: 2,
+  programRows: 8,
 } as const;
+
+const DRAW_SURFACES: readonly DrawSurface[] = ['canvas', 'target'];
 
 export interface WaveMix {
   readonly monster: string;
@@ -138,6 +143,7 @@ export interface FightReport {
   readonly renderer: RendererDrift;
   readonly heap: HeapDrift;
   readonly work: FightWork;
+  readonly programChanges: ProgramChangeReport | null;
   readonly problems: readonly string[];
 }
 
@@ -263,8 +269,34 @@ export function readRaw(value: unknown): FightRaw {
     drops: numeric(source, 'drops', 'fight'),
     casts: numeric(source, 'casts', 'fight'),
     heroDeaths: numeric(source, 'heroDeaths', 'fight'),
+    programChanges: readProgramChanges(source['programChanges'], 'fight.programChanges'),
     problems: strings(source['problems'], 'fight.problems'),
   };
+}
+
+function readReasonRate(value: unknown, where: string): ReasonRate {
+  const source: Fields = fields(value, where);
+  return { reason: choice(source, 'reason', PROGRAM_CHANGE_REASONS, where), perFrame: numeric(source, 'perFrame', where) };
+}
+
+function readProgramRow(value: unknown, where: string): ProgramChangeRow {
+  const source: Fields = fields(value, where);
+  return { reason: choice(source, 'reason', PROGRAM_CHANGE_REASONS, where), material: text(source, 'material', where), object: text(source, 'object', where), surface: choice(source, 'surface', DRAW_SURFACES, where), perFrame: numeric(source, 'perFrame', where) };
+}
+
+export function readProgramChanges(value: unknown, where: string): ProgramChangeReport {
+  const source: Fields = fields(value, where);
+  return {
+    frames: numeric(source, 'frames', where),
+    drawsPerFrame: numeric(source, 'drawsPerFrame', where),
+    changedDrawsPerFrame: numeric(source, 'changedDrawsPerFrame', where),
+    byReason: each(source['byReason'], `${where}.byReason`, readReasonRate),
+    rows: each(source['rows'], `${where}.rows`, readProgramRow),
+  };
+}
+
+function topProgramChanges(report: ProgramChangeReport): ProgramChangeReport {
+  return { ...report, rows: report.rows.slice(0, FIGHT_LIMITS.programRows) };
 }
 
 export function fightReport(raw: FightRaw, meta: FightMeta): FightReport {
@@ -282,6 +314,7 @@ export function fightReport(raw: FightRaw, meta: FightMeta): FightReport {
     renderer: { programsStart: raw.start.programs, programsEnd: raw.end.programs, geometriesStart: raw.start.geometries, geometriesEnd: raw.end.geometries, texturesStart: raw.start.textures, texturesEnd: raw.end.textures },
     heap: { startMegabytes: raw.start.heapMegabytes, endMegabytes: raw.end.heapMegabytes },
     work: { peakLive: raw.peakLive, kills: raw.kills, hits: raw.hits, drops: raw.drops, casts: raw.casts, heroDeaths: raw.heroDeaths },
+    programChanges: topProgramChanges(raw.programChanges),
     problems,
   };
 }
@@ -323,6 +356,7 @@ export function readReport(value: unknown): FightReport {
     renderer: { programsStart: numeric(renderer, 'programsStart', 'report.renderer'), programsEnd: numeric(renderer, 'programsEnd', 'report.renderer'), geometriesStart: numeric(renderer, 'geometriesStart', 'report.renderer'), geometriesEnd: numeric(renderer, 'geometriesEnd', 'report.renderer'), texturesStart: numeric(renderer, 'texturesStart', 'report.renderer'), texturesEnd: numeric(renderer, 'texturesEnd', 'report.renderer') },
     heap: { startMegabytes: maybeNumber(heap, 'startMegabytes', 'report.heap'), endMegabytes: maybeNumber(heap, 'endMegabytes', 'report.heap') },
     work: { peakLive: numeric(work, 'peakLive', 'report.work'), kills: numeric(work, 'kills', 'report.work'), hits: numeric(work, 'hits', 'report.work'), drops: numeric(work, 'drops', 'report.work'), casts: numeric(work, 'casts', 'report.work'), heroDeaths: numeric(work, 'heroDeaths', 'report.work') },
+    programChanges: source['programChanges'] === undefined ? null : readProgramChanges(source['programChanges'], 'report.programChanges'),
     problems: strings(source['problems'], 'report.problems'),
   };
 }
@@ -343,6 +377,8 @@ export const METRICS: readonly Metric[] = [
   { label: 'frames > 20 ms', better: 'lower', read: (report: FightReport): number => report.frames.over20 },
   { label: 'frames > 33 ms', better: 'lower', read: (report: FightReport): number => report.frames.over33 },
   { label: 'frames > 50 ms', better: 'lower', read: (report: FightReport): number => report.frames.over50 },
+  { label: 'draws per frame', better: 'lower', read: (report: FightReport): number | null => report.programChanges?.drawsPerFrame ?? null },
+  { label: 'program changes', better: 'lower', read: (report: FightReport): number | null => report.programChanges?.changedDrawsPerFrame ?? null },
   { label: 'average fps', better: 'higher', read: (report: FightReport): number => report.frames.averageFps },
   { label: 'long tasks', better: 'lower', read: (report: FightReport): number => report.longTasks.count },
   { label: 'long task ms', better: 'lower', read: (report: FightReport): number => report.longTasks.totalMs },
@@ -365,6 +401,13 @@ function cell(value: number | null): string {
   return value === null ? '-' : String(rounded(value));
 }
 
+function programLines(report: ProgramChangeReport | null): string[] {
+  if (report === null) return [];
+  const reasons: string = report.byReason.map((rate: ReasonRate): string => `${rate.reason} ${rounded(rate.perFrame)}`).join(', ');
+  const rows: string[] = report.rows.map((row: ProgramChangeRow): string => `           ${rounded(row.perFrame)}/frame ${row.reason}: ${row.material} on ${row.object}${row.surface === 'target' ? ', to a render target' : ''}`);
+  return [`programs   ${rounded(report.changedDrawsPerFrame)} of ${rounded(report.drawsPerFrame)} draws a frame change program${reasons === '' ? '' : ` (${reasons})`}`, ...rows];
+}
+
 export function reportLines(report: FightReport): string[] {
   const { meta, frames, longTasks, drawCalls, triangles, renderer, heap, work } = report;
   return [
@@ -376,6 +419,7 @@ export function reportLines(report: FightReport): string[] {
     `renderer   programs ${renderer.programsStart} -> ${renderer.programsEnd}, geometries ${renderer.geometriesStart} -> ${renderer.geometriesEnd}, textures ${renderer.texturesStart} -> ${renderer.texturesEnd}`,
     `heap       ${cell(heap.startMegabytes)} MB -> ${cell(heap.endMegabytes)} MB`,
     `work       peak live ${work.peakLive}, kills ${work.kills}, hits ${work.hits}, drops ${work.drops}, casts ${work.casts}, hero deaths ${work.heroDeaths}`,
+    ...programLines(report.programChanges),
     ...report.problems.map((problem: string): string => `problem: ${problem}`),
   ];
 }

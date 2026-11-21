@@ -20,6 +20,7 @@ const RAW: FightRaw = {
   drops: 60,
   casts: 120,
   heroDeaths: 0,
+  programChanges: { frames: 8, drawsPerFrame: 410, changedDrawsPerFrame: 3.5, byReason: [{ reason: 'skinning', perFrame: 3 }, { reason: 'lights', perFrame: 0.5 }], rows: [{ reason: 'skinning', material: 'MeshStandardMaterial "skin" #12', object: 'SkinnedMesh under Group "rig"', surface: 'canvas', perFrame: 3 }, { reason: 'lights', material: 'MeshStandardMaterial "wall" #4', object: 'InstancedMesh "cell"', surface: 'target', perFrame: 0.5 }] },
   problems: [],
 };
 
