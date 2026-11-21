@@ -8,6 +8,8 @@ dist-yandex
 the-lost-storm-yandex.zip
 dist-y8
 the-lost-storm-y8.zip
+dist-gamedistribution
+the-lost-storm-gamedistribution.zip
 .DS_Store
 *.blend1
 __pycache__

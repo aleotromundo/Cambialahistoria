@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import type { Plugin, ResolvedConfig, Rollup } from 'vite';
 import { Y8_SDK } from '../src/portal-sdk-y8.ts';
+import { GD_SDK } from '../src/portal-sdk-gamedistribution.ts';
 
 export const PORTAL = {
   mode: 'portal',
@@ -61,7 +62,17 @@ export const YANDEX: PortalTarget = {
   swaps: { ...GAMEPIX.swaps, 'src/portal-sdk.ts': 'src/portal-sdk-yandex.ts' },
 };
 
-export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX];
+export const GAMEDISTRIBUTION: PortalTarget = {
+  mode: 'gamedistribution',
+  outDir: 'dist-gamedistribution',
+  zip: 'the-lost-storm-gamedistribution.zip',
+  sealed: true,
+  leftOut: GAMEPIX.leftOut,
+  swaps: { ...GAMEPIX.swaps, 'src/portal-sdk.ts': 'src/portal-sdk-gamedistribution.ts' },
+  hostAddresses: [GD_SDK.sdkUrl],
+};
+
+export const PORTAL_TARGETS: readonly PortalTarget[] = [{ mode: PORTAL.mode, outDir: PORTAL.outDir, zip: PORTAL.zip, sealed: false, leftOut: [], swaps: {} }, GAMEPIX, Y8, YANDEX, GAMEDISTRIBUTION];
 
 export const INERT_ADDRESSES: Readonly<Record<string, string>> = {
   'http://www.w3.org/2000/svg': 'the SVG namespace, a name and never fetched',

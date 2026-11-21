@@ -12,6 +12,7 @@ import { keepFrames } from './frame-keeper.ts';
 import { HOST } from './host.ts';
 import { startPortalSdk } from './portal-sdk.ts';
 import type { PortalSdk } from './portal-sdk.ts';
+import { afterBreak, sendAfterBreaks } from './ad-break.ts';
 import type { WatchEffect } from './frame-watch.ts';
 import { startPerfReports } from './perf/perf-start.ts';
 import type { PerfReports } from './perf/perf-start.ts';
@@ -249,13 +250,14 @@ async function start(): Promise<void> {
   placeLine.show(world.zone.name);
   const { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
   const queue: Command[] = [];
-  const send = (command: Command): void => {
+  const sendNow = (command: Command): void => {
     if (watching !== null) return;
     queue.push(command);
     tracker.command(command);
     const action: UiAction | null = uiActionForCommand(command);
     if (action !== null) playUi(action);
   };
+  const send: (command: Command) => void = sendAfterBreaks(portal, sendNow);
   const particles: ParticleSystem = createParticles(stage.scene);
   const weather: Sky = createSky(stage.scene);
   const rain: Rainfall = createRainfall(stage, mobile.quality, gameSettings);
@@ -529,6 +531,7 @@ async function start(): Promise<void> {
     hideout?.frame(dt, playing, world, gate.present);
     if (watching === null && minter?.pump(world) === true) urgent = true;
     if (events.some((event: WorldEvent): boolean => event.type === 'zone_changed')) {
+      if (watching === null) void portal.adBreak?.('travel');
       const held: WorldEvent[] = events;
       saveHeld = true;
       transition.begin((): Promise<BuiltZone> => showZone(held), veilColour(content.zones, held), (): void => hud.handleEvents(held));
@@ -682,7 +685,7 @@ async function start(): Promise<void> {
   }, ready: (): Promise<void> => Promise.all([effects.ready, bootWarm]).then((): void => undefined), startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
   lobbyFlow = flow;
   whenIdle((): void => void flow.warm());
-  const openLobby = (): void => void flow.open();
+  const openLobby = (): void => afterBreak(portal, 'start', (): void => void flow.open());
   if (watching !== null) {
     watchCaptionView = createWatchCaption(duelWatch?.captionHolder ?? element('hud', HTMLDivElement));
     entered = true;

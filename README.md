@@ -132,6 +132,20 @@ The GamePix build for y8.com: the folder `dist-y8/` and the zip `the-lost-storm-
 - The world also pauses when the game loses focus, a click outside the frame included, and moves again when it gets focus back (`paused()` in `src/portal-sdk-y8.ts`), as Y8 asks.
 - The pack script lets through the SDK address and nothing else outside.
 
+### GameDistribution build
+
+```bash
+npm run build:gamedistribution
+```
+
+The GamePix build with the GameDistribution HTML5 SDK added: the folder `dist-gamedistribution/` and the zip `the-lost-storm-gamedistribution.zip`. The Vite mode `gamedistribution` (`GAMEDISTRIBUTION` in `tools/portal.ts`) makes every GamePix change and one more swap: `src/portal-sdk.ts`, the quiet SDK every other build uses, becomes `src/portal-sdk-gamedistribution.ts`, whose `adBreak` the quiet SDK leaves out.
+
+- The game id is `GD_SDK.gameId` at the top of `src/portal-sdk-gamedistribution.ts`, the 32-character hash the GameDistribution dashboard gives a new game. While it is empty the build loads no SDK and shows no ad.
+- The SDK script `https://html5.api.gamedistribution.com/main.min.js` is loaded once, with `GD_OPTIONS` set before it. It is the one outside address the pack script lets through for this build (`GAMEDISTRIBUTION.hostAddresses`).
+- `SDK_GAME_PAUSE` holds the world, input, drawing and sound until `SDK_GAME_START` (the portal SDK's `paused()`, which `src/main.ts` reads every frame).
+- A preroll plays when Enter or Continue is pressed on the title, before the lobby opens. A midroll plays when the player picks a way back on the death screen, before the respawn, and when the player changes zone. Midrolls keep at least `GD_SDK.breakGapMs` after any ad.
+- No ad ever holds the game: a break waits at most `GD_SDK.readyWaitMs` for `SDK_READY` and at most `GD_SDK.adLongestMs` for the ad, and a blocked or failing SDK is skipped.
+
 The overlay state machine (which panel, screen or card may be up, in what order, and what Escape closes) is specified in TLA+ in `spec/Overlays.tla`. Check it with `spec/run-tlc.sh`; [spec/README.md](spec/README.md) says how to get TLC.
 
 ## Layout

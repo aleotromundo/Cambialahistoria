@@ -10,4 +10,5 @@ void test('the site and the portals with no SDK start at once with one that neve
   sdk.gameplay(true);
   sdk.gameplay(false);
   assert.equal(sdk.paused(), false);
+  assert.equal(sdk.adBreak, undefined);
 });
