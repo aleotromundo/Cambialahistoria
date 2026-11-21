@@ -27,6 +27,7 @@ export const SHALLOWS = {
   exits: [{ id: 'east', x: 78.4, z: 30, radius: 1.6, to: 'waystation', toExit: 'west_gate', arrival: { x: 73, z: 30 } }],
   checkpoints: [],
   deathReturn: null,
+  duel: null,
   portalSpot: null,
   waypoint: null,
   npcs: [],

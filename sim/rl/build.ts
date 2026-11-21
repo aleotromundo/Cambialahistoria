@@ -85,7 +85,7 @@ function routeProblems(content: Content, route: readonly string[], level: number
   return problems;
 }
 
-function bookSkills(content: Content, level: number): string[] {
+export function bookSkills(content: Content, level: number): string[] {
   return content.player.skillBook.filter((unlock: SkillUnlock): boolean => unlock.level <= level).map((unlock: SkillUnlock): string => unlock.skill);
 }
 

@@ -68,6 +68,7 @@ import type {
   WearableDef,
   WearRegion,
   ZoneExit,
+  ZoneDuel,
   ZoneReturn,
   XpGap,
 } from './types.ts';
@@ -593,6 +594,12 @@ export function contentProblems(content: Content): string[] {
       const far: ZoneExit | undefined = content.zones.get(exit.to)?.exits.find((candidate: ZoneExit): boolean => candidate.id === exit.toExit);
       need(far !== undefined, `${at} exit ${exit.id} leads to unknown exit ${exit.to}.${exit.toExit}`);
       if (far !== undefined && zoneDef.kind !== 'void') need(far.to === zoneDef.id && far.toExit === exit.id, `${at} exit ${exit.id} is not matched by ${exit.to}.${exit.toExit}`);
+    }
+    const duel: ZoneDuel | null = zoneDef.duel;
+    if (duel !== null) {
+      need(content.zones.get(duel.home.zone)?.exits.some((candidate: ZoneExit): boolean => candidate.id === duel.home.exit) === true && duel.home.zone !== zoneDef.id, `${at} sends the duellist home to ${duel.home.zone}.${duel.home.exit}, which is not an exit of another zone`);
+      need(zoneDef.kind !== 'town' && zoneDef.kind !== 'void', `${at} holds a duel, so it cannot be a ${zoneDef.kind}`);
+      need(zoneDef.packs.length === 0 && zoneDef.surge === null && zoneDef.moments === null, `${at} holds a duel, so it cannot have packs, a surge or moments`);
     }
     const back: ZoneReturn | null = zoneDef.deathReturn;
     if (back !== null) need(content.zones.get(back.zone)?.exits.some((candidate: ZoneExit): boolean => candidate.id === back.exit) === true && back.zone !== zoneDef.id, `${at} returns the fallen to ${back.zone}.${back.exit}, which is not an exit of another zone`);

@@ -54,7 +54,7 @@ function resetMonster(monster: MonsterState): void {
   monster.recovery = { guard: 0, strain: 0, unbroken: 0, stunned: 0 };
 }
 
-function revive(world: World): void {
+export function revive(world: World): void {
   const player: PlayerState = world.player;
   player.alive = true;
   player.life = player.maxLife;
@@ -117,7 +117,7 @@ function recordDeath(world: World, event: Extract<WorldEvent, { readonly type: '
   if (world.death !== null) return;
   const source: MonsterState | undefined = world.monsters.find((monster: MonsterState): boolean => monster.id === event.sourceId);
   const player: PlayerState = world.player;
-  const xpLost: number = penaltyFor(world.content.player.deathPenalty, world.content.player.xp, player.level, player.xp);
+  const xpLost: number = world.zone.duel === null ? penaltyFor(world.content.player.deathPenalty, world.content.player.xp, player.level, player.xp) : 0;
   player.xp -= xpLost;
   world.death = { killer: source?.def.name ?? 'The storm', skill: event.skill.name, elapsed: 0, xpLost };
   for (const monster of world.monsters) monster.aggro = false;

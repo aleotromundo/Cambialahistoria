@@ -101,6 +101,7 @@ export function placePlayer(world: World): void {
 }
 
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {
+  if (world.zone.duel !== null) world.heroes.splice(0, world.heroes.length, world.player);
   endTailwind(world, 'left');
   parkZone(world);
   closeDialogue(world, false);

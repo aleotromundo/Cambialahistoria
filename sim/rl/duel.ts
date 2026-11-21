@@ -66,7 +66,7 @@ function readySeat(world: World, rng: Rng, seed: number, level: number, build: B
   else readyBuild(world, build, DUEL_KIT, ARENA.benchSeed + seed, level);
 }
 
-function benchedRival(content: Content, rng: Rng, seed: number, level: number, build: Build | null): PlayerState {
+export function benchedRival(content: Content, rng: Rng, seed: number, level: number, build: Build | null): PlayerState {
   const scratch: World = emptyArena(content, seed + DUEL.rivalSeed, level);
   readySeat(scratch, rng, seed + DUEL.rivalSeed, level, build);
   return scratch.player;

@@ -27,6 +27,7 @@ import type {
   ZoneAmbience,
   ZoneCheckpoint,
   ZoneDef,
+  ZoneDuel,
   ExitLook,
   ZoneExit,
   ZoneNpc,
@@ -161,6 +162,14 @@ function zoneReturn(value: unknown, where: string): ZoneReturn | null {
   if (value === undefined || value === null) return null;
   const source: Fields = fields(value, where);
   return { zone: text(source, 'zone', where), exit: text(source, 'exit', where) };
+}
+
+function zoneDuel(value: unknown, where: string): ZoneDuel | null {
+  if (value === undefined || value === null) return null;
+  const source: Fields = fields(value, where);
+  const home: ZoneReturn | null = zoneReturn(source['home'], `${where}.home`);
+  if (home === null) throw new ContentError(`${where}.home`, 'a duel needs a home to return the hero to');
+  return { rival: point(source['rival'], `${where}.rival`), home };
 }
 
 function zoneVoice(value: unknown, where: string): ZoneVoice {
@@ -314,6 +323,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     markerSurfaces: markerSurfaces(source['markerSurfaces'], `${where}.markerSurfaces`),
     portalSpot: source['portalSpot'] === undefined || source['portalSpot'] === null ? null : point(source['portalSpot'], `${where}.portalSpot`),
     deathReturn: zoneReturn(source['deathReturn'], `${where}.deathReturn`),
+    duel: zoneDuel(source['duel'], `${where}.duel`),
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
     voices: source['voices'] === undefined ? [] : [...byId(each(source['voices'], `${where}.voices`, zoneVoice), `${where}.voices`).values()],
     scenes: zoneScenes(source['scenes'], `${where}.scenes`),

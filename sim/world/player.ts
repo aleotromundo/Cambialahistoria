@@ -18,6 +18,7 @@ import { dodgesAtOnce, givesWayToDodge, isDodge } from './dodge.ts';
 import type { Buffered, PressRank, Taken } from './press-buffer.ts';
 import { bufferPress, takePress } from './press-buffer.ts';
 import { respawnPlayer } from './death.ts';
+import { leaveDuel } from './duel-zone.ts';
 import { advanceDialogue, closeDialogue, DIALOGUE, findNpc, replayDialogue } from './dialogue.ts';
 import { pickUp } from './finds.ts';
 import { useFlask } from './flasks.ts';
@@ -289,6 +290,7 @@ function act(world: World, player: PlayerState, command: Command): void {
     case 'respec':
     case 'choose_change':
     case 'respawn':
+    case 'leave_duel':
     case 'use_item':
     case 'set_out':
       return;
@@ -337,6 +339,9 @@ export function handleCommand(world: World, player: PlayerState, command: Comman
       return;
     case 'respawn':
       respawnPlayer(world, command.choice);
+      return;
+    case 'leave_duel':
+      leaveDuel(world);
       return;
     case 'use_item':
       useItem(world, command.inventoryIndex);

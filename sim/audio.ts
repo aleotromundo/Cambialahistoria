@@ -361,6 +361,7 @@ export function uiActionForCommand(command: Command): UiAction | null {
     case 'replay':
     case 'teleport':
     case 'respawn':
+    case 'leave_duel':
     case 'flask':
     case 'use':
     case 'use_item':

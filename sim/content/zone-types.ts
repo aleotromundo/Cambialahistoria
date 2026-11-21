@@ -107,6 +107,11 @@ export interface ZoneReturn {
   readonly exit: string;
 }
 
+export interface ZoneDuel {
+  readonly rival: ZonePoint;
+  readonly home: ZoneReturn;
+}
+
 export interface ZoneWaypoint {
   readonly x: number;
   readonly z: number;
@@ -163,6 +168,7 @@ export interface ZoneDef {
   readonly markerSurfaces: Readonly<Record<string, string>>;
   readonly portalSpot: ZonePoint | null;
   readonly deathReturn: ZoneReturn | null;
+  readonly duel: ZoneDuel | null;
   readonly npcs: readonly ZoneNpc[];
   readonly voices: readonly ZoneVoice[];
   readonly scenes: readonly SceneDef[];
