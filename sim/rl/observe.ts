@@ -7,6 +7,7 @@ import { armourReduction } from '../stats.ts';
 import { mayStrike } from '../world/factions.ts';
 import { hostileFrom, isPrimary, partyOf } from '../world/heroes.ts';
 import { blockedFlask } from '../world/flasks.ts';
+import { heldTriggers } from '../powers.ts';
 import { blockedReason } from '../world/skills.ts';
 import type { NpcState } from '../world/npc-types.ts';
 import type { Actor, AreaState, FlaskState, GroundItem, HazardState, MonsterState, PlayerState, ProjectileState, World } from '../world/types.ts';
@@ -180,7 +181,18 @@ function writeSelf(writer: Writer, world: World, context: ObserveContext, view: 
   put(writer, facing.x);
   put(writer, facing.z);
   flag(writer, player.pivot !== null);
+  writeBuilt(writer, world, player);
   blank(writer, RL.spareSelf);
+}
+
+function writeBuilt(writer: Writer, world: World, player: PlayerState): void {
+  put(writer, player.stats.damagePercent);
+  put(writer, player.stats.critMultiplier - 1);
+  put(writer, (player.stats.lifeRegen * RL.timeScale) / Math.max(1, player.maxLife));
+  put(writer, (player.stats.manaRegen * RL.timeScale) / Math.max(1, player.stats.maxMana));
+  put(writer, player.stats.stormResist);
+  put(writer, player.stats.frostResist);
+  put(writer, heldTriggers(world.content, player) / RL.countScale);
 }
 
 function writeDecision(writer: Writer, action: Action): void {
@@ -260,6 +272,11 @@ function writeSlot(writer: Writer, player: PlayerState, slot: number): void {
   put(writer, numbers.duration / RL.timeScale);
   put(writer, numbers.count / RL.countScale);
   flag(writer, player.held.includes(slot));
+  put(writer, skill.lifeOnHit / RL.countScale);
+  put(writer, skill.leech * RL.countScale);
+  put(writer, Math.min(1, (skill.delivery.type === 'projectile' ? skill.delivery.pierce : 0) / RL.countScale));
+  put(writer, skill.echo);
+  put(writer, (skill.momentum?.cap ?? 0) / RL.countScale);
   oneHot(writer, Object.keys(DELIVERY_ORDER).length, DELIVERY_ORDER[skill.delivery.type]);
   oneHot(writer, SKILL_CATEGORIES.length, categoryIndex(skill.category));
   oneHot(writer, DAMAGE_TYPES.length, damageIndex(skill.damage.type));

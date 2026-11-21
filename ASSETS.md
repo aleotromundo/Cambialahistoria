@@ -660,7 +660,7 @@ The game's own model, trained in `rl/` against the game's simulation and exporte
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `public/models/rl/duel-pilot.bin` | `best.pt` of the `levels20-v1` training run (contract v6, update 6600), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
+| `public/models/rl/duel-pilot.bin` | `best.pt` of the `levels20-v2` training run (update 1600), widened to contract v7 and exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
 
 ## Assets that must not be committed
 

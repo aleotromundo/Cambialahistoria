@@ -166,6 +166,10 @@ function heldSources(content: Content, player: PlayerState): readonly TriggerSou
   return sources;
 }
 
+export function heldTriggers(content: Content, player: PlayerState): number {
+  return heldSources(content, player).reduce((sum: number, source: TriggerSource): number => sum + source.triggers.length, 0);
+}
+
 function ready(state: PowerState, key: string, trigger: PowerTriggerDef): boolean {
   if ((state.cooldowns[key] ?? 0) > 0) return false;
   const count: number = (state.counts[key] ?? 0) + 1;

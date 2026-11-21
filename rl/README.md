@@ -79,6 +79,28 @@ A build is a named hero at the fixed duel level, so a duel is a contest of build
 - Replays keep the builds, so a replay plays the same heroes again.
 - `rl/builds/` holds five example builds, derived from the routes in `tools/simulate-policies.json`: Maelstrom and Duelist (blade), Bulwark (heavy), Windrunner (crossbow) and Caster (staff). `sim/rl/build.examples.test.ts` checks that each one is legal.
 
+## Training on tree builds
+
+The model is a pilot: it should fight well with any build, and a separate search picks the tree for it.
+
+- `ppo --tree-builds --levels 1-30 --level-lean 1` gives every arena and both seats of every duel a random legal skill-tree build at its level (`sim/rl/tree-build.ts`). The weapon is one of the standard weapons in `data/duel-kit.json`. The route grows one place at a time by the same rules as allocating in the game, from a starting place, through places that join the ones taken, within the specialty limit, and spends all `2 × (level - 1)` points. Places tied to another weapon group than the one held are drawn less often (`TREE_BUILD.offWeapon`), places that unlock a skill more often (`TREE_BUILD.unlocks`). The bar takes one to four skills from the skill book and the route's unlocks. Nothing in the code names a place or a skill, so a changed tree needs no code change.
+- A tree build and its level follow from the arena's seed (and the level weights), so the same seed always gives the same hero and a replay keeps its build. The bot anchor and the best check play tree builds the same way, so the paired comparison with the bot is on the same heroes.
+- `--level-lean` (0) weights the even share of the level draw by level to that power, so `--level-lean 1` plays level 30 thirty times as often as level 1 before the curriculum's own lean toward the levels the model loses. It works with `--curriculum 0` too.
+- `eval --tree-builds --levels 1-30` measures a checkpoint on tree builds.
+- What a tree changes reaches the model by numbers: the slot tokens already carry the resolved skill (damage, area, cooldown, range, cost, knockback, stagger, projectiles, chain jumps), and contract v7 adds the hero's `damage_percent`, `crit_multiplier`, `life_regen`, `mana_regen`, `storm_resist`, `frost_resist` and how many on-event `powers` it holds, and each slot's `life_on_hit`, `leech`, `pierce`, `echo` and `momentum`.
+
+## Build search
+
+```bash
+uv run python -m lost_storm_rl.train search --policy runs/trees-v1/best.pt --level 20 --budget 40
+```
+
+- `search` looks for the strongest build for a trained model at one level. It starts from the example builds in `rl/builds/` that are legal at that level and `--randoms` random tree builds (12), then repeatedly takes the `--keep` best so far (4) and changes each by one legal step: refund a place that can go and take another that joins, change a bar skill, or change the weapon (`mutateBuild` in `sim/rl/tree-build.ts`). The builds come from `tools/rl/build-tool.ts`, which runs the same generator and validator as training.
+- Each candidate is scored by greedy play: `--duels` duels a seat (4) against each example build, both seats, plus `--arenas` arenas (16) with the build. Its score is the share of all of those it won. Every candidate plays the same seeds, from 2800000000 (`--seed`): training refuses seeds that reach them, and they stay below 3000000000, where the judge's seeds start.
+- `--budget` (40) bounds the candidates scored, `--workers` (1, at most 2) scores that many at once. Every candidate is logged with its score and build to `runs/<run>/search-L<level>/search.csv`, and a rerun into the same folder resumes from that log without scoring a build twice.
+- The best build is written to `runs/<run>/search-L<level>/best.json`, named with its score, ready for `check`, `ppo --build`, `eval --build` and `match`.
+- When the tree changes, nothing here needs code: retrain from the latest checkpoint (widened first if the contract moved), then rerun the search.
+
 Everything under `runs/` is ignored by git.
 
 ## Export a model to the game
@@ -86,7 +108,7 @@ Everything under `runs/` is ignored by git.
 The game runs a trained model itself, in the browser, from one small file.
 
 ```bash
-uv run python -m lost_storm_rl.train export --policy runs/levels20-v1/best.pt --out ../public/models/rl/duel-pilot.bin --fixture ../sim/rl/policy-net.fixture.json
+uv run python -m lost_storm_rl.train export --policy runs/levels20-v2/best-v7.pt --out ../public/models/rl/duel-pilot.bin --fixture ../sim/rl/policy-net.fixture.json
 ```
 
 - The file is the 4 bytes `LSPL`, a u32 header length, a JSON header, padding to an even offset, then every tensor as float16 in header order. The header names the contract (`version`, `fingerprint`, `layout`, `heads`), `width`, `layers`, `attentionHeads`, each tensor's `name` and `shape`, and the checkpoint's `update` and best-check score.

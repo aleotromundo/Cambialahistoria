@@ -14,7 +14,7 @@ export const BEHAVIOUR_ORDER: Readonly<Record<MonsterBehaviour['type'], number>>
 export const BEHAVIOUR_NAMES: readonly MonsterBehaviour['type'][] = ['chaser', 'ranged', 'stalker', 'swarm', 'ambush', 'fixed'];
 
 export const RL = {
-  version: 6,
+  version: 7,
   tick: 1 / 30,
   ticksPerDecision: 4,
   actionParts: 4,
@@ -124,6 +124,13 @@ export const SELF_FEATURES: readonly string[] = [
   'facing_x',
   'facing_z',
   'turning',
+  'damage_percent',
+  'crit_multiplier',
+  'life_regen',
+  'mana_regen',
+  'storm_resist',
+  'frost_resist',
+  'powers',
   ...spare('', RL.spareSelf),
 ];
 
@@ -147,6 +154,11 @@ export const SLOT_FEATURES: readonly string[] = [
   'duration',
   'count',
   'held',
+  'life_on_hit',
+  'leech',
+  'pierce',
+  'echo',
+  'momentum',
   ...each('delivery_', DELIVERY_NAMES),
   ...each('category_', SKILL_CATEGORIES),
   ...each('damage_', DAMAGE_TYPES),

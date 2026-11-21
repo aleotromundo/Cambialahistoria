@@ -16,6 +16,7 @@ import { demonstrate } from '../../sim/rl/demo.ts';
 import type { Pool, PoolOptions, PoolStep } from '../../sim/rl/pool.ts';
 import { createPool, poolBuildLevel, poolObservations, poolRange, setLevels, stepPool } from '../../sim/rl/pool.ts';
 import type { KeptReplay } from '../../sim/rl/duel-replay.ts';
+import { treeBuildFor, treeLevel } from '../../sim/rl/tree-build.ts';
 import type { Frame } from './frames.ts';
 import { demonstrationFrame, frame, FRAME, jsonPart, observationFrame, readActions, readJson } from './frames.ts';
 
@@ -73,6 +74,17 @@ function builds(source: Fields): Pick<PoolOptions, 'build' | 'rivals' | 'seats'>
   return { ...(build === null ? {} : { build }), ...(rivals.length === 0 ? {} : { rivals }), ...(source['seats'] === undefined ? {} : { seats }) };
 }
 
+function flagOf(source: Fields, key: string): boolean {
+  const value: unknown = source[key];
+  if (value === undefined) return false;
+  if (typeof value !== 'boolean') throw new Error(`${key} must be true or false`);
+  return value;
+}
+
+function treeChoice(source: Fields): Pick<PoolOptions, 'treeBuilds'> {
+  return flagOf(source, 'treeBuilds') ? { treeBuilds: true } : {};
+}
+
 function levelChoice(source: Fields): Pick<PoolOptions, 'range' | 'buildLevel'> {
   const range: LevelRange | null = source['levelRange'] === undefined ? null : readLevelRange(source['levelRange']);
   const level: number | null = source['buildLevel'] === undefined ? null : count(source, 'buildLevel', BUILD.level);
@@ -82,17 +94,18 @@ function levelChoice(source: Fields): Pick<PoolOptions, 'range' | 'buildLevel'> 
 export function readPoolOptions(raw: unknown): PoolOptions {
   const source: Fields = fields(raw, 'hello');
   const choice: Pick<PoolOptions, 'range' | 'buildLevel'> = levelChoice(source);
-  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels'], choice.range), ...builds(source), ...choice };
+  return { seed: seedOf(source), envs: Math.max(1, Math.floor(count(source, 'envs', 1))), duels: Math.floor(count(source, 'duels', 0)), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), keepEvery: Math.floor(count(source, 'keepEvery', 0)), levels: readLevelWeights(source['levels'], choice.range), ...builds(source), ...choice, ...treeChoice(source) };
 }
 
 export function legalPool(content: Content, options: PoolOptions): PoolOptions {
+  if (options.treeBuilds === true && (options.build !== undefined || options.rivals !== undefined || options.seats !== undefined)) throw new Error('treeBuilds draws every build itself, so it takes no build, rivals or seats');
   const level: number = checkedLevel(content, poolBuildLevel(options));
   checkedRange(content, poolRange(options));
   const build: Build | undefined = options.build === undefined ? undefined : mustBeLegal(content, DUEL_KIT, options.build, 'build', level);
   const seats: (Build | null)[] | undefined = options.seats?.map((seat: Build | null, index: number): Build | null => (seat === null ? null : mustBeLegal(content, DUEL_KIT, seat, `seat ${index + 1} build`, level)));
   const rivals: Build[] = (options.rivals ?? []).filter((rival: Build): boolean => buildProblems(content, DUEL_KIT, rival, level).length === 0);
   const rest: PoolOptions = { seed: options.seed, envs: options.envs, duels: options.duels, jitter: options.jitter, waves: options.waves, keepEvery: options.keepEvery, levels: options.levels };
-  return { ...rest, ...(build === undefined ? {} : { build }), ...(seats === undefined ? {} : { seats }), ...(rivals.length === 0 ? {} : { rivals }), ...(options.range === undefined ? {} : { range: options.range }), ...(options.buildLevel === undefined ? {} : { buildLevel: options.buildLevel }) };
+  return { ...rest, ...(build === undefined ? {} : { build }), ...(seats === undefined ? {} : { seats }), ...(rivals.length === 0 ? {} : { rivals }), ...(options.range === undefined ? {} : { range: options.range }), ...(options.buildLevel === undefined ? {} : { buildLevel: options.buildLevel }), ...(options.treeBuilds === true ? { treeBuilds: true } : {}) };
 }
 
 function checkedRange(content: Content, range: LevelRange): void {
@@ -109,9 +122,11 @@ export interface BuiltShape {
   readonly build?: string | null;
   readonly rivals?: readonly string[];
   readonly seats?: readonly (string | null)[];
+  readonly treeBuilds?: boolean;
 }
 
 export function builtShape(options: PoolOptions): BuiltShape {
+  if (options.treeBuilds === true) return { treeBuilds: true };
   if (options.build === undefined && options.rivals === undefined && options.seats === undefined) return {};
   return { duelLevel: poolBuildLevel(options), build: buildName(options.build), rivals: (options.rivals ?? []).map((rival: Build): string => rival.name), seats: (options.seats ?? []).map(buildName) };
 }
@@ -131,6 +146,7 @@ interface DemoRequest {
   readonly build: Build | null;
   readonly range: LevelRange;
   readonly buildLevel: number;
+  readonly treeBuilds: boolean;
 }
 
 function seedList(raw: unknown): number[] {
@@ -145,12 +161,16 @@ export function readDemoRequest(raw: unknown): DemoRequest {
   const seeds: number[] = seedList(source['seeds']);
   const samples: unknown = source['samples'];
   if (samples !== undefined && typeof samples !== 'boolean') throw new Error('samples must be true or false');
-  return { seed: seedOf(source), episodes: seeds.length > 0 ? seeds.length : Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), seeds, levels: readLevelWeights(source['levels'], range), samples: samples !== false, build: optionalBuild(source['build'], 'build'), range, buildLevel: count(source, 'buildLevel', BUILD.level) };
+  return { seed: seedOf(source), episodes: seeds.length > 0 ? seeds.length : Math.max(1, Math.floor(count(source, 'episodes', 1))), jitter: spread(source), waves: Math.max(1, Math.floor(count(source, 'waves', 1))), seeds, levels: readLevelWeights(source['levels'], range), samples: samples !== false, build: optionalBuild(source['build'], 'build'), range, buildLevel: count(source, 'buildLevel', BUILD.level), treeBuilds: flagOf(source, 'treeBuilds') };
 }
 
-export function demoOptions(request: DemoRequest, rng: Rng, index: number): ArenaOptions {
+export function demoOptions(content: Content, request: DemoRequest, rng: Rng, index: number): ArenaOptions {
   const options: ArenaOptions = { seed: request.seeds[index] ?? request.seed + index, jitter: request.jitter, waves: request.waves };
   if (request.build !== null) return { ...options, build: request.build, level: request.buildLevel };
+  if (request.treeBuilds) {
+    const drawn: number = treeLevel(options.seed, request.levels, request.range);
+    return { ...options, level: drawn, build: treeBuildFor(content, DUEL_KIT, options.seed, drawn) };
+  }
   const level: number | null = levelIn(rng, request.levels, request.range);
   return level === null ? options : { ...options, level };
 }
@@ -174,7 +194,7 @@ function* demonstrations(session: Session, request: DemoRequest): Generator<Buff
     checkedRange(session.content, request.range);
     if (request.build !== null) mustBeLegal(session.content, DUEL_KIT, request.build, 'build', checkedLevel(session.content, request.buildLevel));
     const rng: Rng = createRng(request.seed + CURRICULUM.seedSalt);
-    for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, demoOptions(request, rng, index)), request.samples);
+    for (let index: number = 0; index < request.episodes; index += 1) yield episodeFrame(demonstrate(session.content, demoOptions(session.content, request, rng, index)), request.samples);
     yield episodeFrame(null, request.samples);
   }
   catch (error: unknown) {

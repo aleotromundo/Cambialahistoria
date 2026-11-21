@@ -22,6 +22,7 @@ class LevelCurriculum:
     mix: float
     rate: float = 0.05
     wins: list[float] = field(default_factory=list)
+    lean: float = 0.0
 
     def __post_init__(self) -> None:
         if not self.wins:
@@ -36,13 +37,17 @@ class LevelCurriculum:
             won = 1.0 if episode["outcome"] == "won" else 0.0
             self.wins[index] += self.rate * (won - self.wins[index])
 
+    def base(self) -> list[float]:
+        leaned = [float(level) ** self.lean for level in range(self.low, self.high + 1)]
+        total = sum(leaned)
+        return [share / total for share in leaned]
+
     def weights(self) -> list[float]:
         if self.mix <= 0:
-            return []
+            return [round(share, 6) for share in self.base()] if self.lean > 0 else []
         failing = [1.0 - win + FAIL_FLOOR for win in self.wins]
         total = sum(failing)
-        even = 1.0 / len(self.wins)
-        return [round((1 - self.mix) * even + self.mix * fail / total, 6) for fail in failing]
+        return [round((1 - self.mix) * share + self.mix * fail / total, 6) for share, fail in zip(self.base(), failing)]
 
     def win_between(self, low: int, high: int) -> float:
         picked = [win for level, win in enumerate(self.wins, start=self.low) if low <= level <= high]

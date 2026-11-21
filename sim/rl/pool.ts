@@ -13,13 +13,15 @@ import type { LevelRange } from './curriculum.ts';
 import { CURRICULUM, levelIn } from './curriculum.ts';
 import { LAYOUT, RL } from './contract.ts';
 import type { Duel, DuelOptions, DuelSeat } from './duel.ts';
-import { createDuel, duelObservation, stepDuel } from './duel.ts';
+import { createDuel, DUEL, duelObservation, stepDuel } from './duel.ts';
 import type { KeptReplay } from './duel-replay.ts';
 import { recordDuelReplay } from './duel-replay.ts';
 import type { Recall } from './recall.ts';
 import { rememberDecision } from './recall.ts';
 import type { Observation } from './observe.ts';
 import { actionFrom, recordReplay } from './replay.ts';
+import { DUEL_KIT } from './kit.ts';
+import { treeBuildFor, treeLevel } from './tree-build.ts';
 
 export interface PoolOptions {
   readonly seed: number;
@@ -34,6 +36,7 @@ export interface PoolOptions {
   readonly seats?: readonly (Build | null)[];
   readonly range?: LevelRange;
   readonly buildLevel?: number;
+  readonly treeBuilds?: boolean;
 }
 
 export type Match = { readonly kind: 'arena'; readonly arena: Arena } | { readonly kind: 'duel'; readonly duel: Duel };
@@ -100,6 +103,10 @@ export function poolBuildLevel(options: PoolOptions): number {
 
 function arenaOptions(pool: Pool, seed: number): ArenaOptions {
   const options: ArenaOptions = { seed, jitter: pool.options.jitter, waves: pool.options.waves };
+  if (pool.options.treeBuilds === true) {
+    const level: number = treeLevel(seed, pool.levels, poolRange(pool.options));
+    return { ...options, level, build: treeBuildFor(pool.content, DUEL_KIT, seed, level) };
+  }
   if (pool.options.build !== undefined) return { ...options, build: pool.options.build, level: poolBuildLevel(pool.options) };
   const level: number | null = levelIn(pool.levelRng, pool.levels, poolRange(pool.options));
   return level === null ? options : { ...options, level };
@@ -113,6 +120,10 @@ export function duelBuilds(options: PoolOptions, seed: number): readonly (Build 
 }
 
 function duelOptions(pool: Pool, seed: number): DuelOptions {
+  if (pool.options.treeBuilds === true) {
+    const level: number = treeLevel(seed, pool.levels, poolRange(pool.options));
+    return { seed, jitter: pool.options.jitter, level, builds: [treeBuildFor(pool.content, DUEL_KIT, seed, level), treeBuildFor(pool.content, DUEL_KIT, seed + DUEL.rivalSeed, level)] };
+  }
   const builds: readonly (Build | null)[] | undefined = duelBuilds(pool.options, seed);
   const options: DuelOptions = builds === undefined ? { seed, jitter: pool.options.jitter } : { seed, jitter: pool.options.jitter, builds };
   if (builds?.some((build: Build | null): boolean => build !== null) === true) return { ...options, level: poolBuildLevel(pool.options) };
