@@ -4,6 +4,8 @@ import type { Fields } from '../sim/content/read.ts';
 import type { FightPlan, FightRaw, FightWave, RendererCounts } from '../src/bench/fight-bench.ts';
 import { PROGRAM_CHANGE_REASONS } from '../src/three-kit/program-changes.ts';
 import type { DrawSurface, ProgramChangeReport, ProgramChangeRow, ReasonRate } from '../src/three-kit/program-changes.ts';
+import { SHADOW_CASTER_KINDS } from '../src/three-kit/shadow-pass.ts';
+import type { ShadowKindRate, ShadowPassReport } from '../src/three-kit/shadow-pass.ts';
 
 export const FIGHT_DEFAULTS = {
   chrome: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -144,6 +146,7 @@ export interface FightReport {
   readonly heap: HeapDrift;
   readonly work: FightWork;
   readonly programChanges: ProgramChangeReport | null;
+  readonly shadowPass: ShadowPassReport | null;
   readonly problems: readonly string[];
 }
 
@@ -270,6 +273,7 @@ export function readRaw(value: unknown): FightRaw {
     casts: numeric(source, 'casts', 'fight'),
     heroDeaths: numeric(source, 'heroDeaths', 'fight'),
     programChanges: readProgramChanges(source['programChanges'], 'fight.programChanges'),
+    shadowPass: readShadowPass(source['shadowPass'], 'fight.shadowPass'),
     problems: strings(source['problems'], 'fight.problems'),
   };
 }
@@ -295,6 +299,25 @@ export function readProgramChanges(value: unknown, where: string): ProgramChange
   };
 }
 
+function readKindRate(value: unknown, where: string): ShadowKindRate {
+  const source: Fields = fields(value, where);
+  return { kind: choice(source, 'kind', SHADOW_CASTER_KINDS, where), drawsPerFrame: numeric(source, 'drawsPerFrame', where), trianglesPerFrame: numeric(source, 'trianglesPerFrame', where) };
+}
+
+export function readShadowPass(value: unknown, where: string): ShadowPassReport {
+  const source: Fields = fields(value, where);
+  return {
+    frames: numeric(source, 'frames', where),
+    passesPerFrame: numeric(source, 'passesPerFrame', where),
+    movedPassShare: numeric(source, 'movedPassShare', where),
+    drawsPerFrame: numeric(source, 'drawsPerFrame', where),
+    trianglesPerFrame: numeric(source, 'trianglesPerFrame', where),
+    allDrawsPerFrame: numeric(source, 'allDrawsPerFrame', where),
+    allTrianglesPerFrame: numeric(source, 'allTrianglesPerFrame', where),
+    kinds: each(source['kinds'], `${where}.kinds`, readKindRate),
+  };
+}
+
 function topProgramChanges(report: ProgramChangeReport): ProgramChangeReport {
   return { ...report, rows: report.rows.slice(0, FIGHT_LIMITS.programRows) };
 }
@@ -315,6 +338,7 @@ export function fightReport(raw: FightRaw, meta: FightMeta): FightReport {
     heap: { startMegabytes: raw.start.heapMegabytes, endMegabytes: raw.end.heapMegabytes },
     work: { peakLive: raw.peakLive, kills: raw.kills, hits: raw.hits, drops: raw.drops, casts: raw.casts, heroDeaths: raw.heroDeaths },
     programChanges: topProgramChanges(raw.programChanges),
+    shadowPass: raw.shadowPass,
     problems,
   };
 }
@@ -357,6 +381,7 @@ export function readReport(value: unknown): FightReport {
     heap: { startMegabytes: maybeNumber(heap, 'startMegabytes', 'report.heap'), endMegabytes: maybeNumber(heap, 'endMegabytes', 'report.heap') },
     work: { peakLive: numeric(work, 'peakLive', 'report.work'), kills: numeric(work, 'kills', 'report.work'), hits: numeric(work, 'hits', 'report.work'), drops: numeric(work, 'drops', 'report.work'), casts: numeric(work, 'casts', 'report.work'), heroDeaths: numeric(work, 'heroDeaths', 'report.work') },
     programChanges: source['programChanges'] === undefined ? null : readProgramChanges(source['programChanges'], 'report.programChanges'),
+    shadowPass: source['shadowPass'] === undefined ? null : readShadowPass(source['shadowPass'], 'report.shadowPass'),
     problems: strings(source['problems'], 'report.problems'),
   };
 }
@@ -378,6 +403,8 @@ export const METRICS: readonly Metric[] = [
   { label: 'frames > 33 ms', better: 'lower', read: (report: FightReport): number => report.frames.over33 },
   { label: 'frames > 50 ms', better: 'lower', read: (report: FightReport): number => report.frames.over50 },
   { label: 'draws per frame', better: 'lower', read: (report: FightReport): number | null => report.programChanges?.drawsPerFrame ?? null },
+  { label: 'shadow draws', better: 'lower', read: (report: FightReport): number | null => report.shadowPass?.drawsPerFrame ?? null },
+  { label: 'shadow triangles', better: 'lower', read: (report: FightReport): number | null => report.shadowPass?.trianglesPerFrame ?? null },
   { label: 'program changes', better: 'lower', read: (report: FightReport): number | null => report.programChanges?.changedDrawsPerFrame ?? null },
   { label: 'average fps', better: 'higher', read: (report: FightReport): number => report.frames.averageFps },
   { label: 'long tasks', better: 'lower', read: (report: FightReport): number => report.longTasks.count },
@@ -408,6 +435,19 @@ function programLines(report: ProgramChangeReport | null): string[] {
   return [`programs   ${rounded(report.changedDrawsPerFrame)} of ${rounded(report.drawsPerFrame)} draws a frame change program${reasons === '' ? '' : ` (${reasons})`}`, ...rows];
 }
 
+function percentOf(part: number, whole: number): string {
+  return whole > 0 ? `${Math.round((part / whole) * FIGHT_LIMITS.percent)}%` : '-';
+}
+
+function shadowLines(report: ShadowPassReport | null): string[] {
+  if (report === null) return [];
+  const kinds: string = report.kinds.map((rate: ShadowKindRate): string => `${rate.kind} ${rounded(rate.drawsPerFrame)} draws ${Math.round(rate.trianglesPerFrame)} tris`).join(', ');
+  return [
+    `shadows    ${rounded(report.passesPerFrame)} passes a frame: ${rounded(report.drawsPerFrame)} of ${rounded(report.allDrawsPerFrame)} draws (${percentOf(report.drawsPerFrame, report.allDrawsPerFrame)}), ${Math.round(report.trianglesPerFrame)} of ${Math.round(report.allTrianglesPerFrame)} triangles (${percentOf(report.trianglesPerFrame, report.allTrianglesPerFrame)}); view moved in ${percentOf(report.movedPassShare, 1)} of passes`,
+    `           ${kinds}`,
+  ];
+}
+
 export function reportLines(report: FightReport): string[] {
   const { meta, frames, longTasks, drawCalls, triangles, renderer, heap, work } = report;
   return [
@@ -420,6 +460,7 @@ export function reportLines(report: FightReport): string[] {
     `heap       ${cell(heap.startMegabytes)} MB -> ${cell(heap.endMegabytes)} MB`,
     `work       peak live ${work.peakLive}, kills ${work.kills}, hits ${work.hits}, drops ${work.drops}, casts ${work.casts}, hero deaths ${work.heroDeaths}`,
     ...programLines(report.programChanges),
+    ...shadowLines(report.shadowPass),
     ...report.problems.map((problem: string): string => `problem: ${problem}`),
   ];
 }

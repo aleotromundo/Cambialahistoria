@@ -33,6 +33,19 @@ Counts the draws for which three re-derives a shader program. Its `setProgram` d
 
 The fix is nearly always to stop sharing: give each kind of draw its own material, so each keeps its own program.
 
+### shadow-pass.ts
+
+Counts what the shadow map costs each frame. `watchShadowPass(renderer)` wraps the shadow map's `render` (an instance field) to mark the pass, and `renderBufferDirect` to read `renderer.info.render` around every draw, so its numbers are three's own. It reports shadow passes, draws and triangles per frame beside every draw of the frame, how often a light's shadow view moved between passes (a cached map would have to be redrawn that often), and the split by caster:
+
+| Kind | The caster |
+|---|---|
+| `still` | a plain mesh with the same world matrix as at its last shadow draw |
+| `moved` | a plain mesh whose world matrix changed since its last shadow draw |
+| `skinned` | a skinned mesh, which changes shape every frame it animates |
+| `instanced` | an instanced or batched mesh |
+
+The fight bench watches its measured window and prints the `shadows` line. Each watch puts the methods back only while it is still the outermost wrapper, so the bench stops it before the program-change meter.
+
 ### steady-shadows.ts
 
 Gives every shadow caster a shared depth material fixed for its kind (skinned or rigid, instanced, morphs, map, side), so the shadow pass never changes a depth program because of draw order. three dresses whichever depth material it uses from the caster's material on every draw, so the shadow does not change. A caster whose material three would give a depth material of its own (alpha-tested map, alpha map, displacement, alpha to coverage, clipping planes) is left to three.

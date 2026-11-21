@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import type { ProgramChangeReport, ProgramChangeRow } from '../src/three-kit/program-changes.ts';
 import type { FightMeta, FightReport, MetricDelta } from './fight-bench-report.ts';
 import { compareReports, FIGHT_LIMITS, fightReport, readProgramChanges, readReport, reportLines } from './fight-bench-report.ts';
+import { emptyShadowPassTally, shadowPassReport } from '../src/three-kit/shadow-pass.ts';
 import type { FightRaw } from '../src/bench/fight-bench.ts';
 
 const META: FightMeta = { plan: 'hall-brawl-v1', zone: 'hall_of_time', commit: 'abc1234', at: '2026-11-21T00:00:00.000Z', load: 3, quiet: true, capped: true, width: 1280, height: 800, scale: 2, warmupMs: 15000, measureMs: 40000 };
@@ -13,7 +14,7 @@ function row(index: number): ProgramChangeRow {
 
 const PROGRAMS: ProgramChangeReport = { frames: 2400, drawsPerFrame: 412.25, changedDrawsPerFrame: 6.5, byReason: [{ reason: 'skinning', perFrame: 6 }, { reason: 'fog', perFrame: 0.5 }], rows: Array.from({ length: 12 }, (_unused: unknown, index: number): ProgramChangeRow => row(index)) };
 
-const RAW: FightRaw = { zone: 'hall_of_time', frames: [16, 17], calls: [100, 120], triangles: [1000, 2000], longTasks: [], start: { programs: 40, geometries: 300, textures: 80, heapMegabytes: null }, end: { programs: 40, geometries: 300, textures: 80, heapMegabytes: null }, peakLive: 40, kills: 100, hits: 900, drops: 20, casts: 80, heroDeaths: 0, programChanges: PROGRAMS, problems: [] };
+const RAW: FightRaw = { zone: 'hall_of_time', frames: [16, 17], calls: [100, 120], triangles: [1000, 2000], longTasks: [], start: { programs: 40, geometries: 300, textures: 80, heapMegabytes: null }, end: { programs: 40, geometries: 300, textures: 80, heapMegabytes: null }, peakLive: 40, kills: 100, hits: 900, drops: 20, casts: 80, heroDeaths: 0, programChanges: PROGRAMS, shadowPass: shadowPassReport(emptyShadowPassTally(), 0), problems: [] };
 
 void test('the report keeps the largest program changes only and prints them under the work line', (): void => {
   const report: FightReport = fightReport(RAW, META);

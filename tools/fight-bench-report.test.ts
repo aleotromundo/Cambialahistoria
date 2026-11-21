@@ -21,6 +21,7 @@ const RAW: FightRaw = {
   casts: 120,
   heroDeaths: 0,
   programChanges: { frames: 8, drawsPerFrame: 410, changedDrawsPerFrame: 3.5, byReason: [{ reason: 'skinning', perFrame: 3 }, { reason: 'lights', perFrame: 0.5 }], rows: [{ reason: 'skinning', material: 'MeshStandardMaterial "skin" #12', object: 'SkinnedMesh under Group "rig"', surface: 'canvas', perFrame: 3 }, { reason: 'lights', material: 'MeshStandardMaterial "wall" #4', object: 'InstancedMesh "cell"', surface: 'target', perFrame: 0.5 }] },
+  shadowPass: { frames: 8, passesPerFrame: 1, movedPassShare: 0.75, drawsPerFrame: 180, trianglesPerFrame: 90000, allDrawsPerFrame: 410, allTrianglesPerFrame: 200000, kinds: [{ kind: 'still', drawsPerFrame: 120, trianglesPerFrame: 60000 }, { kind: 'moved', drawsPerFrame: 10, trianglesPerFrame: 5000 }, { kind: 'skinned', drawsPerFrame: 40, trianglesPerFrame: 20000 }, { kind: 'instanced', drawsPerFrame: 10, trianglesPerFrame: 5000 }] },
   problems: [],
 };
 
