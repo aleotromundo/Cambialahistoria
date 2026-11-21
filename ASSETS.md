@@ -654,6 +654,14 @@ The font files are not committed. They come from npm packages that Vite bundles 
 
 Effects (slashes, bolts, shockwaves, lightning, particles), the HUD and its icons are drawn in code or CSS in this repository and are covered by the MIT licence in [LICENSE](LICENSE). This repository holds no audio: the game's sounds are licensed for use in the game only and are served separately.
 
+## Trained models
+
+The game's own model, trained in `rl/` against the game's simulation and exported with `uv run python -m lost_storm_rl.train export`. Its weights are float16; the file's header names the training contract and the checkpoint it came from.
+
+| File | Source | Author | Licence |
+|---|---|---|---|
+| `public/models/rl/duel-pilot.bin` | `best.pt` of the `levels20-v1` training run (contract v6, update 6600), exported by `rl/lost_storm_rl/export.py` | Made for this project | MIT |
+
 ## Assets that must not be committed
 
 Some licences allow use in a game but not handing the files to others, so those files never go in this repository:

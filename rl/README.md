@@ -80,3 +80,17 @@ A build is a named hero at the fixed duel level, so a duel is a contest of build
 - `rl/builds/` holds five example builds, derived from the routes in `tools/simulate-policies.json`: Maelstrom and Duelist (blade), Bulwark (heavy), Windrunner (crossbow) and Caster (staff). `sim/rl/build.examples.test.ts` checks that each one is legal.
 
 Everything under `runs/` is ignored by git.
+
+## Export a model to the game
+
+The game runs a trained model itself, in the browser, from one small file.
+
+```bash
+uv run python -m lost_storm_rl.train export --policy runs/levels20-v1/best.pt --out ../public/models/rl/duel-pilot.bin --fixture ../sim/rl/policy-net.fixture.json
+```
+
+- The file is the 4 bytes `LSPL`, a u32 header length, a JSON header, padding to an even offset, then every tensor as float16 in header order. The header names the contract (`version`, `fingerprint`, `layout`, `heads`), `width`, `layers`, `attentionHeads`, each tensor's `name` and `shape`, and the checkpoint's `update` and best-check score.
+- The value head is left out (the game only acts), and float16 halves the rest, so a 2 MB checkpoint becomes about 1 MB.
+- `export` refuses a checkpoint for another contract than the game's; widen it first.
+- `--fixture` plays a few greedy duels on held-out seeds and writes their observations (non-zero numbers only), masks, the float16 model's logits and its greedy actions. The game's TypeScript forward pass is tested against it. The printed `same_greedy_action` is the share of those observations where the float16 model chooses exactly what the checkpoint chooses.
+- The shipped file is our own work and has its row in `ASSETS.md`. Never commit the `.pt`.

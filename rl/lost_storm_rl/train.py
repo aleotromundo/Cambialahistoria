@@ -18,6 +18,7 @@ from .anchor import HEAD_NAMES, BotBuffer, LevelCurriculum, bot_weight, imitatio
 from .best import BestKeeper, best_check, high_band, note_best, saved_rate
 from .bridge import MAX_SEED, WORKER_SEED_STRIDE, ArenaEnvs, BridgeError, demonstrations
 from .builds import build_name, example_builds, load_optional, seat_builds
+from .export import export
 from .match import MATCH_DUELS_AT_ONCE, play_match, score
 from .model import Policy, load, save, widen
 
@@ -531,6 +532,10 @@ def main() -> None:
     widen_cmd = sub.add_parser("widen")
     widen_cmd.add_argument("--policy", required=True)
     widen_cmd.add_argument("--out", default=None)
+    export_cmd = sub.add_parser("export")
+    export_cmd.add_argument("--policy", required=True)
+    export_cmd.add_argument("--out", required=True)
+    export_cmd.add_argument("--fixture", default=None)
     for name in ("imitate", "ppo", "eval"):
         command = sub.add_parser(name)
         command.add_argument("--run", default="arena")
@@ -598,7 +603,7 @@ def main() -> None:
     match_cmd.add_argument("--duels", type=int, default=128)
     match_cmd.add_argument("--sample", action="store_true")
     parsed = parser.parse_args()
-    if parsed.command not in ("widen", "check"):
+    if parsed.command not in ("widen", "check", "export"):
         check_seed(parser, parsed.seed)
     if parsed.command == "eval" and parsed.episodes < 1:
         parser.error("--episodes must be 1 or more")
@@ -625,7 +630,9 @@ def main() -> None:
         check_best(parser, parsed.best_every, parsed.best_episodes, parsed.best_seed)
         check_training_seed(parser, parsed.seed, parsed.updates, parsed.bot_episodes, parsed.workers, parsed.steps, parsed.envs, parsed.bot_coef)
     torch.set_num_threads(4)
-    if parsed.command == "widen":
+    if parsed.command == "export":
+        print(json.dumps(export(parsed.policy, parsed.out, parsed.fixture), indent=2))
+    elif parsed.command == "widen":
         probe = ArenaEnvs(1, 1, 1, 0.0, 1)
         contract = probe.contract
         probe.close()
