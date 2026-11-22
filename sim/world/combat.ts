@@ -257,6 +257,10 @@ function mendSource(world: World, offence: Offence, target: Actor, skill: SkillD
   leechActor(world, source, dealt * skill.leech * leech);
 }
 
+export function versusScale(world: World, striker: Actor | null, target: Actor): number {
+  return target.kind === 'player' && striker?.kind === 'player' ? (world.zone.duel?.heroDamage ?? 1) : 1;
+}
+
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
   if (!target.alive || (target.kind === 'player' && (target.invulnerable > 0 || attacksHeld(world)))) return false;
   const guard: GuardOutcome = guardOutcome(target, skill, direction);
@@ -268,7 +272,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const mitigation: number = target.kind === 'player' ? heroTaken(target.stats, skill.damage.type, elementOf(striker), world.content.player.resistance, world.zone.stormTier) : monsterTaken(target.def.element, skill.damage.type);
   const weakened: number = striker === null ? 1 : dealtScale(world, striker);
   const exposed: number = target.kind === 'monster' ? openScale(world, target) * collateralScale(offence, target) : 1;
-  const versus: number = target.kind === 'player' && striker?.kind === 'player' ? (world.zone.duel?.heroDamage ?? 1) : 1;
+  const versus: number = versusScale(world, striker, target);
   const rolled: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded * weakened * exposed * versus));
   const amount: number = target.kind === 'monster' ? holdLine(world, target, strike(world, target, rolled)) : rolled;
   const dealt: number = Math.max(0, Math.min(amount, target.life));

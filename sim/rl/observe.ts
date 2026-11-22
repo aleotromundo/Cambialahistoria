@@ -4,6 +4,7 @@ import type { Vec2 } from '../math.ts';
 import { directionOf } from '../math.ts';
 import { isWalkable } from '../nav/grid.ts';
 import { armourReduction } from '../stats.ts';
+import { findActor, versusScale } from '../world/combat.ts';
 import { mayStrike } from '../world/factions.ts';
 import { hostileFrom, isPrimary, partyOf } from '../world/heroes.ts';
 import { blockedFlask } from '../world/flasks.ts';
@@ -332,14 +333,14 @@ function monsterNumbers(world: World, player: PlayerState, monster: MonsterState
   };
 }
 
-function heroNumbers(player: PlayerState, other: PlayerState, hostile: boolean): EntityNumbers {
+function heroNumbers(world: World, player: PlayerState, other: PlayerState, hostile: boolean): EntityNumbers {
   const action = other.action;
   const numbers: SkillNumbers = action === null ? { reach: 0, area: 0, duration: 0, count: 0 } : skillNumbers(action.skill);
   return {
     hostile,
     life: other.life / Math.max(1, other.maxLife),
     maxLife: Math.log1p(other.maxLife / Math.max(1, player.maxLife)),
-    damage: (other.stats.damageMin + other.stats.damageMax) / 2 / Math.max(1, player.maxLife),
+    damage: ((other.stats.damageMin + other.stats.damageMax) / 2 / Math.max(1, player.maxLife)) * versusScale(world, other, player),
     moveSpeed: other.stats.moveSpeed / RL.speedScale,
     radius: other.radius,
     aggro: true,
@@ -362,16 +363,16 @@ function entityNumbers(world: World, player: PlayerState, seen: Seen): EntityNum
     case 'monster':
       return monsterNumbers(world, player, seen.monster, seen.hostile);
     case 'hero':
-      return heroNumbers(player, seen.hero, seen.hostile);
+      return heroNumbers(world, player, seen.hero, seen.hostile);
     case 'projectile': {
       const numbers: SkillNumbers = skillNumbers(seen.projectile.skill);
-      return { ...QUIET, hostile: seen.hostile, damage: (seen.projectile.damageMin + seen.projectile.damageMax) / 2 / Math.max(1, player.maxLife), area: numbers.area / RL.areaScale, dir: seen.projectile.direction, speed: seen.projectile.skill.delivery.type === 'projectile' ? seen.projectile.skill.delivery.speed / RL.distanceScale : 0, timeLeft: seen.projectile.distanceLeft / RL.distanceScale };
+      return { ...QUIET, hostile: seen.hostile, damage: ((seen.projectile.damageMin + seen.projectile.damageMax) / 2 / Math.max(1, player.maxLife)) * versusScale(world, findActor(world, seen.projectile.ownerId), player), area: numbers.area / RL.areaScale, dir: seen.projectile.direction, speed: seen.projectile.skill.delivery.type === 'projectile' ? seen.projectile.skill.delivery.speed / RL.distanceScale : 0, timeLeft: seen.projectile.distanceLeft / RL.distanceScale };
     }
     case 'hazard':
-      return { ...QUIET, hostile: seen.hostile, damage: (seen.hazard.damageMin + seen.hazard.damageMax) / 2 / Math.max(1, player.maxLife), area: seen.hazard.radius / RL.areaScale, radius: seen.hazard.radius, timeLeft: seen.hazard.timeLeft };
+      return { ...QUIET, hostile: seen.hostile, damage: ((seen.hazard.damageMin + seen.hazard.damageMax) / 2 / Math.max(1, player.maxLife)) * versusScale(world, findActor(world, seen.hazard.ownerId), player), area: seen.hazard.radius / RL.areaScale, radius: seen.hazard.radius, timeLeft: seen.hazard.timeLeft };
     case 'area': {
       const numbers: SkillNumbers = skillNumbers(seen.area.skill);
-      return { ...QUIET, hostile: seen.hostile, damage: (seen.area.offence.damageMin + seen.area.offence.damageMax) / 2 / Math.max(1, player.maxLife), area: numbers.area / RL.areaScale, radius: numbers.area, timeLeft: seen.area.timeLeft };
+      return { ...QUIET, hostile: seen.hostile, damage: ((seen.area.offence.damageMin + seen.area.offence.damageMax) / 2 / Math.max(1, player.maxLife)) * versusScale(world, findActor(world, seen.area.ownerId), player), area: numbers.area / RL.areaScale, radius: numbers.area, timeLeft: seen.area.timeLeft };
     }
     case 'loot':
     case 'exit':

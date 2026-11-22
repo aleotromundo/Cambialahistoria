@@ -1,4 +1,4 @@
-import type { Content } from '../content/types.ts';
+import type { Content, ZoneDef, ZoneDuel } from '../content/types.ts';
 import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
 import { findHero } from '../world/heroes.ts';
@@ -21,7 +21,7 @@ import { emptyTally, REWARD, rewardFor } from './reward.ts';
 
 export const DUEL = {
   seats: 2,
-  timeLimit: 60,
+  timeLimit: 120,
   rivalParty: 1,
   rivalSeed: 104729,
 } as const;
@@ -72,12 +72,19 @@ export function benchedRival(content: Content, rng: Rng, seed: number, level: nu
   return scratch.player;
 }
 
+export function duelRules(content: Content): ZoneDuel | null {
+  for (const zone of content.zones.values()) if (zone.duel !== null) return zone.duel;
+  return null;
+}
+
 export function createDuel(content: Content, options: DuelOptions): Duel {
   const rng: Rng = createRng(options.seed);
   const played: Content = jitterContent(content, rng, options.jitter);
   const rolled: number = rng.int(ARENA.levels.min, ARENA.levels.max);
   const level: number = options.level ?? (options.builds === undefined ? rolled : BUILD.level);
   const world: World = emptyArena(played, options.seed, level);
+  const zone: ZoneDef = { ...world.zone, duel: duelRules(played) };
+  world.zone = zone;
   readySeat(world, rng, options.seed, level, options.builds?.[0] ?? null);
   const benched: PlayerState = benchedRival(played, rng, options.seed, level, options.builds?.[1] ?? null);
   const rival: PlayerState = { ...benched, id: world.nextId, party: DUEL.rivalParty, pos: spawnSpot(world, rng) };
