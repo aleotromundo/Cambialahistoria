@@ -307,8 +307,8 @@
     {"prop":"hall_column","x":164,"z":144,"y":0,"rotationDegrees":0},
     {"prop":"wide_stair","x":96,"z":110,"y":-0.9,"rotationDegrees":0},
     {"prop":"wide_stair","x":96,"z":114,"y":-0.9,"rotationDegrees":0},
-    {"prop":"wide_stair","x":96,"z":158,"y":-0.9,"rotationDegrees":0},
-    {"prop":"wide_stair","x":96,"z":162,"y":-0.9,"rotationDegrees":0}
+    {"prop":"wide_stair","x":96,"z":158,"y":-0.9,"rotationDegrees":180},
+    {"prop":"wide_stair","x":96,"z":162,"y":-0.9,"rotationDegrees":180}
   ],
   "tunnels": [],
   "packs": [

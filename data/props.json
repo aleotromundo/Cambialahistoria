@@ -161,7 +161,7 @@
   {"id": "tree_dead_small", "model": "models/world/dead_tree_small.glb", "scale": 1, "blockRadius": 0.4, "light": null, "surfaces": {"bark": "bark"}},
   {"id": "warden_stone", "model": "models/world/warden_stone.glb", "scale": 1, "blockRadius": 0.45, "light": null, "surfaces": {"stone": "drystone", "iron": "iron"}},
   {"id": "warden_stone_lit", "model": "models/world/warden_stone.glb", "scale": 1, "blockRadius": 0.45, "light": {"form": "flame", "color": "#ffc070", "intensity": 20, "distance": 14, "height": 1.4, "decay": 1.7, "reach": 0.8, "lift": 0}, "surfaces": {"stone": "drystone", "iron": "iron"}},
-  {"id": "wide_stair", "model": "models/world/wide_stair.glb", "scale": 1, "blockRadius": 0, "walkOn": true, "light": null, "surfaces": {"stone": "ashlar"}},
+  {"id": "wide_stair", "model": "models/world/wide_stair.glb", "rises": "-z", "scale": 1, "blockRadius": 0, "walkOn": true, "light": null, "surfaces": {"stone": "ashlar"}},
   {"id": "crag_a", "model": "models/props/rock_set_1.glb", "scale": 2.4, "blockRadius": 2.2, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
   {"id": "crag_a_wide", "model": "models/props/rock_set_1.glb", "footprint": "wide/models/props/rock_set_1.glb", "scale": 2.4, "blockRadius": 2.2, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
   {"id": "crag_b", "model": "models/props/rock_set_2.glb", "scale": 2.8, "blockRadius": 3.0, "light": null, "surfaces": {"rock_moss_set_01": "hall_stone"}, "tint": "#c6ccd6"},
@@ -356,5 +356,5 @@
   {"id": "lava_chunk_cool", "model": "models/cave/rock_chunk_a.glb", "scale": 1.1, "blockRadius": 0, "solid": false, "shadow": false, "light": null, "surfaces": {"rock_07": "cooled_crust"}},
   {"id": "lava_chunk_vent", "model": "models/cave/rock_chunk_b.glb", "scale": 1.2, "blockRadius": 0, "solid": false, "shadow": false, "light": null, "surfaces": {"rock_09": "vent_ground"}},
   {"id": "lava_glow", "model": "models/props/rock_set_3.glb", "scale": 1.4, "blockRadius": 0, "light": {"form": "glow", "color": "#ff5a1a", "intensity": 20, "distance": 16, "height": 1.8, "decay": 2}, "surfaces": {"rock_moss_set_01": "basalt"}},
-  {"id": "basalt_stair", "model": "models/world/wide_stair.glb", "scale": 1, "blockRadius": 0, "walkOn": true, "light": null, "surfaces": {"stone": "basalt"}}
+  {"id": "basalt_stair", "model": "models/world/wide_stair.glb", "rises": "-z", "scale": 1, "blockRadius": 0, "walkOn": true, "light": null, "surfaces": {"stone": "basalt"}}
 ]

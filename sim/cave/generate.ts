@@ -1,8 +1,10 @@
 import { TERRAIN_MARKS } from '../content/terrain-types.ts';
+import type { RiseSide } from '../content/prop-types.ts';
 import type { PropDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { distance } from '../math.ts';
 import { propBlockers } from '../nav/grid.ts';
+import { rampRise, turnToRise } from '../nav/stair-rise.ts';
 import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
 import type { CaveChamber, CavePassage, CaveShape, CellBox } from './layout.ts';
@@ -360,12 +362,15 @@ function rampMask(ground: Ground): Uint8Array {
   return mask;
 }
 
-function stairs(ground: Ground, shape: CaveShape, kit: CaveKit): CaveProp[] {
+function stairs(ground: Ground, shape: CaveShape, kit: CaveKit, defs: ReadonlyMap<string, PropDef>): CaveProp[] {
   const placed: CaveProp[] = [];
+  const local: RiseSide | null = defs.get(kit.stairs.prop)?.rises ?? null;
+  if (local === null) return placed;
   for (const passage of shape.passages) {
     const { ramp } = passage;
     const low: number = Math.min(ramp.start, ramp.start + ramp.sign * (ramp.length - 1));
-    const rotationDegrees: number = ramp.axis === 'z' ? (ramp.sign > 0 ? 0 : 180) : ramp.sign > 0 ? 90 : 270;
+    const climbs: boolean = (shape.chambers[passage.to]?.level ?? 0) > (shape.chambers[passage.from]?.level ?? 0);
+    const rotationDegrees: number = turnToRise(local, rampRise(ramp.axis, climbs === ramp.sign > 0));
     for (const quarter of CAVE_GEN.stairQuarters) {
       const along: number = (low + quarter) * ground.size;
       const across: number = ramp.line * ground.size;
@@ -410,7 +415,7 @@ function dress(rng: Rng, ground: Ground, shape: CaveShape, spots: Spots, packs: 
   const { kit, defs } = maker;
   const { clusters, caches } = kit;
   const floorTiles: number = cellsWhere(ground, (index: number): boolean => isFloor(ground.raster, index)).length;
-  const dressing: Dressing = { ground, props: stairs(ground, shape, kit), lights: [], blockers: [], keep: safePoints(spots), packs, nearRamp: rampMask(ground), screen: request.screen };
+  const dressing: Dressing = { ground, props: stairs(ground, shape, kit, defs), lights: [], blockers: [], keep: safePoints(spots), packs, nearRamp: rampMask(ground), screen: request.screen };
   placeRows(dressing, defs, kit, shape);
   const edges: number[] = cellsWhere(ground, (index: number): boolean => {
     const clear: number = ground.clear[index] ?? 0;
@@ -517,6 +522,7 @@ function kitProps(kit: CaveKit, defs: ReadonlyMap<string, PropDef>): string | nu
   const named: readonly string[] = [kit.stairs.prop, ...kit.caches, ...kit.rows.map((row: KitRow): string => row.prop), ...kit.clusters.flatMap((cluster: readonly KitPiece[]): string[] => cluster.map((piece: KitPiece): string => piece.prop))];
   const missing: readonly string[] = [...new Set(named.filter((prop: string): boolean => !defs.has(prop)))];
   if (missing.length > 0) return `kit ${kit.id} names props the game does not have: ${missing.join(', ')}`;
+  if ((defs.get(kit.stairs.prop)?.rises ?? null) === null) return `kit ${kit.id} lays ${kit.stairs.prop} on its ramps, which does not say which way it rises`;
   const plain: readonly string[] = kit.caches.filter((prop: string): boolean => (defs.get(prop)?.cache ?? null) === null);
   return plain.length > 0 ? `kit ${kit.id} names caches that are not caches: ${plain.join(', ')}` : null;
 }

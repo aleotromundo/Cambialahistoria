@@ -35,6 +35,7 @@ import { mendProblems, skillMend } from './mend.ts';
 import { NOVA_SIDES } from './mend-types.ts';
 import { service, trade, tradeProblems } from './parse-trade.ts';
 import { xpAfter } from './parse-xp.ts';
+import { RISE_SIDES } from './prop-types.ts';
 import { byId, choice, choiceList, colour, ContentError, each, fields, flag, fraction, nonNegative, nullableText, numeric, positive, share, text, textList } from './read.ts';
 import type {
   ActDef,
@@ -299,6 +300,7 @@ function prop(value: unknown, where: string): PropDef {
     solid,
     walkOn,
     climb,
+    rises: source['rises'] === undefined ? null : choice(source, 'rises', RISE_SIDES, where),
     shadow: source['shadow'] === undefined ? true : flag(source, 'shadow', where),
     footprints: [],
     height: 0,

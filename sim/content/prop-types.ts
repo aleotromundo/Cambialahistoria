@@ -71,6 +71,9 @@ export interface PropLid {
   readonly degrees: number;
 }
 
+export const RISE_SIDES = ['+x', '-x', '+z', '-z'] as const;
+export type RiseSide = (typeof RISE_SIDES)[number];
+
 export interface PropClimb {
   readonly steps: number;
   readonly rise: number;
@@ -89,6 +92,7 @@ export interface PropDef {
   readonly solid: boolean | null;
   readonly walkOn: boolean;
   readonly climb: PropClimb | null;
+  readonly rises: RiseSide | null;
   readonly shadow: boolean;
   readonly footprints: readonly (readonly ReadonlyVec2[])[];
   readonly height: number;
