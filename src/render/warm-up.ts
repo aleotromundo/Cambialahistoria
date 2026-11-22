@@ -276,6 +276,8 @@ function drawSlice(compiler: ShaderCompiler, stage: SliceStage, camera: Camera, 
   const drawn: Object3D[] = slice.filter((object: Object3D): boolean => attached(stage, object));
   if (drawn.length === 0) return;
   inSlice(stage, drawn, (proxy: Scene): void => compiler.drawOnce(proxy, camera));
+  const switchable: Material[] = [...new Set(drawn.flatMap((object: Object3D): Material[] => opaqueSwitchables(object)))];
+  if (switchable.length > 0) asSeeThrough(switchable, (): void => inSlice(stage, drawn, (proxy: Scene): void => compiler.drawOnce(proxy, camera)));
   for (const object of drawn) {
     warmedDrawables.add(object);
     const geometry: BufferGeometry | null = geometryOf(object);
