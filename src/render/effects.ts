@@ -26,7 +26,7 @@ import { renderBudget } from '../mobile/quality.ts';
 import type { AbilityCues } from './ability-cues.ts';
 import { createAbilityCues, novaLook } from './ability-cues.ts';
 import type { GatherOrbs } from './gather-orb.ts';
-import { createGatherOrbs } from './gather-orb.ts';
+import { createGatherOrbs, gatherOrbKeepers } from './gather-orb.ts';
 import type { FireBursts } from './fire-burst.ts';
 import { createFireBursts } from './fire-burst.ts';
 import type { GhostWaves } from './ghost-wave.ts';
@@ -167,7 +167,7 @@ export function createEffects(scene: Scene, particles: ParticleSystem, camera: I
 
   const flashes: FlashLights = createFlashLights(scene, Math.min(EFFECTS.flashLights, renderBudget().flashLights));
 
-  const keepers: Mesh[] = [...programKeepers(WHITE), dashTrailKeeper(WHITE)];
+  const keepers: Mesh[] = [...programKeepers(WHITE), dashTrailKeeper(WHITE), ...gatherOrbKeepers(WHITE)];
   let warmFrames: number = EFFECTS.warmFrames;
   let warming: Mesh[] = keepers;
   for (const keeper of keepers) {

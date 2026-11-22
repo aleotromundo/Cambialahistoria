@@ -52,6 +52,14 @@ export function dustOwed(rate: number, level: number, dt: number): number {
   return Math.max(0, rate * level * dt);
 }
 
+function gatherCore(color: Color): MeshBasicMaterial {
+  return new MeshBasicMaterial({ color: glow(color, GATHER_ORB.coreBoost), transparent: true, depthWrite: false, blending: AdditiveBlending });
+}
+
+export function gatherOrbKeepers(color: Color): Mesh[] {
+  return [new Mesh(orbSphere(), gatherCore(color)), orbHalo(color)];
+}
+
 export interface GatherKit {
   readonly add: (object: Mesh | Group, duration: number, tick: (t: number) => void, owner: number | null) => void;
   readonly spray: (x: number, y: number, z: number, color: Color, count: number, overrides: Partial<BurstOptions>) => void;
@@ -70,7 +78,7 @@ export function createGatherOrbs(kit: GatherKit): GatherOrbs {
       if (duration <= 0) return;
       const y: number = height + look.lift;
       const orb: Group = new Group();
-      const coreMaterial: MeshBasicMaterial = new MeshBasicMaterial({ color: glow(color, GATHER_ORB.coreBoost), transparent: true, depthWrite: false, blending: AdditiveBlending });
+      const coreMaterial: MeshBasicMaterial = gatherCore(color);
       const core: Mesh = new Mesh(orbSphere(), coreMaterial);
       const halo: Mesh<IcosahedronGeometry, ShaderMaterial> = orbHalo(color);
       halo.scale.setScalar(GATHER_ORB.haloSize);
