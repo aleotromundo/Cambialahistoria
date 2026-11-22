@@ -73,7 +73,11 @@ export function createSteadyShadows(objectsPerFrame: number = STEADY_SHADOWS.obj
         if (object === undefined) return;
         if (!object.visible) continue;
         settle(object);
-        for (const child of object.children) pending.push(child);
+        const children: readonly Object3D[] = object.children;
+        for (let index: number = 0; index < children.length; index += 1) {
+          const child: Object3D | undefined = children[index];
+          if (child !== undefined) pending.push(child);
+        }
       }
     },
   };

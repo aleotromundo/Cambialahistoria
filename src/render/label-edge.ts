@@ -47,36 +47,53 @@ function boxOf(x: number, y: number, width: number, height: number): ScreenRect 
   return { left: x - width / 2, top: y - height, right: x + width / 2, bottom: y };
 }
 
-function hits(box: ScreenRect, rect: ScreenRect): boolean {
-  return box.left < rect.right + LABEL_EDGE.hudGap && rect.left - LABEL_EDGE.hudGap < box.right && box.top < rect.bottom + LABEL_EDGE.hudGap && rect.top - LABEL_EDGE.hudGap < box.bottom;
-}
-
 export interface ItemPoint {
   readonly x: number;
   readonly y: number;
 }
 
+function freeAt(x: number, y: number, width: number, height: number, rects: readonly ScreenRect[]): boolean {
+  const left: number = x - width / 2;
+  const right: number = x + width / 2;
+  const top: number = y - height;
+  const gap: number = LABEL_EDGE.hudGap;
+  for (let index: number = 0; index < rects.length; index += 1) {
+    const rect: ScreenRect | undefined = rects[index];
+    if (rect !== undefined && left < rect.right + gap && rect.left - gap < right && top < rect.bottom + gap && rect.top - gap < y) return false;
+  }
+  return true;
+}
+
+function candidateX(x: number, column: number, width: number, rects: readonly ScreenRect[]): number {
+  if (column === 0) return x;
+  const rect: ScreenRect | undefined = rects[(column - 1) >> 1];
+  if (rect === undefined) return x;
+  const gap: number = LABEL_EDGE.hudGap + 1;
+  return column % 2 === 1 ? rect.left - gap - width / 2 : rect.right + gap + width / 2;
+}
+
+function candidateY(y: number, row: number, height: number, rects: readonly ScreenRect[]): number {
+  if (row === 0) return y;
+  const rect: ScreenRect | undefined = rects[(row - 1) >> 1];
+  if (rect === undefined) return y;
+  const gap: number = LABEL_EDGE.hudGap + 1;
+  return row % 2 === 1 ? rect.top - gap : rect.bottom + gap + height;
+}
+
 export function placeTag(anchorX: number, anchorY: number, width: number, height: number, view: ViewSize, rects: readonly ScreenRect[], item: ItemPoint = { x: anchorX, y: anchorY }): TagPlace {
-  const free = (x: number, y: number): boolean => {
-    const box: ScreenRect = boxOf(x, y, width, height);
-    for (const rect of rects) {
-      if (hits(box, rect)) return false;
-    }
-    return true;
-  };
-  let x: number = keepInside(anchorX, width, view);
-  let y: number = keepBelowTop(anchorY, height, view);
-  if (!free(x, y)) {
-    const gap: number = LABEL_EDGE.hudGap + 1;
-    const xs: number[] = [x, ...rects.flatMap((rect: ScreenRect): number[] => [rect.left - gap - width / 2, rect.right + gap + width / 2])];
-    const ys: number[] = [y, ...rects.flatMap((rect: ScreenRect): number[] => [rect.top - gap, rect.bottom + gap + height])];
+  const homeX: number = keepInside(anchorX, width, view);
+  const homeY: number = keepBelowTop(anchorY, height, view);
+  let x: number = homeX;
+  let y: number = homeY;
+  if (!freeAt(x, y, width, height, rects)) {
+    const options: number = rects.length * 2 + 1;
     let best: number = Infinity;
-    for (const cx of xs) {
-      for (const cy of ys) {
-        const optionX: number = keepInside(cx, width, view);
-        const optionY: number = keepBelowTop(cy, height, view);
+    for (let column: number = 0; column < options; column += 1) {
+      const optionX: number = keepInside(candidateX(homeX, column, width, rects), width, view);
+      for (let row: number = 0; row < options; row += 1) {
+        const optionY: number = keepBelowTop(candidateY(homeY, row, height, rects), height, view);
         const distance: number = Math.hypot(optionX - anchorX, optionY - anchorY);
-        if (distance < best && free(optionX, optionY)) {
+        if (distance < best && freeAt(optionX, optionY, width, height, rects)) {
           best = distance;
           x = optionX;
           y = optionY;
