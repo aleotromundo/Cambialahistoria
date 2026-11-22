@@ -55,6 +55,7 @@ import type { ZoneBody } from './zone-bodies.ts';
 import { monsterKey, zoneBodies } from './zone-bodies.ts';
 import type { StrikeHolds } from './strike-holds.ts';
 import { strikeHolds } from './strike-holds.ts';
+import { raiseBodies } from './body-raise.ts';
 
 export const ACTORS = {
   monsterFlash: 1,
@@ -117,6 +118,7 @@ export interface Actors {
   boundsOf(actorId: number, out: Box3): boolean;
   hero(): Object3D;
   standIns(zone: ZoneDef): Object3D[];
+  raise(world: World): Promise<void>;
 }
 
 const HIT_WHITE: Color = new Color(0xffffff);
@@ -235,6 +237,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
   let bodies: ReadonlyMap<string, ZoneBody> = new Map<string, ZoneBody>();
   let spareRound: number = 0;
   let sparesDue: readonly ZoneBody[] | null = null;
+  let raiseRound: number = 0;
 
   const guard: ActorGuard = createActorGuard(warnInConsole);
   const waiting: Map<number, number> = new Map<number, number>();
@@ -387,6 +390,10 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
       }
       for (const view of unwanted) view.dispose();
       return made.map((view: ActorView): Object3D => view.rig.root);
+    },
+    raise(current: World): Promise<void> {
+      const round: number = raiseRound;
+      return raiseBodies(current, { body: (monster: MonsterState): Object3D | null => entryFor(current, monster)?.view.rig.root ?? null, pacer, live: (): boolean => round === raiseRound });
     },
     refreshWear(current: World): void {
       dressHero(current);
@@ -603,6 +610,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
           }
           case 'zone_changed':
             spareRound += 1;
+            raiseRound += 1;
             sparesDue = null;
             spin.clear();
             strikes.clear();

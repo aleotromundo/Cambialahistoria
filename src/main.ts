@@ -437,7 +437,7 @@ async function start(): Promise<void> {
     const bodies: Promise<void> = Promise.all(world.heroes.map((hero: PlayerState): Promise<void> => loadNeeds(loader, content, dresser, library, zoneCharacterNeeds(content, world.zone, hero.equipped, hero.hero), loadGate))).then((): void => undefined).catch((error: unknown): void => {
       warnInConsole(`Loading the characters of ${world.zone.id} failed: ${String(error)}`);
     });
-    const bodiesIn: Promise<void> = waitWithin(bodies, createBrowserTimers(), WARM_UP.bodiesWaitMs);
+    const bodiesIn: Promise<void> = waitWithin(bodies.then((): Promise<void> => actors.raise(world)), createBrowserTimers(), WARM_UP.bodiesWaitMs);
     zoneView = await buildZoneView(loader, content, world.zone, stage.scene, mobile.quality.tier.name, stage.renderer);
     if (mobile.quality.tier.releaseOtherZones) releaseOtherZones(content, world.zone);
     keepZones(world.zone, cachedZones(content, world.zone, mobile.quality.tier.releaseOtherZones));
