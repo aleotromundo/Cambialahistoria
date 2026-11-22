@@ -7,10 +7,9 @@ import { must, worldIn, zoneOf } from '../../test/support.ts';
 import { RING, ringContent } from '../../test/rival-support.ts';
 import type { Action } from '../rl/contract.ts';
 import { NO_ACTION, RL } from '../rl/contract.ts';
-import { DUEL } from '../rl/duel.ts';
 import { DUEL_KIT } from '../rl/kit.ts';
 import type { RivalDuel, RivalOutcome, RivalPilot } from '../rl/rival.ts';
-import { beginRivalDuel, rivalCommands, rivalHeard, rivalOf, startRivalDuel } from '../rl/rival.ts';
+import { beginRivalDuel, resignRivalDuel, rivalCommands, rivalHeard, rivalOf, startRivalDuel } from '../rl/rival.ts';
 import { toSave } from '../save.ts';
 import { stepWorld } from './step.ts';
 import type { Command, Equipment, ItemInstance, PlayerState, World, WorldEvent } from './types.ts';
@@ -101,11 +100,11 @@ void test('the rival and the player wear the same armour in a standard duel', ()
   for (const slot of slots) assert.equal(world.player.equipped[slot]?.base, rival.equipped[slot]?.base, slot);
 });
 
-void test('the hero gets their own gear back exactly after a win, a loss and a timeout', (): void => {
+void test('the hero gets their own gear back exactly after a win, a loss and a resignation', (): void => {
   const endings: readonly { readonly outcome: RivalOutcome; readonly settle: (world: World, duel: RivalDuel) => void }[] = [
     { outcome: 'won', settle: (world: World, duel: RivalDuel): void => fell(must(rivalOf(duel, world), 'rival')) },
     { outcome: 'lost', settle: (world: World): void => fell(world.player) },
-    { outcome: 'timeout', settle: (world: World, duel: RivalDuel): void => { duel.start = world.time - DUEL.timeLimit; } },
+    { outcome: 'resigned', settle: (world: World, duel: RivalDuel): void => void resignRivalDuel(duel, world) },
   ];
   for (const ending of endings) {
     const world: World = geared(6);
