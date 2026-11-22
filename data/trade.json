@@ -22,8 +22,8 @@
   ],
   "identify": {
     "prices": {
-      "rare": {"base": 9, "perLevel": 0.75},
-      "stormtouched": {"base": 24, "perLevel": 0.75}
+      "rare": {"base": 140, "perLevel": 0.16},
+      "stormtouched": {"base": 300, "perLevel": 0.16}
     }
   },
   "goods": [
