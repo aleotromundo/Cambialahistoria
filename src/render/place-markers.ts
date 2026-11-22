@@ -51,7 +51,7 @@ interface MarkerParts {
   readonly top: number;
 }
 
-interface MarkerView {
+export interface MarkerView {
   readonly place: Place;
   readonly root: Group;
   readonly ground: number;
@@ -66,7 +66,7 @@ interface MarkerView {
   wake: WakeState;
 }
 
-interface PlaceState {
+export interface PlaceState {
   readonly shown: boolean;
   readonly open: boolean;
   readonly awake: boolean;
@@ -225,28 +225,35 @@ function poseParts(view: MarkerView, parts: MarkerParts, dt: number, time: numbe
   }
 }
 
+export function placeView(place: Place, state: PlaceState, group: Group, lights: boolean): MarkerView {
+  const root: Group = new Group();
+  const ground: number = floorUp(place.x, 0, place.z);
+  root.position.set(place.x, ground, place.z);
+  root.rotation.y = place.yaw;
+  if (place.kind.shadow > 0) {
+    const shadow: Mesh = contactShadow();
+    shadow.scale.setScalar(place.kind.shadow / CONTACT_SHADOW.radius);
+    root.add(shadow);
+  }
+  const light: PointLight = new PointLight(new Color(place.kind.color), 0, place.kind.light.distance, PLACE_MARKERS.lightDecay);
+  light.position.set(place.x, ground + place.kind.light.height, place.z);
+  if (lights) group.add(light);
+  group.add(root);
+  const level: number = levelTarget(place.kind, state, false, false);
+  return { place, root, ground, light, level: spring(level), rise: spring(state.awake ? 1 : 0), shut: spring(state.open ? 0 : 1), shown: spring(state.shown ? 1 : 0), parts: null, usedLeft: 0, spin: place.x * 0.37 + place.z * 0.61, wake: startWake(place.kind.awaken === null || state.awake) };
+}
+
+export function showPlace(view: MarkerView, shown: number): void {
+  view.root.visible = Math.min(1, Math.max(0, shown)) > PLACE_MARKERS.gone;
+  view.root.position.y = view.ground - PLACE_MARKERS.showDepth * (1 - shown);
+  view.light.position.y = view.root.position.y + view.place.kind.light.height;
+}
+
 export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Content, zone: ZoneDef, world: World): PlaceMarkers {
   const group: Group = new Group();
   const lights: boolean = renderBudget().markerLights;
   let aimed: PlaceRef | null = null;
-  const views: MarkerView[] = zonePlaces(content, zone).map((place: Place): MarkerView => {
-    const state: PlaceState = placeState(world, place.ref);
-    const root: Group = new Group();
-    const ground: number = floorUp(place.x, 0, place.z);
-    root.position.set(place.x, ground, place.z);
-    root.rotation.y = place.yaw;
-    if (place.kind.shadow > 0) {
-      const shadow: Mesh = contactShadow();
-      shadow.scale.setScalar(place.kind.shadow / CONTACT_SHADOW.radius);
-      root.add(shadow);
-    }
-    const light: PointLight = new PointLight(new Color(place.kind.color), 0, place.kind.light.distance, PLACE_MARKERS.lightDecay);
-    light.position.set(0, place.kind.light.height, 0);
-    if (lights) root.add(light);
-    group.add(root);
-    const level: number = levelTarget(place.kind, state, false, false);
-    return { place, root, ground, light, level: spring(level), rise: spring(state.awake ? 1 : 0), shut: spring(state.open ? 0 : 1), shown: spring(state.shown ? 1 : 0), parts: null, usedLeft: 0, spin: place.x * 0.37 + place.z * 0.61, wake: startWake(place.kind.awaken === null || state.awake) };
-  });
+  const views: MarkerView[] = zonePlaces(content, zone).map((place: Place): MarkerView => placeView(place, placeState(world, place.ref), group, lights));
   scene.add(group);
   let disposed: boolean = false;
   const ready: Promise<void> = Promise.all(
@@ -282,8 +289,7 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
         stepSpring(view.shut, dt);
         stepSpring(view.shown, dt);
         const shown: number = Math.min(1, Math.max(0, view.shown.value));
-        view.root.visible = shown > PLACE_MARKERS.gone;
-        view.root.position.y = view.ground - PLACE_MARKERS.showDepth * (1 - view.shown.value);
+        showPlace(view, view.shown.value);
         const level: number = Math.max(0, view.level.value);
         const lit: number = kind.awaken === null ? level : (view.wake.type === 'asleep' ? 0 : level) + kind.levels.awake * MARKER_AWAKEN.pulseLight * pulseFlare(pose.pulse);
         view.light.intensity = kind.light.intensity * lit * shown;
