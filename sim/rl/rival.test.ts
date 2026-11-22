@@ -111,15 +111,6 @@ void test('falling to the rival loses no experience and still ends at home, aliv
   assert.equal(world.player.xp, 50);
 });
 
-void test('a duel nobody wins ends when its time runs out', (): void => {
-  const world: World = ringWorld(CONTENT, 8, 12);
-  const duel: RivalDuel = must(startRivalDuel(world, 8), 'duel');
-  world.time = duel.start + DUEL.timeLimit;
-  rivalHeard(duel, world, []);
-  assert.equal(duel.outcome, 'timeout');
-  assert.equal(duel.endedAt, world.time);
-});
-
 void test('walking out of the duel by its way home is no win, and sends no leave', (): void => {
   const world: World = ringWorld(CONTENT, 9, 12);
   const duel: RivalDuel = must(startRivalDuel(world, 9), 'duel');

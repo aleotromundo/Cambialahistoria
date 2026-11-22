@@ -24,7 +24,7 @@ export const RIVAL = {
   buildSalt: 15485863,
 } as const;
 
-export type RivalOutcome = 'fighting' | 'won' | 'lost' | 'timeout' | 'left';
+export type RivalOutcome = 'fighting' | 'won' | 'lost' | 'resigned' | 'left';
 
 export type RivalPilot = (obs: Float32Array, mask: Uint8Array) => Action;
 
@@ -66,12 +66,15 @@ export function rivalOf(duel: RivalDuel, world: World): PlayerState | null {
   return findHero(world, duel.rivalId);
 }
 
-export function rivalTimeLeft(duel: RivalDuel, world: World): number {
-  return Math.max(0, DUEL.timeLimit - Math.max(0, world.time - duel.start));
+export function resignRivalDuel(duel: RivalDuel, world: World): boolean {
+  if (duel.outcome !== 'fighting') return false;
+  duel.outcome = 'resigned';
+  duel.endedAt = world.time;
+  return true;
 }
 
 export function rivalContext(duel: RivalDuel, world: World): ObserveContext {
-  return { situation: 'duel', objective: null, timeLeft: rivalTimeLeft(duel, world), progress: 0, recall: duel.recall, pickup: { minRarity: world.content.rarities.length } };
+  return { situation: 'duel', objective: null, timeLeft: DUEL.timeLimit, progress: 0, recall: duel.recall, pickup: { minRarity: world.content.rarities.length } };
 }
 
 function decide(duel: RivalDuel, world: World, rival: PlayerState, pilot: RivalPilot): Command[] {
@@ -100,7 +103,6 @@ function settle(duel: RivalDuel, world: World, rival: PlayerState | null): Rival
   if (world.zone.duel === null) return 'left';
   if (!world.player.alive) return 'lost';
   if (rival === null || !rival.alive) return 'won';
-  if (world.time >= duel.start && rivalTimeLeft(duel, world) <= 0) return 'timeout';
   return 'fighting';
 }
 

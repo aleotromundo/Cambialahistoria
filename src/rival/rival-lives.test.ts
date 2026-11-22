@@ -35,10 +35,10 @@ function results(outcome: RivalOutcome): string[] {
 void test('each ending marks both bars and says who won', (): void => {
   assert.deepEqual(results('won'), ['Wins', 'Down']);
   assert.deepEqual(results('lost'), ['Down', 'Wins']);
-  assert.deepEqual(results('timeout'), ['Time', 'Time']);
+  assert.deepEqual(results('resigned'), ['', 'Wins']);
   assert.equal(rivalVerdict('won'), 'You win');
   assert.equal(rivalVerdict('lost'), 'The rival wins');
-  assert.equal(rivalVerdict('timeout'), 'Time ran out');
+  assert.equal(rivalVerdict('resigned'), 'You resigned');
   assert.equal(rivalVerdict('left'), null);
 });
 

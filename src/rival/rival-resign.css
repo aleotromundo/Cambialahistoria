@@ -1,0 +1,48 @@
+.duel-lives .rival-resign {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 4px;
+  outline: none;
+  background: var(--panel-bg, rgba(12, 16, 24, 0.82));
+  color: var(--text-dim, rgba(239, 230, 214, 0.58));
+  font: 600 13px/1.2 var(--sans, sans-serif);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 -6px;
+  transition:
+    opacity var(--spring-exit-ms) var(--spring-exit),
+    translate var(--spring-exit-ms) var(--spring-exit),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s linear var(--spring-exit-ms);
+}
+
+.duel-lives .rival-resign.on {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity var(--spring-smooth-ms) var(--spring-smooth),
+    translate var(--spring-bouncy-ms) var(--spring-bouncy),
+    color var(--spring-snappy-ms) var(--spring-snappy),
+    background-color var(--spring-snappy-ms) var(--spring-snappy),
+    scale var(--spring-snappy-ms) var(--spring-snappy),
+    visibility 0s;
+}
+
+.duel-lives .rival-resign.on:hover {
+  color: var(--text, #e8e4dc);
+  background: rgba(30, 34, 44, 0.9);
+}
+
+.duel-lives .rival-resign.on:active {
+  scale: 0.97;
+}

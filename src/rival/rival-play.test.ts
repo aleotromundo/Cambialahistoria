@@ -13,7 +13,7 @@ import { RING, ringContent, ringWorld } from '../../test/rival-support.ts';
 import { worldIn, zoneOf } from '../../test/support.ts';
 import { CAMERA } from '../render/iso-camera.ts';
 import type { LifeRow } from '../watch/duel-lives.ts';
-import type { RivalCamera, RivalLivesView, RivalPlay } from './rival-play.ts';
+import type { RivalCamera, RivalHud, RivalLivesView, RivalPlay } from './rival-play.ts';
 import { createRivalPlay } from './rival-play.ts';
 
 const CONTENT: Content = ringContent(loadContent());
@@ -72,7 +72,7 @@ function rig(world: World, loaded: Gate): { readonly play: RivalPlay; readonly s
       return true;
     },
   };
-  const play: RivalPlay = createRivalPlay({ world, camera, lens: { aspect: 16 / 9, fov: 40 }, openLives: (): RivalLivesView => lives, pushFog: (): void => undefined, loadPilot: (): Promise<RivalPilot> => loaded.promise, seed: (): number => 21, warn: (message: string): void => void seen.warnings.push(message) });
+  const play: RivalPlay = createRivalPlay({ world, camera, lens: { aspect: 16 / 9, fov: 40 }, openLives: (): RivalLivesView => lives, openHud: (): RivalHud => ({ covers: (): readonly [] => [], resignable: (): void => undefined }), pushFog: (): void => undefined, loadPilot: (): Promise<RivalPilot> => loaded.promise, seed: (): number => 21, warn: (message: string): void => void seen.warnings.push(message) });
   return { play, seen };
 }
 

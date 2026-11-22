@@ -7,9 +7,8 @@ import { ringContent, ringWorld } from '../../test/rival-support.ts';
 import { stepWorld } from '../world/step.ts';
 import type { Command, World } from '../world/types.ts';
 import type { Action } from './contract.ts';
-import { DUEL } from './duel.ts';
 import type { RivalDuel, RivalPilot } from './rival.ts';
-import { beginRivalDuel, RIVAL, rivalCommands, rivalHeard, rivalTimeLeft, startRivalDuel } from './rival.ts';
+import { beginRivalDuel, RIVAL, rivalCommands, rivalHeard, startRivalDuel } from './rival.ts';
 
 const CONTENT: Content = ringContent(loadContent());
 const FRAME: number = 1 / 60;
@@ -28,12 +27,11 @@ function decisionsOver(world: World, duel: RivalDuel, seconds: number): number {
   return decisions;
 }
 
-void test('beginning a duel once the player can see it gives them the whole grace and the whole clock from then', (): void => {
+void test('beginning a duel once the player can see it gives them the whole grace from then', (): void => {
   const world: World = ringWorld(CONTENT, 12, 10);
   const duel: RivalDuel = must(startRivalDuel(world, 12), 'duel');
   stepWorld(world, [], 3);
   beginRivalDuel(duel, world);
-  assert.equal(rivalTimeLeft(duel, world), DUEL.timeLimit);
   assert.equal(decisionsOver(world, duel, RIVAL.startIn - 0.1), 0);
   assert.ok(decisionsOver(world, duel, 0.5) > 0);
   assert.equal(duel.outcome, 'fighting');

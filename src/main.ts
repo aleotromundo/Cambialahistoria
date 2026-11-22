@@ -50,8 +50,7 @@ import { createWatchCaption } from './watch/watch-caption.ts';
 import type { RivalPlay } from './rival/rival-play.ts';
 import { createRivalPlay } from './rival/rival-play.ts';
 import { fetchRivalPilot } from './rival/rival-model.ts';
-import { openRivalLives } from './rival/rival-lives-view.ts';
-import type { DuelLivesView } from './watch/duel-lives-view.ts';
+import { rivalViews } from './rival/rival-lives-view.ts';
 import type { DuelWatch } from './watch/duel-watch.ts';
 import { createDuelWatch } from './watch/duel-watch.ts';
 import type { GroundSpot } from './watch/duel-frame.ts';
@@ -358,7 +357,7 @@ async function start(): Promise<void> {
   let saveHeld: boolean = false;
   let watchCaptionView: WatchCaption | null = null;
   const duelWatch: DuelWatch | null = watching === null ? null : createDuelWatch({ watching, world, camera, lens: stage.camera, hud: element('hud', HTMLDivElement), pushFog: (by: number): void => stage.pushFog(by) });
-  const rivalPlay: RivalPlay | null = watching === null ? createRivalPlay({ world, camera, lens: stage.camera, openLives: (): DuelLivesView => openRivalLives(element('hud', HTMLDivElement)), pushFog: (by: number): void => stage.pushFog(by), loadPilot: fetchRivalPilot, seed: (): number => Math.floor(Math.random() * GAME.rivalSeeds), warn: warnInConsole }) : null;
+  const rivalPlay: RivalPlay | null = watching === null ? createRivalPlay({ world, camera, lens: stage.camera, ...rivalViews(element('hud', HTMLDivElement), canvas), pushFog: (by: number): void => stage.pushFog(by), loadPilot: fetchRivalPilot, seed: (): number => Math.floor(Math.random() * GAME.rivalSeeds), warn: warnInConsole }) : null;
   let moment: Moment = NO_MOMENT;
   let dirty: boolean = false;
   let urgent: boolean = false;

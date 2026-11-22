@@ -19,7 +19,7 @@ const ENDINGS: Readonly<Record<RivalOutcome, Ending>> = {
   fighting: { you: 'running', rival: 'running', verdict: null },
   won: { you: 'won', rival: 'died', verdict: 'You win' },
   lost: { you: 'died', rival: 'won', verdict: 'The rival wins' },
-  timeout: { you: 'timeout', rival: 'timeout', verdict: 'Time ran out' },
+  resigned: { you: 'running', rival: 'won', verdict: 'You resigned' },
   left: { you: 'running', rival: 'running', verdict: null },
 };
 
