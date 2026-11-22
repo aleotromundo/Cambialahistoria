@@ -141,7 +141,7 @@ function aimFor(player: PlayerState, skill: SkillDef, foes: readonly MonsterStat
     case 'blink':
       return gap > BALANCE.blinkGap && gap <= delivery.range ? target.pos : null;
     case 'area': {
-      if (delivery.anchor === 'caster') return near(foes, player.pos, delivery.radius).length >= (tough ? 1 : BALANCE.crowd) ? player.pos : null;
+      if (delivery.anchor === 'caster' || delivery.range === 0) return near(foes, player.pos, delivery.radius).length >= (tough ? 1 : BALANCE.crowd) ? player.pos : null;
       const cluster: MonsterState[] = near(foes, target.pos, BALANCE.clump);
       const centre: Vec2 = centroid(cluster);
       if (Math.hypot(centre.x - player.pos.x, centre.z - player.pos.z) > delivery.range) return null;

@@ -79,6 +79,10 @@ export function equipFromInventory(world: World, inventoryIndex: number): void {
   if (item === null) return;
   const slot: ItemSlot | null = slotOf(world.content, item);
   if (slot === null) return;
+  if (world.setAside !== null) {
+    world.events.push({ type: 'notice', reason: 'duel_gear' });
+    return;
+  }
   if (isUnidentified(item)) {
     world.events.push({ type: 'notice', reason: 'unidentified' });
     return;
@@ -96,6 +100,10 @@ export function unequip(world: World, slot: ItemSlot): void {
   const player: PlayerState = world.player;
   const item: ItemInstance | null = player.equipped[slot];
   if (item === null) return;
+  if (world.setAside !== null) {
+    world.events.push({ type: 'notice', reason: 'duel_gear' });
+    return;
+  }
   if (!addToInventory(world, item)) {
     world.events.push({ type: 'notice', reason: 'inventory_full' });
     return;

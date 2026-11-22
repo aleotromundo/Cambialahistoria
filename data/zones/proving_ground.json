@@ -233,7 +233,9 @@
     "home": {
       "zone": "hideout",
       "exit": "proving"
-    }
+    },
+    "gear": "standard",
+    "heroDamage": 0.3
   },
   "npcs": [],
   "ambience": {

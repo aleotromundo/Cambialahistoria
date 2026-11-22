@@ -7,7 +7,7 @@ import { dropOnGround, removeGround } from './ground.ts';
 import type { LedgerItem, PurseCommand, PurseEntry } from './ledger.ts';
 import { sellPrice } from './trade.ts';
 import type { ItemPlace } from './service-types.ts';
-import type { GroundItem, ItemInstance, VendorStock, World } from './types.ts';
+import type { Equipment, GroundItem, ItemInstance, VendorStock, World } from './types.ts';
 
 export interface ItemSpot {
   readonly place: ItemPlace;
@@ -59,10 +59,14 @@ function groundHolds(ground: GroundItem, ledger: string): boolean {
   return ground.content.kind === 'item' && ground.content.item.ledger === ledger;
 }
 
+function wornSets(world: World): Equipment[] {
+  return world.setAside === null ? [world.player.equipped] : [world.player.equipped, world.setAside];
+}
+
 function holds(world: World, ledger: string): boolean {
   const owns = (item: ItemInstance | null): boolean => item !== null && item.ledger === ledger;
   if (world.player.inventory.some(owns) || world.stash.some(owns)) return true;
-  if (ITEM_SLOTS.some((slot): boolean => owns(world.player.equipped[slot]))) return true;
+  if (wornSets(world).some((worn: Equipment): boolean => ITEM_SLOTS.some((slot): boolean => owns(worn[slot])))) return true;
   return world.ground.some((ground: GroundItem): boolean => groundHolds(ground, ledger));
 }
 
@@ -79,10 +83,12 @@ function clearList(list: (ItemInstance | null)[], ledger: string): boolean {
 function removeLedger(world: World, ledger: string): boolean {
   let removed: boolean = clearList(world.player.inventory, ledger);
   removed = clearList(world.stash, ledger) || removed;
-  for (const slot of ITEM_SLOTS) {
-    if (world.player.equipped[slot]?.ledger !== ledger) continue;
-    world.player.equipped[slot] = null;
-    removed = true;
+  for (const worn of wornSets(world)) {
+    for (const slot of ITEM_SLOTS) {
+      if (worn[slot]?.ledger !== ledger) continue;
+      worn[slot] = null;
+      removed = true;
+    }
   }
   for (const ground of world.ground.filter((candidate: GroundItem): boolean => groundHolds(candidate, ledger))) {
     removeGround(world, ground.id);
@@ -134,12 +140,14 @@ export function unverifyLedger(world: World, ids: readonly string[]): boolean {
   const ledgers: ReadonlySet<string> = new Set<string>(ids);
   let changed: boolean = unverifyList(world.player.inventory, ledgers);
   changed = unverifyList(world.stash, ledgers) || changed;
-  for (const slot of ITEM_SLOTS) {
-    const worn: ItemInstance | null = world.player.equipped[slot];
-    const cleared: ItemInstance | null = clearedSlot(worn, ledgers);
-    if (cleared === worn) continue;
-    world.player.equipped[slot] = cleared;
-    changed = true;
+  for (const set of wornSets(world)) {
+    for (const slot of ITEM_SLOTS) {
+      const worn: ItemInstance | null = set[slot];
+      const cleared: ItemInstance | null = clearedSlot(worn, ledgers);
+      if (cleared === worn) continue;
+      set[slot] = cleared;
+      changed = true;
+    }
   }
   for (const ground of world.ground) {
     if (ground.content.kind !== 'item') continue;

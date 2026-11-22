@@ -268,7 +268,8 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
   const mitigation: number = target.kind === 'player' ? heroTaken(target.stats, skill.damage.type, elementOf(striker), world.content.player.resistance, world.zone.stormTier) : monsterTaken(target.def.element, skill.damage.type);
   const weakened: number = striker === null ? 1 : dealtScale(world, striker);
   const exposed: number = target.kind === 'monster' ? openScale(world, target) * collateralScale(offence, target) : 1;
-  const rolled: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded * weakened * exposed));
+  const versus: number = target.kind === 'player' && striker?.kind === 'player' ? (world.zone.duel?.heroDamage ?? 1) : 1;
+  const rolled: number = Math.max(1, Math.round((weapon + flat) * (crit ? offence.critMultiplier : 1) * mitigation * guarded * weakened * exposed * versus));
   const amount: number = target.kind === 'monster' ? holdLine(world, target, strike(world, target, rolled)) : rolled;
   const dealt: number = Math.max(0, Math.min(amount, target.life));
   target.life -= amount;

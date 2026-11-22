@@ -1,6 +1,7 @@
 import type { Work } from '../work.ts';
 import { EMPTY_BUFFER } from './press-buffer.ts';
 import { endTailwind } from './tailwind.ts';
+import { restoreDuelGear, wearDuelKit } from './duel-gear.ts';
 import { ContentError } from '../content/read.ts';
 import type { Content, ZoneCheckpoint, ZoneDef, ZoneExit, ZonePoint } from '../content/types.ts';
 import type { Vec2 } from '../math.ts';
@@ -108,6 +109,7 @@ function restoreOnEntry(player: PlayerState): void {
 
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {
   if (world.zone.duel !== null) world.heroes.splice(0, world.heroes.length, world.player);
+  restoreDuelGear(world);
   endTailwind(world, 'left');
   parkZone(world);
   closeDialogue(world, false);
@@ -143,6 +145,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   world.escort = null;
   if (!restoreKept(world)) spawnPacks(world);
   startMoments(world);
+  if (zone.duel?.gear === 'standard') wearDuelKit(world);
 }
 
 export function prepareZoneWork(content: Content, zone: ZoneDef): Work {

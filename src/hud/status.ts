@@ -27,6 +27,7 @@ const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
   portal_boss: 'The fight holds the way shut',
   unidentified: 'It has to be identified before it can be worn',
   run_refused: 'That descent cannot be set',
+  duel_gear: 'Your gear is set aside for the duel',
 };
 
 export interface Notices {

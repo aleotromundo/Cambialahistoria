@@ -111,7 +111,7 @@ export function toSave(world: World): SaveData {
     freeReset: player.freeReset,
     bar: [...player.bar],
     inventory: [...player.inventory],
-    equipped: { ...player.equipped },
+    equipped: { ...(world.setAside ?? player.equipped) },
     spilled: world.ground.flatMap((ground: GroundItem): ItemInstance[] => (ground.kept && ground.content.kind === 'item' ? [ground.content.item] : [])),
     surge: world.surge,
     nextItemUid: world.nextItemUid,

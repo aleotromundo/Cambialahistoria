@@ -167,6 +167,7 @@ export function createWorld(content: Content, options: WorldOptions): World {
     time: 0,
     player,
     heroes: [player],
+    setAside: null,
     monsters: [],
     spawnedPacks: [],
     rankRun: { rolled: 0, ranked: false },

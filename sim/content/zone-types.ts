@@ -107,9 +107,14 @@ export interface ZoneReturn {
   readonly exit: string;
 }
 
+export const DUEL_GEAR = ['own', 'standard'] as const;
+export type DuelGear = (typeof DUEL_GEAR)[number];
+
 export interface ZoneDuel {
   readonly rival: ZonePoint;
   readonly home: ZoneReturn;
+  readonly gear: DuelGear;
+  readonly heroDamage: number;
 }
 
 export interface ZoneWaypoint {

@@ -377,7 +377,7 @@ export type AreaStage = 'start' | 'pulse' | 'end';
 
 export type ArmedWhere = 'bag' | 'ground';
 
-export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss' | 'run_refused' | 'unidentified';
+export type NoticeReason = 'wrong_weapon' | 'no_mana' | 'on_cooldown' | 'inventory_full' | 'flask_empty' | 'life_full' | 'mana_full' | 'no_gold' | 'stash_full' | 'legendary_limit' | 'portal_town' | 'portal_boss' | 'run_refused' | 'unidentified' | 'duel_gear';
 
 export type WorldEvent =
   | { readonly type: 'tailwind_rise'; readonly tier: number; readonly points: number }
@@ -497,6 +497,7 @@ export interface World {
   time: number;
   readonly player: PlayerState;
   readonly heroes: PlayerState[];
+  setAside: Equipment | null;
   monsters: MonsterState[];
   spawnedPacks: ZonePack[];
   rankRun: RankRun;

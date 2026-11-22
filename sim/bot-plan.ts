@@ -21,6 +21,7 @@ export const BOT_PLAN = {
   chargeRelease: 0.95,
   crowdReach: 4,
   crowd: 2,
+  stormLead: 6,
   manaFloor: 0.25,
   upgradeMargin: 1.02,
   spinSight: 14,
@@ -336,6 +337,10 @@ function crowdNear(foes: readonly MonsterState[], at: ReadonlyVec2, reach: numbe
   return foes.filter((foe: MonsterState): boolean => distance(foe.pos, at) <= reach + foe.radius).length;
 }
 
+function formsUnderfoot(skill: SkillDef): boolean {
+  return skill.delivery.type === 'area' && skill.delivery.anchor === 'ground' && skill.delivery.range === 0;
+}
+
 function worthCasting(plan: BotPlan, player: PlayerState, skill: SkillDef, target: MonsterState, foes: readonly MonsterState[]): boolean {
   if (spends(skill) && momentumShare(player) < BOT_PLAN.spendShare) return false;
   const gap: number = distance(target.pos, player.pos) - target.radius;
@@ -344,7 +349,9 @@ function worthCasting(plan: BotPlan, player: PlayerState, skill: SkillDef, targe
     case 'nova':
       return crowdNear(foes, player.pos, delivery.radius) >= Math.min(BOT_PLAN.crowd, foes.length);
     case 'area':
-      return delivery.anchor === 'caster' ? crowdNear(foes, player.pos, delivery.radius) >= Math.min(BOT_PLAN.crowd, foes.length) : gap <= delivery.range;
+      if (delivery.anchor === 'caster') return crowdNear(foes, player.pos, delivery.radius) >= Math.min(BOT_PLAN.crowd, foes.length);
+      if (formsUnderfoot(skill)) return crowdNear(foes, player.pos, delivery.radius + BOT_PLAN.stormLead) >= Math.min(BOT_PLAN.crowd, foes.length);
+      return gap <= delivery.range;
     case 'arc':
     case 'projectile':
     case 'chain':

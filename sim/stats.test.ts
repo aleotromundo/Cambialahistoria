@@ -107,7 +107,10 @@ void test('range, duration, jumps and stagger modifiers reach the delivery', ():
   const squall: SkillDef = resolveSkill(probe([{ target: { type: 'skill', skill: 'squall' }, field: 'durationPercent', value: 0.5 }, { target: { type: 'skill', skill: 'squall' }, field: 'rangePercent', value: 0.2 }]), skillOf('squall'), ['probe']);
   assert.ok(squall.delivery.type === 'area');
   assert.equal(squall.delivery.duration, 6);
-  assert.ok(Math.abs(squall.delivery.range - 11 * 1.2) < 1e-9);
+  const draught: SkillDef = resolveSkill(probe([{ target: { type: 'skill', skill: 'downdraught' }, field: 'rangePercent', value: 0.2 }]), skillOf('downdraught'), ['probe']);
+  const plain: SkillDef = skillOf('downdraught');
+  assert.ok(draught.delivery.type === 'area' && plain.delivery.type === 'area');
+  assert.ok(Math.abs(draught.delivery.range - plain.delivery.range * 1.2) < 1e-9);
   const fork: SkillDef = resolveSkill(probe([{ target: { type: 'skill', skill: 'forkline' }, field: 'chains', value: 2 }, { target: { type: 'skill', skill: 'forkline' }, field: 'staggerPercent', value: 1 }]), skillOf('forkline'), ['probe']);
   assert.ok(fork.delivery.type === 'chain' && fork.delivery.jumps === 6);
   assert.ok(Math.abs(fork.stagger - skillOf('forkline').stagger * 2) < 1e-9);

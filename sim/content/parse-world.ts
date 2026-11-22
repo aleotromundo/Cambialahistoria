@@ -44,7 +44,7 @@ import type {
 } from './types.ts';
 import { remarks, service } from './parse-trade.ts';
 import type { GlimpsePiece, ShorePath, ShorePool, ShoreProp, ShoreRoom, VoidGlimpse, VoidShore, ZoneVoid, ZoneWake } from './story-types.ts';
-import { ATLAS_FEATURE_KINDS, ZONE_KINDS } from './types.ts';
+import { ATLAS_FEATURE_KINDS, DUEL_GEAR, ZONE_KINDS } from './types.ts';
 import { zoneScatter } from './parse-scatter.ts';
 import { zoneBarrier } from './parse-barrier.ts';
 import { encounter, storyFlags } from './parse-story.ts';
@@ -169,7 +169,7 @@ function zoneDuel(value: unknown, where: string): ZoneDuel | null {
   const source: Fields = fields(value, where);
   const home: ZoneReturn | null = zoneReturn(source['home'], `${where}.home`);
   if (home === null) throw new ContentError(`${where}.home`, 'a duel needs a home to return the hero to');
-  return { rival: point(source['rival'], `${where}.rival`), home };
+  return { rival: point(source['rival'], `${where}.rival`), home, gear: source['gear'] === undefined ? 'own' : choice(source, 'gear', DUEL_GEAR, where), heroDamage: source['heroDamage'] === undefined ? 1 : positive(source, 'heroDamage', where) };
 }
 
 function zoneVoice(value: unknown, where: string): ZoneVoice {
