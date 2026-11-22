@@ -353,9 +353,24 @@ export function stepEchoes(world: World, dt: number): void {
   }
 }
 
+function landsAt(world: World, actor: Actor, target: Vec2 | null): target is Vec2 {
+  return target !== null && isWalkable(gridFor(world, actor), target.x, target.z) && canReach(world, actor.pos, target);
+}
+
+function fly(world: World, actor: Actor, action: ActionState, step: number): void {
+  const target: Vec2 | null = action.target;
+  if (!landsAt(world, actor, target)) {
+    moveWithCollision(gridFor(world, actor), actor.pos, action.direction.x * step, action.direction.z * step);
+    return;
+  }
+  const share: number = Math.min(1, step / action.travelLeft);
+  actor.pos.x += (target.x - actor.pos.x) * share;
+  actor.pos.z += (target.z - actor.pos.z) * share;
+}
+
 function land(world: World, actor: Actor, action: ActionState): void {
   const target: Vec2 | null = action.target;
-  if (target === null || !isWalkable(gridFor(world, actor), target.x, target.z) || !canReach(world, actor.pos, target)) return;
+  if (!landsAt(world, actor, target)) return;
   actor.pos.x = target.x;
   actor.pos.z = target.z;
   actor.motion = 'lunge';
@@ -430,7 +445,7 @@ export function stepAction(world: World, actor: Actor, dt: number): void {
   action.turned = (action.turned + turnRate(actor, action) * dt) % MOMENTUM.fullTurn;
   if (action.phase === 'windup' && action.travelLeft > 0 && action.timeLeft < action.travelLeft / action.travelSpeed + dt) {
     const step: number = Math.min(action.travelLeft, action.travelSpeed * dt);
-    moveWithCollision(gridFor(world, actor), actor.pos, action.direction.x * step, action.direction.z * step);
+    fly(world, actor, action, step);
     actor.motion = 'lunge';
     action.travelLeft -= step;
   }

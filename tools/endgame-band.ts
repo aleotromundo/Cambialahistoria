@@ -23,7 +23,7 @@ export const ENDGAME = {
   bossZone: 'ledger_court',
   bossLimit: 300,
   settle: 3,
-  timeFactor: 2.5,
+  timeFactor: 2.6,
   deathAllowance: 0.34,
   archetypes: ['glass', 'tank', 'caster', 'windrunner', 'echoer', 'spellblade', 'duelist', 'spinner'],
   specialtyPrefix: 'spec_',
