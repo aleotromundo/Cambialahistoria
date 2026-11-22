@@ -3,7 +3,7 @@ import { zoneMarkerModels, zoneMarkerSurfaces } from '../../sim/content/markers.
 
 export function zoneProps(zone: ZoneDef): string[] {
   const walls: string[] = zone.walls === null ? [] : [...zone.walls.tall, zone.walls.low, zone.walls.corner];
-  return [...walls, ...zone.props.map((placed): string => placed.prop), ...(zone.outside?.edge?.props ?? []), ...(zone.outside?.barrier?.rows ?? []).concat(zone.outside?.barrier?.drop ?? []).flatMap((row): readonly string[] => row.far.props.concat(row.near.props)), ...zone.scatter.flatMap((rule): readonly string[] => rule.props), ...(zone.terrain?.cliffs ?? []).flatMap((rule): readonly string[] => rule.props), ...(zone.void?.shore?.props ?? []).map((placed): string => placed.prop), ...zone.tunnels.flatMap((tunnel): string[] => tunnel.roof.map((piece): string => piece.prop))];
+  return [...walls, ...zone.props.map((placed): string => placed.prop), ...(zone.outside?.edge?.props ?? []), ...(zone.outside?.barrier?.rows ?? []).concat(zone.outside?.barrier?.drop ?? []).flatMap((row): readonly string[] => row.far.props.concat(row.near.props)), ...zone.scatter.flatMap((rule): readonly string[] => rule.props), ...(zone.terrain?.cliffs ?? []).flatMap((rule): readonly string[] => rule.props), ...(zone.void?.shore?.props ?? []).map((placed): string => placed.prop), ...(zone.void?.shore?.path?.rubble ?? []), ...(zone.void?.glimpses ?? []).flatMap((glimpse): string[] => glimpse.pieces.map((piece): string => piece.prop)), ...zone.tunnels.flatMap((tunnel): string[] => tunnel.roof.map((piece): string => piece.prop))];
 }
 
 function shownProps(content: Content, zone: ZoneDef): string[] {
@@ -31,10 +31,12 @@ export function zoneSurfaces(content: Content, zone: ZoneDef): Set<string> {
     ids.add(zone.terrain.cliff);
     for (const blend of zone.terrain.blends) ids.add(blend.surface);
   }
+  for (const fall of zone.falls) ids.add(fall.surface);
   const shoreSurface: string | null = zone.void?.shore?.surface ?? null;
   if (shoreSurface !== null) ids.add(shoreSurface);
   const pathSurface: string | null = zone.void?.shore?.path?.surface ?? null;
   if (pathSurface !== null) ids.add(pathSurface);
+  for (const pool of zone.void?.shore?.pools ?? []) ids.add(pool.surface);
   for (const propId of shownProps(content, zone)) {
     const def: PropDef | undefined = content.props.get(propId);
     if (def !== undefined) for (const id of Object.values(def.surfaces)) ids.add(id);

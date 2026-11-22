@@ -6,6 +6,8 @@ import type { Cdp, Chrome, Served } from './chrome-page.ts';
 import { CHROME_PAGE, connect, enterPlay, evaluate, pageSocket, startChrome, startServer } from './chrome-page.ts';
 import type { SoakArgs, SoakSample, SoakVerdict } from './soak-report.ts';
 import { judgeSoak, readSample, SOAK, soakArgs } from './soak-report.ts';
+import type { KeptThing } from './soak-trace.ts';
+import { keptLines, madeLines, readKept, readMade, traceInstall, traceLap, traceMade, traceRead } from './soak-trace.ts';
 import { profileFor } from './walk-report.ts';
 
 async function phone(cdp: Cdp): Promise<void> {
@@ -31,6 +33,7 @@ async function sample(cdp: Cdp, lap: number, ms: number): Promise<SoakSample> {
 }
 
 async function oneLap(cdp: Cdp, lap: number, laps: number, into: SoakSample[]): Promise<string | null> {
+  await evaluate(cdp, traceLap(lap));
   const started: number = performance.now();
   const walked: Fields = fields(await evaluate(cdp, 'window.storm === undefined ? Promise.reject(new Error("no window.storm: soak a dev build")) : window.storm.soak()', SOAK.lapWaitMs), 'soak lap');
   if (!flag(walked, 'ok', 'soak lap')) return `lap ${lap} stopped: ${textList(walked, 'problems', 'soak lap').join('; ')}`;
@@ -56,13 +59,21 @@ async function main(): Promise<number> {
     cdp = await connect(await pageSocket(chrome.profile));
     await phone(cdp);
     await enterPlay(cdp, args.url ?? server?.url ?? '', args.hero, CHROME_PAGE.stepWaitMs, SOAK.page);
+    await evaluate(cdp, traceInstall());
     const samples: SoakSample[] = [];
     const stopped: string | null = await lapsFrom(cdp, 1, args.laps, samples);
     const verdict: SoakVerdict = judgeSoak(samples);
-    for (const line of verdict.lines) console.log(line);
+    const kept: KeptThing[] = readKept(
+      await evaluate(cdp, traceRead()).catch((error: unknown): unknown[] => {
+        console.log(`the leak trace could not be read: ${error instanceof Error ? error.message : String(error)}`);
+        return [];
+      }),
+    );
+    const made: string[] = madeLines(readMade(await evaluate(cdp, traceMade()).catch((): unknown[] => [])));
+    for (const line of [...verdict.lines, ...keptLines(kept), ...made]) console.log(line);
     const problems: readonly string[] = stopped === null ? verdict.problems : [stopped, ...verdict.problems];
     for (const problem of problems) console.log(`SOAK PROBLEM: ${problem}`);
-    if (args.out !== null) writeFileSync(args.out, `${JSON.stringify({ samples, problems }, null, 2)}\n`);
+    if (args.out !== null) writeFileSync(args.out, `${JSON.stringify({ samples, problems, kept }, null, 2)}\n`);
     console.log(problems.length === 0 ? 'SOAK OK' : 'SOAK FAILED');
     return problems.length === 0 ? 0 : 1;
   } finally {

@@ -203,9 +203,10 @@ export function fallColours(glow: SurfaceGlow): { readonly deep: Vector3; readon
   };
 }
 
-function fallMaterial(def: SurfaceDef, glow: SurfaceGlow, map: Texture): ShaderMaterial {
+export function fallMaterial(def: SurfaceDef, glow: SurfaceGlow, map: Texture): ShaderMaterial {
   const colours = fallColours(glow);
-  const uniforms: Record<string, IUniform<unknown>> = UniformsUtils.merge([UniformsLib.fog, { uMap: { value: map }, uMetres: { value: def.metres }, uDeep: { value: colours.deep }, uWarm: { value: colours.warm }, uHot: { value: colours.hot } }]);
+  const uniforms: Record<string, IUniform<unknown>> = UniformsUtils.merge([UniformsLib.fog, { uMetres: { value: def.metres }, uDeep: { value: colours.deep }, uWarm: { value: colours.warm }, uHot: { value: colours.hot } }]);
+  uniforms['uMap'] = { value: map };
   uniforms['uGlowTime'] = GLOW_CLOCK;
   return new ShaderMaterial({ name: `fall:${def.id}`, uniforms, vertexShader: FALL_VERTEX, fragmentShader: fallFragment(), transparent: true, depthWrite: false, side: DoubleSide, fog: true });
 }

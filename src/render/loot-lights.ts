@@ -2,6 +2,7 @@ import type { IUniform, Object3D } from 'three';
 import { Color, CustomBlending, DoubleSide, DynamicDrawUsage, InstancedBufferAttribute, InstancedMesh, OneFactor, OneMinusSrcAlphaFactor, PlaneGeometry, ShaderMaterial } from 'three';
 import { BOLT_FRAGMENT, FLOOR_VERTEX, POOL_FRAGMENT, SHAFT_FRAGMENT, STANDING_VERTEX } from './loot-light-shaders.ts';
 import type { Presence } from './shaft-motion.ts';
+import { unwarm } from './warm-up.ts';
 import { crowdShare, hidden, settle } from './shaft-motion.ts';
 
 export const LOOT_LIGHT = {
@@ -131,6 +132,11 @@ export function createLootLights(): LootLights {
   pools.mesh.renderOrder = LOOT_LIGHT.renderOrder - 1;
   plane.dispose();
   const batches: readonly Batch[] = [pools, shafts, bolts];
+  const stands: readonly InstancedMesh[] = batches.map((entry: Batch): InstancedMesh => {
+    const stand: InstancedMesh = new InstancedMesh(entry.mesh.geometry, entry.mesh.material, 1);
+    stand.frustumCulled = false;
+    return stand;
+  });
   const live: Lit[] = [];
   const xs: Float32Array = new Float32Array(LOOT_LIGHT.capacity);
   const zs: Float32Array = new Float32Array(LOOT_LIGHT.capacity);
@@ -197,11 +203,8 @@ export function createLootLights(): LootLights {
       }
     },
     standIns(): Object3D[] {
-      return batches.map((entry: Batch): Object3D => {
-        const stand: InstancedMesh = new InstancedMesh(entry.mesh.geometry, entry.mesh.material, 1);
-        stand.frustumCulled = false;
-        return stand;
-      });
+      for (const stand of stands) unwarm(stand);
+      return [...stands];
     },
   };
 }

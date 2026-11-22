@@ -49,6 +49,7 @@ interface Made {
 }
 
 const materials: Map<string, Made> = new Map<string, Made>();
+const surfaceTextures: Map<string, Set<string>> = new Map<string, Set<string>>();
 
 function textureKey(path: string, metres: number): string {
   return `${path}@${metres}`;
@@ -82,8 +83,15 @@ function loadTexture(path: string, metres: number, colour: boolean): Texture {
   return texture;
 }
 
+function surfaceTexture(def: SurfaceDef, path: string, colour: boolean): Texture {
+  const owned: Set<string> = surfaceTextures.get(def.id) ?? new Set<string>();
+  owned.add(textureKey(path, def.metres));
+  surfaceTextures.set(def.id, owned);
+  return loadTexture(path, def.metres, colour);
+}
+
 export async function floorSources(defs: readonly SurfaceDef[]): Promise<FloorSource[]> {
-  const made: FloorSource[] = defs.map((def: SurfaceDef): FloorSource => ({ colour: loadTexture(def.color, def.metres, true), normal: def.normal === null ? null : loadTexture(def.normal, def.metres, false), orm: def.orm === null ? null : loadTexture(def.orm, def.metres, false) }));
+  const made: FloorSource[] = defs.map((def: SurfaceDef): FloorSource => ({ colour: surfaceTexture(def, def.color, true), normal: def.normal === null ? null : surfaceTexture(def, def.normal, false), orm: def.orm === null ? null : surfaceTexture(def, def.orm, false) }));
   const keys: string[] = defs.flatMap((def: SurfaceDef): string[] => [def.color, def.normal, def.orm].filter((path: string | null): path is string => path !== null).map((path: string): string => textureKey(path, def.metres)));
   await Promise.all(keys.map((key: string): Promise<void> => textures.get(key)?.done ?? Promise.resolve()));
   return made;
@@ -102,20 +110,20 @@ export function metalSurface(def: SurfaceDef): boolean {
 }
 
 export function surfaceColourMap(def: SurfaceDef): Texture {
-  return loadTexture(def.color, def.metres, true);
+  return surfaceTexture(def, def.color, true);
 }
 
 export function surfaceMaterial(def: SurfaceDef, use: SurfaceUse, wet: number = 0): MeshStandardMaterial {
   const key: string = wet > 0 ? `${def.id}:${use}:wet${wet}` : `${def.id}:${use}`;
   const cached: Made | undefined = materials.get(key);
   if (cached !== undefined) return cached.material;
-  const orm: Texture | null = def.orm === null ? null : loadTexture(def.orm, def.metres, false);
+  const orm: Texture | null = def.orm === null ? null : surfaceTexture(def, def.orm, false);
   const metal: boolean = def.metalness >= SURFACES.metalFrom;
   const made: MeshStandardMaterial = new MeshStandardMaterial({
     name: key,
     color: new Color(def.tint),
-    map: loadTexture(def.color, def.metres, true),
-    normalMap: def.normal === null ? null : loadTexture(def.normal, def.metres, false),
+    map: surfaceTexture(def, def.color, true),
+    normalMap: def.normal === null ? null : surfaceTexture(def, def.normal, false),
     normalScale: new Vector2(def.normalScale, def.normalScale),
     aoMap: orm,
     roughnessMap: metal ? orm : null,
@@ -191,13 +199,20 @@ export async function preloadSurfaces(content: Content, ids: ReadonlySet<string>
   await Promise.all([...textures.values()].map((loading: Loading): Promise<void> => loading.done));
 }
 
+export function keptTextureKeys(materialTextures: readonly (readonly string[])[], surfaceOwned: ReadonlyMap<string, ReadonlySet<string>>, keep: ReadonlySet<string>): Set<string> {
+  const kept: Set<string> = new Set<string>(materialTextures.flat());
+  for (const id of keep) for (const key of surfaceOwned.get(id) ?? []) kept.add(key);
+  return kept;
+}
+
 export function releaseSurfaces(keep: ReadonlySet<string>): void {
   for (const [key, made] of materials) {
     if (keep.has(made.surface)) continue;
     made.material.dispose();
     materials.delete(key);
   }
-  const used: Set<string> = new Set<string>([...materials.values()].flatMap((made: Made): readonly string[] => made.textures));
+  const used: Set<string> = keptTextureKeys([...materials.values()].map((made: Made): readonly string[] => made.textures), surfaceTextures, keep);
+  for (const id of surfaceTextures.keys()) if (!keep.has(id)) surfaceTextures.delete(id);
   for (const [key, loading] of textures) {
     if (used.has(key)) continue;
     loading.texture.dispose();
