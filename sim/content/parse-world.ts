@@ -323,6 +323,7 @@ export function zone(value: unknown, where: string): ZoneDef {
     markerSurfaces: markerSurfaces(source['markerSurfaces'], `${where}.markerSurfaces`),
     portalSpot: source['portalSpot'] === undefined || source['portalSpot'] === null ? null : point(source['portalSpot'], `${where}.portalSpot`),
     deathReturn: zoneReturn(source['deathReturn'], `${where}.deathReturn`),
+    restoresOnEntry: source['restoresOnEntry'] === undefined ? false : flag(source, 'restoresOnEntry', where),
     duel: zoneDuel(source['duel'], `${where}.duel`),
     npcs: each(source['npcs'], `${where}.npcs`, zoneNpc),
     voices: source['voices'] === undefined ? [] : [...byId(each(source['voices'], `${where}.voices`, zoneVoice), `${where}.voices`).values()],

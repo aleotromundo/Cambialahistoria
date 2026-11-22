@@ -81,7 +81,7 @@ void test('the rival waits out the start, then decides once a decision time, and
   assert.ok(played.sent.every((command: Command): boolean => command.by === duel.rivalId));
 });
 
-void test('felling the rival wins, and after the hold one leave takes the player home as they stood with the rival gone', (): void => {
+void test('felling the rival wins, and after the hold one leave takes the player home at full life with the rival gone', (): void => {
   const world: World = ringWorld(CONTENT, 6, 12);
   const duel: RivalDuel = must(startRivalDuel(world, 6), 'duel');
   world.player.life = world.player.maxLife / 2;
@@ -93,7 +93,7 @@ void test('felling the rival wins, and after the hold one leave takes the player
   assert.equal(world.zone.id, RING.home.zone);
   assert.deepEqual(world.heroes, [world.player]);
   assert.ok(world.player.alive);
-  assert.ok(world.player.life < world.player.maxLife);
+  assert.equal(world.player.life, world.player.maxLife);
 });
 
 void test('falling to the rival loses no experience and still ends at home, alive', (): void => {

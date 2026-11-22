@@ -101,6 +101,11 @@ export function placePlayer(world: World): void {
   dropChannel(player);
 }
 
+function restoreOnEntry(player: PlayerState): void {
+  player.life = player.maxLife;
+  player.mana = player.stats.maxMana;
+}
+
 export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, keepRun: boolean = false): void {
   if (world.zone.duel !== null) world.heroes.splice(0, world.heroes.length, world.player);
   endTailwind(world, 'left');
@@ -130,6 +135,7 @@ export function enterZone(world: World, zone: ZoneDef, respawn: RespawnPoint, ke
   const arrival: VoidArrival = world.visited.includes(zone.id) ? 'return' : 'first';
   if (arrival === 'first') world.visited.push(zone.id);
   placePlayer(world);
+  if (zone.restoresOnEntry && world.player.alive) restoreOnEntry(world.player);
   beginVoid(world, arrival);
   for (const item of carried) dropOnGround(world, world.player.pos, { kind: 'item', item }).kept = true;
   spawnNpcs(world);
