@@ -1,5 +1,5 @@
 import type { ParticleSystem } from './particles.ts';
-import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, Texture, WebGLRenderer } from 'three';
+import type { AnimationAction, AnimationClip, Camera, IUniform, Material, MeshBasicMaterial, Object3D, Scene, Texture } from 'three';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, Color, Group, LoopRepeat, Mesh, MeshStandardMaterial, PointLight, ShaderMaterial, SphereGeometry, Vector2 } from 'three';
 import type { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ChestRules, MomentChest, MomentDef, MomentEcho, MomentProp } from '../../sim/content/moment-types.ts';
@@ -27,6 +27,8 @@ import { beneathLook, lookOf } from './prop-surface.ts';
 import { surfaceMaterial } from './surfaces.ts';
 import type { FramePacer } from './paced-work.ts';
 import { browserPacer, PACED_WORK, workPaced } from './paced-work.ts';
+import type { MomentCompiler, WarmTarget } from './moment-warm.ts';
+import { warmRoots } from './moment-warm.ts';
 
 export const MOMENT_VIEW = {
   domeSegments: 40,
@@ -147,9 +149,9 @@ interface Flash {
   age: number;
 }
 
-interface WarmTarget {
-  readonly renderer: WebGLRenderer;
-  readonly camera: Camera;
+interface KeptMoment {
+  readonly entry: MomentEntry;
+  readonly moment: MomentState;
 }
 
 export interface MomentViewDeps {
@@ -167,8 +169,8 @@ export interface MomentViewDeps {
 export interface MomentView {
   handle(events: readonly WorldEvent[]): void;
   update(dt: number, world: World): void;
-  prepare(renderer: WebGLRenderer, camera: Camera): Promise<void>;
-  warm(renderer: WebGLRenderer, camera: Camera): Promise<void>;
+  prepare(renderer: MomentCompiler, camera: Camera): Promise<void>;
+  warm(renderer: MomentCompiler, camera: Camera): Promise<void>;
   showWarm(x: number, z: number): () => void;
   clear(): void;
 }
@@ -259,19 +261,20 @@ function groundMaterial(def: SurfaceDef): MeshStandardMaterial {
   });
 }
 
-export function createMomentView(deps: MomentViewDeps): MomentView {
+export function createMomentView(deps: MomentViewDeps, pacer: FramePacer = browserPacer()): MomentView {
   const { scene, content, library } = deps;
   const phone: boolean = deps.tier.name === 'mobile';
   const domeGeometry: SphereGeometry = new SphereGeometry(1, phone ? MOMENT_VIEW.phoneDomeSegments : MOMENT_VIEW.domeSegments, phone ? MOMENT_VIEW.phoneDomeRings : MOMENT_VIEW.domeRings, 0, Math.PI * 2, 0, Math.PI / 2);
   const floorGeometry: CircleGeometry = new CircleGeometry(1, MOMENT_VIEW.floorSegments);
   const entries: Map<number, MomentEntry> = new Map<number, MomentEntry>();
-  let kept: MomentEntry[] = [];
+  let kept: KeptMoment[] = [];
   let keptStrike: readonly Object3D[] = [];
   let warmed: WarmTarget | null = null;
-  let warmedRigs: number = 0;
+  let warmedLoads: number = 0;
+  const loadedCount = (): number => library.rigs.size + library.wearables.size + library.attachments.size;
   let warmedFigures: number = 0;
   let warming: boolean = false;
-  const pacer: FramePacer = browserPacer();
+  const uploaded: WeakMap<Texture, number> = new WeakMap<Texture, number>();
   const flashes: Flash[] = [];
   const models: Map<string, GLTF> = new Map<string, GLTF>();
   const lights: PointLight[] = [];
@@ -573,6 +576,20 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
     flashes.length = 0;
   };
 
+  const dressKept = async (renderer: MomentCompiler, camera: Camera): Promise<void> => {
+    const added: Object3D[] = [];
+    const dressNew = ({ entry, moment }: KeptMoment): void => {
+      const before: number = entry.figures.length;
+      dressFigures(entry, moment);
+      for (const figure of entry.figures.slice(before)) {
+        figure.rig.setOpacity(1);
+        added.push(figure.rig.root);
+      }
+    };
+    await workPaced(kept, dressNew, pacer, PACED_WORK.frameBudgetMs);
+    if (added.length > 0) await warmRoots(renderer, added, camera, scene, uploaded, pacer);
+  };
+
   const view: MomentView = {
     handle(events: readonly WorldEvent[]): void {
       for (const event of events) {
@@ -581,8 +598,8 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       }
     },
     update(dt: number, world: World): void {
-      if (warmed !== null && !warming && library.rigs.size !== warmedRigs) {
-        if (readyFigures() === warmedFigures) warmedRigs = library.rigs.size;
+      if (warmed !== null && !warming && loadedCount() !== warmedLoads) {
+        if (readyFigures() === warmedFigures) warmedLoads = loadedCount();
         else void view.warm(warmed.renderer, warmed.camera);
       }
       clock += dt;
@@ -615,12 +632,13 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
         flashes.splice(index, 1);
       }
     },
-    async prepare(renderer: WebGLRenderer, camera: Camera): Promise<void> {
+    async prepare(renderer: MomentCompiler, camera: Camera): Promise<void> {
       warmed = { renderer, camera };
-      warmedRigs = library.rigs.size;
+      warmedLoads = loadedCount();
       warmedFigures = readyFigures();
+      if (kept.length > 0) return dressKept(renderer, camera);
       await loadProps(content.moments.defs.values());
-      const warm: MomentEntry[] = [];
+      const warm: KeptMoment[] = [];
       const holder: Group = new Group();
       await workPaced(
         [...content.moments.defs.values()],
@@ -632,7 +650,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
           if (def.chest !== null) entry.chest = chestOf(entry, def.chest);
           dressFigures(entry, moment);
           for (const figure of entry.figures) figure.rig.setOpacity(1);
-          warm.push(entry);
+          warm.push({ entry, moment });
         },
         pacer,
         PACED_WORK.frameBudgetMs,
@@ -640,25 +658,14 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
       const bolt: Mesh<BufferGeometry, MeshBasicMaterial> = skyBolt(STRIKE_WHITE);
       const arcs: Mesh<BufferGeometry, MeshBasicMaterial> = groundArcs(STRIKE_WHITE, 4);
       holder.add(bolt, arcs);
-      await renderer.compileAsync(holder, camera, scene).catch((): undefined => undefined);
-      const textures: Set<Texture> = new Set<Texture>();
-      for (const entry of warm) {
-        entry.group.traverse((object: Object3D): void => {
-          if (!(object instanceof Mesh)) return;
-          const materials: readonly unknown[] = Array.isArray(object.material) ? object.material : [object.material];
-          for (const material of materials) if (material instanceof MeshStandardMaterial) for (const texture of [material.map, material.normalMap, material.roughnessMap, material.emissiveMap]) if (texture !== null) textures.add(texture);
-        });
-        entry.group.visible = false;
-      }
+      await warmRoots(renderer, [holder], camera, scene, uploaded, pacer);
+      for (const { entry } of warm) entry.group.visible = false;
       bolt.visible = false;
       arcs.visible = false;
-      await workPaced([...textures], (texture: Texture): void => renderer.initTexture(texture), pacer, PACED_WORK.frameBudgetMs);
-      for (const entry of kept) dispose(entry);
-      for (const old of keptStrike) old.removeFromParent();
       kept = warm;
       keptStrike = [bolt, arcs];
     },
-    warm(renderer: WebGLRenderer, camera: Camera): Promise<void> {
+    warm(renderer: MomentCompiler, camera: Camera): Promise<void> {
       warming = true;
       return view
         .prepare(renderer, camera)
@@ -668,7 +675,7 @@ export function createMomentView(deps: MomentViewDeps): MomentView {
         });
     },
     showWarm(x: number, z: number): () => void {
-      const shown: Object3D[] = [...kept.map((entry: MomentEntry): Object3D => entry.group), ...keptStrike];
+      const shown: Object3D[] = [...kept.map(({ entry }: KeptMoment): Object3D => entry.group), ...keptStrike];
       const before: { readonly object: Object3D; readonly x: number; readonly z: number }[] = shown.map((object: Object3D): { readonly object: Object3D; readonly x: number; readonly z: number } => ({ object, x: object.position.x, z: object.position.z }));
       for (const object of shown) {
         object.position.x = x;
