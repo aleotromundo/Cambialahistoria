@@ -4,6 +4,7 @@ import { createBrowserFrames, createBrowserTimers } from '../browser-timers.ts';
 
 export const PACED_WORK = {
   frameBudgetMs: 6,
+  gpuHoldMs: 1500,
 } as const;
 
 export interface FramePacer {
@@ -39,6 +40,24 @@ export function heldWhile(pacer: FramePacer, held: () => boolean): FramePacer {
         };
         tick();
       });
+    },
+  };
+}
+
+export interface GpuWork {
+  mark(): void;
+  waiting(): number;
+}
+
+export function gpuPaced(pacer: FramePacer, gpu: GpuWork, holdMs: number = PACED_WORK.gpuHoldMs): FramePacer {
+  return {
+    now(): number {
+      return pacer.now();
+    },
+    next(): Promise<void> {
+      gpu.mark();
+      const sent: number = pacer.now();
+      return heldWhile(pacer, (): boolean => gpu.waiting() > 0 && pacer.now() - sent < holdMs).next();
     },
   };
 }

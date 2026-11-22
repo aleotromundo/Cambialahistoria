@@ -142,7 +142,7 @@ import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
 import { WARM_UP, waitWithin, warmThrough, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { FramePacer, LatestPaced, TurnGate } from './render/paced-work.ts';
-import { browserPacer, heldWhile, latestPaced, turnGate } from './render/paced-work.ts';
+import { browserPacer, gpuPaced, heldWhile, latestPaced, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
 import { createSky } from './render/sky-weather.ts';
 import type { RenderScale } from './render/render-scale.ts';
@@ -449,7 +449,7 @@ async function start(): Promise<void> {
     zoneView.setGraphics(gameSettings.preset());
     effects.setTorches(zoneView.torches);
     torchVersion = zoneView.lightsVersion;
-    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), mobile.quality.tier.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined));
+    await warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), mobile.quality.tier.zoneWaitMs, Promise.all([zoneView.ready, markersReady]).then((): void => undefined), gpuPaced(browserPacer(), stage.gpu));
     prepareNearZones();
     startZoneAmbience();
     glitches.refresh();
@@ -609,7 +609,7 @@ async function start(): Promise<void> {
       if (effect !== 'clear') perf.note(effect);
     },
   });
-  const bootWarm: Promise<void> = warmThrough(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined));
+  const bootWarm: Promise<void> = warmThrough(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined), gpuPaced(browserPacer(), stage.gpu));
   void bootWarm.then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const inVisiblePlay = (): boolean => playing && !transition.blocking && lobbyFlow?.active !== true;
   const backgroundPacer: FramePacer = mobile.quality.tier.backgroundInPlay ? browserPacer() : heldWhile(browserPacer(), inVisiblePlay);

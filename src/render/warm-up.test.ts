@@ -124,8 +124,8 @@ void test('a warm-up that finishes in time cancels its wait', async (): Promise<
   const compiler: Recorder = recorder(standIn);
   const clock: ManualTimers = manualTimers();
   const done: Promise<void> = warmUpWithin(compiler, new Scene(), new PerspectiveCamera(), [standIn], clock.timers, 1, null, PACER);
-  assert.equal(clock.pending(), 1);
   await settle();
+  assert.equal(clock.pending(), 1);
   compiler.finish();
   await done;
   assert.equal(clock.pending(), 0);

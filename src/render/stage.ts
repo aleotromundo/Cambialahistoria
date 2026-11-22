@@ -117,6 +117,7 @@ export interface Stage {
   applyGraphics(preset: GraphicsPreset): void;
   resize(): void;
   render(): void;
+  readonly gpu: GpuQueue;
   gpuQueued(): number;
   applyQuality(tier: QualityTier): void;
   setRenderScale(scale: number): void;
@@ -371,6 +372,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       else composer.render();
       gpu.mark();
     },
+    gpu,
     gpuQueued(): number {
       return gpu.waiting();
     },
