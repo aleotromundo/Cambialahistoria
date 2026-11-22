@@ -249,7 +249,7 @@ interface GridTemplate {
 
 const TEMPLATES: ZoneCache<GridTemplate> = zoneCache<GridTemplate>('nav grids');
 
-function copyGrid(grid: NavGrid): NavGrid {
+export function copyGrid(grid: NavGrid): NavGrid {
   return { ...grid, walkable: grid.walkable.slice(), solid: grid.solid.slice(), ground: grid.ground.slice(), drifts: grid.drifts.map((drift: DriftCells): DriftCells => ({ ...drift })) };
 }
 

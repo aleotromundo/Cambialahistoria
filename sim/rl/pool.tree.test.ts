@@ -5,14 +5,14 @@ import type { Content } from '../content/types.ts';
 import type { PlayerState } from '../world/types.ts';
 import { buildPoints } from './build.ts';
 import type { Match, Pool, PoolOptions } from './pool.ts';
-import { createPool } from './pool.ts';
+import { createPool, matchHeroes } from './pool.ts';
 import { recordReplay } from './replay.ts';
 
 const CONTENT: Content = loadContent();
 const BASE: PoolOptions = { seed: 41, envs: 6, duels: 2, jitter: 0, waves: 1, keepEvery: 1, levels: [], treeBuilds: true };
 
 function heroes(match: Match): PlayerState[] {
-  return match.kind === 'arena' ? [match.arena.world.player] : match.duel.seats.map((seat): PlayerState => seat.hero);
+  return matchHeroes(match);
 }
 
 void test('a tree-build pool gives every arena and both duel seats a tree build at a level from the range', (): void => {

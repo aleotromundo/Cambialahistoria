@@ -6,7 +6,7 @@ import { ARENA } from './arena.ts';
 import { levelCount } from './curriculum.ts';
 import { RL } from './contract.ts';
 import type { EpisodeSummary, Match, Pool } from './pool.ts';
-import { createPool, setLevels, stepPool } from './pool.ts';
+import { createPool, matchLevel, matchWorld, setLevels, stepPool } from './pool.ts';
 
 const CONTENT: Content = loadContent();
 
@@ -15,13 +15,13 @@ function only(level: number): number[] {
 }
 
 function heroLevels(pool: Pool): number[] {
-  return pool.matches.map((match: Match): number => (match.kind === 'arena' ? match.arena.world.player.level : match.duel.world.player.level));
+  return pool.matches.map((match: Match): number => matchWorld(match).player.level);
 }
 
 void test('level weights choose the level of every arena the pool opens, and can change while it runs', (): void => {
   const pool: Pool = createPool(CONTENT, { seed: 97, envs: 4, duels: 0, jitter: 0, waves: 1, keepEvery: 0, levels: only(7) });
   assert.deepEqual(heroLevels(pool), [7, 7, 7, 7]);
-  assert.deepEqual(pool.matches.map((match: Match): number => (match.kind === 'arena' ? match.arena.level : match.duel.level)), [7, 7, 7, 7]);
+  assert.deepEqual(pool.matches.map((match: Match): number => matchLevel(match)), [7, 7, 7, 7]);
   setLevels(pool, only(11));
   const fresh: Pool = createPool(CONTENT, { seed: 98, envs: 2, duels: 0, jitter: 0, waves: 1, keepEvery: 0, levels: [] });
   assert.equal(fresh.levels.length, 0);

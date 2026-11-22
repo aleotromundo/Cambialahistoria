@@ -6,7 +6,7 @@ import type { PlayerState } from '../world/types.ts';
 import type { Build } from './build.ts';
 import { BUILD } from './build.ts';
 import type { Match, Pool, PoolOptions } from './pool.ts';
-import { createPool, duelBuilds } from './pool.ts';
+import { createPool, duelBuilds, matchWorld } from './pool.ts';
 
 const CONTENT: Content = loadContent();
 
@@ -34,7 +34,7 @@ void test('fixed seat builds win over the learner build', (): void => {
 void test('a pool with a learner build plays it in every arena and in the first duel seat', (): void => {
   const pool: Pool = createPool(CONTENT, { ...BASE, build: SPIN, rivals: [WALL] });
   for (const match of pool.matches) {
-    const hero: PlayerState = match.kind === 'arena' ? match.arena.world.player : match.duel.world.player;
+    const hero: PlayerState = matchWorld(match).player;
     assert.deepEqual(hero.allocated, SPIN.route);
     assert.equal(hero.level, BUILD.level);
   }

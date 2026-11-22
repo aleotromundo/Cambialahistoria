@@ -4,6 +4,8 @@ import type { Vec2 } from '../math.ts';
 import { isWalkable, lineWalkable, nearestWalkable } from '../nav/grid.ts';
 import type { Rng } from '../rng.ts';
 import { createRng } from '../rng.ts';
+import type { ZoneCache } from '../zone-cache.ts';
+import { zoneCache } from '../zone-cache.ts';
 import { createWorld } from '../world/create.ts';
 import { regardOf } from '../world/factions.ts';
 import { findHero } from '../world/heroes.ts';
@@ -153,11 +155,15 @@ export function benchHero(content: Content, rng: Rng, level: number): BenchHero 
   return { seed: ARENA.benchSeed + rng.int(0, ARENA.benchSeed), level, weapon: pick(rng, weapons)?.id ?? null, bar };
 }
 
-function arenaZone(content: Content, level: number): ZoneDef {
+const FLOORS: ZoneCache<ZoneDef> = zoneCache<ZoneDef>('arena floors');
+
+function arenaFloor(content: Content): ZoneDef {
   const id: string | undefined = fightZones(content)[0];
   const zone: ZoneDef | undefined = id === undefined ? undefined : content.zones.get(id);
   if (zone === undefined) throw new Error('no fight zone to hold an arena in');
-  return { ...zone, packs: [], surge: null, moments: null, level, levelUpTo: level };
+  const floor: ZoneDef = FLOORS.get(zone) ?? { ...zone, packs: [], surge: null, moments: null };
+  FLOORS.set(zone, floor);
+  return floor;
 }
 
 export function spawnSpot(world: World, rng: Rng): Vec2 {
@@ -197,9 +203,9 @@ function spawnWave(arena: Arena): void {
 
 export function emptyArena(content: Content, seed: number, level: number): World {
   const world: World = createWorld(content, { seed, save: null, opening: false });
-  const zone: ZoneDef = arenaZone(content, level);
-  enterZone(world, zone, { type: 'start' });
-  world.zone = zone;
+  const floor: ZoneDef = arenaFloor(content);
+  enterZone(world, floor, { type: 'start' });
+  world.zone = { ...floor, level, levelUpTo: level };
   world.monsters = [];
   world.moments = [];
   world.encounters = [];
