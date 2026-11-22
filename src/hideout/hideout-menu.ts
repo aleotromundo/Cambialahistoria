@@ -79,6 +79,10 @@ export function reportKey(origin: MenuOrigin): string {
   return route.kind === 'line' ? `line:${String(route.line.id)}` : `name:${route.name.toLowerCase()}`;
 }
 
+export function opensFor(name: string, others: Pick<Others, 'resident'>): boolean {
+  return !others.resident(name);
+}
+
 export function tradeTarget(origin: MenuOrigin, others: Pick<Others, 'target' | 'named'>): OtherTarget | null {
   return origin.kind === 'world' ? others.target(origin.target.id) : others.named(origin.name);
 }
@@ -332,6 +336,7 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     },
     isBlocked: (name: string): boolean => isBlocked(blocks, name),
     openName(name: string, line: ChatLine | null, element: HTMLElement): void {
+      if (!opensFor(name, others)) return;
       openId = null;
       nameAnchor = element;
       origin = { kind: 'chat', name, line };

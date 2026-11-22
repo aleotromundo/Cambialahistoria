@@ -45,6 +45,7 @@ export interface LivePlayer {
   readonly x: number;
   readonly z: number;
   readonly facing: number;
+  readonly resident?: true;
 }
 
 export interface LiveMove {
@@ -148,7 +149,8 @@ export function readPlayer(value: unknown): LivePlayer | null {
   const facing: number | null = finite(value['facing']);
   const username: string | null = shortText(value['username'], LIVE_LIMITS.nameChars);
   if (id === null || name === null || hero === undefined || worn === null || x === null || z === null || facing === null) return null;
-  return { id, name, username, hero, worn, x, z, facing };
+  const player: LivePlayer = { id, name, username, hero, worn, x, z, facing };
+  return value['resident'] === true ? { ...player, resident: true } : player;
 }
 
 export function readLine(value: unknown): ChatLine | null {

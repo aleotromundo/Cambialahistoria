@@ -22,6 +22,7 @@ export const OTHERS = {
   labelLift: 0.45,
   hiddenBelow: 0.01,
   labelClass: 'player-label',
+  residentClass: 'resident',
   leavingClass: 'leaving',
   litClass: 'lit',
   leaveMs: 400,
@@ -79,6 +80,7 @@ export interface Others {
   light(id: string | null): void;
   target(id: string): OtherTarget | null;
   named(name: string): OtherTarget | null;
+  resident(name: string): boolean;
   anchorOf(id: string): ScreenAnchor | null;
   groundOf(id: string): { readonly x: number; readonly z: number } | null;
 }
@@ -102,6 +104,7 @@ interface Other {
   name: HTMLElement;
   called: string;
   username: string | null;
+  resident: boolean;
   readonly shown: Fade;
   readonly box: PickBox;
   pickable: boolean;
@@ -212,6 +215,8 @@ export function createOthers(options: OthersOptions): Others {
       known.hero = player.hero;
       known.worn = player.worn;
       known.username = player.username;
+      known.resident = player.resident === true;
+      known.label.classList.toggle(OTHERS.residentClass, known.resident);
       rename(known, player.name);
       known.shown.target = 1;
       if (known.figure !== null) known.figure.presence.target = 1;
@@ -219,6 +224,7 @@ export function createOthers(options: OthersOptions): Others {
     }
     const label: HTMLDivElement = document.createElement('div');
     label.className = OTHERS.labelClass;
+    label.classList.toggle(OTHERS.residentClass, player.resident === true);
     const inner: HTMLSpanElement = document.createElement('span');
     const name: HTMLElement = document.createElement('b');
     name.textContent = player.name;
@@ -226,7 +232,7 @@ export function createOthers(options: OthersOptions): Others {
     label.append(inner);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null });
   };
 
   const depart = (other: Other): void => {
@@ -337,7 +343,7 @@ export function createOthers(options: OthersOptions): Others {
           other.anchor.copy(point);
           const head: boolean = camera.project(pose.x, floor + figure.view.height, pose.z, point);
           const feet: boolean = camera.project(pose.x, floor, pose.z, foot);
-          if (head && feet && other.here && shown >= OTHERS.pickableFrom) {
+          if (head && feet && other.here && !other.resident && shown >= OTHERS.pickableFrom) {
             const half: number = Math.max(OTHERS.pickMinWidth, Math.abs(foot.y - point.y) * OTHERS.pickWidth) / 2;
             other.box.minX = foot.x - half - OTHERS.pickPadding;
             other.box.maxX = foot.x + half + OTHERS.pickPadding;
@@ -374,14 +380,19 @@ export function createOthers(options: OthersOptions): Others {
     },
     target(id: string): OtherTarget | null {
       const other: Other | null = shownTarget(id);
-      return other === null ? null : { id: other.id, name: other.called, username: other.username };
+      return other === null || other.resident ? null : { id: other.id, name: other.called, username: other.username };
     },
     named(name: string): OtherTarget | null {
       const key: string = name.toLowerCase();
       for (const other of others.values()) {
-        if (other.here && other.called.toLowerCase() === key) return { id: other.id, name: other.called, username: other.username };
+        if (other.here && !other.resident && other.called.toLowerCase() === key) return { id: other.id, name: other.called, username: other.username };
       }
       return null;
+    },
+    resident(name: string): boolean {
+      const key: string = name.toLowerCase();
+      for (const other of others.values()) if (other.here && other.resident && other.called.toLowerCase() === key) return true;
+      return false;
     },
     anchorOf(id: string): ScreenAnchor | null {
       const other: Other | null = shownTarget(id);

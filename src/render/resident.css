@@ -1,0 +1,9 @@
+.player-label.resident b {
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  color: #f3d9a4;
+}
+
+.player-label.resident span {
+  background: rgba(8, 10, 16, 0.62);
+}
