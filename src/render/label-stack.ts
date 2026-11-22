@@ -1,4 +1,4 @@
-import { LABEL_EDGE } from './label-edge.ts';
+import { LABEL_EDGE, squaredDistance } from './label-edge.ts';
 
 export const SETTLE = {
   downWeight: 4,
@@ -149,12 +149,13 @@ export function foldPiles(boxes: readonly RankedBox[], reach: number, keep: numb
     return root;
   };
   for (const box of boxes) groupOf.set(box.id, box.id);
+  const reachSquared: number = reach * reach;
   for (let index: number = 0; index < boxes.length; index += 1) {
     const a: RankedBox | undefined = boxes[index];
     if (a === undefined) continue;
     for (let other: number = index + 1; other < boxes.length; other += 1) {
       const b: RankedBox | undefined = boxes[other];
-      if (b !== undefined && Math.hypot(a.x - b.x, a.y - b.y) <= reach) groupOf.set(find(a.id), find(b.id));
+      if (b !== undefined && squaredDistance(a.x - b.x, a.y - b.y) <= reachSquared) groupOf.set(find(a.id), find(b.id));
     }
   }
   const groups: Map<number, RankedBox[]> = new Map<number, RankedBox[]>();

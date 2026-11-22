@@ -52,6 +52,10 @@ export interface ItemPoint {
   readonly y: number;
 }
 
+export function squaredDistance(dx: number, dy: number): number {
+  return dx * dx + dy * dy;
+}
+
 function freeAt(x: number, y: number, width: number, height: number, rects: readonly ScreenRect[]): boolean {
   const left: number = x - width / 2;
   const right: number = x + width / 2;
@@ -80,7 +84,7 @@ function candidateY(y: number, row: number, height: number, rects: readonly Scre
   return row % 2 === 1 ? rect.top - gap : rect.bottom + gap + height;
 }
 
-export function placeTag(anchorX: number, anchorY: number, width: number, height: number, view: ViewSize, rects: readonly ScreenRect[], item: ItemPoint = { x: anchorX, y: anchorY }): TagPlace {
+export function placeTag(anchorX: number, anchorY: number, width: number, height: number, view: ViewSize, rects: readonly ScreenRect[], item?: ItemPoint): TagPlace {
   const homeX: number = keepInside(anchorX, width, view);
   const homeY: number = keepBelowTop(anchorY, height, view);
   let x: number = homeX;
@@ -92,7 +96,7 @@ export function placeTag(anchorX: number, anchorY: number, width: number, height
       const optionX: number = keepInside(candidateX(homeX, column, width, rects), width, view);
       for (let row: number = 0; row < options; row += 1) {
         const optionY: number = keepBelowTop(candidateY(homeY, row, height, rects), height, view);
-        const distance: number = Math.hypot(optionX - anchorX, optionY - anchorY);
+        const distance: number = squaredDistance(optionX - anchorX, optionY - anchorY);
         if (distance < best && freeAt(optionX, optionY, width, height, rects)) {
           best = distance;
           x = optionX;
@@ -101,8 +105,10 @@ export function placeTag(anchorX: number, anchorY: number, width: number, height
       }
     }
   }
-  const away: boolean = Math.hypot(x - anchorX, y - anchorY) > LABEL_EDGE.awayDistance;
-  return { x, y, away, turn: Math.atan2(item.y - (y - height / 2), item.x - x) };
+  const away: boolean = squaredDistance(x - anchorX, y - anchorY) > LABEL_EDGE.awayDistance * LABEL_EDGE.awayDistance;
+  const itemX: number = item === undefined ? anchorX : item.x;
+  const itemY: number = item === undefined ? anchorY : item.y;
+  return { x, y, away, turn: Math.atan2(itemY - (y - height / 2), itemX - x) };
 }
 
 export type ViewEdge = 'left' | 'right' | 'top' | 'bottom';

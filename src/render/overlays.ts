@@ -18,7 +18,7 @@ import type { IsoCamera } from './iso-camera.ts';
 import { floorUp } from './terrain-lift.ts';
 import { createLootTip } from './loot-tip.ts';
 import type { LootTip, TipCheck } from './loot-tip.ts';
-import { anchorInView, heldReach, keepApart, keepTagInView, LABEL_EDGE, placeTag, stackAtEdges } from './label-edge.ts';
+import { anchorInView, heldReach, keepApart, keepTagInView, LABEL_EDGE, placeTag, squaredDistance, stackAtEdges } from './label-edge.ts';
 import type { EdgeStack, EdgeTag, ItemPoint, TagPlace, ViewSize } from './label-edge.ts';
 import { foldPiles, settleLabels } from './label-stack.ts';
 import { lootShown, pilesFold } from './loot-shown.ts';
@@ -640,7 +640,7 @@ export function createOverlays(root: HTMLElement, camera: IsoCamera, hooks: Over
           label.leaving = OVERLAYS.labelExit;
           label.element.classList.add('taken');
         }
-        const near: boolean = Math.hypot(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear;
+        const near: boolean = squaredDistance(label.ground.pos.x - world.player.pos.x, label.ground.pos.z - world.player.pos.z) <= OVERLAYS.labelNear * OVERLAYS.labelNear;
         camera.project(label.ground.pos.x, floorUp(label.ground.pos.x, label.ground.find === null ? OVERLAYS.labelLift : OVERLAYS.findLift, label.ground.pos.z), label.ground.pos.z, point);
         const shown: boolean = lootShown({ all, near, find: label.ground.find !== null, rank: label.rank, shownRank: OVERLAYS.labelShownRank, inView: anchorInView(point.x, point.y, view) });
         if (shown !== label.shown) {
