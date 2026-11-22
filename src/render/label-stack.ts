@@ -1,4 +1,6 @@
 import { LABEL_EDGE, squaredDistance } from './label-edge.ts';
+import type { RectGrid } from './rect-grid.ts';
+import { cellOf, createRectGrid, fileRect, firstEntry, nextEntry, ownerOf } from './rect-grid.ts';
 
 export const SETTLE = {
   downWeight: 4,
@@ -40,6 +42,7 @@ interface Settling {
   readonly gap: number;
   readonly view: SettleView;
   readonly placed: ScreenRect[];
+  readonly grid: RectGrid;
   readonly blockers: readonly ScreenRect[];
   box: RankedBox;
   home: number;
@@ -55,8 +58,16 @@ function clearAt(settling: Settling, x: number, y: number): boolean {
   const left: number = x - box.width / 2;
   const top: number = y - box.height;
   const right: number = x + box.width / 2;
-  for (const other of settling.placed) {
-    if (left < other.right + gap && other.left - gap < right && top < other.bottom + gap && other.top - gap < y) return false;
+  const { grid, placed }: Settling = settling;
+  const lastColumn: number = cellOf(right, grid.columns);
+  const lastRow: number = cellOf(y, grid.rows);
+  for (let row: number = cellOf(top, grid.rows); row <= lastRow; row += 1) {
+    for (let column: number = cellOf(left, grid.columns); column <= lastColumn; column += 1) {
+      for (let entry: number = firstEntry(grid, column, row); entry >= 0; entry = nextEntry(grid, entry)) {
+        const other: ScreenRect | undefined = placed[ownerOf(grid, entry)];
+        if (other !== undefined && left < other.right + gap && other.left - gap < right && top < other.bottom + gap && other.top - gap < y) return false;
+      }
+    }
   }
   for (const other of settling.blockers) {
     if (left < other.right + LABEL_EDGE.hudGap && other.left - LABEL_EDGE.hudGap < right && top < other.bottom + LABEL_EDGE.hudGap && other.top - LABEL_EDGE.hudGap < y) return false;
@@ -121,12 +132,14 @@ export function settleLabels(boxes: readonly RankedBox[], gap: number, view: Set
   const spots: Map<number, LabelSpot> = new Map<number, LabelSpot>();
   const first: RankedBox | undefined = ordered[0];
   if (first === undefined) return spots;
-  const settling: Settling = { gap, view, placed: [], blockers, box: first, home: 0, x: 0, y: 0, cost: Infinity, found: false };
+  const settling: Settling = { gap, view, placed: [], grid: createRectGrid(view.width, view.height), blockers, box: first, home: 0, x: 0, y: 0, cost: Infinity, found: false };
   for (const box of ordered) {
     settling.box = box;
     settling.home = centred(box.x, box.width, view);
     const spot: LabelSpot = settleOne(settling);
-    settling.placed.push({ left: spot.x - box.width / 2, top: spot.y - box.height, right: spot.x + box.width / 2, bottom: spot.y });
+    const rect: ScreenRect = { left: spot.x - box.width / 2, top: spot.y - box.height, right: spot.x + box.width / 2, bottom: spot.y };
+    fileRect(settling.grid, settling.placed.length, rect.left - gap, rect.top - gap, rect.right + gap, rect.bottom + gap);
+    settling.placed.push(rect);
     spots.set(box.id, spot);
   }
   return spots;
