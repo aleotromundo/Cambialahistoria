@@ -79,8 +79,8 @@ export function reportKey(origin: MenuOrigin): string {
   return route.kind === 'line' ? `line:${String(route.line.id)}` : `name:${route.name.toLowerCase()}`;
 }
 
-export function opensFor(name: string, others: Pick<Others, 'resident'>): boolean {
-  return !others.resident(name);
+export function opensFor(name: string, line: ChatLine | null, others: Pick<Others, 'resident'>): boolean {
+  return line?.resident !== true && !others.resident(name);
 }
 
 export function tradeTarget(origin: MenuOrigin, others: Pick<Others, 'target' | 'named'>): OtherTarget | null {
@@ -336,7 +336,7 @@ export function startHideoutMenu(options: HideoutMenuOptions): HideoutMenu {
     },
     isBlocked: (name: string): boolean => isBlocked(blocks, name),
     openName(name: string, line: ChatLine | null, element: HTMLElement): void {
-      if (!opensFor(name, others)) return;
+      if (!opensFor(name, line, others)) return;
       openId = null;
       nameAnchor = element;
       origin = { kind: 'chat', name, line };

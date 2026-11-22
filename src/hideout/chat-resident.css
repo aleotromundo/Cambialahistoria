@@ -1,0 +1,8 @@
+.chat-name.resident {
+  color: #f3d9a4;
+  cursor: default;
+}
+
+.chat-whisper .chat-name.resident {
+  color: #f3d9a4;
+}

@@ -1,7 +1,7 @@
 import type { ChatLine } from '../backend/live-protocol.ts';
 import { LIVE_LIMITS } from '../backend/live-protocol.ts';
 import type { ChatEntry, ChatState } from './chat.ts';
-import { CHAT_WORDS, dayDivider, destination, readers } from './chat.ts';
+import { CHAT_WORDS, dayDivider, destination, isResidentName, readers } from './chat.ts';
 import { CHAT_KEYS, takesEnter } from './chat-keys.ts';
 import type { Mutes } from './mute.ts';
 
@@ -91,6 +91,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
   field.autocomplete = 'off';
   field.spellcheck = false;
   const rows: Map<string, Row> = new Map<string, Row>();
+  const residents: Set<string> = new Set<string>();
   let open: boolean = false;
   let lastSaid: string | null = null;
   swapText(to, destination({ kind: 'general' }));
@@ -134,10 +135,19 @@ export function createChatView(options: ChatViewOptions): ChatView {
   };
 
   const nameButton = (parent: HTMLElement, name: string, line: ChatLine | null): void => {
+    if (line?.resident === true) residents.add(name.toLowerCase());
+    if (isResidentName(name, line, residents)) {
+      make('span', 'chat-name resident', parent).textContent = name;
+      return;
+    }
     const button: HTMLButtonElement = make('button', 'chat-name', parent);
     button.type = 'button';
     button.textContent = name;
     button.addEventListener('click', (): void => {
+      if (isResidentName(name, line, residents)) {
+        button.classList.add('resident');
+        return;
+      }
       options.pick(name, line, button);
     });
   };

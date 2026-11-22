@@ -76,6 +76,7 @@ export interface ChatLine {
   readonly text: string;
   readonly at: string | null;
   readonly own: boolean | null;
+  readonly resident?: true;
 }
 
 export type WhisperDirection = 'from' | 'to';
@@ -164,7 +165,8 @@ export function readLine(value: unknown): ChatLine | null {
   const at: string | null = stamp !== null && Number.isFinite(Date.parse(stamp)) ? stamp : null;
   const own: unknown = value['own'];
   if (typeof id !== 'number' || !Number.isSafeInteger(id) || (from === null && rawFrom !== null) || name === null || text === null) return null;
-  return { id, from, name, text, at, own: typeof own === 'boolean' ? own : null };
+  const line: ChatLine = { id, from, name, text, at, own: typeof own === 'boolean' ? own : null };
+  return value['resident'] === true ? { ...line, resident: true } : line;
 }
 
 function readWelcome(source: Fields): Welcome | null {

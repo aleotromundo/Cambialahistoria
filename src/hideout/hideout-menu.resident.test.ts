@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import type { ChatLine } from '../backend/live-protocol.ts';
 import type { OtherTarget } from '../render/others.ts';
 import { opensFor, tradeTarget } from './hideout-menu.ts';
 
@@ -14,10 +15,17 @@ function hideoutWith(resident: string | null): { resident(name: string): boolean
 }
 
 void test('a name clicked in chat opens the player menu for a player and never for a resident standing in the Hideout', (): void => {
-  assert.equal(opensFor('Wren', hideoutWith(RESIDENT)), true);
-  assert.equal(opensFor(RESIDENT, hideoutWith(RESIDENT)), false);
-  assert.equal(opensFor('wayfarer', hideoutWith(RESIDENT)), false);
-  assert.equal(opensFor(RESIDENT, hideoutWith(null)), true);
+  assert.equal(opensFor('Wren', null, hideoutWith(RESIDENT)), true);
+  assert.equal(opensFor(RESIDENT, null, hideoutWith(RESIDENT)), false);
+  assert.equal(opensFor('wayfarer', null, hideoutWith(RESIDENT)), false);
+  assert.equal(opensFor(RESIDENT, null, hideoutWith(null)), true);
+});
+
+void test('a line the server marks as a resident’s opens no menu wherever the reader stands, and a player’s line still does', (): void => {
+  const line: ChatLine = { id: 4, from: null, name: RESIDENT, text: 'the rain is late', at: null, own: false };
+  assert.equal(opensFor(RESIDENT, { ...line, resident: true }, hideoutWith(null)), false);
+  assert.equal(opensFor(RESIDENT, line, hideoutWith(null)), true);
+  assert.equal(opensFor('Wren', { ...line, name: 'Wren' }, hideoutWith(null)), true);
 });
 
 void test('a resident is never a trade target, by its body or by its name', (): void => {

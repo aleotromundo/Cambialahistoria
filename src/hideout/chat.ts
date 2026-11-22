@@ -193,6 +193,10 @@ export function destination(aim: ChatTarget): string {
   return aim.kind === 'whisper' ? `To ${aim.name}` : `To ${CHAT_WORDS.general}`;
 }
 
+export function isResidentName(name: string, line: ChatLine | null, known: ReadonlySet<string>): boolean {
+  return line?.resident === true || known.has(name.toLowerCase());
+}
+
 function isOwn(line: ChatLine, state: ChatState): boolean {
   if (line.own !== null) return line.own;
   return line.from !== null && (line.from === state.you || line.from === state.me);
