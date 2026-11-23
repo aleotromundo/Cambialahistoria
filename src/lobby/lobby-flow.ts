@@ -1,9 +1,10 @@
 import type { WebGLRenderer } from 'three';
 import type { Content } from '../../sim/content/types.ts';
 import type { QualityName } from '../mobile/quality.ts';
-import { QUALITY_TIERS } from '../mobile/quality.ts';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { CharacterLibrary } from '../render/character-loader.ts';
+import type { FramePacer } from '../render/paced-work.ts';
+import { WARM_UP } from '../render/warm-up.ts';
 import type { Veil } from '../transition.ts';
 import { createVeil, VEIL } from '../veil.ts';
 import { BOUNDED_WAIT, framesWithin, within } from '../bounded-wait.ts';
@@ -51,6 +52,7 @@ export interface LobbyFlowParts {
   readonly openSettings: () => void;
   readonly openFeedback: (() => void) | null;
   readonly tier: () => QualityName;
+  readonly warmPacer: FramePacer;
   readonly restore: () => void;
   readonly showFps: () => boolean;
   readonly qualityTier: () => string;
@@ -102,7 +104,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     const sheet: SheetView = parts.view();
     return { ...sheet, ...characters.view(sheet.name) };
   };
-  const stage: LobbyStage = createLobbyStage(parts.content, parts.library, parts.loader);
+  const stage: LobbyStage = createLobbyStage(parts.content, parts.library, parts.loader, parts.warmPacer);
   const veil: Veil = createVeil(parts.veil);
   let active: boolean = false;
   let busy: boolean = false;
@@ -125,7 +127,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
     holdControls(true);
     if (!into) screen.hide();
     if (!covered) await veil.cover(colour);
-    await within(hold(), createBrowserTimers(), QUALITY_TIERS[parts.tier()].entryWaitMs);
+    await within(hold(), createBrowserTimers(), WARM_UP.compileWaitMs);
     middle();
     if (!into) active = false;
     document.body.toggleAttribute(`data-${LOBBY_FLOW.bodyMark}`, into);
@@ -134,7 +136,7 @@ export function createLobbyFlow(parts: LobbyFlowParts): LobbyFlow {
       parts.restore();
     }
     if (into) {
-      await within(warmStage(), createBrowserTimers(), QUALITY_TIERS[parts.tier()].entryWaitMs);
+      await within(warmStage(), createBrowserTimers(), WARM_UP.compileWaitMs);
       active = true;
       holdControls(false);
       screen.show(view());

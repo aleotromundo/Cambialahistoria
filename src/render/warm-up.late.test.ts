@@ -5,7 +5,7 @@ import { Mesh, PerspectiveCamera, Scene } from 'three';
 import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
 import type { ShaderCompiler } from './warm-up.ts';
-import { warmUpWithin } from './warm-up.ts';
+import { placedWithin, warmUpWithin } from './warm-up.ts';
 
 interface ManualTimers {
   readonly timers: Timers;
@@ -158,4 +158,46 @@ void test('late pieces that arrive in time are warmed before the warm-up ends', 
   await done;
   assert.deepEqual(compiler.drawn, [piece, late]);
   assert.equal(clock.pending(), 0);
+});
+
+void test('late pieces that arrive after their wait are still warmed, without holding the game', async (): Promise<void> => {
+  const scene: Scene = new Scene();
+  const piece: Mesh = new Mesh();
+  const late: Mesh = new Mesh();
+  scene.add(piece);
+  const compiler: Held = ready();
+  const clock: ManualTimers = manualTimers();
+  const later: Arrival = arrival();
+  const watched: { settled(): boolean } = tracked(warmUpWithin(compiler, scene, new PerspectiveCamera(), [], clock.timers, 1, later.promise, PACER));
+  await settle();
+  clock.fire();
+  await settle();
+  assert.equal(watched.settled(), true);
+  assert.deepEqual(compiler.drawn, [piece]);
+  scene.add(late);
+  later.arrive();
+  await settle();
+  assert.deepEqual(compiler.drawn, [piece, late]);
+});
+
+void test('a piece that arrives in time is waited for until it is placed', async (): Promise<void> => {
+  const clock: ManualTimers = manualTimers();
+  const placed: Arrival = arrival();
+  const watched: { settled(): boolean } = tracked(placedWithin(Promise.resolve(), placed.promise, clock.timers, 1));
+  await settle();
+  assert.equal(watched.settled(), false);
+  placed.arrive();
+  await settle();
+  assert.equal(watched.settled(), true);
+  assert.equal(clock.pending(), 0);
+});
+
+void test('a piece that has not arrived by its wait is left to place itself later', async (): Promise<void> => {
+  const clock: ManualTimers = manualTimers();
+  const watched: { settled(): boolean } = tracked(placedWithin(never(), never(), clock.timers, 1));
+  await settle();
+  assert.equal(watched.settled(), false);
+  clock.fire();
+  await settle();
+  assert.equal(watched.settled(), true);
 });

@@ -380,16 +380,19 @@ export function waitWithin(work: Promise<unknown>, timers: Timers, ms: number): 
   return Promise.race([done(), waited]);
 }
 
-export async function warmThrough(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {
-  await warmUp(compiler, scene, camera, standIns, null, pacer);
-  if (later === null) return;
-  await Promise.allSettled([later]);
-  await warmUp(compiler, scene, camera, standIns, null, pacer);
-}
-
 export async function warmUpWithin(compiler: ShaderCompiler, scene: Scene, camera: Camera, standIns: readonly Object3D[], timers: Timers, ms: number, later: Promise<void> | null = null, pacer: FramePacer = browserPacer()): Promise<void> {
   const wait: CompileWait = (compiling: Promise<unknown>): Promise<unknown> => within(compiling, timers, WARM_UP.compileWaitMs);
+  const warm = (): Promise<void> => warmScene(compiler, scene, camera, standIns, pacer, wait);
   const arrived: Promise<boolean> = later === null ? Promise.resolve(false) : within(later, timers, ms);
-  await warmScene(compiler, scene, camera, standIns, pacer, wait);
-  if (await arrived) await warmScene(compiler, scene, camera, standIns, pacer, wait);
+  await warm();
+  if (later === null) return;
+  if (await arrived) {
+    await warm();
+    return;
+  }
+  void Promise.allSettled([later]).then(warm);
+}
+
+export async function placedWithin(arrival: Promise<unknown>, placed: Promise<void>, timers: Timers, ms: number): Promise<void> {
+  if (await within(arrival, timers, ms)) await placed;
 }

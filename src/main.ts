@@ -140,7 +140,7 @@ import type { ParticleSystem } from './render/particles.ts';
 import { createParticles } from './render/particles.ts';
 import type { Stage } from './render/stage.ts';
 import { createStage } from './render/stage.ts';
-import { WARM_UP, waitWithin, warmThrough, warmUp, warmUpWithin } from './render/warm-up.ts';
+import { WARM_UP, waitWithin, warmUp, warmUpWithin } from './render/warm-up.ts';
 import type { FramePacer, LatestPaced, TurnGate } from './render/paced-work.ts';
 import { browserPacer, gpuPaced, heldWhile, latestPaced, turnGate } from './render/paced-work.ts';
 import type { Sky } from './render/sky-weather.ts';
@@ -609,7 +609,7 @@ async function start(): Promise<void> {
       if (effect !== 'clear') perf.note(effect);
     },
   });
-  const bootWarm: Promise<void> = warmThrough(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined), gpuPaced(browserPacer(), stage.gpu));
+  const bootWarm: Promise<void> = warmUpWithin(stage, stage.scene, stage.camera, [...actors.standIns(world.zone), ...loot.standIns(world), ...rain.standIns()], createBrowserTimers(), mobile.quality.tier.entryWaitMs, Promise.all([zoneView.ready, settledMarkers(markers, warnInConsole)]).then((): void => undefined), gpuPaced(browserPacer(), stage.gpu));
   void bootWarm.then((): void => (!playing && !transition.blocking && lobbyFlow?.active !== true ? stage.render() : undefined));
   const inVisiblePlay = (): boolean => playing && !transition.blocking && lobbyFlow?.active !== true;
   const backgroundPacer: FramePacer = mobile.quality.tier.backgroundInPlay ? browserPacer() : heldWhile(browserPacer(), inVisiblePlay);
@@ -677,7 +677,7 @@ async function start(): Promise<void> {
   reset.addEventListener('click', (): void => {
     void startOver();
   });
-  const flow: LobbyFlow = createLobbyFlow({ tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), showFps: (): boolean => gameSettings.get().graphics.showFps, qualityTier, root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => pick.look(), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: pick.choice() }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
+  const flow: LobbyFlow = createLobbyFlow({ warmPacer: gpuPaced(browserPacer(), stage.gpu), tier: (): QualityName => mobile.quality.tier.name, restore: (): void => stage.resize(), showFps: (): boolean => gameSettings.get().graphics.showFps, qualityTier, root: element('lobby', HTMLDivElement), veil: element('lobby-veil', HTMLDivElement), title, hud: element('hud', HTMLDivElement), renderer: stage.renderer, content, library, loader, lobby, look: (): LobbyLook => pick.look(), view: (): SheetView => ({ name: heroName ?? readHeroName(createBrowserStore()), hero: lobbyHero(content, world.player, world.zone.name, readPlayed(createBrowserStore().read(PLAYED_KEY))), known: entered, heroes: pick.choice() }), enterColour: (): string => world.zone.ambience.background, begin: (): void => {
     entered = true;
     begin();
   }, ready: (): Promise<void> => Promise.all([effects.ready, bootWarm]).then((): void => undefined), startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });

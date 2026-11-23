@@ -5,6 +5,7 @@ import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { QualityName } from '../mobile/quality.ts';
 import { ditheredOutputPass } from '../render/output-dither.ts';
+import type { FramePacer } from '../render/paced-work.ts';
 import { shadowLights, withShadowStandIns } from '../render/shadow-warm.ts';
 import type { ShadowLights } from '../render/shadow-warm.ts';
 import { unsorted, warmUp } from '../render/warm-up.ts';
@@ -227,7 +228,7 @@ function free(built: Built | null): void {
   built.bloomed?.quad.dispose();
 }
 
-export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camera: Camera, backdrop: Texture): LobbyPipeline {
+export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camera: Camera, backdrop: Texture, pacer: FramePacer): LobbyPipeline {
   let built: Built | null = null;
   let sharpened: number = 0;
   let ratio: number = 0;
@@ -325,7 +326,7 @@ export function createLobbyPipeline(renderer: WebGLRenderer, scene: Scene, camer
       for (const root of standIns) sharpenTextures(root, anisotropyFor(name));
       fit(name, devicePixelRatio, tierBuilt(name));
       await compile(name);
-      await warmUp(compiler, scene, camera, standIns);
+      await warmUp(compiler, scene, camera, standIns, null, pacer);
     },
     render(name: QualityName, devicePixelRatio: number): void {
       const tier: LobbyRenderTier = LOBBY_RENDER.tiers[name];

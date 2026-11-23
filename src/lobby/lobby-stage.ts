@@ -11,6 +11,8 @@ import type { CharacterLibrary, LoadedRig, RigInstance } from '../render/charact
 import { contactShadow } from '../render/contact-shadow.ts';
 import { surfaceMaterial } from '../render/surfaces.ts';
 import type { QualityName } from '../mobile/quality.ts';
+import { QUALITY_TIERS } from '../mobile/quality.ts';
+import type { FramePacer } from '../render/paced-work.ts';
 import { createLobbyPipeline } from './lobby-render.ts';
 import type { LobbyPipeline } from './lobby-render.ts';
 import { groundGeometry, valueNoise } from './lobby-ground.ts';
@@ -34,9 +36,9 @@ import { createLobbyOrbit, grab, LOBBY_ORBIT, orbitBy, release, stepOrbit, stepS
 import type { LobbyOrbit, OrbitView, Spring } from './lobby-orbit.ts';
 import { createHeroGate, holdFor } from './hero-hold.ts';
 import type { HeroGate } from './hero-hold.ts';
-import { BOUNDED_WAIT, within } from '../bounded-wait.ts';
+import { within } from '../bounded-wait.ts';
 import { createBrowserTimers } from '../browser-timers.ts';
-import { unwarm } from '../render/warm-up.ts';
+import { placedWithin, unwarm, WARM_UP } from '../render/warm-up.ts';
 import { footing, lowestOf } from './foot-plant.ts';
 import type { Footing } from './foot-plant.ts';
 
@@ -232,7 +234,7 @@ function take(event: Event): void {
   event.stopImmediatePropagation();
 }
 
-export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, random: () => number = Math.random): LobbyStage {
+export function createLobbyStage(content: Content, library: CharacterLibrary, loader: GLTFLoader, pacer: FramePacer, random: () => number = Math.random): LobbyStage {
   const set: LobbySet = pickSet(LOBBY_SETS, window.location.search);
   const mounds: readonly Mound[] = setMounds(set);
   const scene: Scene = new Scene();
@@ -274,7 +276,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
   let drawnOnce: boolean = false;
   let placing: Promise<void> | null = null;
   const pipelineFor = (renderer: WebGLRenderer): LobbyPipeline => {
-    pipeline ??= createLobbyPipeline(renderer, scene, camera, sky.texture);
+    pipeline ??= createLobbyPipeline(renderer, scene, camera, sky.texture, pacer);
     return pipeline;
   };
   const placeDressing = async (made: LobbyPipeline, tier: QualityName): Promise<void> => {
@@ -374,7 +376,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
       return Promise.resolve();
     }
     const run = async (): Promise<void> => {
-      await within(warmBothLooks(made, rig, tier), createBrowserTimers(), BOUNDED_WAIT.readyMs);
+      await within(warmBothLooks(made, rig, tier), createBrowserTimers(), WARM_UP.compileWaitMs);
       preparing = null;
       gate.settle(turn);
     };
@@ -511,7 +513,7 @@ export function createLobbyStage(content: Content, library: CharacterLibrary, lo
     async warm(renderer: WebGLRenderer, tier: QualityName): Promise<void> {
       if (hero === null && wanted !== null) dress(wanted);
       const made: LobbyPipeline = pipelineFor(renderer);
-      await Promise.all([sky.compile(renderer), made.warm(tier, window.devicePixelRatio, []), place(made, tier)]);
+      await Promise.all([sky.compile(renderer), made.warm(tier, window.devicePixelRatio, []), placedWithin(dressing.build(), place(made, tier), createBrowserTimers(), QUALITY_TIERS[tier].entryWaitMs)]);
       await readyHero(made, tier);
     },
   };

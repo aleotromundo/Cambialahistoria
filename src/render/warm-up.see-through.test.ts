@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Object3D } from 'three';
 import { Mesh, MeshStandardMaterial, PerspectiveCamera, Scene } from 'three';
+import type { Timers } from '../backend/backend.ts';
 import type { FramePacer } from './paced-work.ts';
 import type { ShaderCompiler } from './warm-up.ts';
-import { warmThrough, warmUp } from './warm-up.ts';
+import { warmUp, warmUpWithin } from './warm-up.ts';
 import { markSeeThrough } from './see-through.ts';
 
 const PACER: FramePacer = { now: (): number => 0, next: (): Promise<void> => Promise.resolve() };
+const NO_TIMERS: Timers = { after: (): (() => void) => (): void => undefined };
 
 interface Watcher extends ShaderCompiler {
   readonly seen: boolean[];
@@ -46,7 +48,7 @@ void test('a body that never fades is compiled once', async (): Promise<void> =>
   assert.deepEqual(compiler.seen, [false]);
 });
 
-void test('warming through waits for what is still loading and warms it before it ends', async (): Promise<void> => {
+void test('a warm-up waits for what is still loading and warms it before it ends', async (): Promise<void> => {
   const scene: Scene = new Scene();
   const compiled: Object3D[] = [];
   const compiler: ShaderCompiler = {
@@ -62,7 +64,7 @@ void test('warming through waits for what is still loading and warms it before i
     arrivals.push(resolve);
   });
   let ended: boolean = false;
-  const done: Promise<void> = warmThrough(compiler, scene, new PerspectiveCamera(), [], loading, PACER);
+  const done: Promise<void> = warmUpWithin(compiler, scene, new PerspectiveCamera(), [], NO_TIMERS, 1, loading, PACER);
   void done.finally((): void => {
     ended = true;
   });
@@ -75,11 +77,11 @@ void test('warming through waits for what is still loading and warms it before i
   assert.ok(compiled.includes(late));
 });
 
-void test('warming through ends when what was loading failed', async (): Promise<void> => {
+void test('a warm-up ends when what was loading failed', async (): Promise<void> => {
   const compiler: ShaderCompiler = {
     compileAsync: (target: Object3D): Promise<Object3D> => Promise.resolve(target),
     drawOnce(): void {},
     initTexture(): void {},
   };
-  await warmThrough(compiler, new Scene(), new PerspectiveCamera(), [], Promise.reject(new Error('gone')), PACER);
+  await warmUpWithin(compiler, new Scene(), new PerspectiveCamera(), [], NO_TIMERS, 1, Promise.reject(new Error('gone')), PACER);
 });
