@@ -4,6 +4,8 @@
 
 Free, in your browser, on a computer or a phone. Nothing to install and no account needed: open [theloststorm.com](https://theloststorm.com) and press play.
 
+[![Listed on Open Web Arcade](https://openwebarcade.com/badge.svg)](https://openwebarcade.com/games/the-lost-storm)
+
 The Lost Storm is an isometric action RPG. You wake in a white mist with a worn journal lying nearby, and walk out into a hall under a night storm, where lightning leaves pockets of somewhere else on the black rock and what is inside them turns on you. Fight, find loot, level up, and shape your character on a skill tree of 125 places. You fight alone; the Hideout, the chat, trading and the auction house are shared with everyone else who is playing. The game is in alpha and changes daily.
 
 It is built with Three.js, TypeScript and Vite, with no game engine on top, and all of it is in this repository.
