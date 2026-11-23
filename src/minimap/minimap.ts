@@ -13,6 +13,7 @@ import type { MapFit, WorldBox } from './zone-fit.ts';
 import { easeFit, fitBox, seenBox } from './zone-fit.ts';
 import { exploreGrid } from '../../sim/world/exploration.ts';
 import { drawMarks } from './marks.ts';
+import type { MapCharacter } from './marks.ts';
 import { exitUnder } from '../../sim/world/exits.ts';
 import { partShown } from '../../sim/world/hud.ts';
 import minimapCss from './minimap.css?inline';
@@ -53,6 +54,7 @@ export interface MinimapHooks {
   send(command: Command): void;
   clickMarker(x: number, z: number, hostile: boolean): void;
   isToggleKey(code: string): boolean;
+  characters?(): readonly MapCharacter[];
 }
 
 export interface Minimap {
@@ -216,7 +218,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
     context.drawImage(layer.canvas, 0, 0, layer.width, layer.height);
     context.globalAlpha = 1;
     context.setTransform(target.ratio, 0, 0, target.ratio, 0, 0);
-    drawMarks(context, matrix, world, { width: target.width, height: target.height, unit, edgeArrows, labels: !edgeArrows && hooks.touch });
+    drawMarks(context, matrix, world, { width: target.width, height: target.height, unit, edgeArrows, labels: !edgeArrows && hooks.touch, characters: hooks.characters?.() ?? [] });
   };
 
   const drawCorner = (): void => {

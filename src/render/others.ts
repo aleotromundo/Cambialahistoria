@@ -16,6 +16,10 @@ import type { IsoCamera } from './iso-camera.ts';
 import type { Track, TrackPose, TrackSample } from './other-track.ts';
 import { createTrack, fadeToward, placeTrack, poseAt, pushSample, TRACK } from './other-track.ts';
 import type { Sight } from './sight.ts';
+import type { ElementSize } from './element-size.ts';
+import { watchSize } from './element-size.ts';
+import { keepTagInView } from './label-edge.ts';
+import type { MapCharacter } from '../minimap/marks.ts';
 import { SEES_ALL } from './sight.ts';
 
 export const OTHERS = {
@@ -81,6 +85,7 @@ export interface Others {
   target(id: string): OtherTarget | null;
   named(name: string): OtherTarget | null;
   resident(name: string): boolean;
+  residents(): readonly MapCharacter[];
   anchorOf(id: string): ScreenAnchor | null;
   groundOf(id: string): { readonly x: number; readonly z: number } | null;
 }
@@ -116,6 +121,7 @@ interface Other {
   worn: Worn;
   here: boolean;
   figure: Figure | null;
+  plate: ElementSize | null;
 }
 
 interface Dressed {
@@ -150,6 +156,14 @@ export function createOthers(options: OthersOptions): Others {
   const point: Vector2 = new Vector2();
   const foot: Vector2 = new Vector2();
   let lit: string | null = null;
+  const screen: ElementSize = watchSize(options.labels);
+  const plateOf = (other: Other): ElementSize => {
+    if (other.plate !== null) return other.plate;
+    const plate: Element | null = other.label.firstElementChild;
+    const measured: ElementSize = plate instanceof HTMLElement ? { width: plate.offsetWidth, height: plate.offsetHeight } : { width: 0, height: 0 };
+    if (measured.width > 0) other.plate = measured;
+    return measured;
+  };
 
   const makeFigure = (other: Other, dressed: Dressed, facing: number): Figure | null => {
     const loaded: LoadedRig | undefined = library.rigs.get(dressed.rig);
@@ -203,8 +217,12 @@ export function createOthers(options: OthersOptions): Others {
     fresh.textContent = name;
     old.after(fresh);
     old.classList.add(OTHERS.leavingClass);
-    window.setTimeout((): void => old.remove(), OTHERS.leaveMs);
+    window.setTimeout((): void => {
+      old.remove();
+      other.plate = null;
+    }, OTHERS.leaveMs);
     other.name = fresh;
+    other.plate = null;
   };
 
   const arrive = (player: LivePlayer): void => {
@@ -232,7 +250,7 @@ export function createOthers(options: OthersOptions): Others {
     label.append(inner);
     label.style.opacity = '0';
     options.labels.append(label);
-    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null });
+    others.set(player.id, { id: player.id, track: createTrack(sample), label, name, called: player.name, username: player.username, resident: player.resident === true, shown: { value: 0, target: 1 }, box: { minX: 0, minY: 0, maxX: 0, maxY: 0, depth: 0 }, pickable: false, anchor: new Vector2(), feet: 0, ground: null, old: [], hero: player.hero, worn: player.worn, here: true, figure: null, plate: null });
   };
 
   const depart = (other: Other): void => {
@@ -339,6 +357,11 @@ export function createOthers(options: OthersOptions): Others {
         other.pickable = false;
         if (figure !== null) {
           camera.project(pose.x, floor + figure.view.height + OTHERS.labelLift, pose.z, point);
+          if (other.resident) {
+            const plate: ElementSize = plateOf(other);
+            const [x, y] = keepTagInView(point.x, point.y, plate.width, plate.height, screen);
+            point.set(x, y);
+          }
           other.label.style.transform = `translate3d(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px, 0)`;
           other.anchor.copy(point);
           const head: boolean = camera.project(pose.x, floor + figure.view.height, pose.z, point);
@@ -393,6 +416,11 @@ export function createOthers(options: OthersOptions): Others {
       const key: string = name.toLowerCase();
       for (const other of others.values()) if (other.here && other.resident && other.called.toLowerCase() === key) return true;
       return false;
+    },
+    residents(): readonly MapCharacter[] {
+      const found: MapCharacter[] = [];
+      for (const other of others.values()) if (other.here && other.resident && other.figure !== null && other.ground !== null) found.push({ name: other.called, x: other.ground.x, z: other.ground.z });
+      return found;
     },
     anchorOf(id: string): ScreenAnchor | null {
       const other: Other | null = shownTarget(id);

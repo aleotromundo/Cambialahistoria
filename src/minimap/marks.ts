@@ -58,6 +58,13 @@ export interface MarkOptions {
   readonly unit: number;
   readonly edgeArrows: boolean;
   readonly labels: boolean;
+  readonly characters?: readonly MapCharacter[];
+}
+
+export interface MapCharacter {
+  readonly name: string;
+  readonly x: number;
+  readonly z: number;
 }
 
 function dot(context: CanvasRenderingContext2D, at: MapPoint, radius: number, colour: string): void {
@@ -253,6 +260,11 @@ export function drawMarks(context: CanvasRenderingContext2D, matrix: MapMatrix, 
     const at: MapPoint = toMap(matrix, npc.pos.x, npc.pos.z);
     if (pins.some((pin: QuestPin): boolean => pin.kind === 'npc' && pin.npcId === npc.id)) bang(context, at, MARKS.quest * unit, MARKS.questColour);
     else diamond(context, at, MARKS.npc * unit, MARKS.npcColour);
+  }
+  for (const character of options.characters ?? []) {
+    if (!isExplored(world, character.x, character.z)) continue;
+    const at: MapPoint = toMap(matrix, character.x, character.z);
+    if (visible(at, options, MARKS.npc * unit)) diamond(context, at, MARKS.npc * unit, MARKS.npcColour);
   }
   for (const monster of world.monsters) {
     if (!monster.alive || !isExplored(world, monster.pos.x, monster.pos.z)) continue;
