@@ -42,9 +42,9 @@ void test('a duel has no clock: nobody is sent home however long the heroes stan
 void test('the rival always reads a full clock, the one it saw at the start of every training duel', (): void => {
   const world: World = ringWorld(CONTENT, 32, 12);
   const duel: RivalDuel = must(startRivalDuel(world, 32), 'duel');
-  assert.equal(rivalContext(duel, world).timeLeft, DUEL.timeLimit);
+  assert.equal(rivalContext(duel, world).timeLeft, RIVAL.trainedClock);
   world.time = duel.start + DUEL.timeLimit * 2;
-  assert.equal(rivalContext(duel, world).timeLeft, DUEL.timeLimit);
+  assert.equal(rivalContext(duel, world).timeLeft, RIVAL.trainedClock);
   const rival: PlayerState = must(rivalOf(duel, world), 'rival');
   const early: Float32Array = observe(world, rivalContext(duel, world), rival).obs;
   world.time += DUEL.timeLimit;

@@ -22,6 +22,7 @@ export const RIVAL = {
   holdAfter: 2.5,
   decisionTime: RL.tick * RL.ticksPerDecision,
   buildSalt: 15485863,
+  trainedClock: 60,
 } as const;
 
 export type RivalOutcome = 'fighting' | 'won' | 'lost' | 'resigned' | 'left';
@@ -74,7 +75,7 @@ export function resignRivalDuel(duel: RivalDuel, world: World): boolean {
 }
 
 export function rivalContext(duel: RivalDuel, world: World): ObserveContext {
-  return { situation: 'duel', objective: null, timeLeft: DUEL.timeLimit, progress: 0, recall: duel.recall, pickup: { minRarity: world.content.rarities.length } };
+  return { situation: 'duel', objective: null, timeLeft: RIVAL.trainedClock, progress: 0, recall: duel.recall, pickup: { minRarity: world.content.rarities.length } };
 }
 
 function decide(duel: RivalDuel, world: World, rival: PlayerState, pilot: RivalPilot): Command[] {
