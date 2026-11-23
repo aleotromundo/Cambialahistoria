@@ -101,6 +101,7 @@ body.still .pause-card {
 }
 
 .title-card {
+  position: relative;
   width: min(440px, 86vw);
   text-align: center;
   animation: title-rise var(--spring-smooth-ms) var(--spring-smooth) both;
@@ -167,14 +168,9 @@ body.still .pause-card {
   background: linear-gradient(to left, transparent, var(--place-rule));
 }
 
-.title-loader {
-  width: fit-content;
-  margin: 0 auto 12px;
-  transition: opacity var(--spring-smooth-ms) var(--spring-smooth);
-}
-
 .title-loader.loading-mark {
   grid-template-columns: repeat(5, 7px);
+  align-content: center;
   gap: 4px;
 }
 
@@ -189,14 +185,6 @@ body.still .pause-card {
 
 .title-status.failed {
   color: rgba(239, 230, 214, 0.85);
-}
-
-.title-status {
-  margin: 0 0 14px;
-  min-height: 18px;
-  font-size: 13px;
-  color: rgba(239, 230, 214, 0.6);
-  transition: opacity var(--spring-snappy-ms) var(--spring-snappy);
 }
 
 .title-status.quiet {

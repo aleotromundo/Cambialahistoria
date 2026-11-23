@@ -60,34 +60,33 @@ body {
 }
 
 .title-loader {
-  max-height: 64px;
+  position: absolute;
+  inset-inline: 0;
+  width: fit-content;
+  height: 50px;
+  margin: 0 auto;
   transition:
     opacity var(--spring-smooth-ms) var(--spring-smooth),
-    transform var(--spring-smooth-ms) var(--spring-smooth),
-    max-height var(--spring-smooth-ms) var(--spring-smooth),
-    margin-bottom var(--spring-smooth-ms) var(--spring-smooth);
+    transform var(--spring-smooth-ms) var(--spring-smooth);
 }
 
 .title-status {
-  max-height: 64px;
+  position: relative;
+  top: 8px;
+  grid-template-rows: minmax(0, 0fr);
+  margin: 0;
+  font-size: 13px;
+  color: rgba(239, 230, 214, 0.6);
   transition:
     opacity var(--spring-snappy-ms) var(--spring-snappy),
-    max-height var(--spring-smooth-ms) var(--spring-smooth),
-    min-height var(--spring-smooth-ms) var(--spring-smooth),
+    grid-template-rows var(--spring-smooth-ms) var(--spring-smooth),
     margin-bottom var(--spring-smooth-ms) var(--spring-smooth);
 }
 
-#title.ready .title-loader.done {
-  overflow: hidden;
-  max-height: 0;
-  margin-bottom: 0;
-}
-
-#title.ready .title-status.quiet {
-  overflow: hidden;
-  max-height: 0;
-  min-height: 0;
-  margin-bottom: 0;
+#title.ready .title-status:not(.quiet),
+.title-status.failed {
+  grid-template-rows: minmax(0, 1fr);
+  margin-bottom: 8px;
 }
 
 .title-loader.done {

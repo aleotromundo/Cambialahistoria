@@ -10,6 +10,7 @@ export function showStartFailure(error: unknown, freeze: () => void): void {
   const status: HTMLElement | null = document.getElementById('title-status');
   if (status !== null) {
     status.textContent = failureText(error);
+    status.classList.remove('quiet');
     status.classList.add('failed');
   }
   document.getElementById('title-loader')?.classList.add('done');

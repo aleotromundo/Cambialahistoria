@@ -79,8 +79,8 @@ class FakeScript {
 
 const ORIGIN: string = 'https://theloststorm.com';
 
-function classes(held: Set<string>): { add: (name: string) => void; contains: (name: string) => boolean } {
-  return { add: (name: string): void => void held.add(name), contains: (name: string): boolean => held.has(name) };
+function classes(held: Set<string>): { add: (name: string) => void; remove: (name: string) => void; contains: (name: string) => boolean } {
+  return { add: (name: string): void => void held.add(name), remove: (name: string): void => void held.delete(name), contains: (name: string): boolean => held.has(name) };
 }
 
 function trapPage(now: () => number, storage: 'open' | 'refused'): TrapPage {
@@ -149,10 +149,12 @@ void test("the game's own script failing to load reloads the page once, then say
   assert.equal(page.stored.get(RETRY.key), RETRY.mark);
   assert.equal(page.status.textContent, 'Loading…');
   now += 10 * 60_000;
+  page.status.classList.add('quiet');
   page.error(({ script }) => ({ target: script(`${ORIGIN}/assets/play-abc.js`) }));
   assert.equal(page.reloads(), 1);
   assert.equal(page.status.textContent, BROWSER_NOTICES.stopped);
   assert.ok(page.status.classList.has('failed'));
+  assert.ok(!page.status.classList.has('quiet'));
   assert.equal(page.enter.textContent, BROWSER_NOTICES.reload);
   assert.equal(page.enter.disabled, false);
 });

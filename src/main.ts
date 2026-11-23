@@ -682,7 +682,7 @@ async function start(): Promise<void> {
     begin();
   }, ready: (): Promise<void> => Promise.all([effects.ready, bootWarm]).then((): void => undefined), startOver: (): void => void startOver(), characters: { serverUrl, persist, hold: (held: boolean): void => void (saveHeld = held), flush: (): void => backend.flush(), level: (): number | null => (entered ? world.player.level : null), hero: (): string | null => pick.chosen }, chooseHero: (id: string): void => void pick.choose(id), previewHero: (id: string | null): void => void pick.preview(id), openSettings: (): void => pauseMenu.open('graphics'), openFeedback: launch.feedback, bed: lobbyBed });
   lobbyFlow = flow;
-  whenIdle((): void => void flow.warm());
+  window.setTimeout((): void => whenIdle((): void => void flow.warm()), GAME.titleArrivalMs);
   const openLobby = (): void => afterBreak(portal, 'start', (): void => void flow.open());
   if (watching !== null) {
     watchCaptionView = createWatchCaption(duelWatch?.captionHolder ?? element('hud', HTMLDivElement));
