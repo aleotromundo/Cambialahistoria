@@ -24,6 +24,7 @@ function scorch(world: World, target: Actor, burn: BurnState): boolean {
     direction: { x: BURN.fallDirection.x, z: BURN.fallDirection.z },
     skill: burn.skill,
     burn: true,
+    shoveGraced: false,
   });
   if (killed) kill(world, target, BURN.fallDirection, burn.offence.sourceId);
   return !killed;

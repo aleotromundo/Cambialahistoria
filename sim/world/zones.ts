@@ -95,6 +95,7 @@ export function placePlayer(world: World): void {
   const anchor: Vec2 = respawnPosition(world.zone, world.respawn);
   player.pos = nearestWalkable(world.grid, anchor, standingRoom(world.zone, world.respawn)) ?? anchor;
   player.knock = { x: 0, z: 0 };
+  player.knockGrace = 0;
   player.intent = { type: 'idle' };
   player.path = [];
   player.buffered = EMPTY_BUFFER;

@@ -8,7 +8,7 @@ import type { World, WorldEvent } from './world/types.ts';
 const RIVAL = { id: 9001, sourceId: 9002, amount: 5 } as const;
 
 function struck(targetId: number, sourceId: number = RIVAL.sourceId, killed: boolean = false): WorldEvent {
-  return { type: 'damage', targetId, sourceId, targetTeam: 'player', amount: RIVAL.amount, crit: false, killed, pos: offset(0, 0), direction: { x: 1, z: 0 }, skill: shapeSkill('cleave'), burn: false };
+  return { type: 'damage', targetId, sourceId, targetTeam: 'player', amount: RIVAL.amount, crit: false, killed, pos: offset(0, 0), direction: { x: 1, z: 0 }, skill: shapeSkill('cleave'), burn: false, shoveGraced: false };
 }
 
 function taken(world: World, meter: Meter, event: WorldEvent): Measurement[] {

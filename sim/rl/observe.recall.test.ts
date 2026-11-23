@@ -31,7 +31,7 @@ function entityValue(seen: Observation, index: number, name: string): number {
 }
 
 function struck(world: World, sourceId: number, amount: number): WorldEvent {
-  return { type: 'damage', targetId: world.player.id, sourceId, targetTeam: 'player', amount, crit: false, killed: false, pos: world.player.pos, direction: { x: 1, z: 0 }, skill: SKILL, burn: false };
+  return { type: 'damage', targetId: world.player.id, sourceId, targetTeam: 'player', amount, crit: false, killed: false, pos: world.player.pos, direction: { x: 1, z: 0 }, skill: SKILL, burn: false, shoveGraced: false };
 }
 
 void test('a recent hit shows as life lost and a fresh hit, and fades with time', (): void => {

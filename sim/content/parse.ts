@@ -386,6 +386,7 @@ function player(value: unknown, where: string): PlayerDef {
     pickupRadius: numeric(source, 'pickupRadius', where),
     pickupAim: numeric(source, 'pickupAim', where),
     rootGrace: numeric(source, 'rootGrace', where),
+    knockGrace: nonNegative(source, 'knockGrace', where),
     turnRate: positive(source, 'turnRate', where),
     walkTurnRate: positive(source, 'walkTurnRate', where),
     goldMagnetRadius: numeric(source, 'goldMagnetRadius', where),

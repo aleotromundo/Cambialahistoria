@@ -61,7 +61,7 @@ function walkToEnd(roam: Roam): void {
 
 function hurt(targetId: number, sourceId: number, team: 'player' | 'monster', amount: number): WorldEvent {
   const skill: SkillDef = must([...CONTENT.skills.values()][0], 'a skill');
-  return { type: 'damage', targetId, sourceId, targetTeam: team, amount, crit: false, killed: false, pos: { x: 0, z: 0 }, direction: { x: 0, z: 1 }, skill, burn: false };
+  return { type: 'damage', targetId, sourceId, targetTeam: team, amount, crit: false, killed: false, pos: { x: 0, z: 0 }, direction: { x: 0, z: 1 }, skill, burn: false, shoveGraced: false };
 }
 
 function feature(seen: Observation, name: string): number {

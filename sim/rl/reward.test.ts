@@ -10,7 +10,7 @@ const PLAYER: number = 1;
 const FOE: number = 9;
 
 function hit(targetId: number, amount: number, killed: boolean): WorldEvent {
-  return { type: 'damage', targetId, sourceId: targetId === PLAYER ? FOE : PLAYER, targetTeam: targetId === PLAYER ? 'player' : 'monster', amount, crit: false, killed, pos: { x: 0, z: 0 }, direction: { x: 1, z: 0 }, skill: SKILL, burn: false };
+  return { type: 'damage', targetId, sourceId: targetId === PLAYER ? FOE : PLAYER, targetTeam: targetId === PLAYER ? 'player' : 'monster', amount, crit: false, killed, pos: { x: 0, z: 0 }, direction: { x: 1, z: 0 }, skill: SKILL, burn: false, shoveGraced: false };
 }
 
 void test('damage dealt pays by the share of the foe’s life, and a kill pays extra', (): void => {

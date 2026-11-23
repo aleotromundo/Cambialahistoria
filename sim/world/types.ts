@@ -119,6 +119,7 @@ export interface ActorState {
   combo: ComboState | null;
   root: number;
   rootGrace: number;
+  knockGrace: number;
   tempo: number;
   tempoTime: number;
   brand: BrandState | null;
@@ -389,7 +390,7 @@ export type WorldEvent =
   | { readonly type: 'channel_end'; readonly actorId: number; readonly skill: SkillDef }
   | { readonly type: 'projectile_spawn'; readonly projectile: ProjectileState }
   | { readonly type: 'projectile_end'; readonly id: number; readonly pos: Vec2; readonly hit: boolean; readonly skill: SkillDef }
-  | { readonly type: 'damage'; readonly targetId: number; readonly sourceId: number; readonly targetTeam: Team; readonly amount: number; readonly crit: boolean; readonly killed: boolean; readonly pos: Vec2; readonly direction: Vec2; readonly skill: SkillDef; readonly burn: boolean }
+  | { readonly type: 'damage'; readonly targetId: number; readonly sourceId: number; readonly targetTeam: Team; readonly amount: number; readonly crit: boolean; readonly killed: boolean; readonly pos: Vec2; readonly direction: Vec2; readonly skill: SkillDef; readonly burn: boolean; readonly shoveGraced: boolean }
   | { readonly type: 'burn'; readonly targetId: number; readonly skill: SkillDef; readonly pos: Vec2; readonly duration: number }
   | { readonly type: 'soak'; readonly targetId: number; readonly skill: SkillDef; readonly pos: Vec2; readonly duration: number }
   | { readonly type: 'stun'; readonly monsterId: number; readonly pos: Vec2; readonly duration: number }

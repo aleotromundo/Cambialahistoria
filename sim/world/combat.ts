@@ -261,6 +261,10 @@ export function versusScale(world: World, striker: Actor | null, target: Actor):
   return target.kind === 'player' && striker?.kind === 'player' ? (world.zone.duel?.heroDamage ?? 1) : 1;
 }
 
+export function knockGraced(striker: Actor | null, target: Actor): boolean {
+  return striker?.kind === 'player' && target.kind === 'player' && target.knockGrace > 0;
+}
+
 export function applyHit(world: World, offence: Offence, target: Actor, skill: SkillDef, direction: ReadonlyVec2): boolean {
   if (!target.alive || (target.kind === 'player' && (target.invulnerable > 0 || attacksHeld(world)))) return false;
   const guard: GuardOutcome = guardOutcome(target, skill, direction);
@@ -297,7 +301,9 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     }
     aggroPack(world, target);
   }
-  if (target.kind === 'player' && !steady) knockBack(target, push);
+  const heroShove: boolean = target.kind === 'player' && !steady && readablePush(push);
+  const shoveGraced: boolean = heroShove && knockGraced(striker, target);
+  if (target.kind === 'player' && !steady && !shoveGraced && knockBack(target, push) && heroShove && striker?.kind === 'player') target.knockGrace = world.content.player.knockGrace;
   mendSource(world, offence, target, skill, dealt);
   const killed: boolean = target.life <= 0;
   world.events.push({
@@ -312,6 +318,7 @@ export function applyHit(world: World, offence: Offence, target: Actor, skill: S
     direction: { x: direction.x, z: direction.z },
     skill,
     burn: false,
+    shoveGraced,
   });
   if (killed) {
     kill(world, target, direction, offence.sourceId);

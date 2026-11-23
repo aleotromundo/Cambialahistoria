@@ -75,7 +75,7 @@
   "firstDrop": {"flag": "first_drop", "rarity": "magic"},
   "unarmedVisual": null,
   "inventorySize": 24,
-  "pickupRadius": 1.6, "pickupAim": 2.8, "rootGrace": 1.6,
+  "pickupRadius": 1.6, "pickupAim": 2.8, "rootGrace": 1.6, "knockGrace": 1.2,
   "turnRate": 9,
   "walkTurnRate": 16,
   "goldMagnetRadius": 3.2,

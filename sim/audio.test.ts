@@ -88,7 +88,7 @@ void test('Thunderclap landing plays a boom and a crack at the origin', (): void
 void test('a hit plays what the skill and the target sound like, and a crit the crit sound', (): void => {
   const world: World = fresh();
   const thrall: MonsterState = monster(world, 'mended');
-  const base = { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, killed: false, pos: thrall.pos, direction: AWAY, burn: false } as const;
+  const base = { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, killed: false, pos: thrall.pos, direction: AWAY, burn: false, shoveGraced: false } as const;
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('cleave') })), ['bone_hit']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: true, skill: skill('cleave') })), ['bone_hit', 'crit_hit']);
   assert.deepEqual(sounds(cuesForEvent(audio, world, { ...base, crit: false, skill: skill('storm_bolt') })), ['storm_bolt_hit', 'bolt_impact', 'bone_hit']);
@@ -99,7 +99,7 @@ void test('a hit plays what the skill and the target sound like, and a crit the 
 
 void test('a hit on a monster that is already gone still plays the skill sound only', (): void => {
   const world: World = fresh();
-  const cues: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'damage', targetId: 99999, sourceId: world.player.id, targetTeam: 'monster', amount: 1, crit: false, killed: true, pos: AWAY, direction: AWAY, skill: skill('storm_bolt'), burn: false });
+  const cues: readonly SoundCue[] = cuesForEvent(audio, world, { type: 'damage', targetId: 99999, sourceId: world.player.id, targetTeam: 'monster', amount: 1, crit: false, killed: true, pos: AWAY, direction: AWAY, skill: skill('storm_bolt'), burn: false, shoveGraced: false });
   assert.deepEqual(sounds(cues), ['storm_bolt_hit', 'bolt_impact']);
 });
 
@@ -327,7 +327,7 @@ function swung(world: World, skillId: string, from: AudioDef = audio): string[] 
 }
 
 function hitSounds(world: World, target: MonsterState, skillId: string, crit: boolean, from: AudioDef = audio): string[] {
-  return sounds(cuesForEvent(from, world, { type: 'damage', targetId: target.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, crit, killed: false, pos: target.pos, direction: AWAY, skill: skill(skillId), burn: false }));
+  return sounds(cuesForEvent(from, world, { type: 'damage', targetId: target.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, crit, killed: false, pos: target.pos, direction: AWAY, skill: skill(skillId), burn: false, shoveGraced: false }));
 }
 
 void test('a swing adds a heavy layer only for heavy weapons, and an empty hand still swings', (): void => {
@@ -359,7 +359,7 @@ void test('a cue filtered by weapon kind plays only for that kind, for the shot 
   assert.deepEqual(hitSounds(world, thrall, 'quarrel', false, filtered), ['hit_wood', 'bone_hit']);
   world.player.equipped.weapon = null;
   assert.deepEqual(hitSounds(world, thrall, 'quarrel', false, filtered), ['bone_hit']);
-  const theirs: readonly SoundCue[] = cuesForEvent(filtered, world, { type: 'damage', targetId: world.player.id, sourceId: thrall.id, targetTeam: 'player', amount: 5, crit: false, killed: false, pos: AWAY, direction: AWAY, skill: skill('quarrel'), burn: false });
+  const theirs: readonly SoundCue[] = cuesForEvent(filtered, world, { type: 'damage', targetId: world.player.id, sourceId: thrall.id, targetTeam: 'player', amount: 5, crit: false, killed: false, pos: AWAY, direction: AWAY, skill: skill('quarrel'), burn: false, shoveGraced: false });
   assert.deepEqual(sounds(theirs), ['hero_hurt']);
 });
 
@@ -576,7 +576,7 @@ void test('Millrace surges as it leaves and crashes where it strikes, louder for
   const world: World = fresh();
   const thrall: MonsterState = monster(world, 'mended');
   const leaves = (spent: number): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'projectile_spawn', projectile: { id: 1, ownerId: world.player.id, from: AWAY, team: 'player', faction: null, skill: wave(spent), damageMin: 1, damageMax: 2, damagePercent: 0, critChance: 0, critMultiplier: 1.5, pos: AWAY, direction: { x: 0, z: 1 }, distanceLeft: 10, pierceLeft: 99, hitIds: [] } });
-  const strikes = (spent: number): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, crit: false, killed: false, pos: thrall.pos, direction: AWAY, skill: wave(spent), burn: false }).slice(0, 2);
+  const strikes = (spent: number): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'damage', targetId: thrall.id, sourceId: world.player.id, targetTeam: 'monster', amount: 5, crit: false, killed: false, pos: thrall.pos, direction: AWAY, skill: wave(spent), burn: false, shoveGraced: false }).slice(0, 2);
   assert.deepEqual(sounds(leaves(0)), ['water_surge']);
   assert.deepEqual(sounds(strikes(0)), ['water_crash', 'water_crash_heavy']);
   const cold: number = must(leaves(0)[0], 'cold surge').volume;

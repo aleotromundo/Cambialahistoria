@@ -566,7 +566,7 @@ export function createActors(scene: Scene, library: CharacterLibrary, world: Wor
             break;
           case 'damage': {
             const isPlayer: boolean = event.targetId === current.player.id;
-            const pushed: HeroPush | null = event.targetId === current.player.id && !event.burn && !event.killed && current.player.action === null ? pushOnHero(current.player, event.skill.knockback, event.direction) : null;
+            const pushed: HeroPush | null = event.targetId === current.player.id && !event.burn && !event.shoveGraced && !event.killed && current.player.action === null ? pushOnHero(current.player, event.skill.knockback, event.direction) : null;
             const stagger: boolean = isPlayer ? current.player.action === null && (!current.player.moving || (pushed !== null && pushed.reaction !== 'none')) : event.skill.stagger > 0;
             const struck: HeroPush | null = stagger ? pushed : null;
             const reeled: boolean = struck?.reaction === 'reel' && struck.side !== null && (playerView.startAction(reelAnimation(struck.side), 0, ACTORS.reelTime) || playerView.startAction(HERO_PUSH.reelAnimation, 0, ACTORS.reelTime));

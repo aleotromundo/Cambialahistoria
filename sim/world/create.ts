@@ -71,6 +71,7 @@ function freshPlayer(content: Content, save: SaveData | null, chosen: string | n
     combo: null,
     root: 0,
     rootGrace: 0,
+    knockGrace: 0,
     tempo: 1,
     tempoTime: 0,
     brand: null,

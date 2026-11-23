@@ -8,7 +8,7 @@ import { emptyTally, REWARD, rewardFor } from './reward.ts';
 const DUEL = { me: 1, rival: 2, stranger: 3, life: 100, blow: 25 } as const;
 
 function blow(sourceId: number, killed: boolean): WorldEvent {
-  return { type: 'damage', targetId: DUEL.rival, sourceId, targetTeam: 'player', amount: DUEL.blow, crit: false, killed, pos: offset(0, 0), direction: { x: 1, z: 0 }, skill: shapeSkill('cleave'), burn: false };
+  return { type: 'damage', targetId: DUEL.rival, sourceId, targetTeam: 'player', amount: DUEL.blow, crit: false, killed, pos: offset(0, 0), direction: { x: 1, z: 0 }, skill: shapeSkill('cleave'), burn: false, shoveGraced: false };
 }
 
 const INPUTS: RewardInputs = { playerId: DUEL.me, playerMaxLife: DUEL.life, lifeOf: (): number => DUEL.life, calm: false, worth: (): number => 0 };

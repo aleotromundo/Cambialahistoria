@@ -55,7 +55,7 @@ void test('a decided duel pays more per seat than a stalemate', (): void => {
 });
 
 void test('outside a duel a hit taken keeps its full weight', (): void => {
-  const event: WorldEvent = { type: 'damage', targetId: 1, sourceId: 2, targetTeam: 'player', amount: 25, crit: false, killed: false, pos: { x: 0, z: 0 }, direction: { x: 1, z: 0 }, skill: must(CONTENT.skills.get('cleave'), 'cleave'), burn: false };
+  const event: WorldEvent = { type: 'damage', targetId: 1, sourceId: 2, targetTeam: 'player', amount: 25, crit: false, killed: false, pos: { x: 0, z: 0 }, direction: { x: 1, z: 0 }, skill: must(CONTENT.skills.get('cleave'), 'cleave'), burn: false, shoveGraced: false };
   const reward: number = rewardFor([event], { playerId: 1, playerMaxLife: 100, lifeOf: (): number => 100, calm: false, worth: (): number => 0 }, emptyTally());
   assert.equal(reward, -0.25 * REWARD.taken);
 });

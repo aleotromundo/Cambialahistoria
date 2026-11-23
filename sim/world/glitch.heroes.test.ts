@@ -7,7 +7,7 @@ import type { World, WorldEvent } from './types.ts';
 const RIVAL = { id: 9001, sourceId: 9002, amount: 5 } as const;
 
 function struck(world: World, targetId: number): WorldEvent {
-  return { type: 'damage', targetId, sourceId: RIVAL.sourceId, targetTeam: 'player', amount: RIVAL.amount, crit: false, killed: false, pos: offset(0, 0), direction: { x: 1, z: 0 }, skill: shapeSkill('cleave'), burn: false };
+  return { type: 'damage', targetId, sourceId: RIVAL.sourceId, targetTeam: 'player', amount: RIVAL.amount, crit: false, killed: false, pos: offset(0, 0), direction: { x: 1, z: 0 }, skill: shapeSkill('cleave'), burn: false, shoveGraced: false };
 }
 
 void test('another hero being struck is not a fight for the primary hero, and the primary being struck is', (): void => {

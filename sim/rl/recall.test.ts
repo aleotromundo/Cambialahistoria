@@ -15,7 +15,7 @@ const SKILL = must(CONTENT.skills.get('cleave'), 'cleave');
 const LATER = { step: 0.1 } as const;
 
 function hit(world: World, targetId: number, sourceId: number, amount: number): WorldEvent {
-  return { type: 'damage', targetId, sourceId, targetTeam: targetId === world.player.id ? 'player' : 'monster', amount, crit: false, killed: false, pos: { x: 0, z: 0 }, direction: { x: 1, z: 0 }, skill: SKILL, burn: false };
+  return { type: 'damage', targetId, sourceId, targetTeam: targetId === world.player.id ? 'player' : 'monster', amount, crit: false, killed: false, pos: { x: 0, z: 0 }, direction: { x: 1, z: 0 }, skill: SKILL, burn: false, shoveGraced: false };
 }
 
 void test('damage taken and dealt count for the recent window, then fade', (): void => {
