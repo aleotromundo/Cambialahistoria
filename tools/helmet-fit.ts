@@ -40,7 +40,7 @@ const FIT = {
   settled: 0.0002,
   leastCovered: { crown: 0.4, base: 0.03 },
   keepCrown: 0.9,
-  scan: 16,
+  scan: 64,
 } as const;
 
 interface Judged {
