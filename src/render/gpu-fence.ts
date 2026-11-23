@@ -11,32 +11,49 @@ export interface FenceContext {
 }
 
 export interface GpuQueue {
-  mark(): void;
+  mark(): number;
+  finished(ticket: number): boolean;
   waiting(): number;
 }
 
 export function createGpuQueue(context: FenceContext | null): GpuQueue {
   const open: WebGLSync[] = [];
+  let placed: number = 0;
+  let completed: number = 0;
+  const drain = (): void => {
+    if (context === null) return;
+    if (context.isContextLost()) {
+      open.length = 0;
+      completed = placed;
+      return;
+    }
+    while (open.length > 0) {
+      const oldest: WebGLSync | undefined = open[0];
+      if (oldest === undefined || context.getSyncParameter(oldest, context.SYNC_STATUS) === context.UNSIGNALED) break;
+      context.deleteSync(oldest);
+      open.shift();
+      completed += 1;
+    }
+  };
   return {
-    mark(): void {
-      if (context === null) return;
+    mark(): number {
+      if (context === null) return completed;
       const sync: WebGLSync | null = context.fenceSync(context.SYNC_GPU_COMMANDS_COMPLETE, 0);
-      if (sync === null) return;
+      if (sync === null) {
+        drain();
+        return completed;
+      }
       open.push(sync);
+      placed += 1;
       context.flush();
+      return placed;
+    },
+    finished(ticket: number): boolean {
+      drain();
+      return completed >= ticket;
     },
     waiting(): number {
-      if (context === null) return 0;
-      if (context.isContextLost()) {
-        open.length = 0;
-        return 0;
-      }
-      while (open.length > 0) {
-        const oldest: WebGLSync | undefined = open[0];
-        if (oldest === undefined || context.getSyncParameter(oldest, context.SYNC_STATUS) === context.UNSIGNALED) break;
-        context.deleteSync(oldest);
-        open.shift();
-      }
+      drain();
       return open.length;
     },
   };

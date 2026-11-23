@@ -45,8 +45,8 @@ export function heldWhile(pacer: FramePacer, held: () => boolean): FramePacer {
 }
 
 export interface GpuWork {
-  mark(): void;
-  waiting(): number;
+  mark(): number;
+  finished(ticket: number): boolean;
 }
 
 export function gpuPaced(pacer: FramePacer, gpu: GpuWork, holdMs: number = PACED_WORK.gpuHoldMs): FramePacer {
@@ -55,9 +55,9 @@ export function gpuPaced(pacer: FramePacer, gpu: GpuWork, holdMs: number = PACED
       return pacer.now();
     },
     next(): Promise<void> {
-      gpu.mark();
+      const ticket: number = gpu.mark();
       const sent: number = pacer.now();
-      return heldWhile(pacer, (): boolean => gpu.waiting() > 0 && pacer.now() - sent < holdMs).next();
+      return heldWhile(pacer, (): boolean => !gpu.finished(ticket) && pacer.now() - sent < holdMs).next();
     },
   };
 }

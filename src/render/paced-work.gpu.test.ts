@@ -29,10 +29,11 @@ function fakeGpu(busyUntilFrame: number, pacer: CountingPacer): FakeGpu {
   let marks: number = 0;
   return {
     marks: (): number => marks,
-    mark(): void {
+    mark(): number {
       marks += 1;
+      return marks;
     },
-    waiting: (): number => (pacer.frames() < busyUntilFrame ? marks : 0),
+    finished: (): boolean => pacer.frames() >= busyUntilFrame,
   };
 }
 
@@ -61,4 +62,21 @@ void test('a GPU-paced step stops waiting once its hold has passed', async (): P
 void test('a GPU-paced pacer reads the time of the pacer it holds', (): void => {
   const pacer: CountingPacer = countingPacer();
   assert.equal(gpuPaced(pacer, fakeGpu(0, pacer)).now(), pacer.now());
+});
+
+void test('a GPU-paced step waits only for what it sent, however much another warm-up sends after it', async (): Promise<void> => {
+  const pacer: CountingPacer = countingPacer();
+  let sent: number = 0;
+  const gpu: GpuWork = {
+    mark(): number {
+      sent += 1;
+      return sent;
+    },
+    finished: (ticket: number): boolean => pacer.frames() >= ticket,
+  };
+  const step: Promise<void> = gpuPaced(pacer, gpu).next();
+  gpu.mark();
+  gpu.mark();
+  await step;
+  assert.equal(pacer.frames(), 1);
 });
