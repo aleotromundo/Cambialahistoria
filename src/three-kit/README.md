@@ -62,6 +62,10 @@ three poses a skeleton once per value of its frame counter, and it bumps that co
 
 An animated bone's quaternion changes every frame, and three rebuilds its Euler `rotation` from it every time. Nothing in the game reads a bone's Euler angles, so `quietBones` makes that rebuild do nothing. Setting a bone by its angles still turns it.
 
+### held-programs.ts
+
+Keeps every shader program the renderer has built for the rest of the session. three deletes a program when the last material using it is disposed, and a zone change disposes the old zone's materials before the new zone is built, so programs the two zones share were deleted and linked again under the loading mark a few seconds later. `holdPrograms(renderer)` adds one use to each program in `renderer.info.programs` the first time it sees it, so three never reaches zero and reuses the program for the same key. The stage holds after every render, except on a tier that releases other zones to save memory. The programs and the draws are unchanged; only fewer programs are linked.
+
 ### dark-lights.ts
 
 Edits `lights_fragment_begin` so the shader skips the direct-light maths for a point or spot light that adds nothing to the pixel: a light at zero intensity, or a pixel past its cutoff distance. three already marks such a light not visible, and every term of the skipped call is scaled by its colour, so the picture does not change. The number of lights and the programs are unchanged.

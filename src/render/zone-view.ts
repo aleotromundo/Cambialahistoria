@@ -312,7 +312,7 @@ export async function buildZoneView(loader: GLTFLoader, content: Content, zone: 
   });
 
   const pool: PointLight[] = [];
-  for (let index: number = 0; index < Math.min(ZONE_VIEW.lightBudget, renderBudget().zoneLights, sources.length); index += 1) {
+  for (let index: number = 0; index < Math.min(ZONE_VIEW.lightBudget, renderBudget().zoneLights); index += 1) {
     const light: PointLight = new PointLight(0xffffff, 0, 1);
     pool.push(light);
     group.add(light);

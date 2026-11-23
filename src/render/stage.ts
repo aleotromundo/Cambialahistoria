@@ -20,6 +20,7 @@ import { ditheredOutputPass } from './output-dither.ts';
 import { GPU } from '../gpu-release.ts';
 import { unsorted } from './warm-up.ts';
 import { installDarkLightSkip } from '../three-kit/dark-lights.ts';
+import { holdPrograms } from '../three-kit/held-programs.ts';
 import type { GpuQueue } from './gpu-fence.ts';
 import { createGpuQueue } from './gpu-fence.ts';
 import { nextPoseTick } from '../three-kit/pose-once.ts';
@@ -371,6 +372,7 @@ export function createStage(canvas: HTMLCanvasElement, initial: QualityTier): St
       if (composer === null) renderer.render(scene, camera);
       else composer.render();
       gpu.mark();
+      if (!tier.releaseOtherZones) holdPrograms(renderer);
     },
     gpu,
     gpuQueued(): number {

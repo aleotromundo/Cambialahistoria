@@ -35,6 +35,8 @@ export const PLACE_MARKERS = {
   gone: 0.01,
   shown: 0.5,
   lightDecay: 1.8,
+  lightSlots: 4,
+  lightFadeBand: 7,
   bobRate: 1.7,
   stoneFallback: 0x8a8580,
 } as const;
@@ -225,7 +227,7 @@ function poseParts(view: MarkerView, parts: MarkerParts, dt: number, time: numbe
   }
 }
 
-export function placeView(place: Place, state: PlaceState, group: Group, lights: boolean): MarkerView {
+export function placeView(place: Place, state: PlaceState, group: Group): MarkerView {
   const root: Group = new Group();
   const ground: number = floorUp(place.x, 0, place.z);
   root.position.set(place.x, ground, place.z);
@@ -237,10 +239,53 @@ export function placeView(place: Place, state: PlaceState, group: Group, lights:
   }
   const light: PointLight = new PointLight(new Color(place.kind.color), 0, place.kind.light.distance, PLACE_MARKERS.lightDecay);
   light.position.set(place.x, ground + place.kind.light.height, place.z);
-  if (lights) group.add(light);
   group.add(root);
   const level: number = levelTarget(place.kind, state, false, false);
   return { place, root, ground, light, level: spring(level), rise: spring(state.awake ? 1 : 0), shut: spring(state.open ? 0 : 1), shown: spring(state.shown ? 1 : 0), parts: null, usedLeft: 0, spin: place.x * 0.37 + place.z * 0.61, wake: startWake(place.kind.awaken === null || state.awake) };
+}
+
+export function placeLightSlots(group: Group, lights: boolean): PointLight[] {
+  const slots: PointLight[] = [];
+  for (let index: number = 0; index < (lights ? PLACE_MARKERS.lightSlots : 0); index += 1) {
+    const slot: PointLight = new PointLight(0xffffff, 0, 1, PLACE_MARKERS.lightDecay);
+    slots.push(slot);
+    group.add(slot);
+  }
+  return slots;
+}
+
+interface ScoredPlace {
+  readonly light: PointLight;
+  readonly score: number;
+}
+
+function scorePlace(view: MarkerView, x: number, z: number): ScoredPlace {
+  const light: PointLight = view.light;
+  const score: number = light.intensity > 0 ? Math.hypot(light.position.x - x, light.position.z - z) - light.distance : Number.POSITIVE_INFINITY;
+  return { light, score };
+}
+
+function byScore(a: ScoredPlace, b: ScoredPlace): number {
+  if (a.score === b.score) return 0;
+  return a.score < b.score ? -1 : 1;
+}
+
+export function lightPlaces(slots: readonly PointLight[], views: readonly MarkerView[], x: number, z: number): void {
+  const ranked: ScoredPlace[] = views.map((view: MarkerView): ScoredPlace => scorePlace(view, x, z)).toSorted(byScore);
+  const cutoff: number = ranked[slots.length]?.score ?? Number.POSITIVE_INFINITY;
+  slots.forEach((slot: PointLight, index: number): void => {
+    const place: ScoredPlace | undefined = ranked[index];
+    if (place === undefined || place.score === Number.POSITIVE_INFINITY) {
+      slot.intensity = 0;
+      return;
+    }
+    const fade: number = cutoff === Number.POSITIVE_INFINITY ? 1 : Math.min(1, Math.max(0, (cutoff - place.score) / PLACE_MARKERS.lightFadeBand));
+    slot.position.copy(place.light.position);
+    slot.color.copy(place.light.color);
+    slot.distance = place.light.distance;
+    slot.decay = place.light.decay;
+    slot.intensity = place.light.intensity * fade;
+  });
 }
 
 export function showPlace(view: MarkerView, shown: number): void {
@@ -251,9 +296,9 @@ export function showPlace(view: MarkerView, shown: number): void {
 
 export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Content, zone: ZoneDef, world: World): PlaceMarkers {
   const group: Group = new Group();
-  const lights: boolean = renderBudget().markerLights;
+  const slots: readonly PointLight[] = placeLightSlots(group, renderBudget().markerLights);
   let aimed: PlaceRef | null = null;
-  const views: MarkerView[] = zonePlaces(content, zone).map((place: Place): MarkerView => placeView(place, placeState(world, place.ref), group, lights));
+  const views: MarkerView[] = zonePlaces(content, zone).map((place: Place): MarkerView => placeView(place, placeState(world, place.ref), group));
   scene.add(group);
   let disposed: boolean = false;
   const ready: Promise<void> = Promise.all(
@@ -295,6 +340,7 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
         view.light.intensity = kind.light.intensity * lit * shown;
         if (view.parts !== null) poseParts(view, view.parts, dt, time, pose);
       }
+      lightPlaces(slots, views, current.player.pos.x, current.player.pos.z);
       return kick;
     },
     aim(ref: PlaceRef | null): void {
@@ -314,6 +360,7 @@ export function createPlaceMarkers(scene: Scene, loader: GLTFLoader, content: Co
     dispose(): void {
       disposed = true;
       group.removeFromParent();
+      for (const slot of slots) slot.dispose();
       for (const view of views) {
         view.light.dispose();
         for (const glow of view.parts?.glows ?? []) glow.dispose();
