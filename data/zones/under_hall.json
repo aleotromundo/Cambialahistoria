@@ -643,7 +643,6 @@
     {"prop":"cave_bone_a","x":129.79,"z":119.63,"y":0,"rotationDegrees":152},
     {"prop":"cave_skull_bones","x":123.91,"z":115.68,"y":0,"rotationDegrees":133},
     {"prop":"cave_shards","x":117.68,"z":112.68,"y":0,"rotationDegrees":347},
-    {"prop":"cave_stalagmite","x":137.25,"z":138.25,"y":0,"rotationDegrees":248},
     {"prop":"cave_stalagmite","x":160.75,"z":147.25,"y":0,"rotationDegrees":251},
     {"prop":"cave_scree","x":150,"z":152.87,"y":0,"rotationDegrees":56},
     {"prop":"cave_scree","x":145.41,"z":150.22,"y":0,"rotationDegrees":343},
@@ -1574,8 +1573,8 @@
   ],
   "checkpoints": [
     {"id":"under_t3","x":60.5,"z":56,"radius":2.5},
-    {"id":"under_t6","x":38,"z":82.5,"radius":2.5},
-    {"id":"under_t9","x":75.5,"z":129,"radius":2.5},
+    {"id":"under_t6","x":38,"z":73,"radius":2.5},
+    {"id":"under_t9","x":77.5,"z":131,"radius":2.5},
     {"id":"under_t11","x":131,"z":139.5,"radius":2.5},
     {"id":"under_hall_wing_1","x":151,"z":185,"radius":2.5},
     {"id":"under_hall_wing_2","x":253,"z":369,"radius":2.5}
