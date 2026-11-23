@@ -12,6 +12,8 @@ import type { Fields } from '../sim/content/read.ts';
 import { choice, each, fields, items, numeric, text } from '../sim/content/read.ts';
 import type { Anchor, FitGoal, HeadShape, HelmetShape, Placement } from './helmet-fit.ts';
 import { fitHelmet, headShape } from './helmet-fit.ts';
+import type { BentVertex, CheekGraft, FaceMarks, Point, Warp } from './helmet-reshape.ts';
+import { bendVertex, cheekGrafter, faceWarp } from './helmet-reshape.ts';
 
 const BUILD = {
   out: 'public/models/wear/{frame}/helms/{piece}.glb',
@@ -47,6 +49,13 @@ interface PartPlan {
   readonly stretch: readonly [number, number, number];
   readonly shift: readonly [number, number, number];
   readonly finish: Finish | null;
+  readonly face: FacePlan | null;
+}
+
+interface FacePlan {
+  readonly eyes: number;
+  readonly mouth: number;
+  readonly mouthBelowEyes: Fields;
 }
 
 interface Finish {
@@ -61,6 +70,8 @@ interface PiecePlan {
 }
 
 interface Body {
+  readonly frame: string;
+  readonly eye: number;
   readonly document: Document;
   readonly skin: Skin;
   readonly parent: Node | null;
@@ -100,6 +111,10 @@ function finished(document: Document, finish: Finish | null): void {
   }
 }
 
+function readFace(face: Fields, where: string): FacePlan {
+  return { eyes: numeric(face, 'eyes', where), mouth: numeric(face, 'mouth', where), mouthBelowEyes: fields(face['mouthBelowEyes'], `${where}.mouthBelowEyes`) };
+}
+
 function readPlan(): PiecePlan[] {
   const where: string = 'helmets';
   return each(JSON.parse(readFileSync(BUILD.plan, 'utf8')), where, (entry: unknown, at: string): PiecePlan => {
@@ -126,6 +141,7 @@ function readPlan(): PiecePlan[] {
           stretch: [stretch[0] ?? 1, stretch[1] ?? 1, stretch[2] ?? 1],
           shift: [shift[0] ?? 0, shift[1] ?? 0, shift[2] ?? 0],
           finish: part['finish'] === null ? null : readFinish(fields(part['finish'], `${partAt}.finish`), `${partAt}.finish`),
+          face: part['face'] === undefined ? null : readFace(fields(part['face'], `${partAt}.face`), `${partAt}.face`),
         };
       }),
     };
@@ -171,7 +187,7 @@ async function readBody(io: NodeIO, frame: string): Promise<Body> {
   const points: Vector3[] = pointsOf(node);
   const centre: Vector3 = new Box3().setFromPoints(points).getCenter(new Vector3());
   const eyes: Vector3 = new Box3().setFromPoints(pointsOf(meshNode(document, BUILD.eyesMesh))).getCenter(new Vector3());
-  return { document, skin, parent: node.getParentNode(), headIndex, points, joint: joint.y, facing: eyes.z >= centre.z ? 1 : -1 };
+  return { frame, eye: eyes.y, document, skin, parent: node.getParentNode(), headIndex, points, joint: joint.y, facing: eyes.z >= centre.z ? 1 : -1 };
 }
 
 function meshNodesOf(document: Document): Node[] {
@@ -260,6 +276,74 @@ function desaturate(document: Document, saturation: number): void {
     });
 }
 
+function reshapeFace(document: Document, face: FacePlan, body: Body): void {
+  const primitives: Primitive[] = meshNodesOf(document).flatMap((node: Node): Primitive[] => node.getMesh()?.listPrimitives() ?? []);
+  const box: Box3 = new Box3().setFromPoints(primitives.flatMap(positionsOf));
+  const height: number = box.max.y - box.min.y;
+  const marks: FaceMarks = { bottom: box.min.y, top: box.max.y, slit: box.min.y + height * face.eyes, mouthSlit: box.min.y + height * face.mouth, eye: body.eye, mouth: body.eye - numeric(face.mouthBelowEyes, body.frame, 'helmets.face.mouthBelowEyes') };
+  bendAll(primitives, faceWarp(marks));
+  graftCheek(document, primitives, body.eye);
+}
+
+function primitiveShape(primitive: Primitive): HelmetShape {
+  const positions: number[] = positionsOf(primitive).flatMap((point: Vector3): number[] => [point.x, point.y, point.z]);
+  const order: Accessor | null = primitive.getIndices();
+  const count: number = order === null ? positions.length / 3 : order.getCount();
+  return { positions, indices: Array.from({ length: count }, (_: unknown, index: number): number => (order === null ? index : order.getScalar(index))) };
+}
+
+function graftedElement(semantic: string, value: readonly number[], graft: CheekGraft, at: number): number[] {
+  switch (semantic) {
+    case 'POSITION':
+      return [graft.positions[at * 3] ?? 0, graft.positions[at * 3 + 1] ?? 0, graft.positions[at * 3 + 2] ?? 0];
+    case 'NORMAL':
+      return [-(value[0] ?? 0), value[1] ?? 0, value[2] ?? 1];
+    case 'TANGENT':
+      return [-(value[0] ?? 0), value[1] ?? 0, value[2] ?? 0, -(value[3] ?? 1)];
+    default:
+      return [...value];
+  }
+}
+
+function graftCheek(document: Document, primitives: readonly Primitive[], eye: number): void {
+  const graft: (shape: HelmetShape) => CheekGraft = cheekGrafter(shapeOf(document), eye);
+  for (const primitive of primitives) {
+    const made: CheekGraft = graft(primitiveShape(primitive));
+    for (const semantic of primitive.listSemantics()) {
+      const source: Accessor | null = primitive.getAttribute(semantic);
+      if (source === null) continue;
+      const size: number = source.getElementSize();
+      const count: number = source.getCount();
+      const extended: Float32Array = new Float32Array((count + made.sources.length) * size);
+      const element: number[] = Array.from({ length: size }, (): number => 0);
+      for (let index: number = 0; index < count; index += 1) extended.set(source.getElement(index, element), index * size);
+      made.sources.forEach((vertex: number, at: number): void => {
+        extended.set(graftedElement(semantic, source.getElement(vertex, element), made, at), (count + at) * size);
+      });
+      primitive.setAttribute(semantic, document.createAccessor().setType(source.getType()).setArray(extended));
+    }
+    primitive.setIndices(document.createAccessor().setType('SCALAR').setArray(new Uint32Array(made.indices)));
+  }
+}
+
+function bendAll(primitives: readonly Primitive[], warp: Warp): void {
+  const done: Set<Accessor> = new Set<Accessor>();
+  for (const primitive of primitives) {
+    const position: Accessor | null = primitive.getAttribute('POSITION');
+    const normal: Accessor | null = primitive.getAttribute('NORMAL');
+    if (position === null || normal === null || done.has(position)) continue;
+    done.add(position);
+    for (let index: number = 0; index < position.getCount(); index += 1) {
+      const [px, py, pz]: number[] = position.getElement(index, [0, 0, 0]);
+      const [nx, ny, nz]: number[] = normal.getElement(index, [0, 0, 0]);
+      const point: Point = [px ?? 0, py ?? 0, pz ?? 0];
+      const bent: BentVertex = bendVertex(point, [nx ?? 0, ny ?? 0, nz ?? 1], warp);
+      position.setElement(index, [...bent.point]);
+      normal.setElement(index, [...bent.normal]);
+    }
+  }
+}
+
 async function partFor(io: NodeIO, folder: string, part: PartPlan, body: Body, joint: number, report: string[], label: string): Promise<Document> {
   const document: Document = await io.read(join(folder, part.file));
   const turn: Matrix4 = new Matrix4().makeRotationFromEuler(new Euler(MathUtils.degToRad(part.turn[0]), MathUtils.degToRad(part.turn[1] + (body.facing > 0 ? 0 : 180)), MathUtils.degToRad(part.turn[2])));
@@ -277,11 +361,10 @@ async function partFor(io: NodeIO, folder: string, part: PartPlan, body: Body, j
     const mesh: Mesh | null = node.getMesh();
     if (mesh === null) continue;
     transformMesh(mesh, place.toArray());
-    for (const primitive of mesh.listPrimitives()) {
-      if (part.floor !== null) trimBelow(document, primitive, body.joint + part.floor);
-      rigid(document, primitive, joint);
-    }
+    for (const primitive of mesh.listPrimitives()) if (part.floor !== null) trimBelow(document, primitive, body.joint + part.floor);
   }
+  if (part.face !== null) reshapeFace(document, part.face, body);
+  for (const node of meshNodesOf(document)) for (const primitive of node.getMesh()?.listPrimitives() ?? []) rigid(document, primitive, joint);
   return document;
 }
 

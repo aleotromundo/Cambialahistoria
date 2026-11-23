@@ -367,6 +367,14 @@
     "parts": [
       {
         "file": "sketchfab-rusty_iron_mask-efd61055f793456c999087e956fa9898.glb",
+        "face": {
+          "eyes": 0.485,
+          "mouth": 0.169,
+          "mouthBelowEyes": {
+            "man": 0.075,
+            "woman": 0.071
+          }
+        },
         "turn": [
           0,
           0,
@@ -424,7 +432,7 @@
         ],
         "shift": [
           0,
-          0,
+          0.029,
           0
         ],
         "finish": {
