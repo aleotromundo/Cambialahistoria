@@ -22,6 +22,8 @@ import { emptyTally, REWARD, rewardFor } from './reward.ts';
 export const DUEL = {
   seats: 2,
   timeLimit: 120,
+  taken: 1,
+  stalemate: 1.5,
   rivalParty: 1,
   rivalSeed: 104729,
 } as const;
@@ -120,7 +122,11 @@ function settle(duel: Duel, rewards: number[]): void {
     return;
   }
   if (duel.world.time - duel.start < DUEL.timeLimit) return;
-  for (const seat of duel.seats) seat.outcome = 'timeout';
+  duel.seats.forEach((seat: DuelSeat, index: number): void => {
+    seat.outcome = 'timeout';
+    rewards[index] = (rewards[index] ?? 0) - DUEL.stalemate;
+    seat.total -= DUEL.stalemate;
+  });
 }
 
 export function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards: number[]): void {
@@ -128,7 +134,7 @@ export function afterDuelTick(duel: Duel, events: readonly WorldEvent[], rewards
   duel.seats.forEach((seat: DuelSeat, index: number): void => {
     recallEvents(seat.recall, world, seat.hero, events);
     const lifeOf = (id: number): number => findHero(world, id)?.maxLife ?? world.monsters.find((monster): boolean => monster.id === id)?.maxLife ?? seat.hero.maxLife;
-    const gained: number = rewardFor(events, { playerId: seat.hero.id, playerMaxLife: seat.hero.maxLife, lifeOf, calm: false, worth: (): number => 0 }, seat.tally);
+    const gained: number = rewardFor(events, { playerId: seat.hero.id, playerMaxLife: seat.hero.maxLife, lifeOf, calm: false, worth: (): number => 0, taken: DUEL.taken }, seat.tally);
     rewards[index] = (rewards[index] ?? 0) + gained;
     seat.total += gained;
   });

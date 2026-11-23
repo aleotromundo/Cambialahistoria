@@ -30,6 +30,7 @@ export interface RewardInputs {
   readonly lifeOf: (id: number) => number;
   readonly calm: boolean;
   readonly worth: (ground: GroundItem) => number;
+  readonly taken?: number;
 }
 
 export function rewardFor(events: readonly WorldEvent[], inputs: RewardInputs, tally: RewardTally): number {
@@ -55,7 +56,7 @@ export function rewardFor(events: readonly WorldEvent[], inputs: RewardInputs, t
     }
     else if (event.type === 'damage' && event.targetId === inputs.playerId) {
       const share: number = Math.min(1, event.amount / Math.max(1, inputs.playerMaxLife));
-      reward -= share * REWARD.taken;
+      reward -= share * (inputs.taken ?? REWARD.taken);
       tally.taken += share;
     }
     else if (event.type === 'pickup' && inputs.calm && inputs.worth(event.ground) > 0) {
