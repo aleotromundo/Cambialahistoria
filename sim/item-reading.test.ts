@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { must } from '../test/support.ts';
 import { loadContent } from './content/content.ts';
 import type { Content } from './content/types.ts';
 import { readItem, readingLines } from './item-reading.ts';
@@ -39,8 +38,7 @@ void test('armour leads an armour piece, a charm leads with its first line, and 
 });
 
 void test('a line that cancels the base out to nothing is left off instead of reading as +0%', (): void => {
-  const slow: number = must(must(content.itemBases.get('ringmail_hauberk'), 'hauberk').implicit.find((mod) => mod.stat === 'moveSpeed'), 'mail slow').value;
-  const hauberk: ItemInstance = item('ringmail_hauberk', 'rare', [{ affix: 'fleet', value: -slow }, { affix: 'hale', value: 20 }]);
+  const hauberk: ItemInstance = item('ringmail_hauberk', 'rare', [{ affix: 'fleet', value: 0.04 }, { affix: 'fleet', value: -0.04 }, { affix: 'hale', value: 20 }]);
   const reading: ItemReading = readItem(content, hauberk, null);
   assert.ok(!reading.rows.some((entry: ReadingRow): boolean => entry.stat === 'moveSpeed'));
   assert.ok(reading.rows.some((entry: ReadingRow): boolean => entry.stat === 'maxLife'));

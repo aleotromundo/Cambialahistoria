@@ -104,13 +104,10 @@ void test('item level scales the implicit modifiers and rarity does not', (): vo
   assert.equal(rarityOf(content, { ...common, rarity: 'gone' }).id, 'unknown');
 });
 
-void test('item level grows what a base gives but never its drawback', (): void => {
+void test('item level grows what a base gives', (): void => {
   const low: ItemInstance = must(generateItem(content, createRng(1), 1, 1, 'iron_maul', 'common'), 'low');
   const high: ItemInstance = { ...low, level: 20 };
-  const speed = (item: ItemInstance): number => itemMods(content, item).filter((mod: StatMod): boolean => mod.stat === 'attackSpeed').reduce((sum: number, mod: StatMod): number => sum + mod.value, 0);
   const hit = (item: ItemInstance): number => itemMods(content, item).filter((mod: StatMod): boolean => mod.stat === 'damageMax').reduce((sum: number, mod: StatMod): number => sum + mod.value, 0);
-  assert.ok(speed(low) < 0);
-  assert.equal(speed(high), speed(low));
   assert.ok(hit(high) > hit(low) * 3);
 });
 
@@ -207,20 +204,22 @@ void test('heavier materials turn up later and less often', (): void => {
   }
 });
 
-void test('each material has its own trade-off', (): void => {
+void test('no item base takes anything away from its wearer', (): void => {
   for (const base of content.itemBases.values()) {
-    const slows: boolean = implicitOf(base, 'moveSpeed') < 0 || implicitOf(base, 'attackSpeed') < 0;
+    for (const mod of base.implicit) assert.ok(mod.value >= 0, `${base.id} ${mod.stat} ${String(mod.value)}`);
+  }
+});
+
+void test('each material gives its own thing', (): void => {
+  for (const base of content.itemBases.values()) {
     switch (base.material) {
       case 'cloth':
         assert.ok(implicitOf(base, 'maxMana') > 0, `${base.id} gives mana`);
-        assert.ok(!slows, base.id);
         break;
       case 'leather':
-        assert.ok(!slows, base.id);
         break;
       case 'mail':
       case 'plate':
-        assert.ok(slows, `${base.id} slows its wearer`);
         assert.ok(implicitOf(base, 'maxLife') > 0, `${base.id} gives life`);
         break;
       case null:

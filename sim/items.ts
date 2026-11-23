@@ -39,7 +39,7 @@ function implicitMods(content: Content, item: ItemInstance): StatMod[] {
   const base: ItemBaseDef | null = baseOf(content, item);
   if (base === null) return [];
   const factor: number = 1 + content.itemScaling.implicitPerLevel * (item.level - 1);
-  return base.implicit.map((mod: StatMod): StatMod => ({ stat: mod.stat, op: mod.op, value: roundStat(mod.stat, mod.op, mod.value < 0 ? mod.value : mod.value * factor) }));
+  return base.implicit.map((mod: StatMod): StatMod => ({ stat: mod.stat, op: mod.op, value: roundStat(mod.stat, mod.op, mod.value * factor) }));
 }
 
 function affixMods(content: Content, item: ItemInstance): StatMod[] {

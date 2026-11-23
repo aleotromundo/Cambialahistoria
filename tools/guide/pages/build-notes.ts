@@ -46,7 +46,7 @@ function tank(data: GuideData): BuildNotes {
     id,
     ...buildName(id),
     mainSkill: null,
-    forWho: 'For players who want a big weapon, slow heavy blows, and to walk out of every fight.',
+    forWho: 'For players who want a big weapon, heavy blows, and to walk out of every fight.',
     plays: [
       `You stand in the pack and let it burn. The Emberwarden walks ${pathName(data, 'stone')}, the path of fire, life and armour, with ${groupNeeds(data, 'heavy')} in your hands: every place on the path answers only while you hold one. It spends little on damage until it is hard to kill, and later crosses into ${pathName(data, 'echo')} for skills that hit a whole crowd.`,
       `${skillName(data, 'thunderclap')} is your first point: when the pack closes around you, slam the ground and they are thrown back, staggered and set alight. ${skillName(data, 'held_breath')} comes at level ${placeLevel(data, id, 'stone_held_breath')}. Use it when you are surrounded or a big enemy is winding up: everything near you slows to a crawl and you do not.`,
@@ -59,7 +59,7 @@ function tank(data: GuideData): BuildNotes {
       `${skillName(data, 'thunderclap')} is not your damage; it is how you stop being hit while the sweep is gathering. Light ${skillName(data, 'banked_fire')} and stay in it: it is weak when lit and twice as hot by the end. ${skillName(data, 'held_breath')} has a long wait, so keep it for the moment a fight turns.`,
     ],
     lookFor: [
-      `A heavy weapon: ${weaponNames(groupWeapons(data, 'heavy'))}. They swing slower and hit much harder, which suits a held sweep.`,
+      `A heavy weapon: ${weaponNames(groupWeapons(data, 'heavy'))}. They hit much harder, which suits a held sweep.`,
       affixLine(data, 'hale'),
       affixLine(data, 'vital'),
       affixLine(data, 'plated'),
@@ -86,7 +86,7 @@ function tank(data: GuideData): BuildNotes {
       'Enemies that run or throw from far away. You walk to them slowly.',
     ],
     thin: [
-      `The game has no two-handed weapons as such. The heavy weapons are the maces, mauls and greatswords: they swing slower and hit harder.`,
+      `The game has no two-handed weapons as such. The heavy weapons are the maces, mauls and greatswords: they hit harder.`,
       'The simulated player wears whatever raises its damage and toughness most, not always a heavy weapon, so the numbers here are for the route, not for the weapon.',
     ],
     marks: {

@@ -371,17 +371,12 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 10
+          "value": 8
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 18
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.18
+          "value": 15
         },
         {
           "stat": "damagePercent",
@@ -604,11 +599,6 @@
           "stat": "critMultiplier",
           "op": "add",
           "value": 0.12
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.02
         }
       ],
       "ground": {
@@ -646,11 +636,6 @@
           "stat": "stormResist",
           "op": "add",
           "value": 0.08
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -683,11 +668,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 10
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.01
         }
       ],
       "ground": {
@@ -720,11 +700,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 12
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.01
         }
       ],
       "ground": {
@@ -762,11 +737,6 @@
           "stat": "critChance",
           "op": "add",
           "value": 0.02
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.01
         }
       ],
       "ground": {
@@ -804,11 +774,6 @@
           "stat": "critChance",
           "op": "add",
           "value": 0.02
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.01
         }
       ],
       "ground": {
@@ -846,11 +811,6 @@
           "stat": "critMultiplier",
           "op": "add",
           "value": 0.08
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.02
         }
       ],
       "ground": {
@@ -888,11 +848,6 @@
           "stat": "stormResist",
           "op": "add",
           "value": 0.06
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.04
         }
       ],
       "ground": {
@@ -930,11 +885,6 @@
           "stat": "critMultiplier",
           "op": "add",
           "value": 0.1
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -972,11 +922,6 @@
           "stat": "frostResist",
           "op": "add",
           "value": 0.06
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -1014,11 +959,6 @@
           "stat": "critChance",
           "op": "add",
           "value": 0.03
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -1056,11 +996,6 @@
           "stat": "attackSpeed",
           "op": "add",
           "value": 0.04
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -1103,11 +1038,6 @@
           "stat": "critMultiplier",
           "op": "add",
           "value": 0.1
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.04
         }
       ],
       "ground": {
@@ -1239,11 +1169,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 20
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -1277,11 +1202,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 28
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.06
         }
       ],
       "ground": {
@@ -1999,17 +1919,12 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 22
+          "value": 16
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 37
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.25
+          "value": 28
         },
         {
           "stat": "maxLife",
@@ -2081,17 +1996,12 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 16
+          "value": 13
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 28
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.16
+          "value": 24
         },
         {
           "stat": "critChance",
@@ -2426,17 +2336,12 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 26
+          "value": 20
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 42
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.24
+          "value": 32
         },
         {
           "stat": "damagePercent",
@@ -2575,17 +2480,17 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 33
+          "value": 26
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 55
+          "value": 44
         },
         {
-          "stat": "attackSpeed",
+          "stat": "critChance",
           "op": "add",
-          "value": -0.2
+          "value": 0.03
         },
         {
           "stat": "damagePercent",
@@ -2781,17 +2686,12 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 44
+          "value": 33
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 72
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.26
+          "value": 53
         },
         {
           "stat": "damagePercent",
@@ -3075,11 +2975,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 36
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.04
         }
       ],
       "ground": {
@@ -3113,11 +3008,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 48
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.06
         },
         {
           "stat": "stormResist",
@@ -3189,11 +3079,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 12
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -3293,11 +3178,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 20
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         }
       ],
       "ground": {
@@ -3368,11 +3248,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 14
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.02
         }
       ],
       "ground": {
@@ -3522,11 +3397,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 14
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.04
         }
       ],
       "ground": {
@@ -3560,11 +3430,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 24
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.03
         },
         {
           "stat": "stormResist",
@@ -3605,11 +3470,6 @@
           "value": 16
         },
         {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.02
-        },
-        {
           "stat": "frostResist",
           "op": "add",
           "value": 0.06
@@ -3645,11 +3505,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 52
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.05
         },
         {
           "stat": "frostResist",
@@ -4334,17 +4189,12 @@
         {
           "stat": "damageMin",
           "op": "add",
-          "value": 20
+          "value": 15
         },
         {
           "stat": "damageMax",
           "op": "add",
-          "value": 34
-        },
-        {
-          "stat": "attackSpeed",
-          "op": "add",
-          "value": -0.24
+          "value": 26
         },
         {
           "stat": "damagePercent",
@@ -4425,11 +4275,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 18
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.02
         }
       ],
       "ground": {
@@ -4485,11 +4330,6 @@
           "stat": "maxLife",
           "op": "add",
           "value": 30
-        },
-        {
-          "stat": "moveSpeed",
-          "op": "percent",
-          "value": -0.05
         }
       ],
       "ground": {

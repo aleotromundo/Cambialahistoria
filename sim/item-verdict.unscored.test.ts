@@ -52,7 +52,7 @@ void test('the owner case: the Gyre-Stitched Breeches over the Sturdy Mailed Cha
   assert.ok(verdict.move > VERDICT.move);
   assert.deepEqual(verdict.gained, { name: 'Millwheel', count: 2, of: 3 });
   assert.equal(verdict.lost, null);
-  assert.deepEqual(verdictParts(verdict), ['+8% movement speed', '−13% toughness', 'Millwheel power, 2/3 worn']);
+  assert.deepEqual(verdictParts(verdict), ['+5% movement speed', '−13% toughness', 'Millwheel power, 2/3 worn']);
   assert.equal(verdictNote(verdict), 'Storm and frost hit hardest in the Inner Hall: −11% toughness there');
 });
 

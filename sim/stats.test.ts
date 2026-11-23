@@ -173,7 +173,7 @@ void test('every equipment slot adds its item to the stats', (): void => {
   assert.ok(Math.abs(after.attackSpeed - (before.attackSpeed + 0.05)) < 1e-9);
   assert.ok(Math.abs(after.moveSpeed - before.moveSpeed * 1.08) < 1e-9);
   const heavy: StatBlock = computeStats(content, 1, { ...bare, chest: item('squall_plate') }, []);
-  assert.ok(heavy.moveSpeed < before.moveSpeed);
+  assert.equal(heavy.moveSpeed, before.moveSpeed);
   assert.ok(heavy.armour > after.armour - 6 - 6 - 9 - 6);
   for (const slot of ITEM_SLOTS) {
     if (dressed[slot] === null) continue;

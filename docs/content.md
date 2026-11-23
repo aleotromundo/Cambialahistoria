@@ -100,6 +100,6 @@ New bodies and outfits are assembled from the Quaternius packs by `tools/assembl
 
 A held weapon sits in its socket, and the fingers close on it only through the authored clips.
 
-An armour base also names its `material`: `cloth`, `leather`, `mail` or `plate`. Within a slot a heavier material gives more armour, turns up later and less often, and mail and plate slow the wearer; `sim/items.test.ts` holds the data to that.
+An armour base also names its `material`: `cloth`, `leather`, `mail` or `plate`. Within a slot a heavier material gives more armour, and turns up later and less often. No item base has a negative line: an item only ever adds. `sim/items.test.ts` holds the data to both.
 
 To use a different rig, add its rig entry with its own bone names in `sockets`, and point `data/player.json` (`rig`) or a monster at it. Mixamo characters work this way (export FBX, convert to GLB, set `scale` to 0.01 and `rootMotionBone` to `mixamorigHips`), but Mixamo files may not be redistributed, so they go in `public/models/local/`, which is git-ignored, and never in this repository.
