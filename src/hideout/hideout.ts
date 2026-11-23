@@ -30,6 +30,8 @@ import type { OtherTarget } from '../render/others.ts';
 import type { MapCharacter } from '../minimap/marks.ts';
 import type { Mutes } from './mute.ts';
 import { createMutes } from './mute.ts';
+import type { Ground, ResidentVoice } from './resident-voice.ts';
+import { createResidentVoice } from './resident-voice.ts';
 
 export interface HideoutParts {
   readonly scene: Scene;
@@ -46,6 +48,7 @@ export interface HideoutParts {
   readonly screen: Pick<Hud, 'attachPlayerTrade'>;
   readonly sync: () => Promise<void>;
   readonly openProfile: ((name: string) => void) | null;
+  readonly speak: (audio: ArrayBuffer, at: Ground) => Promise<void>;
 }
 
 export interface Hideout {
@@ -87,8 +90,15 @@ export function startHideout(rawUrl: string | undefined, parts: HideoutParts): H
   const trade: PlayerTrade = createTradeFlow({ live: server.live, world: (): World | null => current, sync: parts.sync, clock: (): number => Date.now(), timers: WINDOW_TIMERS });
   parts.screen.attachPlayerTrade(trade);
   const menu: HideoutMenu = startHideoutMenu({ server, chat, mutes, others, root: parts.hud, frame: parts.labels, events: window, openDirect: (name: string): void => chat.openDirect(name), openProfile: parts.openProfile, trade: { ready: (): boolean => trade.ready(), busy: (): boolean => tradeBusy(trade.state()), start: (target: OtherTarget): void => trade.ask(target.id, target.name) } });
+  const standsAt = (line: ChatLine): Ground | null => {
+    if (current?.zone.id !== LIVE_ZONE) return null;
+    const id: string | null = line.from !== null && others.groundOf(line.from) !== null ? line.from : others.resident(line.name) ? (others.named(line.name)?.id ?? null) : null;
+    return id === null ? null : others.groundOf(id);
+  };
+  const voice: ResidentVoice = createResidentVoice({ serverUrl: server.url, fetch: server.fetch, standsAt, speak: parts.speak });
   server.live.subscribe((event: LiveEvent): void => {
     others.handle(event);
+    voice.handle(event);
     chat.handle(event);
     menu.handle(event);
   });

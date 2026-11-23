@@ -5,6 +5,7 @@ import { createBrowserStore } from '../storage.ts';
 import { createAccountService } from './account.ts';
 import type { AccountService } from './account.ts';
 import { createApi } from './api.ts';
+import type { FetchFn } from './api.ts';
 import { createHideoutApi } from './hideout-api.ts';
 import type { HideoutApi } from './hideout-api.ts';
 import { createLobbyApi } from './lobby-api.ts';
@@ -89,6 +90,8 @@ function openBrowserSocket(url: string, handlers: SocketHandlers): LiveSocket {
 }
 
 export interface HideoutServer {
+  readonly url: string;
+  readonly fetch: FetchFn;
   readonly live: Live;
   readonly api: HideoutApi;
   readonly lobby: LobbyApi;
@@ -104,6 +107,8 @@ export function createBrowserHideoutServer(rawUrl: string | undefined): HideoutS
     return record === null ? null : record.token;
   };
   return {
+    url: server.url,
+    fetch: browserFetch,
     live: createLive({ serverUrl: server.url, open: openBrowserSocket, token, clock: (): number => performance.now(), timers: createBrowserTimers(), random: Math.random, play: PAGE_PLAY }),
     api: createHideoutApi(server.url, browserFetch),
     lobby: createLobbyApi(server.url, browserFetch),

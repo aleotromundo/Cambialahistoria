@@ -77,6 +77,7 @@ export interface ChatLine {
   readonly at: string | null;
   readonly own: boolean | null;
   readonly resident?: true;
+  readonly voice?: string;
 }
 
 export type WhisperDirection = 'from' | 'to';
@@ -154,6 +155,8 @@ export function readPlayer(value: unknown): LivePlayer | null {
   return value['resident'] === true ? { ...player, resident: true } : player;
 }
 
+const VOICE_KEY: RegExp = /^[0-9a-f]{64}$/;
+
 export function readLine(value: unknown): ChatLine | null {
   if (!isFields(value)) return null;
   const id: unknown = value['id'];
@@ -166,7 +169,9 @@ export function readLine(value: unknown): ChatLine | null {
   const own: unknown = value['own'];
   if (typeof id !== 'number' || !Number.isSafeInteger(id) || (from === null && rawFrom !== null) || name === null || text === null) return null;
   const line: ChatLine = { id, from, name, text, at, own: typeof own === 'boolean' ? own : null };
-  return value['resident'] === true ? { ...line, resident: true } : line;
+  if (value['resident'] !== true) return line;
+  const voice: unknown = value['voice'];
+  return typeof voice === 'string' && VOICE_KEY.test(voice) ? { ...line, resident: true, voice } : { ...line, resident: true };
 }
 
 function readWelcome(source: Fields): Welcome | null {

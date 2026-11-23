@@ -13,7 +13,7 @@ import type { Listener } from './audio/listener.ts';
 import { createListener, locateNear } from './audio/listener.ts';
 import { readAssetBase } from './audio/manifest.ts';
 import type { Placement } from './audio/mix.ts';
-import { CENTRE } from './audio/mix.ts';
+import { CENTRE, MIX } from './audio/mix.ts';
 import type { AudioControls } from './audio/settings.ts';
 import { browserSettingsStorage, createSettingsStore } from './audio/settings.ts';
 import type { AudioSystem, StingerLocator, Trigger } from './audio/system.ts';
@@ -52,6 +52,7 @@ export interface GameAudio {
   readonly quietBeds: () => void;
   readonly hushBeds: () => void;
   readonly unlockAudio: () => void;
+  readonly speakAt: (clip: ArrayBuffer, at: Vec2) => Promise<void>;
 }
 
 export function createGameAudio(deps: GameAudioDeps): GameAudio {
@@ -112,5 +113,9 @@ export function createGameAudio(deps: GameAudioDeps): GameAudio {
       audio.stopVoice();
     },
   };
-  return { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio };
+  const speakAt = (clip: ArrayBuffer, at: Vec2): Promise<void> => {
+    const place: Placement | null = listener(at, MIX.farDistance);
+    return place === null ? Promise.resolve() : audio.playSpoken(clip, place).catch((): void => undefined);
+  };
+  return { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio, speakAt };
 }

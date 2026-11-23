@@ -17,8 +17,8 @@ import { createLoadHealth } from './load-health.ts';
 import { createManifestLoader } from './manifest-loader.ts';
 import type { ManifestLoader } from './manifest-loader.ts';
 import type { AssetManifest } from './manifest.ts';
-import type { Placement } from './mix.ts';
-import { CENTRE, MIX } from './mix.ts';
+import { playPlaced } from './spoken.ts';
+import { CENTRE, MIX, type Placement } from './mix.ts';
 import type { AudioControls, AudioSettings } from './settings.ts';
 import type { DueNote } from './score.ts';
 import { notesBetween, scoreSounds } from './score.ts';
@@ -85,6 +85,7 @@ export interface AudioSystem {
   playHeld(cue: SoundCue, place: Placement): SoundTicket;
   playVoice(speaker: string, clipId: string): Promise<void>;
   playEcho(audio: ArrayBuffer): Promise<void>;
+  playSpoken(audio: ArrayBuffer, place: Placement): Promise<void>;
   warm(ids: readonly string[], voices: readonly string[]): void;
   stopVoice(): void;
   speaking(): readonly string[];
@@ -629,6 +630,9 @@ export function createAudioSystem(options: AudioOptions): AudioSystem {
         });
         source.start();
       });
+    },
+    playSpoken(audio: ArrayBuffer, place: Placement): Promise<void> {
+      return graph === null ? Promise.resolve() : playPlaced({ context: graph.context, bus: graph.voice, gainOf: (buffer: AudioBuffer): number => voiceGain(measureOf(buffer)), duck }, audio, place);
     },
     warm(ids: readonly string[], voices: readonly string[]): void {
       warmIds = ids;
