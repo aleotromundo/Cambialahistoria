@@ -8,7 +8,7 @@ export const SOAK = {
   port: 5471,
   profile: 'soak-walk-profile',
   phone: { width: 844, height: 390, deviceScale: 3 },
-  page: '/play/?quality=mobile',
+  page: '/play/?quality=mobile&rivalSeed=1',
   hero: 'woman',
   chrome: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   lapWaitMs: 900_000,

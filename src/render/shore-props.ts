@@ -243,12 +243,13 @@ export interface ShoreProps {
   dispose(): void;
 }
 
-function dress(content: Content, def: PropDef, material: Material): Material {
+function dress(content: Content, def: PropDef, material: Material, owned: Material[]): Material {
   const made: Material = dressedProp(content, def.surfaces, material, SHORE_PROPS.dressing);
   if (def.tint === null || !(made instanceof MeshStandardMaterial)) return made;
   const look: PropLook | undefined = lookOf(made);
   const own: MeshStandardMaterial = look === undefined ? made.clone() : withPropLook(made.clone(), look);
   own.color.multiply(new Color(def.tint));
+  owned.push(own);
   return own;
 }
 
@@ -266,21 +267,29 @@ function isGeometry(value: unknown): value is BufferGeometry {
   return value instanceof BufferGeometry;
 }
 
-interface Placed {
+export interface Placed {
   readonly placed: ShoreProp;
   readonly scale: number;
 }
 
-function instanced(content: Content, def: PropDef, gltf: GLTF, list: readonly Placed[]): InstancedMesh[] {
+export interface ShoreBatch {
+  readonly meshes: readonly InstancedMesh[];
+  readonly owned: readonly Material[];
+}
+
+export function instancedProp(content: Content, def: PropDef, model: Object3D, list: readonly Placed[]): ShoreBatch {
   const made: InstancedMesh[] = [];
-  gltf.scene.updateMatrixWorld(true);
-  gltf.scene.traverse((node: Object3D): void => {
+  const owned: Material[] = [];
+  model.updateMatrixWorld(true);
+  model.traverse((node: Object3D): void => {
     if (!(node instanceof Mesh)) return;
     const geometry: unknown = node.geometry;
     const source: unknown = node.material;
     if (!(source instanceof MeshStandardMaterial) || !isGeometry(geometry)) return;
-    const dressed: Material = dress(content, def, source);
-    const material: Material = isTall(def.height) && dressed instanceof MeshStandardMaterial ? withCutaway(dressed.clone(), propWidth(def)) : dressed;
+    const dressed: Material = dress(content, def, source, owned);
+    const cut: Material | null = isTall(def.height) && dressed instanceof MeshStandardMaterial ? withCutaway(dressed.clone(), propWidth(def)) : null;
+    if (cut !== null) owned.push(cut);
+    const material: Material = cut ?? dressed;
     const mesh: InstancedMesh = new InstancedMesh(geometry, material, list.length);
     list.forEach((item: Placed, index: number): void => {
       mesh.setMatrixAt(index, new Matrix4().multiplyMatrices(shoreMatrix(item.placed, def.scale * item.scale), node.matrixWorld));
@@ -291,7 +300,12 @@ function instanced(content: Content, def: PropDef, gltf: GLTF, list: readonly Pl
     mesh.computeBoundingSphere();
     made.push(mesh);
   });
-  return made;
+  return { meshes: made, owned };
+}
+
+export function releaseShoreBatch(batch: ShoreBatch): void {
+  for (const mesh of batch.meshes) mesh.dispose();
+  for (const material of batch.owned) material.dispose();
 }
 
 export function createShoreProps(loader: GLTFLoader, content: Content, rules: VoidShore | null, floorHeight: number, phone: boolean): ShoreProps {
@@ -307,14 +321,18 @@ export function createShoreProps(loader: GLTFLoader, content: Content, rules: Vo
   const byProp: Map<string, Placed[]> = new Map<string, Placed[]>();
   const strewn: Placed[] = (path === null ? [] : pathStones(path)).map((stone: PathStone): Placed => ({ placed: { prop: stone.prop, x: stone.x, z: stone.z, rotationDegrees: stone.rotationDegrees, scale: stone.scale }, scale: stone.scale }));
   for (const item of [...(rules?.props ?? []).map((placed: ShoreProp): Placed => ({ placed, scale: placed.scale })), ...strewn]) byProp.set(item.placed.prop, [...(byProp.get(item.placed.prop) ?? []), item]);
+  const batches: ShoreBatch[] = [];
+  let gone: boolean = false;
   let shown: boolean = false;
   const ready: Promise<void> = Promise.all(
     [...byProp].map(async ([propId, list]: [string, Placed[]]): Promise<void> => {
       const def: PropDef | undefined = content.props.get(propId);
       if (def === undefined || (phone && isClutter(def))) return;
       const gltf: GLTF | null = await loadModel(loader, def.model).catch((): null => null);
-      if (gltf === null) return;
-      for (const mesh of instanced(content, def, gltf, list)) {
+      if (gltf === null || gone) return;
+      const batch: ShoreBatch = instancedProp(content, def, gltf.scene, list);
+      batches.push(batch);
+      for (const mesh of batch.meshes) {
         group.add(mesh);
         if (isTall(def.height)) occluders.push(mesh);
       }
@@ -335,8 +353,10 @@ export function createShoreProps(loader: GLTFLoader, content: Content, rules: Vo
       group.rotation.y = Math.atan2(shore.facing.x, shore.facing.z);
     },
     dispose(): void {
+      gone = true;
       resetCutaway();
       group.removeFromParent();
+      for (const batch of batches) releaseShoreBatch(batch);
       worn?.geometry.dispose();
       for (const pool of pools) {
         pool.geometry.dispose();
