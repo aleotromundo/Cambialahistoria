@@ -58,7 +58,7 @@ export function resolveChain(world: World, from: ReadonlyVec2, skill: SkillDef, 
   return hits;
 }
 
-function beamEnd(world: World, from: ReadonlyVec2, direction: ReadonlyVec2, range: number): number {
+export function beamEnd(world: World, from: ReadonlyVec2, direction: ReadonlyVec2, range: number): number {
   let reach: number = 0;
   while (reach < range) {
     const next: number = Math.min(range, reach + SHAPES.beamProbe);

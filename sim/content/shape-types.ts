@@ -29,6 +29,7 @@ export interface AreaDelivery {
   readonly anchor: AreaAnchor;
   readonly opening: boolean;
   readonly stoke: AreaStoke | null;
+  readonly length: number;
 }
 
 export interface BlinkDelivery {

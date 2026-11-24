@@ -27,7 +27,7 @@ export function skillNumbers(skill: SkillDef): SkillNumbers {
     case 'chain':
       return { reach: delivery.range, area: delivery.jumpRange, duration: 0, count: delivery.jumps };
     case 'area':
-      return { reach: delivery.range, area: delivery.radius, duration: delivery.duration, count: 1 };
+      return { reach: delivery.range + delivery.length, area: delivery.radius, duration: delivery.duration, count: 1 };
     case 'blink':
       return { reach: delivery.range, area: delivery.radius, duration: 0, count: 1 };
     case 'beam':

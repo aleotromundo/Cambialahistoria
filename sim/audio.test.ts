@@ -492,7 +492,7 @@ void test('Standing Storm crackles and rumbles when it starts, crackles quietly 
 void test('a lasting area sounds from its own form, a crackle sounds on its pulse, and a flare adds its strike sound', (): void => {
   const world: World = fresh();
   const owner: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
-  const cuesOf = (id: string, stage: 'start' | 'pulse' | 'end', hits: number, pulses: number = 0): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, timeLeft: 1, pulseLeft: 1, pulses }, stage, hits });
+  const cuesOf = (id: string, stage: 'start' | 'pulse' | 'end', hits: number, pulses: number = 0): readonly SoundCue[] => cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, toward: { x: 0, z: 1 }, reach: 0, timeLeft: 1, pulseLeft: 1, pulses }, stage, hits });
   const area = (id: string, stage: 'start' | 'pulse' | 'end', hits: number): string[] => sounds(cuesOf(id, stage, hits));
   assert.deepEqual(area('banked_fire', 'start', 0), ['fire_ignite']);
   assert.deepEqual(area('banked_fire', 'pulse', 0), ['ember_bed']);
@@ -510,7 +510,7 @@ void test('a lasting area sounds from its own form, a crackle sounds on its puls
 void test('Banked Fire crackles brighter with every strike of its stoke, up to its limit, and an area without a stoke never changes pitch', (): void => {
   const world: World = fresh();
   const owner: Vec2 = { x: world.player.pos.x, z: world.player.pos.z };
-  const flare = (id: string, pulses: number): SoundCue | undefined => cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, timeLeft: 1, pulseLeft: 1, pulses }, stage: 'pulse', hits: 1 }).find((cue: SoundCue): boolean => cue.sound === 'flare_crackle');
+  const flare = (id: string, pulses: number): SoundCue | undefined => cuesForEvent(audio, world, { type: 'area', area: { id: 1, ownerId: world.player.id, from: owner, skill: skill(id), offence: offenceOf(world.player), pos: owner, toward: { x: 0, z: 1 }, reach: 0, timeLeft: 1, pulseLeft: 1, pulses }, stage: 'pulse', hits: 1 }).find((cue: SoundCue): boolean => cue.sound === 'flare_crackle');
   const cold: number = flare('banked_fire', 0)?.pitch?.min ?? 0;
   const warm: number = flare('banked_fire', 3)?.pitch?.min ?? 0;
   const hot: number = flare('banked_fire', 5)?.pitch?.min ?? 0;

@@ -351,7 +351,7 @@ function worthCasting(plan: BotPlan, player: PlayerState, skill: SkillDef, targe
     case 'area':
       if (delivery.anchor === 'caster') return crowdNear(foes, player.pos, delivery.radius) >= Math.min(BOT_PLAN.crowd, foes.length);
       if (formsUnderfoot(skill)) return crowdNear(foes, player.pos, delivery.radius + BOT_PLAN.stormLead) >= Math.min(BOT_PLAN.crowd, foes.length);
-      return gap <= delivery.range;
+      return gap <= delivery.range + delivery.length;
     case 'arc':
     case 'projectile':
     case 'chain':

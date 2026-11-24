@@ -1,7 +1,7 @@
 import { conditions } from './parse-conditions.ts';
 import type { Fields } from './read.ts';
 import { choice, ContentError, each, fields, flag, fraction, nonNegative, positive, share, text } from './read.ts';
-import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaDelivery, AreaStoke, MomentumDef, MomentumSpend, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
+import type { BeamDelivery, BlinkDelivery, BrandDef, BurnDef, ChainDelivery, AreaAnchor, AreaDelivery, AreaStoke, MomentumDef, MomentumSpend, MomentumTier, PressDef, SkillUnlock, SoakDef } from './shape-types.ts';
 import { AREA_ANCHORS } from './shape-types.ts';
 import type { Content, SkillBinding, SkillDef, SkillTreeNodeDef } from './types.ts';
 
@@ -32,18 +32,24 @@ function area(source: Fields, where: string): AreaDelivery {
   if (pulse > 0 && pulse < SHAPE_LIMITS.shortestPulse) throw new ContentError(`${where}.pulse`, `expected 0 or at least ${SHAPE_LIMITS.shortestPulse} seconds`);
   const stoke: AreaStoke | null = source['stoke'] === undefined ? null : stokeOf(source['stoke'], `${where}.stoke`);
   if (stoke !== null && pulse === 0) throw new ContentError(`${where}.stoke`, 'expected an area that pulses');
+  const length: number = source['length'] === undefined ? 0 : nonNegative(source, 'length', where);
+  const anchor: AreaAnchor = choice(source, 'anchor', AREA_ANCHORS, where);
+  const pull: number = nonNegative(source, 'pull', where);
+  if (length > 0 && anchor !== 'ground') throw new ContentError(`${where}.length`, 'expected a lane to lie on the ground');
+  if (length > 0 && pull > 0) throw new ContentError(`${where}.length`, 'expected a lane that does not pull');
   return {
     type: 'area',
     range: nonNegative(source, 'range', where),
     radius: positive(source, 'radius', where),
     duration,
     pulse,
-    pull: nonNegative(source, 'pull', where),
+    pull,
     slow: fraction(source, 'slow', where),
     weaken: source['weaken'] === undefined ? 0 : share(source, 'weaken', where),
-    anchor: choice(source, 'anchor', AREA_ANCHORS, where),
+    anchor,
     opening: source['opening'] === undefined ? false : flag(source, 'opening', where),
     stoke,
+    length,
   };
 }
 

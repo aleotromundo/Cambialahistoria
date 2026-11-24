@@ -205,8 +205,8 @@ function roundTelegraph(arc: number, inner: number, radius: number, color: Color
   return ahead(createGroundLight(color, { kind: 'round', radius, inner, arc }, spotLook(radius)));
 }
 
-function laneTelegraph(halfWidth: number, length: number, color: Color): GroundLight {
-  return ahead(createGroundLight(color, { kind: 'lane', halfWidth, start: SHAPES.laneStart, length: length - SHAPES.laneStart }, telegraphLook(halfWidth * 2)));
+function laneTelegraph(halfWidth: number, length: number, color: Color, start: number = SHAPES.laneStart): GroundLight {
+  return ahead(createGroundLight(color, { kind: 'lane', halfWidth, start, length: length - start }, telegraphLook(halfWidth * 2)));
 }
 
 function footprintOf(delivery: Delivery): number {
@@ -244,10 +244,12 @@ export function telegraphFor(delivery: Delivery, color: Color, path: number): Te
     case 'arc':
       lights.push(roundTelegraph((delivery.arcDegrees * Math.PI) / 180, 0, delivery.reach, color));
       break;
+    case 'area':
+      lights.push(delivery.length > 0 ? laneTelegraph(delivery.radius, delivery.range + delivery.length, color, delivery.range) : roundTelegraph(Math.PI * 2, 0, delivery.radius, color));
+      break;
     case 'nova':
     case 'mark':
     case 'field':
-    case 'area':
     case 'blink':
       lights.push(roundTelegraph(Math.PI * 2, 0, delivery.radius, color));
       break;

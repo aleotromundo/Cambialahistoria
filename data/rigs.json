@@ -418,6 +418,11 @@
           "impactFraction": 0.35,
           "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
         },
+        "slam_fire_slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
+        },
         "cast_dodge_roll_slip": {
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35,
@@ -867,6 +872,11 @@
           "impactFraction": 0.35,
           "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
         },
+        "slam_fire_slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
+        },
         "cast_dodge_roll_slip": {
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35,
@@ -1313,6 +1323,11 @@
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35,
           "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
+        },
+        "slam_fire_slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
         },
         "cast_dodge_roll_slip": {
           "clip": "Spell_Simple_Shoot",
@@ -1763,6 +1778,11 @@
           "clip": "Spell_Simple_Shoot",
           "impactFraction": 0.35,
           "private": { "clip": "mixamo_magic_spell_casting", "impactFraction": 0.394 }
+        },
+        "slam_fire_slam": {
+          "clip": "Sword_Slam",
+          "impactFraction": 0.245,
+          "private": { "clip": "mixamo_gs_downward_slash", "impactFraction": 0.375 }
         },
         "cast_dodge_roll_slip": {
           "clip": "Spell_Simple_Shoot",

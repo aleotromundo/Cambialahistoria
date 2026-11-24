@@ -149,7 +149,7 @@ const ROOT: Color = new Color(0x5d7a52);
 
 function landsAhead(skill: SkillDef): boolean {
   const delivery = skill.delivery;
-  return skill.leap !== null || delivery.type === 'blink' || (delivery.type === 'area' && delivery.anchor === 'ground');
+  return skill.leap !== null || delivery.type === 'blink' || (delivery.type === 'area' && delivery.anchor === 'ground' && delivery.length === 0);
 }
 
 const launchPoint = (from: { readonly x: number; readonly z: number }, direction: { readonly x: number; readonly z: number }): Vec2 => ({ x: from.x + direction.x * SKILLS.projectileOrigin, z: from.z + direction.z * SKILLS.projectileOrigin });

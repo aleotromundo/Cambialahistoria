@@ -296,6 +296,8 @@ export interface AreaState {
   readonly skill: SkillDef;
   readonly offence: Offence;
   readonly pos: Vec2;
+  readonly toward: Vec2;
+  readonly reach: number;
   timeLeft: number;
   pulseLeft: number;
   pulses: number;

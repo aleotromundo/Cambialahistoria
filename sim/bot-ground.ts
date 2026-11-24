@@ -2,7 +2,8 @@ import type { SkillDef, SurfaceHeat } from './content/types.ts';
 import type { ReadonlyVec2 } from './math.ts';
 import { distance } from './math.ts';
 import { damageTakenScale, expectedHit, skillCycle } from './stats.ts';
-import { areaOf, stokedOffence } from './world/areas.ts';
+import { areaCovers, areaOf, stokedOffence } from './world/areas.ts';
+import { sameFloor } from './world/floors.ts';
 import { burnTicks } from './world/combat.ts';
 import { heatAt } from './world/heat.ts';
 import { hostileFrom } from './world/heroes.ts';
@@ -21,7 +22,7 @@ function hurtsToStand(skill: SkillDef): boolean {
 
 function burningUnder(world: World, hero: PlayerState, area: AreaState, pos: ReadonlyVec2): boolean {
   const delivery = areaOf(area.skill);
-  return delivery !== null && hostileFrom(world, hero, area.offence.team, area.ownerId) && hurtsToStand(area.skill) && distance(pos, area.pos) <= delivery.radius + hero.radius;
+  return delivery !== null && hostileFrom(world, hero, area.offence.team, area.ownerId) && hurtsToStand(area.skill) && areaCovers(area, delivery, pos, hero.radius) && sameFloor(world, area.pos, pos);
 }
 
 export function hotGround(world: World, pos: ReadonlyVec2, hero: PlayerState = world.player): boolean {

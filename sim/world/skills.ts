@@ -1,6 +1,6 @@
 import { isEmpty } from './press-buffer.ts';
 import type { SkillLeap } from '../content/combat-types.ts';
-import type { PressDef } from '../content/shape-types.ts';
+import type { AreaDelivery, PressDef } from '../content/shape-types.ts';
 import type { ComboStep, Delivery, ProjectileDelivery, SkillDef } from '../content/types.ts';
 import type { ReadonlyVec2, Vec2 } from '../math.ts';
 import { DEGREES_TO_RADIANS, directionOf, dot, facingOf, normalize, rotate } from '../math.ts';
@@ -77,6 +77,12 @@ export function stepSkill(skill: SkillDef, step: ComboStep): SkillDef {
   };
 }
 
+function areaStart(delivery: AreaDelivery, origin: ReadonlyVec2, direction: ReadonlyVec2, target: ReadonlyVec2 | null): ReadonlyVec2 {
+  if (delivery.anchor === 'caster') return origin;
+  if (delivery.length > 0) return { x: origin.x + direction.x * delivery.range, z: origin.z + direction.z * delivery.range };
+  return target ?? origin;
+}
+
 function aimedRange(delivery: Delivery): number | null {
   switch (delivery.type) {
     case 'mark':
@@ -85,7 +91,7 @@ function aimedRange(delivery: Delivery): number | null {
     case 'blink':
       return delivery.range;
     case 'area':
-      return delivery.anchor === 'ground' ? delivery.range : null;
+      return delivery.anchor === 'ground' && delivery.length === 0 ? delivery.range : null;
     case 'arc':
     case 'nova':
     case 'projectile':
@@ -279,7 +285,7 @@ function strike(world: World, impact: Impact): number {
     case 'revive':
       return offence.faction === null ? 0 : raiseFallen(world, offence.sourceId, offence.faction, delivery, origin);
     case 'area':
-      placeArea(world, offence, skill, delivery.anchor === 'caster' ? origin : (impact.target ?? origin));
+      placeArea(world, offence, skill, areaStart(delivery, origin, direction, impact.target), direction);
       return 0;
     case 'chain':
       return resolveChain(world, origin, skill, delivery, impact.target ?? origin, offence);
@@ -294,7 +300,10 @@ function strike(world: World, impact: Impact): number {
 function leave(world: World, impact: Impact): void {
   if (impact.echo || impact.skill.leaves === null) return;
   const left: SkillDef | undefined = world.content.skills.get(impact.skill.leaves);
-  if (left !== undefined) placeArea(world, impact.offence, left, impact.origin);
+  if (left === undefined) return;
+  const parent: Delivery = impact.skill.delivery;
+  const at: ReadonlyVec2 = parent.type === 'area' && parent.length > 0 ? areaStart(parent, impact.origin, impact.direction, impact.target) : impact.origin;
+  placeArea(world, impact.offence, left, at, impact.direction);
 }
 
 function resolve(world: World, impact: Impact, team: Team): number {
