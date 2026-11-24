@@ -204,7 +204,9 @@ async function start(): Promise<void> {
   const stage: Stage = createdOrUnsupported((): Stage => createStage(canvas, mobile.quality.tier));
   const camera: IsoCamera = createIsoCamera(stage.camera, canvas);
   const loader: GLTFLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  const privateClips: Promise<PrivateClips> = loadPrivateClips(browserClipDeps(readAssetBase(import.meta.env['VITE_ASSET_BASE']), loader));
+  const configuredAssetBase: unknown = import.meta.env['VITE_ASSET_BASE'];
+  const assetBase: string = typeof configuredAssetBase === 'string' ? configuredAssetBase : new URL('/audio/', window.location.href).href;
+  const privateClips: Promise<PrivateClips> = loadPrivateClips(browserClipDeps(readAssetBase(assetBase), loader));
   const dresser: Dresser = (dress: Readonly<Record<string, string>>, material: Material): Material => dressed(content, dress, material);
 
   const save: SaveData | null = await loadingSave;
@@ -248,7 +250,7 @@ async function start(): Promise<void> {
   stage.setAmbience(world.zone.ambience);
   stage.setHeroLight(world.zone.heroLight);
   placeLine.show(world.zone.name);
-  const { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio, speakAt }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase: import.meta.env['VITE_ASSET_BASE'], logSounds: import.meta.env.DEV });
+  const { audioDef, controls, audio, sounds, voice, playCues, playEvent, releaseHeld, playUi, startZoneAmbience, lobbyBed, quietBeds, hushBeds, unlockAudio, speakAt }: GameAudio = createGameAudio({ content, world, camera, canvas, assetBase, logSounds: import.meta.env.DEV });
   const queue: Command[] = [];
   const sendNow = (command: Command): void => {
     if (watching !== null) return;

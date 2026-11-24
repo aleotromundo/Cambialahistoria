@@ -1,0 +1,521 @@
+{
+  "sfx": {
+    "ambience_cave_air": [
+      "generated/ambience_cave_air.wav"
+    ],
+    "ambience_cave_drip_bed": [
+      "generated/ambience_cave_drip_bed.wav"
+    ],
+    "ambience_cave_room": [
+      "generated/ambience_cave_room.wav"
+    ],
+    "ambience_cave_rumble": [
+      "generated/ambience_cave_rumble.wav"
+    ],
+    "ambience_drone_dark": [
+      "generated/ambience_drone_dark.wav"
+    ],
+    "ambience_drone_low": [
+      "generated/ambience_drone_low.wav"
+    ],
+    "ambience_hall_1": [
+      "generated/ambience_hall_1.wav"
+    ],
+    "ambience_hall_air": [
+      "generated/ambience_hall_air.wav"
+    ],
+    "ambience_hall_storm": [
+      "generated/ambience_hall_storm.wav"
+    ],
+    "ambience_hall_wind": [
+      "generated/ambience_hall_wind.wav"
+    ],
+    "ambience_hideout_fire": [
+      "generated/ambience_hideout_fire.wav"
+    ],
+    "ambience_hideout_storm": [
+      "generated/ambience_hideout_storm.wav"
+    ],
+    "ambience_lava_bed": [
+      "generated/ambience_lava_bed.wav"
+    ],
+    "ambience_lava_flow": [
+      "generated/ambience_lava_flow.wav"
+    ],
+    "ambience_lava_heat": [
+      "generated/ambience_lava_heat.wav"
+    ],
+    "ambience_lobby_drone": [
+      "generated/ambience_lobby_drone.wav"
+    ],
+    "ambience_lobby_wind": [
+      "generated/ambience_lobby_wind.wav"
+    ],
+    "ambience_mist_air": [
+      "generated/ambience_mist_air.wav"
+    ],
+    "ambience_mist_drone": [
+      "generated/ambience_mist_drone.wav"
+    ],
+    "ambience_mist_gust": [
+      "generated/ambience_mist_gust.wav"
+    ],
+    "ambience_mist_wind": [
+      "generated/ambience_mist_wind.wav"
+    ],
+    "ambience_wind_low": [
+      "generated/ambience_wind_low.wav"
+    ],
+    "ambience_wind_storm": [
+      "generated/ambience_wind_storm.wav"
+    ],
+    "bat_flutter": [
+      "generated/bat_flutter.wav"
+    ],
+    "bat_squeak": [
+      "generated/bat_squeak.wav"
+    ],
+    "bell_chime": [
+      "generated/bell_chime.wav"
+    ],
+    "body_fall": [
+      "generated/body_fall.wav"
+    ],
+    "bolt_flight": [
+      "generated/bolt_flight.wav"
+    ],
+    "bolt_impact": [
+      "generated/bolt_impact.wav"
+    ],
+    "bolt_whoosh": [
+      "generated/bolt_whoosh.wav"
+    ],
+    "bolt_zap": [
+      "generated/bolt_zap.wav"
+    ],
+    "bone_hit": [
+      "generated/bone_hit.wav"
+    ],
+    "bones_collapse": [
+      "generated/bones_collapse.wav"
+    ],
+    "bones_rattle": [
+      "generated/bones_rattle.wav"
+    ],
+    "brand_burst": [
+      "generated/brand_burst.wav"
+    ],
+    "brand_mark": [
+      "generated/brand_mark.wav"
+    ],
+    "brood_death": [
+      "generated/brood_death.wav"
+    ],
+    "brood_screech": [
+      "generated/brood_screech.wav"
+    ],
+    "bubble_calm": [
+      "generated/bubble_calm.wav"
+    ],
+    "bubble_hostile": [
+      "generated/bubble_hostile.wav"
+    ],
+    "burn_sizzle": [
+      "generated/burn_sizzle.wav"
+    ],
+    "cave_drip": [
+      "generated/cave_drip.wav"
+    ],
+    "cave_moan": [
+      "generated/cave_moan.wav"
+    ],
+    "chest_close": [
+      "generated/chest_close.wav"
+    ],
+    "chest_open": [
+      "generated/chest_open.wav"
+    ],
+    "clock_strike": [
+      "generated/clock_strike.wav"
+    ],
+    "clock_tick_great": [
+      "generated/clock_tick_great.wav"
+    ],
+    "cloth_rustle": [
+      "generated/cloth_rustle.wav"
+    ],
+    "coin_drop": [
+      "generated/coin_drop.wav"
+    ],
+    "coin_pickup": [
+      "generated/coin_pickup.wav"
+    ],
+    "crit_hit": [
+      "generated/crit_hit.wav"
+    ],
+    "crossbow_heavy": [
+      "generated/crossbow_heavy.wav"
+    ],
+    "crossbow_shot": [
+      "generated/crossbow_shot.wav"
+    ],
+    "custodian_raise": [
+      "generated/custodian_raise.wav"
+    ],
+    "death_large": [
+      "generated/death_large.wav"
+    ],
+    "death_small": [
+      "generated/death_small.wav"
+    ],
+    "dodge_whoosh": [
+      "generated/dodge_whoosh.wav"
+    ],
+    "electric_crackle": [
+      "generated/electric_crackle.wav"
+    ],
+    "ember_bed": [
+      "generated/ember_bed.wav"
+    ],
+    "fire_blast": [
+      "generated/fire_blast.wav"
+    ],
+    "fire_extinguish": [
+      "generated/fire_extinguish.wav"
+    ],
+    "fire_ignite": [
+      "generated/fire_ignite.wav"
+    ],
+    "flare_crackle": [
+      "generated/flare_crackle.wav"
+    ],
+    "flask_drink": [
+      "generated/flask_drink.wav"
+    ],
+    "footstep_stone": [
+      "generated/footstep_stone.wav"
+    ],
+    "ghost_horn": [
+      "generated/ghost_horn.wav"
+    ],
+    "glass_clink": [
+      "generated/glass_clink.wav"
+    ],
+    "ground_boom": [
+      "generated/ground_boom.wav"
+    ],
+    "growl_airy": [
+      "generated/growl_airy.wav"
+    ],
+    "growl_brute": [
+      "generated/growl_brute.wav"
+    ],
+    "growl_hound": [
+      "generated/growl_hound.wav"
+    ],
+    "heavy_whoosh": [
+      "generated/heavy_whoosh.wav"
+    ],
+    "hero_death": [
+      "generated/hero_death.wav"
+    ],
+    "hero_hurt": [
+      "generated/hero_hurt.wav"
+    ],
+    "hex_charge": [
+      "generated/hex_charge.wav"
+    ],
+    "hex_impact": [
+      "generated/hex_impact.wav"
+    ],
+    "hex_orb_launch": [
+      "generated/hex_orb_launch.wav"
+    ],
+    "hit_flesh": [
+      "generated/hit_flesh.wav"
+    ],
+    "hit_shell": [
+      "generated/hit_shell.wav"
+    ],
+    "hit_shell_crit": [
+      "generated/hit_shell_crit.wav"
+    ],
+    "hit_shield": [
+      "generated/hit_shield.wav"
+    ],
+    "hound_yelp": [
+      "generated/hound_yelp.wav"
+    ],
+    "item_drop_common": [
+      "generated/item_drop_common.wav"
+    ],
+    "item_drop_magic": [
+      "generated/item_drop_magic.wav"
+    ],
+    "item_drop_rare": [
+      "generated/item_drop_rare.wav"
+    ],
+    "item_drop_stormtouched": [
+      "generated/item_drop_stormtouched.wav"
+    ],
+    "item_identified": [
+      "generated/item_identified.wav"
+    ],
+    "item_metal": [
+      "generated/item_metal.wav"
+    ],
+    "lava_boil": [
+      "generated/lava_boil.wav"
+    ],
+    "lava_bubble": [
+      "generated/lava_bubble.wav"
+    ],
+    "lava_erupt": [
+      "generated/lava_erupt.wav"
+    ],
+    "lava_glop": [
+      "generated/lava_glop.wav"
+    ],
+    "leather_move": [
+      "generated/leather_move.wav"
+    ],
+    "level_up": [
+      "generated/level_up.wav"
+    ],
+    "masked_voice": [
+      "generated/masked_voice.wav"
+    ],
+    "mender_thread": [
+      "generated/mender_thread.wav"
+    ],
+    "millwheel_whoosh": [
+      "generated/millwheel_whoosh.wav"
+    ],
+    "monsters_rising": [
+      "generated/monsters_rising.wav"
+    ],
+    "music_pad_am": [
+      "generated/music_pad_am.wav"
+    ],
+    "music_pad_c": [
+      "generated/music_pad_c.wav"
+    ],
+    "music_pad_em": [
+      "generated/music_pad_em.wav"
+    ],
+    "music_pad_f": [
+      "generated/music_pad_f.wav"
+    ],
+    "music_pad_fmaj7": [
+      "generated/music_pad_fmaj7.wav"
+    ],
+    "music_pad_g": [
+      "generated/music_pad_g.wav"
+    ],
+    "music_pad_high": [
+      "generated/music_pad_high.wav"
+    ],
+    "ooze_death": [
+      "generated/ooze_death.wav"
+    ],
+    "opening_alien": [
+      "generated/opening_alien.wav"
+    ],
+    "opening_glitch": [
+      "generated/opening_glitch.wav"
+    ],
+    "page_turn": [
+      "generated/page_turn.wav"
+    ],
+    "portal_open": [
+      "generated/portal_open.wav"
+    ],
+    "portal_travel": [
+      "generated/portal_travel.wav"
+    ],
+    "quest_update": [
+      "generated/quest_update.wav"
+    ],
+    "rank_step": [
+      "generated/rank_step.wav"
+    ],
+    "rat_squeal": [
+      "generated/rat_squeal.wav"
+    ],
+    "rock_settle": [
+      "generated/rock_settle.wav"
+    ],
+    "rock_slam": [
+      "generated/rock_slam.wav"
+    ],
+    "shade_breath": [
+      "generated/shade_breath.wav"
+    ],
+    "shade_death": [
+      "generated/shade_death.wav"
+    ],
+    "shade_hush": [
+      "generated/shade_hush.wav"
+    ],
+    "shadow_cast": [
+      "generated/shadow_cast.wav"
+    ],
+    "shimmer_faint": [
+      "generated/shimmer_faint.wav"
+    ],
+    "slam_heavy": [
+      "generated/slam_heavy.wav"
+    ],
+    "spark_snap": [
+      "generated/spark_snap.wav"
+    ],
+    "spark_tick": [
+      "generated/spark_tick.wav"
+    ],
+    "spell_flick": [
+      "generated/spell_flick.wav"
+    ],
+    "spider_death": [
+      "generated/spider_death.wav"
+    ],
+    "spider_hiss": [
+      "generated/spider_hiss.wav"
+    ],
+    "spit_land": [
+      "generated/spit_land.wav"
+    ],
+    "spit_launch": [
+      "generated/spit_launch.wav"
+    ],
+    "sporecap_death": [
+      "generated/sporecap_death.wav"
+    ],
+    "squall_gust": [
+      "generated/squall_gust.wav"
+    ],
+    "squall_rise": [
+      "generated/squall_rise.wav"
+    ],
+    "step_ash": [
+      "generated/step_ash.wav"
+    ],
+    "still_creak": [
+      "generated/still_creak.wav"
+    ],
+    "still_exhale": [
+      "generated/still_exhale.wav"
+    ],
+    "storm_bolt_cast": [
+      "generated/storm_bolt_cast.wav"
+    ],
+    "storm_bolt_hit": [
+      "generated/storm_bolt_hit.wav"
+    ],
+    "storm_fade": [
+      "generated/storm_fade.wav"
+    ],
+    "storm_hum": [
+      "generated/storm_hum.wav"
+    ],
+    "swell_slow": [
+      "generated/swell_slow.wav"
+    ],
+    "sword_swing_heavy": [
+      "generated/sword_swing_heavy.wav"
+    ],
+    "sword_swing_light": [
+      "generated/sword_swing_light.wav"
+    ],
+    "tailwind_gust": [
+      "generated/tailwind_gust.wav"
+    ],
+    "tailwind_whisk": [
+      "generated/tailwind_whisk.wav"
+    ],
+    "tally_due": [
+      "generated/tally_due.wav"
+    ],
+    "tally_scratch": [
+      "generated/tally_scratch.wav"
+    ],
+    "thunder_close": [
+      "generated/thunder_close.wav"
+    ],
+    "thunder_close_sharp": [
+      "generated/thunder_close_sharp.wav"
+    ],
+    "thunder_crack": [
+      "generated/thunder_crack.wav"
+    ],
+    "thunder_far": [
+      "generated/thunder_far.wav"
+    ],
+    "thunder_rumble": [
+      "generated/thunder_rumble.wav"
+    ],
+    "ui_error": [
+      "generated/ui_error.wav"
+    ],
+    "ui_panel": [
+      "generated/ui_panel.wav"
+    ],
+    "ui_skill_point": [
+      "generated/ui_skill_point.wav"
+    ],
+    "ui_tap": [
+      "generated/ui_tap.wav"
+    ],
+    "unfinished_death": [
+      "generated/unfinished_death.wav"
+    ],
+    "unfinished_growl": [
+      "generated/unfinished_growl.wav"
+    ],
+    "unfinished_snarl": [
+      "generated/unfinished_snarl.wav"
+    ],
+    "unfinished_tell": [
+      "generated/unfinished_tell.wav"
+    ],
+    "vent_hiss": [
+      "generated/vent_hiss.wav"
+    ],
+    "vent_hiss_loop": [
+      "generated/vent_hiss_loop.wav"
+    ],
+    "water_cast": [
+      "generated/water_cast.wav"
+    ],
+    "water_crash": [
+      "generated/water_crash.wav"
+    ],
+    "water_crash_heavy": [
+      "generated/water_crash_heavy.wav"
+    ],
+    "water_douse": [
+      "generated/water_douse.wav"
+    ],
+    "water_surge": [
+      "generated/water_surge.wav"
+    ],
+    "water_sweep": [
+      "generated/water_sweep.wav"
+    ],
+    "wave_arrival": [
+      "generated/wave_arrival.wav"
+    ],
+    "waypoint_attune": [
+      "generated/waypoint_attune.wav"
+    ],
+    "wisp_whoosh": [
+      "generated/wisp_whoosh.wav"
+    ],
+    "wolf_death": [
+      "generated/wolf_death.wav"
+    ],
+    "wolf_snarl": [
+      "generated/wolf_snarl.wav"
+    ]
+  },
+  "voice": {}
+}
