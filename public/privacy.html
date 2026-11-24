@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="es-419">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <meta name="description" content="What The Lost Storm stores about you, and how to remove it." />
-    <title>Privacy · The Lost Storm</title>
+    <meta name="description" content="Qué información almacena The Lost Storm sobre ti y cómo eliminarla." />
+    <title>Privacidad · The Lost Storm</title>
     <style>
       :root {
         --serif: "Cinzel", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -76,97 +76,97 @@
   </head>
   <body>
     <main>
-      <h1>Privacy</h1>
-      <p class="dated">The Lost Storm, as served at theloststorm.com. Last updated 19 November 2026.</p>
+      <h1>Privacidad</h1>
+      <p class="dated">The Lost Storm, disponible en theloststorm.com. Última actualización: 19 de noviembre de 2026.</p>
 
-      <h2>In short</h2>
-      <p>The game keeps your progress so you can come back to it. It has no ads and no third-party analytics or trackers, and nothing about you is sold or shared for marketing. A few services handle data for the parts of the game that need them: Cloudflare delivers the site and runs the bot check for email sign-in, Google handles Google sign-in, Resend delivers sign-in codes by email, and ElevenLabs makes the voice that speaks your character's name. Each is described below. The game also counts a few anonymous milestones, records what happens in your own play so we can see where players get stuck and keep the game fair, and keeps the feedback you choose to send.</p>
+      <h2>En resumen</h2>
+      <p>El juego guarda tu progreso para que puedas retomarlo. No tiene anuncios ni herramientas de análisis o rastreadores de terceros, y no se vende ni se comparte ninguna información sobre ti con fines de marketing. Algunos servicios procesan datos para las funciones del juego que los necesitan: Cloudflare aloja el sitio y realiza la verificación para iniciar sesión por correo electrónico; Google gestiona el inicio de sesión con Google; Resend envía los códigos de inicio de sesión por correo electrónico; y ElevenLabs genera la voz que pronuncia el nombre de tu personaje. A continuación, se describe cada uno. El juego también cuenta algunos hitos de forma anónima, registra lo que ocurre durante tus propias partidas para que podamos ver en qué puntos se quedan atascados los jugadores y mantener la imparcialidad del juego, y conserva los comentarios que decidas enviar.</p>
 
-      <h2>If you just play</h2>
-      <p>Your progress is saved in your browser's local storage. The first time the game reaches the server it also creates a guest account so the save can be kept there. For a guest account the server stores:</p>
+      <h2>Si solo juegas</h2>
+      <p>Tu progreso se guarda en el almacenamiento local de tu navegador. La primera vez que el juego se conecta al servidor, también crea una cuenta de invitado para guardar allí tu progreso. En una cuenta de invitado, el servidor almacena:</p>
       <ul>
-        <li>a random account id and the time it was created;</li>
-        <li>a one-way hash of the guest token. The token itself stays in your browser's local storage;</li>
-        <li>your save: your hero, items, progress and story choices, with a revision number and the time it was last written.</li>
+        <li>un identificador de cuenta aleatorio y la fecha y hora de su creación;</li>
+        <li>un hash unidireccional del token de invitado. El token en sí permanece en el almacenamiento local de tu navegador;</li>
+        <li>tu partida guardada: tu héroe, tus objetos, tu progreso y tus decisiones en la historia, con un número de revisión y la hora de la última vez que se guardó.</li>
       </ul>
 
-      <h2>Your character and the ladder</h2>
-      <p>Your character gets a generated two-word name until you pick one. The ladder and the lobby are public: anyone who opens the site can see each character's name, level and furthest zone, whether it played in the last five minutes, and recent level-ups (name, level and how many minutes ago). The ladder never shows an account id, an email address or a Google name.</p>
-      <p>When you pick up the journal in the In-Between, your account is counted once toward the number of players who did. Only that number is shown, never who.</p>
+      <h2>Tu personaje y la clasificación</h2>
+      <p>Tu personaje recibe un nombre generado de dos palabras hasta que eliges uno. La clasificación y la sala son públicas: cualquiera que abra el sitio puede ver el nombre, el nivel y la zona más lejana de cada personaje, si jugó en los últimos cinco minutos y los ascensos de nivel recientes (nombre, nivel y hace cuántos minutos). La clasificación nunca muestra un id de cuenta, una dirección de correo electrónico ni un nombre de Google.</p>
+      <p>Cuando recoges el diario en El Entreplano, tu cuenta se suma una sola vez al total de jugadores que lo hicieron. Solo se muestra ese total, nunca quiénes son.</p>
 
-      <h2>Your items</h2>
-<p>When the game is connected to the server, the server hands your browser a small batch of random seeds ahead of time. The game rolls each item you find from one of them, and the server rolls the same seed again to check the item and record it once, so it can later be traded fairly. For each item the ledger stores:</p>
+      <h2>Tus objetos</h2>
+<p>Cuando el juego está conectado al servidor, este le entrega a tu navegador con anticipación un pequeño lote de semillas aleatorias. El juego genera cada objeto que encuentras a partir de una de ellas, y el servidor vuelve a generar el resultado con la misma semilla para verificar el objeto y registrarlo una sola vez, de modo que luego pueda intercambiarse de manera justa. Para cada objeto, el registro almacena:</p>
 <ul>
-<li>a random item id, the account that owns it and the save reset it belongs to;</li>
-<li>what it is: its base, rarity, item level and rolled properties;</li>
-<li>where it came from: the kind of source (a monster, a boss, a moment, a find or starting gear), which one, the zone and the time;</li>
-<li>its state (held or sold to the trader) and a short history of those changes with their times.</li>
+<li>un id de objeto aleatorio, la cuenta que lo posee y el reinicio de la partida guardada al que pertenece;</li>
+<li>qué es: su base, rareza, nivel del objeto y propiedades obtenidas al azar;</li>
+<li>de dónde provino: el tipo de fuente (un monstruo, un jefe, un momento, un hallazgo o equipo inicial), cuál fue, la zona y la hora;</li>
+<li>su estado (en posesión o vendido al comerciante) y un breve historial de esos cambios con sus horas.</li>
 </ul>
-<p>The server also keeps the seeds it handed out, with the account, the time and whether each was used. When it refuses an item, because it came too fast or does not fit the game, it keeps a note with the account, the time, the reason and the source for 30 days. These records are used to keep drops fair and to see which items players find, and are not shown to other players. Starting gear and plain finds made before the first seeds arrive roll the same from any seed, so they are recorded with the first seeds that arrive while the game stays open. Any other item found while the server cannot be reached, and anything still waiting when the game closes, stays in your save as unverified and is not added to the ledger later.</p>
+<p>El servidor también conserva las semillas que entregó, junto con la cuenta, la hora y si se usó cada una. Cuando rechaza un objeto porque llegó demasiado rápido o no corresponde al juego, conserva una nota con la cuenta, la hora, el motivo y la fuente durante 30 días. Estos registros se usan para mantener la equidad de los objetos que aparecen y saber qué objetos encuentran los jugadores; no se muestran a otros jugadores. El equipo inicial y los hallazgos comunes obtenidos antes de que lleguen las primeras semillas dan el mismo resultado con cualquier semilla, por lo que se registran con las primeras semillas que llegan mientras el juego sigue abierto. Cualquier otro objeto encontrado mientras no se puede acceder al servidor, así como todo lo que siga pendiente cuando se cierra el juego, permanece en tu partida guardada como no verificado y no se agrega al registro más adelante.</p>
 
-<h2>The voice that speaks your name</h2>
-      <p>At the start of the game a voice may say your character's name. To make it, the server sends the character name, and nothing else about you, to ElevenLabs, which turns it into audio. The audio is kept on the server under a file name made from a hash of the name, so the same name is not sent again. It is not linked to your account. The server keeps at most 4000 of these files and removes the oldest first when it needs room.</p>
+<h2>La voz que dice tu nombre</h2>
+      <p>Al inicio del juego, una voz puede decir el nombre de tu personaje. Para generarla, el servidor envía el nombre del personaje, y ninguna otra información sobre ti, a ElevenLabs, que lo convierte en audio. El audio se conserva en el servidor con un nombre de archivo creado a partir de un hash del nombre, para que no se vuelva a enviar el mismo nombre. No está vinculado a tu cuenta. El servidor conserva un máximo de 4000 de estos archivos y, cuando necesita espacio, elimina primero los más antiguos.</p>
 
-      <h2>If you sign in with Google</h2>
-      <p>Signing in is optional. It attaches your Google account to your save so that you can load it in another browser. The server then also stores:</p>
+      <h2>Si inicias sesión con Google</h2>
+      <p>Iniciar sesión es opcional. Vincula tu cuenta de Google a tu partida guardada para que puedas cargarla en otro navegador. Luego, el servidor también almacena:</p>
       <ul>
-        <li>your Google account id (a number Google assigns to your account);</li>
-        <li>the display name on your Google account, to show who is signed in;</li>
-        <li>a one-way hash of each sign-in session, and the time it started.</li>
+        <li>el ID de tu cuenta de Google (un número que Google asigna a tu cuenta);</li>
+        <li>el nombre visible de tu cuenta de Google, para mostrar quién inició sesión;</li>
+        <li>un hash unidireccional de cada sesión de inicio de sesión y la hora en que comenzó.</li>
       </ul>
-      <p>The sign-in token Google sends also contains your email address. The server checks the token and does not store the email address, your profile picture or anything else from your Google account. The game asks Google for nothing beyond that basic sign-in.</p>
-      <p>When sign-in is offered, the page loads Google's sign-in script from accounts.google.com, and Google handles the sign-in window under its own privacy policy.</p>
+      <p>El token de inicio de sesión que envía Google también contiene tu dirección de correo electrónico. El servidor verifica el token y no almacena la dirección de correo electrónico, tu foto de perfil ni ningún otro dato de tu cuenta de Google. El juego no solicita a Google nada más que ese inicio de sesión básico.</p>
+      <p>Cuando se ofrece la opción de iniciar sesión, la página carga el script de inicio de sesión de Google desde accounts.google.com, y Google gestiona la ventana de inicio de sesión de acuerdo con su propia política de privacidad.</p>
 
-      <h2>If you sign in with email</h2>
-      <p>Email sign-in is optional and has no password. You type your address and the server emails you a six-digit code.</p>
+      <h2>Si inicias sesión con tu correo electrónico</h2>
+      <p>El inicio de sesión con correo electrónico es opcional y no requiere contraseña. Escribes tu dirección y el servidor te envía un código de seis dígitos por correo electrónico.</p>
       <ul>
-        <li>Before a code is sent, the page runs Cloudflare Turnstile, a bot check. It loads from challenges.cloudflare.com, and Cloudflare sees your IP address and browser details. The server sends Cloudflare the check's result and your IP address to confirm it.</li>
-        <li>The code is sent through Resend, an email delivery service. Resend receives your email address and the code.</li>
-        <li>The server stores a one-way hash of your address as your sign-in identity, and a masked form such as a•••@example.com to show who is signed in. It never stores the full address.</li>
-        <li>The code is stored only as a salted hash, lasts 10 minutes and works once. To limit how many codes one address gets, the server keeps a hash of the address with a count for up to 24 hours.</li>
-        <li>The server's logs record your account id and the part of your address after the @, never the full address or the code.</li>
+        <li>Antes de enviar un código, la página ejecuta Cloudflare Turnstile, una verificación para detectar bots. Se carga desde challenges.cloudflare.com, y Cloudflare ve tu dirección IP y los detalles de tu navegador. El servidor envía a Cloudflare el resultado de la verificación y tu dirección IP para confirmarlo.</li>
+        <li>El código se envía a través de Resend, un servicio de envío de correo electrónico. Resend recibe tu dirección de correo electrónico y el código.</li>
+        <li>El servidor almacena un hash unidireccional de tu dirección como identificador para iniciar sesión, y una versión enmascarada, como a•••@example.com, para mostrar quién inició sesión. Nunca almacena la dirección completa.</li>
+        <li>El código se almacena únicamente como un hash con sal, tiene una vigencia de 10 minutos y puede usarse una sola vez. Para limitar cuántos códigos recibe una misma dirección, el servidor conserva un hash de la dirección junto con un contador durante un máximo de 24 horas.</li>
+        <li>Los registros del servidor guardan el ID de tu cuenta y la parte de tu dirección que aparece después de @, nunca la dirección completa ni el código.</li>
       </ul>
 
-      <h2>Feedback you send</h2>
-      <p>The game asks what you think at the end of the alpha, and Feedback in the pause menu and on the title screen asks any time. Sending it is optional. The server stores:</p>
+      <h2>Comentarios que envías</h2>
+      <p>Al final de la versión alfa, el juego te pregunta qué opinas; además, la opción «Comentarios» del menú de pausa y de la pantalla de título te permite enviar comentarios en cualquier momento. Enviarlos es opcional. El servidor almacena:</p>
       <ul>
-        <li>your rating, thumbs up or thumbs down, and the line of text you typed, if any (at most 600 characters);</li>
-        <li>where you were: the zone, your hero's level, the minutes you have played in this browser, whether you play on a desktop or a phone, and which version of the game you were running;</li>
-        <li>the time it arrived;</li>
-        <li>your account id, so the note can be read beside your character's name on the ladder. If you have no account yet, nothing ties it to you.</li>
+        <li>tu calificación, con pulgar hacia arriba o hacia abajo, y el texto que escribiste, si corresponde (hasta 600 caracteres);</li>
+        <li>dónde estabas: la zona, el nivel de tu héroe, los minutos que has jugado en este navegador, si juegas en una computadora de escritorio o en un teléfono, y qué versión del juego estabas usando;</li>
+        <li>la hora en que llegó;</li>
+        <li>el ID de tu cuenta, para que la nota pueda leerse junto al nombre de tu personaje en la clasificación. Si aún no tienes una cuenta, nada la vincula contigo.</li>
       </ul>
-      <p>Your IP address and email address are not stored with it. If the server cannot be reached, the note waits in your browser's local storage and is sent later.</p>
+      <p>Tu dirección IP y tu dirección de correo electrónico no se almacenan junto con ella. Si no se puede acceder al servidor, la nota queda en el almacenamiento local de tu navegador y se envía más tarde.</p>
 
-      <h2>Anonymous counts</h2>
-      <p>To see how far players get, the game sends each of these milestones at most once per browser: opened the game, pressed Enter, picked up the journal, left the mist, reached the Hall of Time, cleared the first moment, reached the fire, sent feedback, and died for the first time. Each one adds one to a counter for that day, kept separately for desktops and phones. Nothing else is sent or stored with it: no account, no IP address, no time beyond the day, no identifier of your browser. Your browser remembers in its local storage which milestones it has already sent.</p>
-      <p>Feedback and counts are sent only to the game's own server. Their lines in the server's request log leave out the IP address and the account.</p>
+      <h2>Recuentos anónimos</h2>
+      <p>Para saber hasta dónde llegan los jugadores, el juego envía cada uno de estos hitos como máximo una vez por navegador: abrir el juego, presionar Enter, recoger el diario, salir de la niebla, llegar al Salón del Tiempo, superar el primer momento, llegar al fuego, enviar comentarios y morir por primera vez. Cada uno suma uno a un contador de ese día, que se mantiene por separado para computadoras y teléfonos. No se envía ni se almacena nada más junto con esos datos: ninguna cuenta, ninguna dirección IP, ninguna hora más específica que el día y ningún identificador de tu navegador. Tu navegador recuerda en su almacenamiento local cuáles hitos ya envió.</p>
+      <p>Los comentarios y los recuentos se envían únicamente al servidor propio del juego. Las entradas correspondientes en el registro de solicitudes del servidor omiten la dirección IP y la cuenta.</p>
 
-      <h2>What happens in your play</h2>
-      <p>While you play, the game sends its own server a short record of what happens in your game, a batch at a time: when you enter play, which zone you go to, when you level up, die, beat a boss, finish a quest, unlock a skill, upgrade a flask or open a waypoint, which skill-tree points you spend or refund, which skills you put on your bar, which item you equip, what you do at a trader, the stash or the auction house, and which panel you open. Once a minute it also sends your zone, level, experience, kills, gold, a rounded position in the zone and how long since your last input. Each record carries the time, your account if you have one, the game build, desktop or phone, and a random number for this browser tab that changes on every visit.</p>
-      <p>These records are used to see how players get through the game, where they get stuck, which builds they play, and to spot progress that play could not have earned. Only the operator sees them; they are not shown to other players and not shared. They are kept for 90 days and then deleted, and are never stored with your IP address. A game built without a server address sends none of them.</p>
+      <h2>Lo que ocurre durante tu partida</h2>
+      <p>Mientras juegas, el juego envía a su propio servidor un breve registro de lo que ocurre en tu partida, en lotes: cuándo empiezas a jugar, a qué zona vas, cuándo subes de nivel, mueres, derrotas a un jefe, completas una misión, desbloqueas una habilidad, mejoras un frasco o abres un punto de ruta; qué puntos del árbol de habilidades gastas o reembolsas; qué habilidades colocas en tu barra; qué objeto equipas; qué haces con un comerciante, en el alijo o en la casa de subastas; y qué panel abres. Una vez por minuto también envía tu zona, nivel, experiencia, bajas, oro, una posición aproximada en la zona y cuánto tiempo ha pasado desde tu última acción. Cada registro incluye la hora, tu cuenta si tienes una, la versión del juego, si usas una computadora o un teléfono y un número aleatorio para esta pestaña del navegador, que cambia en cada visita.</p>
+      <p>Estos registros se utilizan para ver cómo avanzan los jugadores en el juego, dónde se quedan atascados, qué configuraciones usan y para detectar avances que no podrían haberse obtenido jugando. Solo los ve el operador; no se muestran a otros jugadores ni se comparten. Se conservan durante 90 días y luego se eliminan, y nunca se almacenan junto con tu dirección IP. Una versión del juego creada sin una dirección de servidor no envía ninguno de estos registros.</p>
 
-      <h2>IP addresses</h2>
-      <p>The server uses your IP address to limit how fast one address can send requests, and writes it to its request logs, which are used only to run and protect the service. It is not stored with your account or your save. The site is delivered through Cloudflare, which processes requests, including IP addresses, to deliver and protect it.</p>
+      <h2>Direcciones IP</h2>
+      <p>El servidor utiliza tu dirección IP para limitar la frecuencia con la que una misma dirección puede enviar solicitudes, y la registra en sus registros de solicitudes, que se utilizan únicamente para operar y proteger el servicio. No se almacena junto con tu cuenta ni con tu partida guardada. El sitio se ofrece a través de Cloudflare, que procesa solicitudes, incluidas las direcciones IP, para ofrecerlo y protegerlo.</p>
 
       <h2>Cookies</h2>
-      <p>The game sets no cookies. It uses your browser's local storage for your save (including each item's ledger id), your token, the minutes you have played, the milestones already counted and any feedback still waiting to be sent. Google may set its own cookies when you use its sign-in, and Cloudflare may when it runs the bot check.</p>
+      <p>El juego no instala cookies. Utiliza el almacenamiento local de tu navegador para guardar tu partida (incluido el id de registro de cada elemento), tu token, los minutos que has jugado, los hitos que ya se contabilizaron y cualquier comentario que aún esté pendiente de envío. Google puede instalar sus propias cookies cuando utilizas su función de inicio de sesión, y Cloudflare puede hacerlo cuando ejecuta la verificación de bots.</p>
 
-      <h2>Removing your data</h2>
+      <h2>Eliminar tus datos</h2>
       <ul>
-        <li>"Start over" on the title screen clears your progress, here and in the cloud copy.</li>
-        <li>"Sign out" ends your session on the server and returns this browser to a new guest account.</li>
-        <li>Clearing this site's data in your browser removes everything kept on your device. Your account, save and character stay on the server until you ask for them to be deleted, as below.</li>
-        <li>To have your account deleted from the server, email <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> with your character name, and the address you signed in with if you used email. The operator deletes it by hand: the account, its sign-in identities and sessions, its save, its character and ladder entries, its items in the ledger with their history, seeds and refusal notes, the records of its play, and the feedback tied to it. You get a reply when it is done.</li>
+        <li>La opción «Volver a empezar» en la pantalla de título borra tu progreso, tanto en este dispositivo como en la copia en la nube.</li>
+        <li>La opción «Cerrar sesión» finaliza tu sesión en el servidor y devuelve este navegador a una nueva cuenta de invitado.</li>
+        <li>Borrar los datos de este sitio en tu navegador elimina todo lo que se guarda en tu dispositivo. Tu cuenta, partida guardada y personaje permanecen en el servidor hasta que solicites que se eliminen, como se indica a continuación.</li>
+        <li>Para solicitar que se elimine tu cuenta del servidor, envía un correo electrónico a  <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a> con el nombre de tu personaje y la dirección de correo electrónico con la que iniciaste sesión, si usaste ese método. El operador la elimina manualmente: la cuenta, sus identidades de inicio de sesión y sesiones, su partida guardada, su personaje y sus registros en la clasificación, sus artículos en el libro mayor junto con su historial, semillas y notas de rechazo, los registros de su juego y los comentarios asociados. Recibirás una respuesta cuando el proceso haya terminado.</li>
       </ul>
-      <p>The alpha may reset every player's progress. A reset deletes every save and every character on the ladder, and keeps accounts, sign-ins and the item ledger's record of items found before it.</p>
+      <p>La versión alfa puede restablecer el progreso de todos los jugadores. Un restablecimiento elimina todas las partidas guardadas y todos los personajes de la clasificación, y conserva las cuentas, los inicios de sesión y el registro de artículos encontrados antes del restablecimiento en el libro mayor de artículos.</p>
 
-      <h2>Open source</h2>
-      <p>The game client is open source under the MIT licence, so you can read exactly what it stores and sends: <a href="https://github.com/marginsystems/the-lost-storm">github.com/marginsystems/the-lost-storm</a>.</p>
+      <h2>Código abierto</h2>
+      <p>El cliente del juego es de código abierto bajo la licencia MIT, por lo que puedes leer exactamente qué almacena y envía:  <a href="https://github.com/marginsystems/the-lost-storm">github.com/marginsystems/the-lost-storm</a>.</p>
 
-      <h2>Changes and contact</h2>
-      <p>If this page changes, the date at the top changes with it. Questions about your data go to <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a>; other questions can go to the <a href="https://github.com/marginsystems/the-lost-storm/issues">issue tracker</a>, without personal details.</p>
+      <h2>Cambios y contacto</h2>
+      <p>Si esta página cambia, también cambia la fecha que aparece en la parte superior. Para preguntas sobre tus datos, escribe a  <a href="mailto:contact@mergestorm.ai">contact@mergestorm.ai</a>; para otras preguntas, puedes consultar el  <a href="https://github.com/marginsystems/the-lost-storm/issues">rastreador de incidencias</a>, sin incluir datos personales.</p>
 
-      <p class="foot"><a href="/">The Lost Storm</a> · <a href="/play/">Play</a> · <a href="/terms.html">Terms</a></p>
+      <p class="foot"><a href="/">The Lost Storm</a> · <a href="/play/">Jugar</a> · <a href="/terms.html">Términos</a></p>
     </main>
   </body>
 </html>

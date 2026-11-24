@@ -50,28 +50,28 @@ export type ProfileState = 'loading' | ProfileLookup['kind'];
 
 export const PROFILE_PANEL = {
   closeKey: 'Escape',
-  label: 'Player profile',
+  label: 'Perfil del jugador',
   blank: '–',
-  noSkills: 'No skills on the bar',
+  noSkills: 'No hay habilidades en la barra',
   keepOpenWithin: ['.profile-pick', '.player-menu'],
 } as const;
 
 export const BLANK_PROFILE: CharacterProfile = { name: '', hero: null, level: 0, furthest: '', online: false, stats: { playedMs: 0, kills: 0, bosses: 0, deaths: 0, bestLevel: 0, biggestHit: 0, goldLooted: 0, moments: 0, quests: 0, found: {} }, worn: [], build: null };
 
-const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = { weapon: 'Weapon', head: 'Head', chest: 'Chest', hands: 'Hands', legs: 'Legs', feet: 'Feet', charm: 'Charm' };
+const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = { weapon: 'Arma', head: 'Cabeza', chest: 'Pecho', hands: 'Manos', legs: 'Piernas', feet: 'Pies', charm: 'Amuleto' };
 
 export function stateNote(state: ProfileState, name: string): string {
   switch (state) {
     case 'loading':
-      return `Looking for ${name}…`;
+      return `Buscando a ${name}…`;
     case 'ok':
       return '';
     case 'missing':
-      return `No one is called ${name}.`;
+      return `No hay nadie con el nombre ${name}.`;
     case 'unsupported':
-      return 'Profiles are not open on this server yet.';
+      return 'Los perfiles aún no están disponibles en este servidor.';
     case 'failed':
-      return 'The profile is out of reach right now.';
+      return 'No se puede consultar el perfil por ahora.';
   }
   return '';
 }
@@ -110,19 +110,19 @@ export function createProfilePanel(deps: ProfilePanelDeps): ProfilePanel {
   const figure: HTMLDivElement = el('div', 'profile-figure', body);
   const turning: FigureView = createFigureView(figure);
   const side: HTMLDivElement = el('div', 'profile-side', body);
-  label('cs-heading', 'Worn', side);
+  label('cs-heading', 'Equipo', side);
   const worn: HTMLDivElement = el('div', 'profile-worn', side);
   const slots: SlotView[] = profileSlots(BLANK_PROFILE, 0).map((entry: ProfileSlot): SlotView => {
     const holder: HTMLDivElement = el('div', 'profile-slot', worn);
-    const cell: ItemCell = createItemCell(context, holder, (): string => (shown === null ? '' : `Worn by ${shown.name}`));
+    const cell: ItemCell = createItemCell(context, holder, (): string => (shown === null ? '' : `Lo lleva ${shown.name}`));
     label('profile-slot-name', SLOT_NAMES[entry.slot], holder);
     return { slot: entry.slot, cell };
   });
-  label('cs-heading wide', 'Build', side);
+  label('cs-heading wide', 'Habilidades', side);
   const skills: HTMLDivElement = label('profile-skills', PROFILE_PANEL.blank, side);
   const places: HTMLDivElement = label('profile-places', '', side);
 
-  label('cs-heading wide', 'Record', sheet);
+  label('cs-heading wide', 'Récord', sheet);
   const recordList: HTMLDivElement = el('div', 'cs-record profile-record', sheet);
   let figures: RecordFigures | null = null;
   const rows: RecordRow[] = recordLines(profileFigures(BLANK_PROFILE)).map((line: RecordLine): RecordRow => {

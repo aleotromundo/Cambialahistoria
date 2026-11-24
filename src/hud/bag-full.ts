@@ -4,8 +4,8 @@ export const BAG_FULL = {
   shownMs: 1900,
   rootClass: 'bag-full',
   shakeClass: 'shake',
-  title: 'Inventory full',
-  line: 'Make room to pick this up',
+  title: 'Inventario lleno',
+  line: 'Haz espacio para recoger esto',
 } as const;
 
 export interface BagFull {

@@ -1,6 +1,6 @@
 export const MENU_HURT = {
   holdSeconds: 1.6,
-  line: 'You are being hit.',
+  line: 'Te están atacando.',
 } as const;
 
 export interface HurtWatch {

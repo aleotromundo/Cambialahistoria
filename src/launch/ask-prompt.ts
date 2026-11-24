@@ -9,7 +9,7 @@ export const ASK_PROMPT = {
   campFlag: 'camp',
   campValue: 'reached',
   showSeconds: 45,
-  line: 'How is the alpha so far?',
+  line: '¿Qué te ha parecido la alfa hasta ahora?',
   later: 'Not now',
 } as const;
 

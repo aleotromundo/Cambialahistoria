@@ -19,22 +19,22 @@ void test('a price is whole gold inside the rules', (): void => {
 
 void test('time left reads in hours and minutes and never goes below ending', (): void => {
   const now: number = Date.parse('2026-11-14T10:00:00.000Z');
-  assert.equal(timeLeft('2026-11-16T10:00:00.000Z', now), '48h left');
-  assert.equal(timeLeft('2026-11-14T12:30:00.000Z', now), '2h 30m left');
-  assert.equal(timeLeft('2026-11-14T10:20:00.000Z', now), '20m left');
-  assert.equal(timeLeft('2026-11-14T09:00:00.000Z', now), 'Ending');
+  assert.equal(timeLeft('2026-11-16T10:00:00.000Z', now), 'Quedan 48 h');
+  assert.equal(timeLeft('2026-11-14T12:30:00.000Z', now), 'Quedan 2 h 30 min');
+  assert.equal(timeLeft('2026-11-14T10:20:00.000Z', now), 'Quedan 20 min');
+  assert.equal(timeLeft('2026-11-14T09:00:00.000Z', now), 'Finaliza');
 });
 
 void test('the terms and the proceeds follow the cut the server sends', (): void => {
-  assert.equal(termsLine(RULES), 'The house keeps 10% of a sale. Listings last 48 hours.');
-  assert.equal(termsLine({ ...RULES, cut: 0 }), 'Listings last 48 hours.');
+  assert.equal(termsLine(RULES), 'La casa de subastas se queda con el 10% de cada venta. Las publicaciones duran 48 horas.');
+  assert.equal(termsLine({ ...RULES, cut: 0 }), 'Las publicaciones duran 48 horas.');
   assert.equal(proceeds(105, RULES), 95);
   assert.equal(proceeds(105, null), 105);
 });
 
 void test('refusals and picks read as short lines', (): void => {
-  assert.equal(refusalLine('level_too_low', RULES).text, 'Selling needs level 3.');
-  assert.equal(refusalLine('too_many_listings', RULES).text, 'All 10 of your listings are open. Cancel one or wait for a sale.');
+  assert.equal(refusalLine('level_too_low', RULES).text, 'Necesitas nivel 3 para vender.');
+  assert.equal(refusalLine('too_many_listings', RULES).text, 'Tienes tus 10 publicaciones abiertas. Cancela una o espera a que se venda algo.');
   assert.equal(refusalLine('not_enough_gold', null).tone, 'refusal');
   assert.equal(pickLine('empty').tone, 'note');
   assert.deepEqual(pickLine('unverified'), { text: 'This item was never recorded, so it cannot be sold. Trader purchases and some early or offline finds are not recorded.', tone: 'refusal' });
@@ -54,10 +54,10 @@ void test('a listed roll is drawn with a stable uid that no carried item can sha
 
 void test('a closed sale says how it ended and whether its gold or item still waits', (): void => {
   const sold: Sale = { id: 'lst_DDDDDDDDDDDDDDDDDDDDDD', item: { id: 'itm_AAAAAAAAAAAAAAAAAAAAAA', base: 'rusted_blade', rarity: 'magic', level: 3, affixes: [] }, price: 340, cut: 34, proceeds: 306, outcome: 'sold', closedAt: '2026-11-14T12:00:00.000Z', collected: true };
-  assert.equal(saleLine(sold), 'Sold for 340 · you got 306');
-  assert.equal(saleLine({ ...sold, collected: false }), 'Sold for 340 · 306 waiting');
-  assert.equal(saleLine({ ...sold, outcome: 'expired', collected: false }), 'Expired · waiting');
-  assert.equal(saleLine({ ...sold, outcome: 'cancelled' }), 'Cancelled');
+  assert.equal(saleLine(sold), 'Vendida por 340 · recibiste 306');
+  assert.equal(saleLine({ ...sold, collected: false }), 'Vendida por 340 · 306 pendientes de retiro');
+  assert.equal(saleLine({ ...sold, outcome: 'expired', collected: false }), 'Vencida · pendiente');
+  assert.equal(saleLine({ ...sold, outcome: 'cancelled' }), 'Cancelada');
 });
 
 void test('each choice from a filter dropdown becomes the filter it names', (): void => {
@@ -73,19 +73,19 @@ void test('each choice from a filter dropdown becomes the filter it names', (): 
 
 void test('a public sale says who sold to whom, and speaks to the reader on their own side', (): void => {
   const sale: PublicSale = { id: 'lst_BBBBBBBBBBBBBBBBBBBBBB', item: { id: 'itm_AAAAAAAAAAAAAAAAAAAAAA', base: 'rusted_blade', rarity: 'magic', level: 3, affixes: [] }, price: 250, seller: 'Grey Heron', buyer: 'Ash', soldAt: '2026-11-15T10:00:00.000Z', you: null };
-  assert.equal(tradeLine(sale), 'Grey Heron sold to Ash');
-  assert.equal(tradeLine({ ...sale, you: 'seller' }), 'You sold to Ash');
-  assert.equal(tradeLine({ ...sale, you: 'buyer' }), 'You bought from Grey Heron');
-  assert.equal(tradeLine({ ...sale, seller: null, buyer: null }), 'Someone sold to Someone');
+  assert.equal(tradeLine(sale), 'Grey Heron le vendió a Ash');
+  assert.equal(tradeLine({ ...sale, you: 'seller' }), 'Le vendiste a Ash');
+  assert.equal(tradeLine({ ...sale, you: 'buyer' }), 'Le compraste a Grey Heron');
+  assert.equal(tradeLine({ ...sale, seller: null, buyer: null }), 'Alguien le vendió a Alguien');
 });
 
 void test('a sale time reads as how long ago, in minutes, hours or days', (): void => {
   const now: number = Date.parse('2026-11-15T10:00:00.000Z');
-  assert.equal(agoLine('2026-11-15T09:59:40.000Z', now), 'just now');
-  assert.equal(agoLine('2026-11-15T09:15:00.000Z', now), '45m ago');
-  assert.equal(agoLine('2026-11-15T07:00:00.000Z', now), '3h ago');
-  assert.equal(agoLine('2026-11-12T10:00:00.000Z', now), '3d ago');
-  assert.equal(agoLine('2026-11-15T10:05:00.000Z', now), 'just now');
+  assert.equal(agoLine('2026-11-15T09:59:40.000Z', now), 'hace un momento');
+  assert.equal(agoLine('2026-11-15T09:15:00.000Z', now), 'hace 45 min');
+  assert.equal(agoLine('2026-11-15T07:00:00.000Z', now), 'hace 3 h');
+  assert.equal(agoLine('2026-11-12T10:00:00.000Z', now), 'hace 3 días');
+  assert.equal(agoLine('2026-11-15T10:05:00.000Z', now), 'hace un momento');
 });
 
 function mine(open: number): MyAuction {
@@ -98,14 +98,14 @@ void test('the house is asked about waiting gold once, then again only while lis
   assert.equal(peekDue(0, AUCTION_WATCH.everyMs, mine(1)), true);
   assert.equal(peekDue(0, AUCTION_WATCH.everyMs * 10, mine(0)), false);
   assert.equal(peekDue(0, AUCTION_WATCH.everyMs, null), true);
-  assert.equal(waitingCue(225), '225 at the auctioneer');
+  assert.equal(waitingCue(225), '225 de oro por retirar en la casa de subastas');
   assert.equal(waitingCue(0), '');
 });
 
 void test('the suggestion says where it came from and the count says how many of the allowed listings are open', (): void => {
-  assert.equal(suggestionLine({ kind: 'similar', count: 4 }), 'Suggested from 4 similar items');
-  assert.equal(suggestionLine({ kind: 'similar', count: 1 }), 'Suggested from 1 similar item');
-  assert.equal(suggestionLine({ kind: 'default' }), 'Suggested price: no similar items yet');
-  assert.equal(listedLine(9, RULES), '9 of 10 listed');
-  assert.equal(listedLine(12, RULES), '10 of 10 listed');
+  assert.equal(suggestionLine({ kind: 'similar', count: 4 }), 'Sugerido a partir de 4 objetos similares');
+  assert.equal(suggestionLine({ kind: 'similar', count: 1 }), 'Sugerido a partir de 1 objeto similar');
+  assert.equal(suggestionLine({ kind: 'default' }), 'Precio sugerido: todavía no hay objetos similares');
+  assert.equal(listedLine(9, RULES), '9 de 10 publicados');
+  assert.equal(listedLine(12, RULES), '10 de 10 publicados');
 });

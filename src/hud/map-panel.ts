@@ -40,13 +40,13 @@ const MAP = {
 const PLACE_STATES: readonly PlaceState[] = ['here', 'visited', 'reachable', 'locked', 'unknown'];
 const ROAD_STATES: readonly RoadState[] = ['open', 'locked', 'hidden'];
 const LEGEND: readonly { readonly mark: ZoneMark; readonly waypoint: boolean; readonly state: string; readonly text: string }[] = [
-  { mark: 'town', waypoint: false, state: 'visited', text: 'Town' },
-  { mark: 'wild', waypoint: false, state: 'visited', text: 'Wilds' },
-  { mark: 'boss', waypoint: false, state: 'visited', text: 'Boss lair' },
-  { mark: 'void', waypoint: false, state: 'visited', text: 'Void' },
-  { mark: 'wild', waypoint: true, state: 'visited found', text: 'Waypoint' },
-  { mark: 'wild', waypoint: false, state: 'here', text: 'You are here' },
-  { mark: 'wild', waypoint: false, state: 'reachable', text: 'Unexplored' },
+  { mark: 'town', waypoint: false, state: 'visited', text: 'Pueblo' },
+  { mark: 'wild', waypoint: false, state: 'visited', text: 'Tierras salvajes' },
+  { mark: 'boss', waypoint: false, state: 'visited', text: 'Guarida del jefe' },
+  { mark: 'void', waypoint: false, state: 'visited', text: 'Vacío' },
+  { mark: 'wild', waypoint: true, state: 'visited found', text: 'Punto de teletransporte' },
+  { mark: 'wild', waypoint: false, state: 'here', text: 'Estás aquí' },
+  { mark: 'wild', waypoint: false, state: 'reachable', text: 'Sin explorar' },
 ];
 
 interface NodeView {

@@ -39,7 +39,7 @@ const UNWOKEN: LiveCharacter = { name: null, hero: null, level: null };
 
 void test('hero ids read as their names from the data', (): void => {
   const names = heroNames(content);
-  assert.equal(names.name('woman'), 'Woman');
+  assert.equal(names.name('woman'), 'Mujer');
   assert.equal(names.name('nobody'), null);
 });
 

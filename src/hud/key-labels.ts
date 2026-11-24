@@ -20,12 +20,12 @@ export function keyLabel(keys: ResolvedKeys, name: string): string {
 
 export const TOUCH_NAMES = {
   icon: 'tag',
-  name: 'Show item names',
+  name: 'Mostrar nombres de objetos',
 } as const;
 
 export const TOUCH_FLASK = {
   icon: 'flask',
-  name: 'Life flask',
+  name: 'Frasco de Vida',
 } as const;
 
 export const PANEL_ICONS = {
@@ -45,11 +45,11 @@ export function touchLabel(world: World, name: string): TouchLabel {
   }
   switch (name) {
     case 'inventory':
-      return { kind: 'icon', icon: PANEL_ICONS.inventory, name: 'Inventory' };
+      return { kind: 'icon', icon: PANEL_ICONS.inventory, name: 'Inventario' };
     case 'tree':
-      return { kind: 'icon', icon: PANEL_ICONS.tree, name: 'Skill Tree' };
+      return { kind: 'icon', icon: PANEL_ICONS.tree, name: 'Árbol de habilidades' };
     case 'map':
-      return { kind: 'icon', icon: PANEL_ICONS.map, name: 'Map' };
+      return { kind: 'icon', icon: PANEL_ICONS.map, name: 'Mapa' };
     case 'flask':
       return { kind: 'icon', icon: TOUCH_FLASK.icon, name: TOUCH_FLASK.name };
     case 'names':

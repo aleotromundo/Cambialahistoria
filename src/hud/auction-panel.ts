@@ -26,27 +26,27 @@ import type { ScrollFade } from './scroll-fade.ts';
 import { watchScrollFade } from './scroll-fade.ts';
 
 const AUCTION_PANEL = {
-  anyLabel: 'Any',
-  sortLabels: { price: 'Lowest price', newest: 'Newest' },
-  emptyBrowse: 'Nothing is listed that fits.',
-  emptyMine: 'You have nothing listed.',
-  loading: 'Looking…',
-  closedBody: 'Come back when the house is open.',
-  buy: 'Buy',
-  sure: 'Confirm',
-  cancel: 'Cancel',
-  list: 'List',
-  collect: 'Collect',
-  prev: 'Previous',
-  next: 'Next',
-  stash: 'From your stash',
-  pickHint: 'Pick an item from your bags or stash to sell.',
-  stashHint: 'pick to sell',
-  noSeller: 'Someone',
-  history: 'Closed sales',
-  recent: 'Recent sales',
-  noSales: 'Nothing has sold yet.',
-  salesMissing: 'The sale history is not open yet.',
+  anyLabel: 'Cualquiera',
+  sortLabels: { price: 'Menor precio', newest: 'Más recientes' },
+  emptyBrowse: 'No hay publicaciones que coincidan.',
+  emptyMine: 'No tienes publicaciones.',
+  loading: 'Buscando…',
+  closedBody: 'Vuelve cuando la casa de subastas esté abierta.',
+  buy: 'Comprar',
+  sure: 'Confirmar',
+  cancel: 'Cancelar',
+  list: 'Publicar',
+  collect: 'Retirar',
+  prev: 'Anterior',
+  next: 'Siguiente',
+  stash: 'Desde tu alijo',
+  pickHint: 'Elige un objeto de tus bolsas o de tu alijo para vender.',
+  stashHint: 'elegir para vender',
+  noSeller: 'Alguien',
+  history: 'Ventas finalizadas',
+  recent: 'Ventas recientes',
+  noSales: 'Aún no se vendió nada.',
+  salesMissing: 'El historial de ventas todavía no está disponible.',
 } as const;
 
 const STASH_HASH = {
@@ -54,7 +54,7 @@ const STASH_HASH = {
   prime: 0x01000193,
 } as const;
 
-const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = { weapon: 'Weapon', head: 'Head', chest: 'Chest', hands: 'Hands', legs: 'Legs', feet: 'Feet', charm: 'Charm' };
+const SLOT_NAMES: Readonly<Record<ItemSlot, string>> = { weapon: 'Arma', head: 'Cabeza', chest: 'Pecho', hands: 'Manos', legs: 'Piernas', feet: 'Pies', charm: 'Amuleto' };
 
 interface Row {
   readonly element: HTMLElement;
@@ -180,16 +180,16 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
   const browseView: HTMLDivElement = el('div', 'auction-view', views);
   const filters: HTMLDivElement = el('div', 'auction-filters', browseView);
   const any: DropdownChoice = { value: '', label: AUCTION_PANEL.anyLabel };
-  picker(filters, parent, element, 'Slot', [any, ...ITEM_SLOTS.map((each: ItemSlot): DropdownChoice => ({ value: each, label: SLOT_NAMES[each] }))], (value: string): void => {
+  picker(filters, parent, element, 'Ranura', [any, ...ITEM_SLOTS.map((each: ItemSlot): DropdownChoice => ({ value: each, label: SLOT_NAMES[each] }))], (value: string): void => {
     flow?.filter(choiceFilter('slot', value));
   });
-  picker(filters, parent, element, 'Rarity', [any, ...context.api.world.content.rarities.map((each: RarityDef): DropdownChoice => ({ value: each.id, label: each.name }))], (value: string): void => {
+  picker(filters, parent, element, 'Rareza', [any, ...context.api.world.content.rarities.map((each: RarityDef): DropdownChoice => ({ value: each.id, label: each.name }))], (value: string): void => {
     flow?.filter(choiceFilter('rarity', value));
   });
-  const minLevel: HTMLInputElement = numberField(filters, 'Level', 'from');
-  const maxLevel: HTMLInputElement = numberField(filters, '', 'to');
-  const maxPrice: HTMLInputElement = numberField(filters, 'Price', 'up to');
-  picker(filters, parent, element, 'Sort', SORTS.map((each: AuctionSort): DropdownChoice => ({ value: each, label: AUCTION_PANEL.sortLabels[each] })), (value: string): void => {
+  const minLevel: HTMLInputElement = numberField(filters, 'Nivel', 'desde');
+  const maxLevel: HTMLInputElement = numberField(filters, '', 'hasta');
+  const maxPrice: HTMLInputElement = numberField(filters, 'Precio', 'hasta');
+  picker(filters, parent, element, 'Ordenar', SORTS.map((each: AuctionSort): DropdownChoice => ({ value: each, label: AUCTION_PANEL.sortLabels[each] })), (value: string): void => {
     flow?.filter(choiceFilter('sort', value));
   });
   const browseRows: HTMLDivElement = el('div', 'auction-rows', browseView);
@@ -208,7 +208,7 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
   const pickedName: HTMLDivElement = label('auction-row-name', '', pickedText);
   const pickedSub: HTMLDivElement = label('auction-row-sub', '', pickedText);
   const pricing: HTMLDivElement = el('div', 'auction-pricing', sellView);
-  const price: HTMLInputElement = numberField(pricing, 'Price', 'gold');
+  const price: HTMLInputElement = numberField(pricing, 'Precio', 'oro');
   const listButton: HTMLButtonElement = actButton(pricing, AUCTION_PANEL.list, null);
   const source: HTMLDivElement = label('auction-source', '', sellView);
   const termsRow: HTMLDivElement = el('div', 'auction-terms-row', sellView);
@@ -381,7 +381,7 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
     setText(row.price, String(row.listing.price), true);
   };
 
-  const sellerOf = (listing: Listing): string => (listing.yours ? 'You' : (listing.seller ?? AUCTION_PANEL.noSeller));
+  const sellerOf = (listing: Listing): string => (listing.yours ? 'Tú' : (listing.seller ?? AUCTION_PANEL.noSeller));
 
   const renderBrowse = (state: AuctionState, world: World): void => {
     const listings: readonly Listing[] = state.page?.listings ?? [];
@@ -393,7 +393,7 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
       }),
     );
     for (const row of browseKept.values()) {
-      fill(row, world, `Level ${row.listing.item.level} · ${sellerOf(row.listing)}`);
+      fill(row, world, `Nivel ${row.listing.item.level} · ${sellerOf(row.listing)}`);
       row.act.classList.toggle('confirming', state.confirm === row.listing.id);
       row.act.classList.toggle('busy', state.work === 'buy' && state.confirm === null);
       row.act.disabled = row.listing.yours || state.work !== null;
@@ -401,7 +401,7 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
     }
     setText(browseEmpty, state.page === null || state.loading ? AUCTION_PANEL.loading : AUCTION_PANEL.emptyBrowse, false);
     shown(browseEmpty, listings.length === 0);
-    setText(pageText, `Page ${state.filters.page}`, true);
+    setText(pageText, `Página ${state.filters.page}`, true);
     prev.disabled = state.filters.page <= 1;
     next.disabled = state.page?.more !== true;
     browseRows.classList.toggle('loading', state.loading);
@@ -493,7 +493,7 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
     setText(pickedName, item === null ? AUCTION_PANEL.pickHint : itemName(world.content, item), true);
     setVar(pickedName, '--rarity', item === null ? 'var(--text-dim)' : rarityOf(world.content, item).color);
     const asked: number | null = parsePrice(state.price, rules);
-    const sub: HeldLine = heldLine(item === null ? null : asked === null ? `Level ${item.level}` : `Level ${item.level} · you get ${proceeds(asked, rules)} gold`, pickedSub.textContent);
+    const sub: HeldLine = heldLine(item === null ? null : asked === null ? `Nivel ${item.level}` : `Nivel ${item.level} · recibes ${proceeds(asked, rules)} de oro`, pickedSub.textContent);
     setText(pickedSub, sub.text, sub.shown);
     shown(pickedSub, sub.shown);
     const filled: boolean = state.suggested !== null && state.suggested !== filledFrom;
@@ -531,13 +531,13 @@ export function createAuctionPanel(parent: HTMLElement, context: HudContext): Pa
       row.act.classList.toggle('busy', state.work === 'cancel');
     }
     shown(mineEmpty, listings.length === 0);
-    setText(mineTitle, rules === null ? 'Your listings' : `Your listings ${listings.length} / ${rules.maxListings}`, true);
+    setText(mineTitle, rules === null ? 'Tus publicaciones' : `Tus publicaciones ${listings.length} / ${rules.maxListings}`, true);
     const held = state.mine?.waiting ?? null;
     const count: number = held?.items.length ?? 0;
     const parts: string[] = [];
-    if (held !== null && held.gold > 0) parts.push(`${held.gold} gold`);
-    if (count > 0) parts.push(count === 1 ? '1 item' : `${count} items`);
-    setText(waitingText, parts.length === 0 ? 'Nothing is waiting for you.' : `Waiting for you: ${parts.join(' and ')}`, true);
+    if (held !== null && held.gold > 0) parts.push(`${held.gold} de oro`);
+    if (count > 0) parts.push(count === 1 ? '1 objeto' : `${count} objetos`);
+    setText(waitingText, parts.length === 0 ? 'No tienes nada pendiente.' : `Pendiente para retirar: ${parts.join(' y ')}`, true);
     collect.disabled = parts.length === 0 || state.work !== null;
     collect.classList.toggle('busy', state.work === 'collect');
     renderSales(state, world);

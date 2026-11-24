@@ -19,7 +19,7 @@ export function decimal(value: number, digits: number): string {
 
 export function seconds(value: number): string {
   const rounded: number = Math.round(value * 10) / 10;
-  return `${rounded} ${rounded === 1 ? 'second' : 'seconds'}`;
+  return `${rounded} ${rounded === 1 ? 'segundo' : 'segundos'}`;
 }
 
 export function minutes(value: number): string {
@@ -32,7 +32,7 @@ export function minutes(value: number): string {
 
 export function list(parts: readonly string[]): string {
   if (parts.length <= 1) return parts.join('');
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1] ?? ''}`;
+  return `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1] ?? ''}`;
 }
 
 export function para(...lines: readonly string[]): string {

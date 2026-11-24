@@ -11,7 +11,7 @@ function names(order: readonly string[]): string[] {
 
 void test('the Maelstrom reaches the Millwheel in seven places, with a blade worn and Cleave held', (): void => {
   const facts = signatureFacts(CONTENT, 'whirlwind');
-  assert.deepEqual(names(facts.route), ['Thunderhead', 'Heavy Hands', 'Keen Edge', 'Whetstone', 'Follow Through', 'Whirling Cleave', 'Endless Turn']);
+  assert.deepEqual(names(facts.route), ['Nube de tormenta', 'Manos pesadas', 'Filo afilado', 'Piedra de afilar', 'Golpe de seguimiento', 'Tajo giratorio', 'Giro interminable']);
   assert.equal(facts.family?.id, 'blade');
   assert.equal(facts.held, 'cleave');
   assert.equal(facts.becomes, 'cleave_millwheel');

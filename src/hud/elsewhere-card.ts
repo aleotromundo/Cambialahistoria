@@ -2,8 +2,8 @@ import type { Play } from '../backend/play.ts';
 import { el, label } from './dom.ts';
 
 export const ELSEWHERE_CARD = {
-  text: 'This character was opened in another tab or on another device.',
-  action: 'Play here instead',
+  text: 'Este personaje se abrió en otra pestaña o en otro dispositivo.',
+  action: 'Jugar aquí en su lugar',
   shownClass: 'on',
 } as const;
 

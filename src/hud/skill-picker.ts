@@ -24,7 +24,7 @@ const CLEAR = {
   pointerName: 'Move only',
   keyName: 'Empty',
   pointerLine: 'A left click only moves, talks, opens and picks up. It never attacks.',
-  keyLine: 'The key does nothing until you choose a skill for it.',
+  keyLine: 'La tecla no hace nada hasta que le asignes una habilidad.',
 } as const;
 
 interface Choice {
@@ -64,7 +64,7 @@ export function clearDetails(pointer: boolean, sub: string): HTMLElement {
 export function createSkillPicker(parent: HTMLElement, context: HudContext, track: (element: HTMLElement) => void): SkillPicker {
   const element: HTMLDivElement = el('div', 'skill-picker', parent);
   track(element);
-  label('skill-picker-title', 'Choose a skill', element);
+  label('skill-picker-title', 'Elige una habilidad', element);
   const grid: HTMLDivElement = el('div', 'skill-picker-grid', element);
   const choices: Choice[] = [];
   let slot: number | null = null;

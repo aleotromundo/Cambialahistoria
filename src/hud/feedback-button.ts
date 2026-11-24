@@ -6,7 +6,7 @@ const BUBBLE: string =
 export function createFeedbackButton(parent: HTMLElement, track: (element: HTMLElement) => void, onClick: () => void): HTMLButtonElement {
   const button: HTMLButtonElement = el('button', 'hud-menu-btn hud-feedback-btn', parent);
   button.type = 'button';
-  button.setAttribute('aria-label', 'Send feedback');
+  button.setAttribute('aria-label', 'Enviar comentarios');
   button.innerHTML = BUBBLE;
   track(button);
   button.addEventListener('click', onClick);

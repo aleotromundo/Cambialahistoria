@@ -1,4 +1,4 @@
-import type { ActionDef, ActionId, Movement, RebindResult, ResolvedKeys } from '../settings/bindings.ts';
+import type { ActionDef, ActionGroup, ActionId, Movement, RebindResult, ResolvedKeys } from '../settings/bindings.ts';
 import { ACTION_GROUPS, BINDING, keyLabel, MOVEMENTS } from '../settings/bindings.ts';
 import type { HeldSkills } from '../settings/settings.ts';
 import { HELD_SKILLS } from '../settings/settings.ts';
@@ -8,22 +8,30 @@ import { el, label, setText } from './dom.ts';
 const MOUSE_BUTTONS: ReadonlyMap<number, string> = new Map<number, string>([[2, BINDING.rightMouse]]);
 
 const COPY = {
-  idle: 'Pick an action, then press the new key. Esc cancels.',
-  waiting: 'Press a key for',
-  movement: 'Movement',
-  moved: { click: 'A left click moves the hero again.', keys: 'The keys move the hero. A left click attacks where you point.' },
+  idle: 'Elige una acción y presiona la nueva tecla. Esc cancela.',
+  waiting: 'Presiona una tecla para',
+  movement: 'Movimiento',
+  moved: { click: 'Un clic izquierdo vuelve a mover al héroe.', keys: 'Las teclas mueven al héroe. Con un clic izquierdo atacas hacia donde apuntas.' },
 } as const;
 
-const MOVEMENT_LABELS: Readonly<Record<Movement, string>> = { click: 'Click', keys: 'WASD' };
+const MOVEMENT_LABELS: Readonly<Record<Movement, string>> = { click: 'Clic', keys: 'WASD' };
 
-const HELD_LABELS: Readonly<Record<HeldSkills, string>> = { hold: 'Hold', toggle: 'Press to toggle' };
+const ACTION_GROUP_LABELS: Readonly<Record<ActionGroup, string>> = {
+  Movement: 'Movimiento',
+  Combat: 'Combate',
+  Flasks: 'Frascos',
+  Panels: 'Paneles',
+  System: 'Sistema',
+};
+
+const HELD_LABELS: Readonly<Record<HeldSkills, string>> = { hold: 'Mantener presionado', toggle: 'Presionar para alternar' };
 
 function mountHeldSkills(page: HTMLElement, settings: SettingsStore): () => void {
   const row: HTMLDivElement = el('div', 'set-row', page);
-  label('set-name', 'Held skills', row);
+  label('set-name', 'Habilidades activas', row);
   const segment: HTMLDivElement = el('div', 'set-seg wide', row);
   segment.setAttribute('role', 'radiogroup');
-  segment.setAttribute('aria-label', 'Held skills');
+  segment.setAttribute('aria-label', 'Habilidades activas');
   segment.style.setProperty('--count', String(HELD_SKILLS.length));
   el('div', 'set-seg-thumb', segment);
   const buttons: Map<HeldSkills, HTMLButtonElement> = new Map<HeldSkills, HTMLButtonElement>();
@@ -100,7 +108,7 @@ export function mountControls(page: HTMLElement, settings: SettingsStore): Contr
   const footer: HTMLDivElement = el('div', 'ctl-foot', page);
   const reset: HTMLButtonElement = el('button', 'set-text-btn', footer);
   reset.type = 'button';
-  reset.textContent = 'Reset to defaults';
+  reset.textContent = 'Restablecer valores predeterminados';
   const rows: RowView[] = [];
   const folds: HTMLElement[] = [];
   let pending: ActionDef | null = null;
@@ -139,7 +147,7 @@ export function mountControls(page: HTMLElement, settings: SettingsStore): Contr
       const fold: HTMLElement | null = group === 'Movement' ? el('div', 'ctl-fold', list) : null;
       const parent: HTMLElement = fold === null ? list : el('div', 'ctl-fold-in', fold);
       if (fold !== null) folds.push(fold);
-      label('ctl-group', group, parent);
+      label('ctl-group', ACTION_GROUP_LABELS[group], parent);
       for (const { id, label: text } of defs) {
         const row: HTMLButtonElement = el('button', 'ctl-row', parent);
         row.type = 'button';
@@ -163,13 +171,13 @@ export function mountControls(page: HTMLElement, settings: SettingsStore): Contr
     switch (result.kind) {
       case 'ok':
         select(null);
-        say(`${target.label} is now ${keyLabel(code)}.`, false);
+        say(`${target.label} ahora es ${keyLabel(code)}.`, false);
         return;
       case 'conflict':
-        say(`${keyLabel(code)} is already used by ${result.with.label}. Press another key.`, true);
+        say(`${keyLabel(code)} ya está asignada a ${result.with.label}. Presiona otra tecla.`, true);
         return;
       case 'refused':
-        say(`${result.reason} Press another key.`, true);
+        say(`${result.reason} Presiona otra tecla.`, true);
         return;
     }
   };
@@ -177,7 +185,7 @@ export function mountControls(page: HTMLElement, settings: SettingsStore): Contr
   reset.addEventListener('click', (): void => {
     settings.resetControls();
     select(null);
-    say('Controls are back to their defaults.', false);
+    say('Los controles volvieron a sus valores predeterminados.', false);
   });
   settings.subscribe(refresh);
   window.addEventListener(

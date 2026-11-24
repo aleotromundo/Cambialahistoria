@@ -29,7 +29,7 @@ export function skillChanges(content: Content, owner: ChangeOwner, skill: string
   const active: string | null = activeChange(content, owner.allocated, owner.changes, skill);
   return {
     skill,
-    title: `${nameOf(content, skill)} uses`,
+    title: `${nameOf(content, skill)}: variantes`,
     choices: held.map((entry: HeldChange): ChangeChoice => ({ becomes: entry.becomes, name: entry.place.name, lit: entry.becomes === active })),
   };
 }

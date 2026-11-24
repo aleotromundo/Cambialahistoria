@@ -28,8 +28,8 @@ export const LOBBY_PANEL: { readonly tickerMs: number; readonly tickerLines: num
   tickerMs: 4200,
   tickerLines: 5,
   swapMs: 260,
-  empty: 'No one has woken yet.',
-  unreachable: 'The ladder is out of reach right now.',
+  empty: 'Nadie ha despertado todavía.',
+  unreachable: 'La clasificación no está disponible por ahora.',
 };
 
 interface Ticker {

@@ -8,7 +8,7 @@ export type AuctionTab = 'browse' | 'sell' | 'mine' | 'history';
 
 export const AUCTION_TABS: readonly AuctionTab[] = ['browse', 'sell', 'mine', 'history'];
 
-export const TAB_NAMES: Readonly<Record<AuctionTab, string>> = { browse: 'Browse', sell: 'Sell', mine: 'Mine', history: 'History' };
+export const TAB_NAMES: Readonly<Record<AuctionTab, string>> = { browse: 'Explorar', sell: 'Vender', mine: 'Mis publicaciones', history: 'Historial' };
 
 export type SalesView = { readonly kind: 'loading' } | { readonly kind: 'ready'; readonly sales: readonly PublicSale[] } | { readonly kind: 'missing' };
 
@@ -46,29 +46,29 @@ const MINUTES_PER_HOUR: number = 60;
 const PERCENT: number = 100;
 
 const REFUSAL_LINES: Readonly<Record<AuctionRefusal, string>> = {
-  bad_request: 'The auctioneer did not follow that.',
-  bad_price: 'That price is not allowed.',
-  no_such_listing: 'That listing does not exist.',
-  listing_gone: 'That listing is gone.',
-  price_changed: 'The price changed. Look again.',
-  own_listing: 'That is your own listing.',
-  not_enough_gold: 'Not enough gold.',
-  not_listable: 'That item cannot be listed.',
-  no_character: 'The house needs a saved character.',
-  too_many_listings: 'You have as many listings open as the house allows.',
-  level_too_low: 'You are too new here to sell.',
-  rate_limited: 'Too quick. Wait a moment.',
-  unauthorized: 'Your session ended. Reload to go on.',
+  bad_request: 'El subastador no pudo completar esa acción.',
+  bad_price: 'Ese precio no está permitido.',
+  no_such_listing: 'Esa publicación no existe.',
+  listing_gone: 'Esa publicación ya no está disponible.',
+  price_changed: 'El precio cambió. Revisa la publicación otra vez.',
+  own_listing: 'Esa es tu propia publicación.',
+  not_enough_gold: 'No tienes suficiente oro.',
+  not_listable: 'Ese objeto no se puede publicar.',
+  no_character: 'La casa de subastas requiere un personaje guardado.',
+  too_many_listings: 'Ya tienes abiertas todas las publicaciones que permite la casa de subastas.',
+  level_too_low: 'Aún no tienes suficiente nivel para vender.',
+  rate_limited: 'Espera un momento antes de volver a intentarlo.',
+  unauthorized: 'Tu sesión terminó. Recarga la página para continuar.',
 };
 
 const PICK_LINES: Readonly<Record<ListRefusal, string>> = {
-  empty: 'Pick an item from your bags or stash.',
-  unverified: 'This item was never recorded, so it cannot be sold. Trader purchases and some early or offline finds are not recorded.',
-  story: 'This cannot be sold.',
-  unidentified: 'Unidentified items cannot be listed. Have it identified first.',
+  empty: 'Elige un objeto de tus bolsas o alijo.',
+  unverified: 'Este objeto nunca se registró, así que no se puede vender. Las compras al comerciante y algunos hallazgos tempranos o sin conexión no se registran.',
+  story: 'Este objeto no se puede vender.',
+  unidentified: 'No se pueden publicar objetos sin identificar. Primero identifícalo.',
 };
 
-export const RECORDING_LINE: AuctionLine = { text: 'This item is still being recorded. Try again in a moment.', tone: 'note' };
+export const RECORDING_LINE: AuctionLine = { text: 'Este objeto aún se está registrando. Inténtalo de nuevo en un momento.', tone: 'note' };
 
 export const AUCTION_LINES: {
   readonly closed: AuctionLine;
@@ -80,46 +80,46 @@ export const AUCTION_LINES: {
   readonly nothing: AuctionLine;
   readonly pick: AuctionLine;
 } = {
-  closed: { text: 'The auction house is closed.', tone: 'refusal' },
-  failed: { text: 'The auctioneer did not answer. Nothing changed.', tone: 'refusal' },
-  noRoom: { text: 'Make room in your bags or stash first.', tone: 'refusal' },
-  listed: { text: 'Listed.', tone: 'done' },
-  bought: { text: 'Bought.', tone: 'done' },
-  cancelled: { text: 'The item is back with you.', tone: 'done' },
-  nothing: { text: 'Nothing is waiting.', tone: 'note' },
+  closed: { text: 'La casa de subastas está cerrada.', tone: 'refusal' },
+  failed: { text: 'El subastador no respondió. No hubo cambios.', tone: 'refusal' },
+  noRoom: { text: 'Haz espacio primero en tus bolsas o alijo.', tone: 'refusal' },
+  listed: { text: 'Publicado.', tone: 'done' },
+  bought: { text: 'Comprado.', tone: 'done' },
+  cancelled: { text: 'Te devolvieron el objeto.', tone: 'done' },
+  nothing: { text: 'No hay nada pendiente.', tone: 'note' },
   pick: { text: PICK_LINES.empty, tone: 'note' },
 };
 
 export function refusalLine(code: AuctionRefusal, rules: AuctionRules | null): AuctionLine {
-  if (code === 'level_too_low' && rules !== null && rules.sellLevel > 0) return { text: `Selling needs level ${rules.sellLevel}.`, tone: 'refusal' };
-  if (code === 'too_many_listings' && rules !== null) return { text: `All ${rules.maxListings} of your listings are open. Cancel one or wait for a sale.`, tone: 'refusal' };
+  if (code === 'level_too_low' && rules !== null && rules.sellLevel > 0) return { text: `Necesitas nivel ${rules.sellLevel} para vender.`, tone: 'refusal' };
+  if (code === 'too_many_listings' && rules !== null) return { text: `Tienes tus ${rules.maxListings} publicaciones abiertas. Cancela una o espera a que se venda algo.`, tone: 'refusal' };
   return { text: REFUSAL_LINES[code], tone: 'refusal' };
 }
 
 export function suggestionLine(basis: PriceBasis): string {
-  if (basis.kind === 'default') return 'Suggested price: no similar items yet';
-  return basis.count === 1 ? 'Suggested from 1 similar item' : `Suggested from ${basis.count} similar items`;
+  if (basis.kind === 'default') return 'Precio sugerido: todavía no hay objetos similares';
+  return basis.count === 1 ? 'Sugerido a partir de 1 objeto similar' : `Sugerido a partir de ${basis.count} objetos similares`;
 }
 
 export function listedLine(open: number, rules: AuctionRules): string {
-  return `${Math.min(open, rules.maxListings)} of ${rules.maxListings} listed`;
+  return `${Math.min(open, rules.maxListings)} de ${rules.maxListings} publicados`;
 }
 
-export const UNSELLABLE_HINT: string = "Can't be sold here: never recorded";
+export const UNSELLABLE_HINT: string = "No se puede vender aquí: nunca se registró";
 
 export function pickLine(reason: ListRefusal): AuctionLine {
   return { text: PICK_LINES[reason], tone: reason === 'empty' ? 'note' : 'refusal' };
 }
 
 export function priceLine(rules: AuctionRules | null): AuctionLine {
-  return rules === null ? { text: 'Set a price in whole gold.', tone: 'refusal' } : { text: `Set a price from ${rules.minPrice} to ${rules.maxPrice} gold.`, tone: 'refusal' };
+  return rules === null ? { text: 'Fija un precio en una cantidad entera de oro.', tone: 'refusal' } : { text: `Fija un precio de ${rules.minPrice} a ${rules.maxPrice} de oro.`, tone: 'refusal' };
 }
 
 export function collectedLine(gold: number, items: number): AuctionLine {
   const parts: string[] = [];
-  if (gold > 0) parts.push(`${gold} gold`);
-  if (items > 0) parts.push(items === 1 ? '1 item' : `${items} items`);
-  return parts.length === 0 ? AUCTION_LINES.nothing : { text: `Collected ${parts.join(' and ')}.`, tone: 'done' };
+  if (gold > 0) parts.push(`${gold} de oro`);
+  if (items > 0) parts.push(items === 1 ? '1 objeto' : `${items} objetos`);
+  return parts.length === 0 ? AUCTION_LINES.nothing : { text: `Retiraste ${parts.join(' y ')}.`, tone: 'done' };
 }
 
 export function parsePrice(text: string, rules: AuctionRules | null): number | null {
@@ -140,17 +140,17 @@ export function parseLevel(text: string): number | null {
 
 export function timeLeft(endsAt: string, now: number): string {
   const minutes: number = Math.max(0, Math.ceil((Date.parse(endsAt) - now) / MS_PER_MINUTE));
-  if (minutes <= 0) return 'Ending';
-  if (minutes < MINUTES_PER_HOUR) return `${minutes}m left`;
+  if (minutes <= 0) return 'Finaliza';
+  if (minutes < MINUTES_PER_HOUR) return `Quedan ${minutes} min`;
   const hours: number = Math.floor(minutes / MINUTES_PER_HOUR);
   const rest: number = minutes % MINUTES_PER_HOUR;
-  return rest === 0 ? `${hours}h left` : `${hours}h ${rest}m left`;
+  return rest === 0 ? `Quedan ${hours} h` : `Quedan ${hours} h ${rest} min`;
 }
 
 export function termsLine(rules: AuctionRules): string {
   const cut: number = Math.round(rules.cut * PERCENT);
-  const hours: string = `Listings last ${rules.lifeHours} hours.`;
-  return cut > 0 ? `The house keeps ${cut}% of a sale. ${hours}` : hours;
+  const hours: string = `Las publicaciones duran ${rules.lifeHours} horas.`;
+  return cut > 0 ? `La casa de subastas se queda con el ${cut}% de cada venta. ${hours}` : hours;
 }
 
 export function proceeds(price: number, rules: AuctionRules | null): number {
@@ -158,32 +158,32 @@ export function proceeds(price: number, rules: AuctionRules | null): number {
 }
 
 export function saleLine(sale: Sale): string {
-  if (sale.outcome === 'cancelled') return 'Cancelled';
-  if (sale.outcome === 'expired') return sale.collected ? 'Expired · back with you' : 'Expired · waiting';
-  return sale.collected ? `Sold for ${sale.price} · you got ${sale.proceeds}` : `Sold for ${sale.price} · ${sale.proceeds} waiting`;
+  if (sale.outcome === 'cancelled') return 'Cancelada';
+  if (sale.outcome === 'expired') return sale.collected ? 'Vencida · devuelto' : 'Vencida · pendiente';
+  return sale.collected ? `Vendida por ${sale.price} · recibiste ${sale.proceeds}` : `Vendida por ${sale.price} · ${sale.proceeds} pendientes de retiro`;
 }
 
-const SOMEONE: string = 'Someone';
+const SOMEONE: string = 'Alguien';
 const MINUTES_PER_DAY: number = 1440;
 
 export function agoLine(at: string, now: number): string {
   const minutes: number = Math.max(0, Math.floor((now - Date.parse(at)) / MS_PER_MINUTE));
-  if (minutes < 1) return 'just now';
-  if (minutes < MINUTES_PER_HOUR) return `${minutes}m ago`;
-  if (minutes < MINUTES_PER_DAY) return `${Math.floor(minutes / MINUTES_PER_HOUR)}h ago`;
-  return `${Math.floor(minutes / MINUTES_PER_DAY)}d ago`;
+  if (minutes < 1) return 'hace un momento';
+  if (minutes < MINUTES_PER_HOUR) return `hace ${minutes} min`;
+  if (minutes < MINUTES_PER_DAY) return `hace ${Math.floor(minutes / MINUTES_PER_HOUR)} h`;
+  return `hace ${Math.floor(minutes / MINUTES_PER_DAY)} días`;
 }
 
 export function tradeLine(sale: PublicSale): string {
   const seller: string = sale.seller ?? SOMEONE;
   const buyer: string = sale.buyer ?? SOMEONE;
-  if (sale.you === 'seller') return `You sold to ${buyer}`;
-  if (sale.you === 'buyer') return `You bought from ${seller}`;
-  return `${seller} sold to ${buyer}`;
+  if (sale.you === 'seller') return `Le vendiste a ${buyer}`;
+  if (sale.you === 'buyer') return `Le compraste a ${seller}`;
+  return `${seller} le vendió a ${buyer}`;
 }
 
 export function waitingCue(gold: number): string {
-  return gold > 0 ? `${gold} at the auctioneer` : '';
+  return gold > 0 ? `${gold} de oro por retirar en la casa de subastas` : '';
 }
 
 export interface ShownItems {

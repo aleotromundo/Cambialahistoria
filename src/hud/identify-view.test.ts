@@ -46,7 +46,7 @@ void test('the view lists each hidden item with its price, its shortfall and the
   assert.equal(view.total, priceOne + priceTwo);
   assert.equal(view.allShort, priceTwo);
   assert.equal(view.gold, priceOne);
-  assert.match(must(view.rows[0], 'row').kind, /^Rare /);
+  assert.match(must(view.rows[0], 'row').kind, /^Raro /);
   assert.equal(IDENTIFY_TEXT.short(view.allShort), `${priceTwo} gold short`);
 });
 

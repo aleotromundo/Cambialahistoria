@@ -131,7 +131,7 @@ void test('with the keys moving the hero W, A, S and D move, and a skill that sh
   assert.equal(keys.actionOf('KeyQ'), 'skill:1');
   const codes: string[] = KEYS_TABLE.flatMap((def: ActionDef): readonly string[] => def.defaults);
   assert.equal(new Set(codes).size, codes.length);
-  assert.equal(KEYS_TABLE.find((def: ActionDef): boolean => def.id === 'primary')?.label, 'Attack');
+  assert.equal(KEYS_TABLE.find((def: ActionDef): boolean => def.id === 'primary')?.label, 'Atacar');
 });
 
 void test('a move key can be rebound, and no other action can take a key that moves', (): void => {

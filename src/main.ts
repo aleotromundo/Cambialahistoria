@@ -385,7 +385,7 @@ async function start(): Promise<void> {
     markPlaying(document.body, false);
     quietBeds();
     releaseHeld();
-    enter.textContent = 'Continue';
+    enter.textContent = 'Continuar';
     titleBar.current = world.player.bar;
     drawTitleKeys();
     return lobbyFlow;
@@ -480,7 +480,7 @@ async function start(): Promise<void> {
     statusLine.show(error instanceof Error ? `${world.zone.name} could not be built: ${error.message}` : `${world.zone.name} could not be built.`);
     status.classList.remove('quiet');
     placeLine.show(world.zone.name);
-    enter.textContent = 'Reload';
+    enter.textContent = 'Recargar';
     reset.hidden = true;
     ladder?.setPlaying(false);
     title.classList.remove('gone');

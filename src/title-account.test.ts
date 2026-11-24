@@ -223,7 +223,7 @@ void test('the Google control is the page\'s own button, dressed by the same rul
 void test('the Signing in label swaps with the idle label by a spring fade, never as a jump', (): void => {
   const css: string = readFileSync(new URL('./title-account.css', import.meta.url), 'utf8');
   const page: string = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
-  assert.match(page, /<span class="title-signin-idle">Sign in with Google<\/span><span class="title-signin-busy" aria-hidden="true">Signing in…<\/span>/);
+  assert.match(page, /<span class="title-signin-idle">Iniciar sesión con Google<\/span><span class="title-signin-busy" aria-hidden="true">Iniciando sesión…<\/span>/);
   for (const label of ['.title-signin-idle', '.title-signin-busy']) {
     const moving: string[] = rulesFor(css, label).filter((body: string): boolean => /transition\s*:/.test(body));
     assert.ok(moving.length > 0, `${label} has no transition`);

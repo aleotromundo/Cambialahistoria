@@ -6,7 +6,7 @@ export const KEY_MOVE_HINT = {
   clicks: 2,
   windowSeconds: 4,
   quietSeconds: 60,
-  text: 'Keys move the hero · Settings → Controls → Movement',
+  text: 'Las teclas mueven al héroe · Configuración → Controles → Movimiento',
 } as const;
 
 export interface KeyMoveHintState {

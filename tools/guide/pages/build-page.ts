@@ -21,16 +21,16 @@ export interface BuildName {
 }
 
 export const BUILD_NAMES: Readonly<Record<string, BuildName>> = {
-  stormcaller: { name: 'Stormcaller', kind: 'Staff and lightning' },
-  bulwark: { name: 'Emberwarden', kind: 'Heavy weapon and fire' },
-  whirlwind: { name: 'Maelstrom', kind: 'Blade and water' },
-  windrunner: { name: 'Nightshot', kind: 'Crossbow and shadow' },
-  'echo-weaver': { name: 'The Echo', kind: 'Any weapon, struck twice' },
+  stormcaller: { name: 'Stormcaller', kind: 'Bastón y relámpago' },
+  bulwark: { name: 'Emberwarden', kind: 'Arma pesada y fuego' },
+  whirlwind: { name: 'Maelstrom', kind: 'Espada y agua' },
+  windrunner: { name: 'Nightshot', kind: 'Ballesta y sombra' },
+  'echo-weaver': { name: 'The Echo', kind: 'Cualquier arma, recibir dos golpes' },
 };
 
 export function buildName(id: string): BuildName {
   const found: BuildName | undefined = BUILD_NAMES[id];
-  if (found === undefined) throw new Error(`the build ${id} has no name in the guide`);
+  if (found === undefined) throw new Error(`la build ${id} no tiene nombre en la guía`);
   return found;
 }
 
@@ -72,9 +72,9 @@ function kindLabel(node: SkillTreeNodeDef): string {
     case 'minor':
       return '';
     case 'notable':
-      return '<span class="tag notable">Notable</span>';
+      return '<span class="tag notable">Destacado</span>';
     case 'keystone':
-      return '<span class="tag keystone">Keystone</span>';
+      return '<span class="tag keystone">Piedra angular</span>';
   }
   return '';
 }
@@ -93,7 +93,7 @@ function routeList(data: GuideData, order: readonly string[], notes: BuildNotes)
   const items: string[] = order.map((id: string, index: number): string => {
     const node: SkillTreeNodeDef = place(data, id);
     const level: number = levelForPlace(data.content, index + 1);
-    const levelMark: string = level === shownLevel ? '' : `<span class="at-level">Level ${level}</span>`;
+    const levelMark: string = level === shownLevel ? '' : `<span class="at-level">Nivel ${level}</span>`;
     shownLevel = level;
     const mark: string | undefined = notes.marks[id];
     return `<li class="${node.kind}" style="--tint:${esc(path(data, node.path).tint)}">${levelMark}<span class="step">${index + 1}</span><span class="what"><b>${esc(node.name)}</b> ${kindLabel(node)}<span class="does">${esc(node.description)}</span>${mark === undefined ? '' : `<span class="why">${mark}</span>`}</span></li>`;
@@ -111,17 +111,17 @@ function glance(data: GuideData, notes: BuildNotes, order: readonly string[]): s
   const built: StatBlock = treeStats(data, order, level);
   const keystones: string[] = order.map((id: string): SkillTreeNodeDef => place(data, id)).filter((node: SkillTreeNodeDef): boolean => node.kind === 'keystone').map((node: SkillTreeNodeDef): string => esc(node.name));
   const rows: readonly (readonly [string, string])[] = [
-    ['Paths', esc(list(pathsOf(data, order)))],
-    ['Main skill', esc(mainSkillName(data, notes))],
-    ['Keystone', keystones.length === 0 ? 'None' : list(keystones)],
-    [`Life at level ${level}`, `${Math.round(built.maxLife)} <span class="vs">(${Math.round(bare.maxLife)} with no places taken)</span>`],
-    ['Armour from the tree', `${Math.round(built.armour)}`],
-    ['Critical strike', `${percent(built.critChance)} chance, ×${decimal(built.critMultiplier, 2)} damage`],
-    ['Damage from the tree', signedPercent(built.damagePercent)],
-    ['Attack speed', `×${decimal(built.attackSpeed, 2)}`],
+    ['Rutas', esc(list(pathsOf(data, order)))],
+    ['Habilidad principal', esc(mainSkillName(data, notes))],
+    ['Piedras angulares', keystones.length === 0 ? 'Ninguna' : list(keystones)],
+    [`Vida en el nivel ${level}`, `${Math.round(built.maxLife)} <span class="vs">(${Math.round(bare.maxLife)} sin nodos asignados)</span>`],
+    ['Armadura del árbol', `${Math.round(built.armour)}`],
+    ['Golpe crítico', `${percent(built.critChance)} de probabilidad, ×${decimal(built.critMultiplier, 2)} de daño`],
+    ['Daño del árbol', signedPercent(built.damagePercent)],
+    ['Velocidad de ataque', `×${decimal(built.attackSpeed, 2)}`],
   ];
   return `<dl class="glance">${rows.map(([term, value]: readonly [string, string]): string => `<div><dt>${term}</dt><dd>${value}</dd></div>`).join('')}</dl>
-<p class="small">Life, armour and the rest are what the places on the route give a level ${level} character with nothing equipped. Gear adds to all of them.</p>`;
+<p class="small">La vida, la armadura y las demás estadísticas son las que otorgan los nodos de la ruta a un personaje de nivel ${level} sin equipo. El equipo aumenta todas ellas.</p>`;
 }
 
 function capitalised(text: string): string {
@@ -129,13 +129,13 @@ function capitalised(text: string): string {
 }
 
 function withArticle(name: string): string {
-  return name.startsWith('The ') ? name : `the ${name}`;
+  return name.startsWith('The ') ? name : `el objeto ${name}`;
 }
 
 export function whereLikely(places: LegendaryPlaces): string {
   const leaning: DropLean[] = [...places.family, ...places.weapon];
   const boss: string[] = places.boss.filter((lean: DropLean): boolean => !leaning.includes(lean)).map((lean: DropLean): string => lean.name);
-  if (leaning.length === 0) return capitalised(boss.length === 0 ? 'anywhere alike' : `anywhere alike, and more often in ${list(boss)}`);
+  if (leaning.length === 0) return capitalised(boss.length === 0 ? 'igual en cualquier lugar' : `en cualquier lugar por igual, y con más frecuencia en ${list(boss)}`);
   return capitalised(list([...leaning.map((lean: DropLean): string => lean.name), ...boss]));
 }
 
@@ -151,14 +151,14 @@ function legendariesSection(data: GuideData, notes: BuildNotes): string {
   const firstName: string = first === undefined ? '' : esc(legendary(data.content, first.item).name);
   return section(
     'legendaries',
-    'Legendaries',
+    'Legendarios',
     [
       para(
-        `About one drop in ${Math.round(1 / share)} is a legendary, and you can wear ${rarity?.wornLimit ?? 0} at once. These are the ones made for this build. Each is good worn alone, and together they change how the build plays.`,
-        'Every area drops every legendary. The last column says where each is most likely: those areas drop its kind more often.',
+        `Aproximadamente uno de cada ${Math.round(1 / share)} objetos que caen es legendario, y puedes llevar ${rarity?.wornLimit ?? 0} a la vez. Estos son los que mejor van con esta build. Cada uno es útil por sí solo, y juntos cambian la forma de jugarla.`,
+        'En cada zona puede caer cualquier objeto legendario. La última columna indica dónde es más probable encontrar cada uno: en esas zonas suelen caer con más frecuencia los objetos de ese tipo.',
       ),
-      table({ head: ['Item', 'Slot', 'Power', 'What it changes', 'Most likely in'], rows: notes.legendaries.map((entry: LegendaryNote): string[] => legendaryRow(data, entry)), className: 'wide' }),
-      first === undefined ? '' : para(`Chase ${withArticle(firstName)} first. ${notes.chase}`),
+      table({ head: ['Objeto', 'Ranura', 'Poder', 'Qué cambia', 'Dónde es más probable'], rows: notes.legendaries.map((entry: LegendaryNote): string[] => legendaryRow(data, entry)), className: 'wide' }),
+      first === undefined ? '' : para(`Prioriza conseguir ${withArticle(firstName)}. ${notes.chase}`),
     ].join('\n'),
   );
 }
@@ -173,37 +173,37 @@ export function comparison(data: GuideData, current: string): string {
   const bossLevel: number = data.spec.levels[BUILD_PAGE.bossLevelIndex] ?? topLevel(data.spec);
   return [
     `<div class="charts">`,
-    barChart(entries, { title: `Time to level ${level}`, hint: 'shorter is faster', value: (measure): number | null => levelMinutes(measure.steady, level), show: (value: number): string => `${Math.round(value)} min`, lowerIsBetter: true }, current),
-    barChart(entries, { title: `The boss at level ${bossLevel}`, hint: 'seconds to win, shorter is better', value: (measure): number | null => bossAt(measure.steady, bossLevel)?.seconds ?? null, show: (value: number): string => `${Math.round(value)} s`, lowerIsBetter: true }, current),
-    barChart(entries, { title: `The boss at level ${bossLevel}, played carelessly`, hint: 'share of fights won', value: (measure): number | null => bossAt(measure.careless, bossLevel)?.winShare ?? null, show: (value: number): string => percent(value), lowerIsBetter: false }, current),
-    barChart(entries, { title: 'Deaths an hour, played carelessly', hint: 'fewer is safer', value: (measure): number | null => measure.careless.deathsPerHour, show: (value: number): string => decimal(value, 1), lowerIsBetter: true }, current),
+    barChart(entries, { title: `Tiempo para llegar al nivel ${level}`, hint: 'menos tiempo es más rápido', value: (measure): number | null => levelMinutes(measure.steady, level), show: (value: number): string => `${Math.round(value)} min`, lowerIsBetter: true }, current),
+    barChart(entries, { title: `Jefe en el nivel ${bossLevel}`, hint: 'segundos para vencerlo; cuanto menos, mejor', value: (measure): number | null => bossAt(measure.steady, bossLevel)?.seconds ?? null, show: (value: number): string => `${Math.round(value)} s`, lowerIsBetter: true }, current),
+    barChart(entries, { title: `Jefe en el nivel ${bossLevel}, jugando sin cuidado`, hint: 'porcentaje de peleas ganadas', value: (measure): number | null => bossAt(measure.careless, bossLevel)?.winShare ?? null, show: (value: number): string => percent(value), lowerIsBetter: false }, current),
+    barChart(entries, { title: 'Muertes por hora, jugando sin cuidado', hint: 'menos es más seguro', value: (measure): number | null => measure.careless.deathsPerHour, show: (value: number): string => decimal(value, 1), lowerIsBetter: true }, current),
     `</div>`,
   ].join('\n');
 }
 
 function drinks(policy: SkillPolicy): string {
-  return policy.flaskAt === null ? 'never drinks a flask' : `drinks a life flask at ${percent(policy.flaskAt)} life`;
+  return policy.flaskAt === null ? 'nunca usa un frasco' : `usa un frasco de vida al ${percent(policy.flaskAt)} de vida`;
 }
 
 function habits(policy: SkillPolicy): string {
-  const dodge: string = policy.habits.dodges ? 'steps out of attacks it can see coming' : 'never steps out of anything';
-  return `${dodge}, ${drinks(policy)} and ${policy.rolls ? 'rolls out of danger' : 'never rolls'}`;
+  const dodge: string = policy.habits.dodges ? 'esquiva los ataques que alcanza a ver venir' : 'nunca esquiva nada';
+  return `${dodge}, ${drinks(policy)} y ${policy.rolls ? 'rueda para apartarse del peligro' : 'nunca rueda'}`;
 }
 
 export function measuredMethod(data: GuideData): string {
   return para(
-    `These numbers come from the game's own rules, played by a simulated player ${data.measured.runs} times per build from a fresh character. The steady player ${habits(namedSkill(data.policies, data.spec.skill))}. The careless player ${habits(namedSkill(data.policies, data.spec.careless))}. Both follow the route on the page and wear whatever raises their damage and toughness most.`,
-    'A simulated player walks straight to the next fight and never stops to read an item, so a person takes longer to reach each level. Compare the builds with each other, not with your own clock.',
-    measuredNow(data) ? `They were measured on the game as it is now, balance ${data.balance}.` : `They were measured on balance ${data.measured.fingerprint}. The game is now at balance ${data.balance}.`,
+    `Estas cifras se obtienen con las reglas del propio juego: un jugador simulado juega ${data.measured.runs} veces cada build con un personaje nuevo. El jugador constante ${habits(namedSkill(data.policies, data.spec.skill))}. El jugador despreocupado ${habits(namedSkill(data.policies, data.spec.careless))}. Ambos siguen la ruta de esta página y usan el equipo que más aumenta su daño y resistencia.`,
+    'El jugador simulado va directo al siguiente combate y nunca se detiene a leer un objeto, así que una persona tarda más en alcanzar cada nivel. Compara las builds entre sí, no con tu propio tiempo.',
+    measuredNow(data) ? `Se midieron con el estado actual del juego, equilibrio ${data.balance}.` : `Se midieron con el equilibrio ${data.measured.fingerprint}. El equilibrio actual del juego es ${data.balance}.`,
   );
 }
 
 export function staleNotice(data: GuideData): string {
-  return measuredNow(data) ? '' : note(`The game's balance has changed since these numbers were measured, so they show the game as it was, not as it is now. They are measured again after the changes settle.`);
+  return measuredNow(data) ? '' : note(`El equilibrio del juego ha cambiado desde que se midieron estas cifras, así que muestran cómo era el juego, no cómo es ahora. Se vuelven a medir cuando los cambios se estabilizan.`);
 }
 
 function deaths(perHour: number): string {
-  return perHour === 0 ? 'never died' : `died ${decimal(perHour, 1)} times an hour`;
+  return perHour === 0 ? 'nunca murió' : `murió ${decimal(perHour, 1)} veces por hora`;
 }
 
 export function summaryLine(data: GuideData, id: string): string {
@@ -211,9 +211,9 @@ export function summaryLine(data: GuideData, id: string): string {
   const top: number = topLevel(data.spec);
   const bossLevel: number = data.spec.levels[BUILD_PAGE.bossLevelIndex] ?? top;
   const reached: number | null = levelMinutes(measure.steady, top);
-  const climb: string = reached === null ? `reached level ${top} in only some runs` : `reached level ${top} in about ${minutes(reached)} of play`;
+  const climb: string = reached === null ? `llegó al nivel ${top} solo en algunas partidas` : `llegó al nivel ${top} en aproximadamente ${minutes(reached)} de juego`;
   const won: string = percent(bossAt(measure.careless, bossLevel)?.winShare ?? 0);
-  return `Played steadily, this build ${climb} and ${deaths(measure.steady.deathsPerHour)}. Played carelessly it ${deaths(measure.careless.deathsPerHour)} and won ${won} of its fights with the boss at level ${bossLevel}.`;
+  return `Jugando de forma constante, esta build ${climb} y ${deaths(measure.steady.deathsPerHour)}. Jugando sin cuidado ${deaths(measure.careless.deathsPerHour)} y ganó ${won} de sus combates contra el jefe de nivel ${bossLevel}.`;
 }
 
 export function mainSkillName(data: GuideData, notes: BuildNotes): string {
@@ -224,27 +224,27 @@ export function buildPage(data: GuideData, notes: BuildNotes): string {
   const order: readonly string[] = route(data, notes.id);
   const top: number = topLevel(data.spec);
   return [
-    section('glance', 'At a glance', glance(data, notes, order)),
+    section('glance', 'De un vistazo', glance(data, notes, order)),
     signatureSection(data, notes.id),
-    section('plays', 'How it plays', para(...notes.plays)),
+    section('plays', 'Cómo juega', para(...notes.plays)),
     section(
       'route',
-      'The route',
+      'La ruta',
       [
-        para(`Take the places in this order. Two points come with every level after the first, and the first two come early in the Hall of Time, so the list says the level at which you can afford each place. It runs to level ${top}, where the Hall of Time stops growing harder.`),
-        `<figure class="tree">${treePicture(data.content, order, `The ${notes.name} route on the Skill Tree`)}<figcaption>Filled places are on the route. The numbers mark the notables and keystones in the order you reach them.</figcaption></figure>`,
+        para(`Asigna los nodos en este orden. Obtienes dos puntos por cada nivel después del primero, y los dos primeros llegan pronto en El Salón del Tiempo, así que la lista indica el nivel en el que puedes asignar cada nodo. La ruta llega hasta el nivel ${top}, donde El Salón del Tiempo deja de aumentar la dificultad.`),
+        `<figure class="tree">${treePicture(data.content, order, `Ruta de ${notes.name} en el árbol de habilidades`)}<figcaption>Los nodos rellenos están en la ruta. Los números indican los nodos notables y las piedras angulares en el orden en que los alcanzas.</figcaption></figure>`,
         routeList(data, order, notes),
         para(notes.afterRoute),
       ].join('\n'),
     ),
-    section('lean', `Lean on ${esc(mainSkillName(data, notes))}`, para(...notes.lean)),
+    section('lean', `Apóyate en ${esc(mainSkillName(data, notes))}`, para(...notes.lean)),
     legendariesSection(data, notes),
-    section('gear', 'Gear', `<div class="two"><div><h3>Look for</h3>${bullets(notes.lookFor)}</div><div><h3>Avoid</h3>${bullets(notes.avoid)}</div></div>`),
-    section('strengths', 'Strengths and weak spots', `<div class="two"><div><h3>Strong at</h3>${bullets(notes.strengths)}</div><div><h3>Weak at</h3>${bullets(notes.weakSpots)}</div></div>`),
-    notes.thin.length === 0 ? '' : section('thin', 'Thin today', para(...notes.thin)),
+    section('gear', 'Equipo', `<div class="two"><div><h3>Busca</h3>${bullets(notes.lookFor)}</div><div><h3>Evita</h3>${bullets(notes.avoid)}</div></div>`),
+    section('strengths', 'Fortalezas y puntos débiles', `<div class="two"><div><h3>Fuerte en</h3>${bullets(notes.strengths)}</div><div><h3>Débil en</h3>${bullets(notes.weakSpots)}</div></div>`),
+    notes.thin.length === 0 ? '' : section('thin', 'Escasean por ahora', para(...notes.thin)),
     section(
       'numbers',
-      'Measured',
+      'Mediciones',
       [
         para(summaryLine(data, notes.id)),
         comparison(data, notes.id),

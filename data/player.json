@@ -1,9 +1,9 @@
 {
   "heroes": [
-    {"id": "man", "name": "Man", "rig": "hero_man", "names": "man"},
-    {"id": "woman", "name": "Woman", "rig": "hero_woman", "names": "woman"},
-    {"id": "wight_man", "name": "Wight man", "rig": "hero_wight_man", "names": "man"},
-    {"id": "wight_woman", "name": "Wight woman", "rig": "hero_wight_woman", "names": "woman"}
+    {"id": "man", "name": "Hombre", "rig": "hero_man", "names": "man"},
+    {"id": "woman", "name": "Mujer", "rig": "hero_woman", "names": "woman"},
+    {"id": "wight_man", "name": "Hombre espectral", "rig": "hero_wight_man", "names": "man"},
+    {"id": "wight_woman", "name": "Mujer espectral", "rig": "hero_wight_woman", "names": "woman"}
   ],
   "radius": 0.5,
   "baseStats": {
@@ -55,7 +55,7 @@
     { "skill": null, "bindings": ["KeyW", "mouse_right"], "label": "W" },
     { "skill": null, "bindings": ["KeyE"], "label": "E" },
     { "skill": null, "bindings": ["KeyR"], "label": "R" },
-    { "skill": "dodge_roll", "bindings": ["Space"], "label": "Space" }
+    { "skill": "dodge_roll", "bindings": ["Space"], "label": "Espacio" }
   ],
   "xp": {
     "base": 105,

@@ -24,8 +24,8 @@ export interface FeedbackCard {
 }
 
 const COPY: Readonly<Record<CardMode, { readonly title: string; readonly line: string; readonly done: string }>> = {
-  end: { title: 'End of the alpha', line: 'More is coming. How was it?', done: 'Keep playing' },
-  ask: { title: 'Feedback', line: 'What do you think of the alpha so far?', done: 'Close' },
+  end: { title: 'Fin de la alfa', line: 'Se viene más. ¿Qué te pareció?', done: 'Seguir jugando' },
+  ask: { title: 'Comentarios', line: '¿Qué te parece la alfa hasta ahora?', done: 'Cerrar' },
 };
 
 const NOTES: Readonly<Record<SendResult, string>> = {
@@ -72,9 +72,9 @@ function keepKeysInside(root: HTMLElement): void {
 function shareButton(row: HTMLParagraphElement, site: string): HTMLButtonElement {
   const copy: HTMLButtonElement = el('button', 'fb-copy', row);
   copy.type = 'button';
-  el('span', 'fb-copy-idle', copy).textContent = 'Copy link';
+  el('span', 'fb-copy-idle', copy).textContent = 'Copiar enlace';
   const copied: HTMLSpanElement = el('span', 'fb-copy-done', copy);
-  copied.textContent = 'Copied';
+  copied.textContent = 'Copiado';
   copied.setAttribute('aria-hidden', 'true');
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(site);
@@ -105,7 +105,7 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
   if (hooks.send === null) card.classList.add('fb-links-only');
   const close: HTMLButtonElement = el('button', 'fb-close', card);
   close.type = 'button';
-  close.setAttribute('aria-label', 'Close');
+  close.setAttribute('aria-label', 'Cerrar');
   close.textContent = '×';
   const title: HTMLHeadingElement = el('h2', 'fb-title', card);
   title.id = `fb-title-${name}`;
@@ -113,7 +113,7 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
 
   const rate: HTMLDivElement = el('div', 'fb-rate', card);
   rate.setAttribute('role', 'group');
-  rate.setAttribute('aria-label', 'Did you like it?');
+  rate.setAttribute('aria-label', '¿Te gustó?');
   const up: HTMLButtonElement = thumb(rate, 'up');
   const down: HTMLButtonElement = thumb(rate, 'down');
   const stack: HTMLDivElement = el('div', 'fb-stack', card);
@@ -128,12 +128,12 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
   const input: HTMLInputElement = el('input', 'fb-text', follow);
   input.type = 'text';
   input.maxLength = ALPHA.textChars;
-  input.placeholder = 'Anything to add? (optional)';
-  input.setAttribute('aria-label', 'Anything to add? (optional)');
+  input.placeholder = '¿Algo más que quieras agregar? (opcional)';
+  input.setAttribute('aria-label', '¿Algo más que quieras agregar? (opcional)');
   input.autocomplete = 'off';
   const sendButton: HTMLButtonElement = el('button', 'fb-send', follow);
   sendButton.type = 'submit';
-  sendButton.textContent = 'Send';
+  sendButton.textContent = 'Enviar';
   const row: HTMLParagraphElement | null = hooks.links.length > 0 || hooks.site !== null ? el('p', 'fb-links', thanks) : null;
   for (const link of row === null ? [] : hooks.links) {
     const anchor: HTMLAnchorElement = el('a', `fb-link fb-link-${link.id}`, row);

@@ -1,7 +1,7 @@
 [
   {
     "id": "out_of_the_mist",
-    "name": "Out of the Mist",
+    "name": "Fuera de la niebla",
     "requires": [],
     "when": [
       {
@@ -15,7 +15,7 @@
       {
         "id": "leave",
         "type": "either",
-        "text": "Leave the In-Between",
+        "text": "Sal del Entre-mundos",
         "paths": [
           {
             "id": "hall",
@@ -24,7 +24,7 @@
             "x": 14,
             "z": 30,
             "radius": 6,
-            "text": "Leave the In-Between"
+            "text": "Sal del Entre-mundos"
           },
           {
             "id": "rerouted",
@@ -33,7 +33,7 @@
             "x": 24,
             "z": 20,
             "radius": 8,
-            "text": "Reach the fire",
+            "text": "Llega al fuego",
             "when": [
               {
                 "type": "flag",
@@ -51,7 +51,7 @@
   },
   {
     "id": "to_the_waystation",
-    "name": "Find shelter",
+    "name": "Encuentra refugio",
     "requires": [
       "out_of_the_mist",
       "the_first_taker"
@@ -64,7 +64,7 @@
         "x": 24,
         "z": 20,
         "radius": 8,
-        "text": "Reach the fire",
+        "text": "Llega al fuego",
         "sets": {
           "camp": "reached"
         }
@@ -73,7 +73,7 @@
   },
   {
     "id": "the_first_taker",
-    "name": "The First Moment",
+    "name": "El primer momento",
     "requires": [
       "out_of_the_mist"
     ],
@@ -82,7 +82,7 @@
       {
         "id": "put_down",
         "type": "moment",
-        "text": "Clear a moment",
+        "text": "Supera un momento",
         "sets": {
           "first_moment": "cleared"
         }
@@ -91,7 +91,7 @@
   },
   {
     "id": "wardens_lesson",
-    "name": "The Warden's Lesson",
+    "name": "La lección del Guardián",
     "requires": [
       "to_the_waystation",
       "the_first_taker"
@@ -102,7 +102,7 @@
         "type": "talk",
         "npc": "warden_guide",
         "talk": "warden_guide_lesson",
-        "text": "Talk to the Warden Guide",
+        "text": "Habla con el guía del Guardián",
         "sets": {
           "fire_lesson": "given"
         }
@@ -111,7 +111,7 @@
   },
   {
     "id": "the_gate",
-    "name": "The Last Gate",
+    "name": "La última puerta",
     "requires": [
       "wardens_lesson"
     ],

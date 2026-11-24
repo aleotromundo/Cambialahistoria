@@ -56,15 +56,15 @@ export function treePage(data: GuideData): PageBody {
   const keystones: number = count(data, 'keystone');
   return {
     kicker: 'Guide',
-    title: 'The Skill Tree',
-    lede: 'Where your points go, how the five paths fit together, and what it costs to change your mind.',
-    description: 'How the Skill Tree in The Lost Storm works: points per level, the five paths, notables and keystones, the one rule about changing a skill, and what a respec costs.',
+    title: 'árbol de habilidades',
+    lede: 'A dónde van tus puntos, cómo encajan los cinco caminos y cuánto cuesta cambiar de opinión.',
+    description: 'Cómo funciona el árbol de habilidades de The Lost Storm: puntos por nivel, los cinco caminos, los nodos notables y las piedras angulares, la única regla para cambiar una habilidad y cuánto cuesta redistribuir los puntos.',
     body: [
       section(
         'whole',
-        'The whole tree',
+        'Todo el árbol',
         [
-          `<figure class="tree">${treePicture(data.content, [], 'The whole Skill Tree')}<figcaption>Every place on the tree. Big circles are notables, the biggest are keystones.</figcaption></figure>`,
+          `<figure class="tree">${treePicture(data.content, [], 'The whole Skill Tree')}<figcaption>Cada lugar del árbol. Los círculos grandes son nodos notables; los más grandes son piedras angulares.</figcaption></figure>`,
           para(`Press ${kbd('T')} to open it in the game. There are ${minors + notables + keystones} places: ${minors} small ones that add a little, ${notables} notables that teach a skill or change one, and ${keystones} keystones that change how you play and always cost you something for it.`),
         ].join('\n'),
       ),
@@ -105,7 +105,7 @@ export function treePage(data: GuideData): PageBody {
         [
           para(`You can give back a single place, as long as everything you hold still connects, or clear the whole tree at once. Either costs gold: ${respec.goldPerPoint} for each point, plus ${respec.goldPerLevel} for each point for every level you have. The points come back to spend again.`),
           table({
-            head: ['Level', 'One place', 'The whole tree'],
+            head: ['Level', 'One place', 'Todo el árbol'],
             rows: TREE_PAGE.respecLevels.map((level: number): string[] => [String(level), `${respecCost(data, level, 1)} gold`, `${respecCost(data, level, pointsAtLevel(data.content, level))} gold`]),
           }),
         ].join('\n'),

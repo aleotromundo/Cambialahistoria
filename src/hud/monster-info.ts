@@ -23,18 +23,18 @@ function abilities(content: Content, def: MonsterDef): MonsterLine[] {
     if (skill !== undefined) lines.push(ability(skill, ''));
   }
   const last: SkillDef | undefined = def.deathSkill === null ? undefined : content.skills.get(def.deathSkill);
-  if (last !== undefined) lines.push(ability(last, 'On death: '));
+  if (last !== undefined) lines.push(ability(last, 'Al morir: '));
   if (def.summon !== null) {
     const kin: MonsterDef = def.summon.monster === null ? def : (content.monsters.get(def.summon.monster) ?? def);
-    lines.push({ kind: 'ability', name: `Calls ${def.summon.count} ${kin.name} every ${Number(def.summon.cooldown.toFixed(1))}s`, tags: '', effect: '' });
+    lines.push({ kind: 'ability', name: `Invoca ${def.summon.count} ${kin.name} cada ${Number(def.summon.cooldown.toFixed(1))}s`, tags: '', effect: '' });
   }
   return lines;
 }
 
 function poiseLine(what: string, share: number): MonsterLine | null {
-  if (share <= 0) return { kind: 'resist', text: `Immune to ${what}` };
-  if (share < 1) return { kind: 'resist', text: `Resists ${what}` };
-  if (share > 1) return { kind: 'weak', text: `Easily ${what === 'stagger' ? 'staggered' : 'knocked back'}` };
+  if (share <= 0) return { kind: 'resist', text: `Inmune a ${what}` };
+  if (share < 1) return { kind: 'resist', text: `Resiste ${what}` };
+  if (share > 1) return { kind: 'weak', text: `Fácil de ${what === 'stagger' ? 'aturdir' : 'derribar'}` };
   return null;
 }
 
@@ -45,8 +45,8 @@ function defences(def: MonsterDef): MonsterLine[] {
   if (knock !== null) lines.push(knock);
   if (stagger !== null) lines.push(stagger);
   if (def.guard !== null) {
-    lines.push({ kind: 'resist', text: 'Guards its front' });
-    lines.push({ kind: 'weak', text: 'Open from behind, and a heavy blow breaks its guard' });
+    lines.push({ kind: 'resist', text: 'Protege su frente' });
+    lines.push({ kind: 'weak', text: 'Queda expuesto por detrás, y un golpe fuerte rompe su guardia' });
   }
   return lines;
 }
@@ -54,29 +54,29 @@ function defences(def: MonsterDef): MonsterLine[] {
 function stateTexts(world: World, monster: MonsterState): string[] {
   const def: MonsterDef = monster.def;
   const texts: string[] = [];
-  if (def.boss !== null) texts.push('Boss');
-  if (def.rank !== null) texts.push(def.rank.leader ? `${def.rank.name} leader` : def.rank.name);
-  else if (def.mods.length > 0) texts.push('Elite');
-  if (def.faction === world.content.moments.faction) texts.push('Hostile echo');
-  if (momentOfEcho(world, monster.id) !== null) texts.push('Bound to a moment');
-  if (monster.revived) texts.push('Raised again');
-  if (monster.summonerId !== null) texts.push('Called by another');
-  if (def.dormant !== null && !monster.aggro) texts.push('Asleep until it hears you');
+  if (def.boss !== null) texts.push('Jefe');
+  if (def.rank !== null) texts.push(def.rank.leader ? `${def.rank.name} líder` : def.rank.name);
+  else if (def.mods.length > 0) texts.push('Élite');
+  if (def.faction === world.content.moments.faction) texts.push('Eco hostil');
+  if (momentOfEcho(world, monster.id) !== null) texts.push('Vinculado a un momento');
+  if (monster.revived) texts.push('Reanimado');
+  if (monster.summonerId !== null) texts.push('Invocado por otro');
+  if (def.dormant !== null && !monster.aggro) texts.push('Dormido hasta que te escucha');
   switch (def.behaviour.type) {
     case 'ranged':
-      texts.push('Keeps its distance');
+      texts.push('Mantiene la distancia');
       break;
     case 'stalker':
-      texts.push('Circles before it strikes');
+      texts.push('Rodea antes de atacar');
       break;
     case 'swarm':
-      texts.push('Surrounds you with its kind');
+      texts.push('Te rodea con los suyos');
       break;
     case 'ambush':
-      texts.push('Waits for you to come close, then springs');
+      texts.push('Espera a que te acerques y luego se abalanza');
       break;
     case 'fixed':
-      texts.push(monster.sealed ? 'Sealed' : 'Stands fixed');
+      texts.push(monster.sealed ? 'Sellado' : 'Permanece inmóvil');
       break;
     case 'chaser':
       break;

@@ -463,7 +463,7 @@ void test('with held skills on press to toggle, one press keeps the Millwheel tu
     assert.ok(spinning(world), `${ending}: the spin keeps turning after the key is let go`);
     assert.ok(sent.some((command: Command): boolean => command.type === 'steer'), `${ending}: the toggled spin steers`);
     assert.ok(world.player.pos.x > start.x + 1, `${ending}: glided toward the cursor`);
-    assert.equal(setup.input.reading.toggled, 'Millwheel');
+    assert.equal(setup.input.reading.toggled, 'Rueda de molino');
     if (ending === 'same key') {
       setup.fire('keydown', { code: 'KeyQ' });
       const off: Command[] = play(setup, 0.05);

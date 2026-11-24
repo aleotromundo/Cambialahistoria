@@ -40,7 +40,7 @@ function modEffect(data: GuideData, mod: MonsterModDef): string {
   if (mod.speedScale !== 1) parts.push(`moves ${percent(Math.abs(mod.speedScale - 1))} ${mod.speedScale > 1 ? 'faster' : 'slower'}`);
   if (mod.lifeScale !== 1) parts.push(`has ${more(mod.lifeScale)} life`);
   if (mod.damageScale !== 1) parts.push(`hits ${percent(Math.abs(mod.damageScale - 1))} ${mod.damageScale > 1 ? 'harder' : 'softer'}`);
-  if (mod.sizeScale > 1) parts.push('is bigger');
+  if (mod.sizeScale > 1) parts.push('es más grande');
   if (mod.staggerScale < 1) parts.push(`is staggered ${percent(1 - mod.staggerScale)} less`);
   if (mod.regen > 0) parts.push(`heals ${percent(mod.regen)} of its life a second once it has gone a while without being hit`);
   if (mod.deathSkill !== null) parts.push(`bursts a moment after it dies, where it fell (${esc(skill(data, mod.deathSkill).name)}), so step away from it`);
@@ -77,7 +77,7 @@ function phaseText(data: GuideData, phase: BossPhase, index: number, all: readon
   const now: ReadonlySet<string> = new Set<string>(skills.map((entry: SkillDef): string => entry.id));
   const added: SkillDef[] = skills.filter((entry: SkillDef): boolean => !before.has(entry.id));
   const dropped: SkillDef[] = index === 0 ? [] : phaseSkills(data, all[index - 1] ?? phase).filter((entry: SkillDef): boolean => !now.has(entry.id));
-  const when: string = index === 0 ? 'From the start' : `Below ${percent(phase.below)} of its life`;
+  const when: string = index === 0 ? 'Desde el principio' : `Below ${percent(phase.below)} of its life`;
   const what: string = added.map((entry: SkillDef): string => `<b>${esc(entry.name)}</b>: ${esc(entry.description)}`).join(' ');
   const gone: string = dropped.length === 0 ? '' : ` It stops using ${esc(list(dropped.map((entry: SkillDef): string => entry.name)))}.`;
   return `${when}. ${index === 0 ? 'It uses' : 'It adds'} ${what}${gone}`;
@@ -94,7 +94,7 @@ function typedSkills(data: GuideData, type: 'storm' | 'frost'): string[] {
 export function gapRows(data: GuideData): string[][] {
   const gap = data.content.player.xp.gap;
   const hero: number = COMBAT_PAGE.gapHero;
-  return COMBAT_PAGE.gapSteps.map((step: number): string[] => [step === 0 ? 'Your level' : `${step} levels apart`, percent(gapScale(gap, hero, hero - step))]);
+  return COMBAT_PAGE.gapSteps.map((step: number): string[] => [step === 0 ? 'Tu nivel' : `${step} levels apart`, percent(gapScale(gap, hero, hero - step))]);
 }
 
 export function combatPage(data: GuideData): PageBody {
@@ -109,31 +109,31 @@ export function combatPage(data: GuideData): PageBody {
   const lifePerLevel: number = per.find((mod): boolean => mod.stat === 'maxLife')?.value ?? 0;
   return {
     kicker: 'Guide',
-    title: 'How combat works',
-    lede: 'What decides how hard you hit, how much of it you take, and why some fights go badly.',
-    description: 'How combat works in The Lost Storm: damage, critical strikes, armour, resistances, mana, stagger, experience, magic and rare packs, and the first boss.',
+    title: 'Cómo funciona el combate',
+    lede: 'Qué determina cuánto daño infliges, cuánto recibes y por qué algunas peleas salen mal.',
+    description: 'Cómo funciona el combate en The Lost Storm: daño, golpes críticos, armadura, resistencias, maná, aturdimiento, experiencia, magia y grupos raros, además del primer jefe.',
     body: [
       section(
         'damage',
         'Damage',
         [
           para(
-            'Every skill you use starts from your weapon. A hit rolls a number in your weapon\'s damage range, adds your Damage bonus, and takes the share of that the skill uses. Some skills add a little damage of their own on top. Then the hit may be a critical strike.',
-            'So a better weapon makes every skill stronger, spells included. "Damage" on the tree and on gear is a bonus to all of it; "damage for weapon skills" or "damage for lightning skills" counts only for that kind of skill.',
+            'Cada habilidad que usas parte de tu arma. Cada golpe calcula un número dentro del rango de daño de tu arma, le suma tu bonificación de daño y aplica la proporción que usa la habilidad. Algunas habilidades agregan un poco de daño propio. Después, el golpe puede ser crítico.',
+            'Así que un arma mejor hace que todas tus habilidades sean más fuertes, incluso los hechizos. El «daño» del árbol de habilidades y del equipo es una bonificación a todo; el «daño de habilidades con armas» o el «daño de habilidades de rayo» solo cuenta para ese tipo de habilidad.',
             `You start with a ${decimal(base.damageMin, 0)} to ${decimal(base.damageMax, 0)} damage range of your own, and every level adds a little to it. Your weapon adds far more.`,
           ),
           subsection(
-            'Critical strikes',
+            'Golpes críticos',
             para(`A critical strike multiplies the hit. You start with a ${percent(base.critChance)} chance and a ${times(base.critMultiplier)} multiplier. Chance stops counting at ${capPercent(data, 'critChance')}; the multiplier has no cap.`),
           ),
         ].join('\n'),
       ),
       section(
         'defence',
-        'Armour and resistances',
+        'Armadura y resistencias',
         [
           para(`Armour takes a share off every hit you take. The first points count the most: ${ARMOUR_HALF_POINT} armour takes off ${percent(armourReduction(ARMOUR_HALF_POINT, rules.armourCap))}, and no amount takes off more than ${percent(rules.armourCap)}.`),
-          table({ head: ['Armour', 'Taken off each hit'], rows: COMBAT_PAGE.armourSamples.map((value: number): string[] => [String(value), percent(armourReduction(value, rules.armourCap))]) }),
+          table({ head: ['Armour', 'Se resta de cada golpe'], rows: COMBAT_PAGE.armourSamples.map((value: number): string[] => [String(value), percent(armourReduction(value, rules.armourCap))]) }),
           para(
             `Storm and frost resistance take a further share off hits of that kind, after armour. They stop at ${percent(rules.cap)}. The storm hits you will meet are ${esc(list(typedSkills(data, 'storm')))}; the frost ones are ${esc(list(typedSkills(data, 'frost')))}. Everything else is plain physical damage, which only armour lowers.`,
           ),
@@ -149,31 +149,31 @@ export function combatPage(data: GuideData): PageBody {
       ),
       section(
         'stagger',
-        'Stagger and knockback',
+        'Aturdimiento y empuje',
         [
           para(
-            'Every hit pushes the enemy back a little and staggers it for a moment. A staggered enemy that was winding up an attack loses that attack. Heavier skills push further and stagger longer: a charged blow or a slam can stop a big swing that a quick cut would not.',
-            'Some big attacks pass a point where they can no longer be stopped by a light hit. Only a heavy one breaks them then. Unyielding enemies are staggered less, and the boss is never staggered and barely moves when struck.',
+            'Cada golpe empuja un poco al enemigo hacia atrás y lo aturde por un momento. Si un enemigo aturdido estaba preparando un ataque, lo pierde. Las habilidades más pesadas empujan más lejos y aturden por más tiempo: un golpe cargado o un impacto contra el suelo puede detener un gran ataque que un corte rápido no podría.',
+            'Algunos ataques potentes llegan a un punto en el que ya no pueden detenerse con un golpe ligero. En ese momento, solo uno pesado puede interrumpirlos. Los enemigos implacables se aturden menos, y el jefe nunca se aturde y apenas se mueve cuando lo golpean.',
           ),
-          note(`Watch for the wind-up. The bigger the attack, the longer the wind-up, and the more it pays to roll away or hit it with something heavy before it lands.`),
+          note(`Fíjate en cuándo prepara el ataque. Cuanto más potente sea, más tiempo tardará en prepararlo y más conviene alejarse con una Rodada evasiva o golpearlo con algo pesado antes de que impacte.`),
         ].join('\n'),
       ),
       section(
         'xp',
-        'Experience and the level gap',
+        'Experiencia y diferencia de nivel',
         [
           para(
             `In ${esc(zone(data, 'hall_of_time').name)} and ${esc(zone(data, 'keepers_gate').name)} the enemies are your level, so there is always a fair fight in front of you. Enemies far from your level, above or below, give less experience. Up to ${gapBand(gap, COMBAT_PAGE.gapHero)} levels apart (a little more as you grow) there is no loss; past that it falls off quickly.`,
           ),
-          table({ head: ['Enemy level', 'Experience you get'], rows: gapRows(data), caption: `For a level ${COMBAT_PAGE.gapHero} character` }),
+          table({ head: ['Nivel del enemigo', 'Experiencia que obtienes'], rows: gapRows(data), caption: `For a level ${COMBAT_PAGE.gapHero} character` }),
           para(`Dying costs ${percent(data.content.player.deathPenalty.xpPercent)} of the experience you need for your next level. It never takes a level away.`),
         ].join('\n'),
       ),
       section(
         'packs',
-        'Magic and rare packs',
+        'Grupos mágicos y raros',
         [
-          para(`Most packs are plain. Some glow: blue for magic, gold for rare. The deeper you are in levels, the more of them there are.`),
+          para(`La mayoría de los grupos son comunes. Algunos brillan: azules para los mágicos y dorados para los raros. Cuanto más avances de nivel, más encontrarás.`),
           terms([
             [
               `<span style="color: ${esc(magic.color)}">${esc(magic.name)}</span>`,

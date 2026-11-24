@@ -25,28 +25,24 @@ export interface GuidePage {
   readonly measured: boolean;
 }
 
-function indefinite(word: string): string {
-  return /^[aeiou]/i.test(word) ? 'an' : 'a';
-}
-
 function buildEntry(notes: BuildNotes): GuidePage {
   return {
     key: `builds/${notes.id}`,
     href: buildHref(notes.id),
     label: notes.name,
     measured: true,
-    render: (data: GuideData): PageBody => ({ kicker: `Build · ${notes.kind}`, title: notes.name, lede: notes.forWho, description: `${notes.name}, ${indefinite(notes.kind)} ${notes.kind.toLowerCase()} build for The Lost Storm: the route through the Skill Tree, the skill to lean on, gear and measured numbers.`, body: buildPage(data, notes) }),
+    render: (data: GuideData): PageBody => ({ kicker: `Configuración · ${notes.kind}`, title: notes.name, lede: notes.forWho, description: `${notes.name}: configuración de ${notes.kind.toLowerCase()} para The Lost Storm, con la ruta por el árbol de habilidades, la habilidad principal, el equipo y las cifras medidas.`, body: buildPage(data, notes) }),
   };
 }
 
 export const GUIDE_PAGES: readonly GuidePage[] = [
-  { key: 'home', href: '/guide/', label: 'Guide', render: homePage, measured: false },
-  { key: 'start', href: '/guide/start/', label: 'Getting started', render: startPage, measured: false },
-  { key: 'combat', href: '/guide/combat/', label: 'Combat', render: combatPage, measured: false },
-  { key: 'skills', href: '/guide/skills/', label: 'Skills', render: skillsPage, measured: false },
-  { key: 'tree', href: '/guide/tree/', label: 'Skill Tree', render: treePage, measured: false },
-  { key: 'items', href: '/guide/items/', label: 'Items', render: itemsPage, measured: false },
-  { key: 'builds', href: '/guide/builds/', label: 'Builds', render: buildsPage, measured: true },
+  { key: 'home', href: '/guide/', label: 'Guía', render: homePage, measured: false },
+  { key: 'start', href: '/guide/start/', label: 'Primeros pasos', render: startPage, measured: false },
+  { key: 'combat', href: '/guide/combat/', label: 'Combate', render: combatPage, measured: false },
+  { key: 'skills', href: '/guide/skills/', label: 'Habilidades', render: skillsPage, measured: false },
+  { key: 'tree', href: '/guide/tree/', label: 'Árbol de habilidades', render: treePage, measured: false },
+  { key: 'items', href: '/guide/items/', label: 'Objetos', render: itemsPage, measured: false },
+  { key: 'builds', href: '/guide/builds/', label: 'Configuraciones', render: buildsPage, measured: true },
   ...BUILD_NOTES.map(buildEntry),
 ];
 
@@ -88,11 +84,11 @@ const TITLE: RegExp = /<title>[\s\S]*?<\/title>/;
 
 export function shellHtml(key: string): string {
   return `<!doctype html>
-<html lang="en">
+<html lang="es-419">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>The Lost Storm · Guide</title>
+    <title>The Lost Storm · Guía</title>
     <meta name="theme-color" content="#05070b" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -123,8 +119,8 @@ export function guideCrumbs(page: GuidePage): readonly Crumb[] {
 }
 
 export function guideTitle(page: GuidePage, heading: string): string {
-  if (page.key === 'home') return `${SITE.name} · Player’s guide`;
-  return `${heading}${isBuild(page) ? ' build' : ''} · ${SITE.name} guide`;
+  if (page.key === 'home') return `${SITE.name} · Guía del jugador`;
+  return `${heading}${isBuild(page) ? ' · Configuración' : ''} · Guía de ${SITE.name}`;
 }
 
 export function fillShell(html: string, data: GuideData = guideData()): string {

@@ -24,12 +24,12 @@ export function buildsPage(data: GuideData): PageBody {
   return {
     kicker: 'Guide',
     title: 'Builds',
-    lede: 'Five ways to grow a character: one for each kind of weapon, and one that follows whatever you hold. Each has a route through the Skill Tree and numbers measured in the game itself.',
-    description: 'Five builds for The Lost Storm: staff, heavy weapon, blade, crossbow, and the Echo for any weapon. Who each is for, its route, and measured speed, deaths and boss fights.',
+    lede: 'Cinco formas de hacer crecer a un personaje: una para cada tipo de arma y otra que se adapta a lo que tengas equipado. Cada una tiene una ruta por el árbol de habilidades y estadísticas medidas en el propio juego.',
+    description: 'Cinco configuraciones para The Lost Storm: bastón, arma pesada, espada, ballesta y el eco para cualquier arma. Para quién es cada una, su ruta y estadísticas medidas de velocidad, muertes y combates contra jefes.',
     body: [
       section(
         'pick',
-        'Pick one',
+        'Elige una',
         [
           para(
             `Each build page tells you who the build is for, how it plays, the places to take in order up to level ${top}, the skill to lean on, what to wear and what to avoid. Each one has been played many times by the game's own simulated player, so the numbers on it are measured, not guessed.`,

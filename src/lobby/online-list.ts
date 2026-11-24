@@ -12,7 +12,7 @@ export interface OnlineList {
 export const ONLINE_LIST: { readonly leaveMs: number; readonly closeKey: string; readonly label: string } = {
   leaveMs: 520,
   closeKey: 'Escape',
-  label: 'Who is online',
+  label: 'Quién está en línea',
 };
 
 interface RowParts {

@@ -66,9 +66,9 @@ interface ButtonView {
 }
 
 const MENU: readonly { readonly panel: HudPanel; readonly label: string; readonly icon: string }[] = [
-  { panel: 'inventory', label: 'Inventory', icon: PANEL_ICONS.inventory },
-  { panel: 'character', label: 'Character', icon: PANEL_ICONS.character },
-  { panel: 'tree', label: 'Skill Tree', icon: PANEL_ICONS.tree },
+  { panel: 'inventory', label: 'Inventario', icon: PANEL_ICONS.inventory },
+  { panel: 'character', label: 'Personaje', icon: PANEL_ICONS.character },
+  { panel: 'tree', label: 'Árbol de habilidades', icon: PANEL_ICONS.tree },
   { panel: 'map', label: 'Map', icon: PANEL_ICONS.map },
 ];
 
@@ -204,7 +204,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   if (feedback !== null) {
     const send: HTMLButtonElement = el('button', 'tc-menu-btn tc-feedback', menu);
     send.type = 'button';
-    send.setAttribute('aria-label', 'Send feedback');
+    send.setAttribute('aria-label', 'Enviar comentarios');
     send.innerHTML = FEEDBACK_HTML;
     send.addEventListener('click', (): void => {
       reset();
@@ -227,7 +227,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   });
   const pause: HTMLButtonElement = el('button', 'tc-menu-btn tc-pause', menu);
   pause.type = 'button';
-  pause.setAttribute('aria-label', 'Menu');
+  pause.setAttribute('aria-label', 'Menú');
   pause.innerHTML = MENU_HTML;
   pause.addEventListener('click', (): void => {
     reset();
@@ -235,7 +235,7 @@ export function createTouchControls(setup: TouchSetup): TouchControls {
   });
   const close: HTMLButtonElement = el('button', 'tc-close', hudRoot);
   close.type = 'button';
-  close.setAttribute('aria-label', 'Close');
+  close.setAttribute('aria-label', 'Cerrar');
   close.innerHTML = CLOSE_HTML;
   close.addEventListener('click', (): void => {
     hud.closePanels();

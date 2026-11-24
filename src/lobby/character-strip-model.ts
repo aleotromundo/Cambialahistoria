@@ -5,26 +5,26 @@ import type { Roster, Slot } from '../backend/roster.ts';
 import { NAME_MESSAGES } from './lobby-model.ts';
 
 export const STRIP_TEXT = {
-  heading: 'Characters',
-  unnamed: 'The one who woke',
-  fresh: 'Not yet woken',
-  levelLabel: 'Level',
-  newCharacter: 'New character',
-  newDetail: 'A name, then who wakes',
-  firstFirst: 'Play or name your first character first.',
-  offAccount: 'Not on your account: no free slot',
-  create: 'Create',
-  cancel: 'Cancel',
-  choose: 'Choose for me',
-  placeholder: 'Their name',
-  full: 'This account already has three characters.',
-  unreachable: 'The server could not be reached. Try again in a moment.',
-  deleteLabel: 'Delete character',
-  deleteYes: 'Delete for good',
-  startOverYes: 'Erase and start over',
-  keep: 'Keep this character',
-  listed: 'still has auction house business. Cancel its listings and collect what is waiting first.',
-  offline: 'The server could not be reached, so nothing was deleted. Try again in a moment.',
+  heading: 'Personajes',
+  unnamed: 'Quien despertó',
+  fresh: 'Aún no ha despertado',
+  levelLabel: 'Nivel',
+  newCharacter: 'Nuevo personaje',
+  newDetail: 'Un nombre y luego elegir quién despierta',
+  firstFirst: 'Primero juega con tu primer personaje o ponle un nombre.',
+  offAccount: 'No está en tu cuenta: no hay espacios libres',
+  create: 'Crear',
+  cancel: 'Cancelar',
+  choose: 'Elegir por mí',
+  placeholder: 'Su nombre',
+  full: 'Esta cuenta ya tiene tres personajes.',
+  unreachable: 'No se pudo conectar con el servidor. Inténtalo de nuevo en un momento.',
+  deleteLabel: 'Eliminar personaje',
+  deleteYes: 'Eliminar para siempre',
+  startOverYes: 'Borrar y volver a empezar',
+  keep: 'Conservar este personaje',
+  listed: 'aún tiene operaciones pendientes en la casa de subastas. Primero cancela sus publicaciones y retira lo que está pendiente.',
+  offline: 'No se pudo conectar con el servidor, así que no se eliminó nada. Inténtalo de nuevo en un momento.',
 } as const;
 
 export interface HeroNames {
@@ -107,8 +107,8 @@ export interface DeleteWording {
 }
 
 export function deleteWording(name: string, only: boolean): DeleteWording {
-  if (only) return { ask: `Start over? ${name} and everything they carry is gone for good.`, yes: STRIP_TEXT.startOverYes };
-  return { ask: `Delete ${name}? This character and everything they carry is gone for good.`, yes: STRIP_TEXT.deleteYes };
+  if (only) return { ask: `¿Volver a empezar? ${name} y todo lo que lleva desaparecerán para siempre.`, yes: STRIP_TEXT.startOverYes };
+  return { ask: `¿Eliminar a ${name}? Este personaje y todo lo que lleva desaparecerán para siempre.`, yes: STRIP_TEXT.deleteYes };
 }
 
 export function removeRefusalText(outcome: RemoveOutcome, name: string): string | null {

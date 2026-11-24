@@ -8,12 +8,12 @@ export interface RankingTab {
 }
 
 export const RANKING_TABS: readonly RankingTab[] = [
-  { by: 'level', label: 'Level', caption: 'Highest level reached, then experience' },
-  { by: 'damage', label: 'Damage', caption: DAMAGE_EXPLAINED },
-  { by: 'life', label: 'Life', caption: 'Maximum life' },
-  { by: 'played', label: 'Time', caption: 'Time played, counted while in the storm' },
-  { by: 'kills', label: 'Kills', caption: 'Monsters slain' },
-  { by: 'deaths', label: 'Deaths', caption: 'Times fallen' },
+  { by: 'level', label: 'Nivel', caption: 'Nivel más alto alcanzado, luego experiencia' },
+  { by: 'damage', label: 'Daño', caption: DAMAGE_EXPLAINED },
+  { by: 'life', label: 'Vida', caption: 'Vida máxima' },
+  { by: 'played', label: 'Tiempo', caption: 'Tiempo jugado, contado mientras estás en la tormenta' },
+  { by: 'kills', label: 'Bajas', caption: 'Monstruos derrotados' },
+  { by: 'deaths', label: 'Muertes', caption: 'Veces que caíste' },
 ];
 
 const GROUPED: Intl.NumberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });

@@ -15,11 +15,11 @@ import { reloadPage } from '../gpu-release.ts';
 import stepCss from './name-step.css?inline';
 
 export const NAME_STEP = {
-  ask: 'What is your name?',
-  placeholder: 'Your name',
-  choose: 'Choose for me',
-  take: 'Take',
-  suggested: 'Enter to keep it, or type your own.',
+  ask: '¿Cómo te llamas?',
+  placeholder: 'Tu nombre',
+  choose: 'Elegir por mí',
+  take: 'Usar',
+  suggested: 'Presiona Enter para conservarlo o escribe otro nombre.',
   nudgeClass: 'nudge',
   tickClass: 'tick',
   retries: 3,

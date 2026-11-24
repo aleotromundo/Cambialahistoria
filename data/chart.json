@@ -1,5 +1,5 @@
 {
-  "title": "The Skill Tree",
+  "title": "El Árbol de habilidades",
   "pointsPerLevel": 2,
   "revision": 9,
   "specialtyLimit": 3,
@@ -12,65 +12,65 @@
   "paths": [
     {
       "id": "storm",
-      "name": "The Gathering Storm",
+      "name": "La tormenta creciente",
       "tint": "#86c8f0",
-      "description": "Lightning that reaches further, forks wider and lands harder."
+      "description": "Rayos que llegan más lejos, se bifurcan más y golpean con más fuerza."
     },
     {
       "id": "blade",
-      "name": "The Turning Tide",
+      "name": "La marea cambiante",
       "tint": "#7ab6d4",
-      "description": "The blade that never stops turning: spin through them, drag them under, and drink from the fight."
+      "description": "La hoja que nunca deja de girar: atraviesa a tus enemigos, arrástralos hacia las profundidades y aliméntate del combate."
     },
     {
       "id": "wind",
-      "name": "The Long Shadow",
+      "name": "La sombra alargada",
       "tint": "#8a6fd1",
-      "description": "Step through the dark and shoot out of it: the Veil, the Umbra and the long shot."
+      "description": "Atraviesa la oscuridad y sal disparado de ella: el Velo, la Umbría y el disparo de largo alcance."
     },
     {
       "id": "stone",
-      "name": "The Banked Fire",
+      "name": "El fuego contenido",
       "tint": "#e0773a",
-      "description": "Hold your ground and keep them in the fire: heavy blows that burn, a fire banked around you, and the life to stand in it."
+      "description": "Mantén tu posición y déjalos en medio del fuego: golpes pesados que queman, un fuego contenido a tu alrededor y la Vida necesaria para resistirlo."
     },
     {
       "id": "echo",
-      "name": "The Echo",
+      "name": "El eco",
       "tint": "#bdb2f2",
-      "description": "What happened once happens again: echoes, held moments and long storms."
+      "description": "Lo que ocurrió una vez vuelve a ocurrir: ecos, momentos prolongados y largas tormentas."
     }
   ],
   "common": {
-    "name": "Common",
+    "name": "Común",
     "tint": "#c9ccd1",
     "places": [
-      {"id": "hardy", "name": "Hardy", "description": "+10 Maximum Life.", "icon": "common_life", "statMods": [{"stat": "maxLife", "op": "add", "value": 10}]},
-      {"id": "clear_head", "name": "Clear Head", "description": "+8 Maximum Mana.", "icon": "common_mana", "statMods": [{"stat": "maxMana", "op": "add", "value": 8}]},
-      {"id": "even_keel", "name": "Even Keel", "description": "+6 Maximum Life, +5 Maximum Mana.", "icon": "common_both", "statMods": [{"stat": "maxLife", "op": "add", "value": 6}, {"stat": "maxMana", "op": "add", "value": 5}]},
-      {"id": "weathered", "name": "Weathered", "description": "+12 Armour.", "icon": "common_armour", "statMods": [{"stat": "armour", "op": "add", "value": 12}]},
-      {"id": "sheltered", "name": "Sheltered", "description": "+6% Storm Resistance, +6% Frost Resistance.", "icon": "common_shelter", "statMods": [{"stat": "stormResist", "op": "add", "value": 0.06}, {"stat": "frostResist", "op": "add", "value": 0.06}]},
-      {"id": "light_step", "name": "Light Step", "description": "+3% Movement Speed.", "icon": "common_step", "statMods": [{"stat": "moveSpeed", "op": "percent", "value": 0.03}]}
+      {"id": "hardy", "name": "Resistente", "description": "+10 a la Vida máxima.", "icon": "common_life", "statMods": [{"stat": "maxLife", "op": "add", "value": 10}]},
+      {"id": "clear_head", "name": "Mente despejada", "description": "+8 a Maná máximo.", "icon": "common_mana", "statMods": [{"stat": "maxMana", "op": "add", "value": 8}]},
+      {"id": "even_keel", "name": "Equilibrio perfecto", "description": "+6 a Vida máxima, +5 a Maná máximo.", "icon": "common_both", "statMods": [{"stat": "maxLife", "op": "add", "value": 6}, {"stat": "maxMana", "op": "add", "value": 5}]},
+      {"id": "weathered", "name": "Curtido por la intemperie", "description": "+12 a Armadura.", "icon": "common_armour", "statMods": [{"stat": "armour", "op": "add", "value": 12}]},
+      {"id": "sheltered", "name": "A resguardo", "description": "+6% a Resistencia a la Tormenta, +6% a Resistencia al Hielo.", "icon": "common_shelter", "statMods": [{"stat": "stormResist", "op": "add", "value": 0.06}, {"stat": "frostResist", "op": "add", "value": 0.06}]},
+      {"id": "light_step", "name": "Paso ligero", "description": "+3% a Velocidad de movimiento.", "icon": "common_step", "statMods": [{"stat": "moveSpeed", "op": "percent", "value": 0.03}]}
     ]
   },
   "specialties": [
-    {"id": "hearth", "name": "The Hearth", "path": "stone", "description": "Stand in the fire and outlast it: life, armour, and a hearth that flares back at every blow."},
-    {"id": "kiln", "name": "The Kiln", "path": "stone", "description": "Everything you strike keeps burning: fire that lands harder and leaves the ground alight under them."},
-    {"id": "rockfall", "name": "The Rockfall", "path": "stone", "description": "Heavy blows that bring the hillside down: slower swings that land harder and throw them far."},
-    {"id": "maelstrom", "name": "The Maelstrom", "path": "blade", "description": "The spin that drags the room into it: the Millwheel pulls them in, widens and holds them close."},
-    {"id": "spring_tide", "name": "The Spring Tide", "path": "blade", "description": "Drink from the fight: every blow gives back, and the flasks never run dry."},
-    {"id": "tidal_bore", "name": "The Tidal Bore", "path": "blade", "description": "Ride the wave in: every roll throws water ahead of you, and the Millrace runs far and fast."},
-    {"id": "squall_line", "name": "The Squall Line", "path": "storm", "description": "A storm that walks with you: storms that stay close, follow you and heal you."},
-    {"id": "forked_sky", "name": "The Forked Sky", "path": "storm", "description": "Lightning that never stops at one: more jumps, more bolts, and every kill forks again."},
-    {"id": "static_front", "name": "The Static Front", "path": "storm", "description": "The charge in the air before it breaks: deep mana, heavy brands, and lightning that answers when you are struck."},
-    {"id": "hailfall", "name": "The Hailfall", "path": "wind", "description": "Volleys that break across a crowd: more bolts, wider fans, and shots that leap on."},
-    {"id": "penumbra", "name": "The Penumbra", "path": "wind", "description": "Carry the dark with you: an Umbra that grows, lasts, and rises again on every kill."},
-    {"id": "far_dark", "name": "The Far Dark", "path": "wind", "description": "The long shot from deep cover: bolts that drive through everything, and a veil after every roll."}
+    {"id": "hearth", "name": "El Hogar", "path": "stone", "description": "Párate entre las llamas y resiste: vida, armadura y un hogar que responde a cada golpe con una llamarada."},
+    {"id": "kiln", "name": "El Horno", "path": "stone", "description": "Todo lo que golpeas sigue ardiendo: fuego que impacta con más fuerza y deja el suelo en llamas bajo sus pies."},
+    {"id": "rockfall", "name": "El Derrumbe", "path": "stone", "description": "Golpes pesados que hacen caer la ladera: movimientos más lentos que impactan con más fuerza y los lanzan lejos."},
+    {"id": "maelstrom", "name": "El Maelstrom", "path": "blade", "description": "El giro que arrastra a todos: la Rueda de molino los atrae, se expande y los mantiene cerca."},
+    {"id": "spring_tide", "name": "La marea primaveral", "path": "blade", "description": "Sácale provecho al combate: cada golpe te devuelve fuerzas y los frascos nunca se vacían."},
+    {"id": "tidal_bore", "name": "La ola de marea", "path": "blade", "description": "Surca la ola: cada rodada evasiva lanza agua hacia delante y la Corriente del molino llega más lejos y fluye más rápido."},
+    {"id": "squall_line", "name": "La línea de turbonadas", "path": "storm", "description": "Una tormenta que avanza contigo: tormentas que se quedan cerca, te siguen y te curan."},
+    {"id": "forked_sky", "name": "El cielo bifurcado", "path": "storm", "description": "Relámpagos que no se detienen en un solo objetivo: más saltos, más rayos y cada enemigo que eliminas provoca otra bifurcación."},
+    {"id": "static_front", "name": "El frente estático", "path": "storm", "description": "La carga en el aire antes de la tormenta: mucho maná, marcas poderosas y relámpagos que responden cuando recibes un golpe."},
+    {"id": "hailfall", "name": "La granizada", "path": "wind", "description": "Ráfagas que estallan entre la multitud: más pernos, abanicos más amplios y disparos que siguen rebotando."},
+    {"id": "penumbra", "name": "La penumbra", "path": "wind", "description": "Lleva la oscuridad contigo: una Umbría que crece, dura más y vuelve a surgir con cada enemigo que eliminas."},
+    {"id": "far_dark", "name": "La oscuridad lejana", "path": "wind", "description": "El disparo a larga distancia desde las sombras: pernos que atraviesan todo y un velo después de cada rodada evasiva."}
   ],
   "groups": [
     {
       "id": "lightning",
-      "name": "lightning skills",
+      "name": "habilidades de rayo",
       "skills": [
         "storm_bolt",
         "forkline",
@@ -82,7 +82,7 @@
     },
     {
       "id": "weapon",
-      "name": "weapon skills",
+      "name": "habilidades con armas",
       "skills": [
         "cleave",
         "thunderhead",
@@ -91,7 +91,7 @@
     },
     {
       "id": "motion",
-      "name": "movement skills",
+      "name": "habilidades de movimiento",
       "skills": [
         "dodge_roll",
         "mist_step",
@@ -100,7 +100,7 @@
     },
     {
       "id": "spread",
-      "name": "area skills",
+      "name": "habilidades de área",
       "skills": [
         "thunderclap",
         "squall",
@@ -113,7 +113,7 @@
     },
     {
       "id": "missile",
-      "name": "bolt skills",
+      "name": "habilidades con pernos",
       "skills": [
         "storm_bolt",
         "static_brand",
@@ -123,7 +123,7 @@
     },
     {
       "id": "roll",
-      "name": "rolls",
+      "name": "rodadas evasivas",
       "skills": [
         "dodge_roll",
         "dodge_roll_slip",
@@ -133,7 +133,7 @@
     },
     {
       "id": "spin",
-      "name": "spin skills",
+      "name": "habilidades giratorias",
       "skills": [
         "cleave_whirl",
         "cleave_millwheel"
@@ -141,7 +141,7 @@
     },
     {
       "id": "fire",
-      "name": "fire skills",
+      "name": "habilidades de fuego",
       "skills": [
         "thunderclap",
         "fire_burst",
@@ -151,7 +151,7 @@
     },
     {
       "id": "shot",
-      "name": "crossbow shots",
+      "name": "disparos de ballesta",
       "skills": [
         "quarrel",
         "quarrel_fan",
@@ -161,7 +161,7 @@
     },
     {
       "id": "main",
-      "name": "main attacks",
+      "name": "ataques principales",
       "skills": [
         "cleave",
         "cleave_whirl",
@@ -178,10 +178,10 @@
     }
   ],
   "weaponGroups": [
-    { "id": "blade", "name": "Blade", "kinds": ["blade", "axe"], "starter": "warden_shortsword", "needs": "a blade", "icon": "sword", "holds": "swords, sabres, knives, dirks and axes", "path": "blade" },
-    { "id": "heavy", "name": "Heavy weapon", "kinds": ["greatsword", "blunt"], "starter": "tempest_greatsword", "needs": "a heavy weapon", "icon": "greatsword", "holds": "greatswords, maces and mauls", "path": "stone" },
-    { "id": "crossbow", "name": "Crossbow", "kinds": ["crossbow"], "starter": "hand_crossbow", "needs": "a crossbow", "icon": "crossbow", "holds": "crossbows, arbalests and repeaters", "path": "wind" },
-    { "id": "staff", "name": "Staff", "kinds": ["staff"], "starter": "driftwood_staff", "needs": "a staff", "icon": "staff", "holds": "staves and rods", "path": "storm" }
+    { "id": "blade", "name": "Hoja", "kinds": ["blade", "axe"], "starter": "warden_shortsword", "needs": "a blade", "icon": "sword", "holds": "swords, sabres, knives, dirks and axes", "path": "blade" },
+    { "id": "heavy", "name": "Arma pesada", "kinds": ["greatsword", "blunt"], "starter": "tempest_greatsword", "needs": "a heavy weapon", "icon": "greatsword", "holds": "greatswords, maces and mauls", "path": "stone" },
+    { "id": "crossbow", "name": "Ballesta", "kinds": ["crossbow"], "starter": "hand_crossbow", "needs": "a crossbow", "icon": "crossbow", "holds": "crossbows, arbalests and repeaters", "path": "wind" },
+    { "id": "staff", "name": "Bastón", "kinds": ["staff"], "starter": "driftwood_staff", "needs": "a staff", "icon": "staff", "holds": "staves and rods", "path": "storm" }
   ],
   "grants": [
     {"id": "first_moment", "when": [{"type": "flag", "flag": "first_moment", "is": "cleared"}], "points": 1},

@@ -91,7 +91,7 @@ void test('every place on the Skill Tree is reachable from every starting place 
 });
 
 void test('the Skill Tree has five paths of a hundred places or more, every place reachable, with crossings between paths', (): void => {
-  assert.equal(content.chart.title, 'The Skill Tree');
+  assert.equal(content.chart.title, 'El Árbol de habilidades');
   assert.ok(content.skillTree.length >= 100);
   const pathOf: ReadonlyMap<string, string> = new Map<string, string>(content.skillTree.map((node: SkillTreeNodeDef): [string, string] => [node.id, node.path]));
   for (const path of content.chart.paths) {

@@ -59,15 +59,15 @@ export interface TableView {
 }
 
 const TABLE_WORDS = {
-  noLevels: 'No level to set out to yet',
-  pickFor: 'Pick one for',
-  nothingHere: 'Nothing to pick on this level',
-  from: 'From level',
-  plain: 'No conditions: an ordinary descent',
-  noLast: 'Nothing set out from here yet',
-  clash: 'Cannot be pinned with',
-  lean: "lean toward this level's gear",
-  lastGone: 'That level cannot be reached',
+  noLevels: 'Aún no hay niveles para emprender una expedición',
+  pickFor: 'Elige una opción para',
+  nothingHere: 'No hay opciones para este nivel',
+  from: 'Desde el nivel',
+  plain: 'Sin condiciones: descenso normal',
+  noLast: 'Aún no has emprendido una expedición desde aquí',
+  clash: 'No se puede combinar con',
+  lean: 'favorece el equipo de este nivel',
+  lastGone: 'No puedes llegar a ese nivel',
 } as const;
 
 function percent(share: number): string {
@@ -77,8 +77,8 @@ function percent(share: number): string {
 function gainsText(reward: RunReward): string | null {
   if (reward.xp === 0 && reward.gold === 0 && reward.items === 0 && reward.rarity === 0) return null;
   const same: boolean = reward.xp === reward.gold && reward.gold === reward.items;
-  const gains: string = same ? `${percent(reward.xp)} experience, gold and items` : `${percent(reward.xp)} experience, ${percent(reward.gold)} gold, ${percent(reward.items)} items`;
-  return reward.rarity > 0 ? `${gains}, ${Math.round(reward.rarity * 100)}% of drops at least magic` : gains;
+  const gains: string = same ? `${percent(reward.xp)} de experiencia, oro y objetos` : `${percent(reward.xp)} de experiencia, ${percent(reward.gold)} de oro, ${percent(reward.items)} objetos`;
+  return reward.rarity > 0 ? `${gains}; al menos ${Math.round(reward.rarity * 100)}% de los objetos hallados serán mágicos` : gains;
 }
 
 export function rewardText(reward: RunReward, lean: number = 0): string {
@@ -88,14 +88,14 @@ export function rewardText(reward: RunReward, lean: number = 0): string {
 }
 
 export function dangerText(danger: number): string {
-  return danger <= 0 ? 'No added danger' : `Danger ${percent(danger)}`;
+  return danger <= 0 ? 'Sin peligro adicional' : `Peligro ${percent(danger)}`;
 }
 
 function rangeText(zone: ZoneDef): string {
   const levels: number[] = zone.packs.map((pack): number => pack.level ?? zone.level);
   const least: number = Math.min(zone.level, ...levels);
   const most: number = Math.max(zone.levelUpTo, ...levels);
-  return least === most ? `Level ${least}` : `Level ${least}–${most}`;
+  return least === most ? `Nivel ${least}` : `Nivel ${least}–${most}`;
 }
 
 function holdsText(kinds: readonly MonsterDef[]): string {
@@ -113,7 +113,7 @@ export function shapedLine(world: World, zoneId: string): string | null {
     const choice: string | null = pickName(world.content, entry.condition.pick, entry.pick);
     return choice === null ? entry.condition.name : `${entry.condition.name}: ${choice}`;
   });
-  return `Shaped · ${names.join(' · ')}`;
+  return `Modificado · ${names.join(' · ')}`;
 }
 
 export function firstPick(world: World): TablePick {
@@ -153,10 +153,10 @@ function unready(content: Content, pins: readonly RunPin[]): PinnedCondition | u
 }
 
 function setOutAction(world: World, zone: ZoneDef | null, pins: readonly RunPin[]): TableAction {
-  if (zone === null) return { command: null, label: 'Set out', note: TABLE_WORDS.noLevels, short: false };
+  if (zone === null) return { command: null, label: 'Empezar', note: TABLE_WORDS.noLevels, short: false };
   const price: number = runPrice(world.content, zone, pins);
   const short: boolean = isShort(price, world.player.gold);
-  const label: string = price > 0 ? `Set out · ${price} gold` : 'Set out';
+  const label: string = price > 0 ? `Emprender · ${price} de oro` : 'Emprender';
   const waiting: PinnedCondition | undefined = unready(world.content, pins);
   if (waiting !== undefined) return { command: null, label, note: `${TABLE_WORDS.pickFor} ${waiting.condition.name}`, short: false };
   const note: string = short ? goldShortText(price, world.player.gold) : pins.length === 0 ? TABLE_WORDS.plain : '';
@@ -165,14 +165,14 @@ function setOutAction(world: World, zone: ZoneDef | null, pins: readonly RunPin[
 
 function againAction(world: World): TableAction {
   const last: RunSetup | null = world.run.last;
-  if (last === null) return { command: null, label: 'Again', note: TABLE_WORDS.noLast, short: false };
+  if (last === null) return { command: null, label: 'Otra vez', note: TABLE_WORDS.noLast, short: false };
   const zone: ZoneDef | undefined = reachedLevels(world).find((entry: ZoneDef): boolean => entry.id === last.zone);
-  if (zone === undefined) return { command: null, label: 'Again', note: TABLE_WORDS.lastGone, short: false };
+  if (zone === undefined) return { command: null, label: 'Otra vez', note: TABLE_WORDS.lastGone, short: false };
   const price: number = runPrice(world.content, zone, last.pins);
   const short: boolean = isShort(price, world.player.gold);
   const names: string = pinned(world.content, last.pins).map((entry: PinnedCondition): string => entry.condition.name).join(', ');
   const note: string = short ? goldShortText(price, world.player.gold) : names === '' ? zone.name : `${zone.name}: ${names}`;
-  return { command: short ? null : { type: 'set_out', setup: last }, label: price > 0 ? `Again · ${price} gold` : 'Again', note, short };
+  return { command: short ? null : { type: 'set_out', setup: last }, label: price > 0 ? `Otra vez · ${price} de oro` : 'Otra vez', note, short };
 }
 
 export function tableView(world: World, pick: TablePick): TableView {

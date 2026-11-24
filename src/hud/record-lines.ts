@@ -84,17 +84,17 @@ export function foundLines(content: Content, found: Readonly<Record<string, numb
 export function recordLines(figures: RecordFigures): readonly RecordLine[] {
   const count = (value: number): RecordValue => ({ kind: 'count', value: whole(value) });
   return [
-    { id: 'played', name: 'Time played', value: { kind: 'time', seconds: whole(figures.playedSeconds) } },
-    { id: 'kills', name: 'Monsters slain', value: count(figures.kills) },
-    { id: 'bosses', name: 'Bosses slain', value: count(figures.bosses) },
-    { id: 'deaths', name: 'Deaths', value: count(figures.deaths) },
-    { id: 'level', name: 'Highest level', value: count(figures.level) },
-    { id: 'furthest', name: 'Furthest reached', value: { kind: 'text', text: figures.furthest } },
-    { id: 'hit', name: 'Biggest hit', value: count(figures.biggestHit) },
-    { id: 'gold', name: 'Gold looted', value: count(figures.goldLooted) },
-    { id: 'found', name: 'Items found', value: count(foundTotal(figures.found)) },
-    { id: 'quests', name: 'Quests done', value: count(figures.quests) },
-    { id: 'moments', name: 'Moments cleared', value: count(figures.moments) },
+    { id: 'played', name: 'Tiempo jugado', value: { kind: 'time', seconds: whole(figures.playedSeconds) } },
+    { id: 'kills', name: 'Monstruos derrotados', value: count(figures.kills) },
+    { id: 'bosses', name: 'Jefes derrotados', value: count(figures.bosses) },
+    { id: 'deaths', name: 'Muertes', value: count(figures.deaths) },
+    { id: 'level', name: 'Nivel más alto', value: count(figures.level) },
+    { id: 'furthest', name: 'Mayor avance', value: { kind: 'text', text: figures.furthest } },
+    { id: 'hit', name: 'Golpe más fuerte', value: count(figures.biggestHit) },
+    { id: 'gold', name: 'Oro saqueado', value: count(figures.goldLooted) },
+    { id: 'found', name: 'Objetos encontrados', value: count(foundTotal(figures.found)) },
+    { id: 'quests', name: 'Misiones completadas', value: count(figures.quests) },
+    { id: 'moments', name: 'Momentos superados', value: count(figures.moments) },
   ];
 }
 

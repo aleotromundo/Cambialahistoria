@@ -83,7 +83,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       button(tabs, 'set-tab', SECTION_LABELS[id], (): void => showSection(id)),
     );
   }
-  button(head, 'set-text-btn', 'Back', (): void => setView('main'));
+  button(head, 'set-text-btn', 'Volver', (): void => setView('main'));
 
   const body: HTMLDivElement = el('div', 'set-body', settingsView);
   const pages: Map<SettingsSection, HTMLDivElement> = new Map<SettingsSection, HTMLDivElement>();
@@ -129,7 +129,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
 
   const resume = (): void => api.close();
 
-  button(main, 'pause-btn', 'Back to the game', resume);
+  button(main, 'pause-btn', 'Volver al juego', resume);
   button(main, 'pause-btn', 'Settings', (): void => setView('settings'));
   const feedback: (() => void) | null = hooks.feedback;
   if (feedback !== null) {
@@ -138,7 +138,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
       feedback();
     });
   }
-  button(main, 'pause-btn', 'Back to lobby', (): void => {
+  button(main, 'pause-btn', 'Volver a la sala', (): void => {
     api.close();
     hooks.onTitle();
   });

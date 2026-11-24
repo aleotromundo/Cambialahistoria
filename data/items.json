@@ -5,7 +5,7 @@
   "rarities": [
     {
       "id": "common",
-      "name": "Common",
+      "name": "Común",
       "color": "#c9ccd1",
       "weight": 58,
       "affixMin": 0,
@@ -13,7 +13,7 @@
     },
     {
       "id": "magic",
-      "name": "Magic",
+      "name": "Mágico",
       "color": "#6fa8ff",
       "weight": 29,
       "affixMin": 1,
@@ -21,7 +21,7 @@
     },
     {
       "id": "rare",
-      "name": "Rare",
+      "name": "Raro",
       "color": "#f1d06b",
       "marker": "shaft",
       "weight": 11,
@@ -30,7 +30,7 @@
     },
     {
       "id": "stormtouched",
-      "name": "Legendary",
+      "name": "Legendario",
       "color": "#ff9a4a",
       "marker": "shaft",
       "weight": 1,
@@ -43,34 +43,34 @@
   "families": [
     {
       "id": "forkweather",
-      "name": "Forkweather"
+      "name": "Clima bifurcado"
     },
     {
       "id": "millwheel",
-      "name": "Millwheel"
+      "name": "Rueda de molino"
     },
     {
       "id": "quietshot",
-      "name": "Quietshot"
+      "name": "Disparo silencioso"
     },
     {
       "id": "groundbreaker",
-      "name": "Groundbreaker"
+      "name": "Quebratierra"
     },
     {
       "id": "rainmaker",
-      "name": "Rainmaker"
+      "name": "Hacedor de lluvia"
     },
     {
       "id": "mist_treader",
-      "name": "Mist-Treader"
+      "name": "Caminante de la niebla"
     }
   ],
   "leaning": true,
   "leans": [
     {
       "id": "hourfall",
-      "name": "Hourfall Caves",
+      "name": "Cuevas de la Caída de las Horas",
       "zones": [
         "under_hall",
         "under_hall_2",
@@ -90,7 +90,7 @@
     },
     {
       "id": "lava",
-      "name": "the Lava Depths",
+      "name": "las Profundidades de lava",
       "zones": [
         "lava_depths",
         "lava_depths_2",
@@ -110,7 +110,7 @@
     },
     {
       "id": "columned_hall",
-      "name": "the Columned Hall",
+      "name": "el Salón de las Columnas",
       "zones": [
         "ledger_hall",
         "ledger_hall_2",
@@ -131,7 +131,7 @@
     },
     {
       "id": "ledger_court",
-      "name": "the Inner Hall",
+      "name": "el Salón Interior",
       "zones": [
         "ledger_court"
       ],
@@ -145,7 +145,7 @@
   "bases": [
     {
       "id": "rusted_blade",
-      "name": "Rusted Blade",
+      "name": "Hoja oxidada",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -181,7 +181,7 @@
     },
     {
       "id": "worn_crossbow",
-      "name": "Worn Crossbow",
+      "name": "Ballesta gastada",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -228,7 +228,7 @@
     },
     {
       "id": "stormsteel_sword",
-      "name": "Stormsteel Sword",
+      "name": "Espada de acero tormentoso",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -269,7 +269,7 @@
     },
     {
       "id": "hexwood_staff",
-      "name": "Hexwood Staff",
+      "name": "Bastón de madera maldita",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -311,7 +311,7 @@
     },
     {
       "id": "hand_crossbow",
-      "name": "Hand Crossbow",
+      "name": "Ballesta de mano",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -358,7 +358,7 @@
     },
     {
       "id": "tempest_greatsword",
-      "name": "Tempest Greatsword",
+      "name": "Mandoble de la Tempestad",
       "slot": "weapon",
       "material": null,
       "weaponKind": "greatsword",
@@ -394,7 +394,7 @@
     },
     {
       "id": "penitent_cowl",
-      "name": "Penitent's Cowl",
+      "name": "Capucha del penitente",
       "slot": "head",
       "material": "cloth",
       "icon": "helm",
@@ -426,7 +426,7 @@
     },
     {
       "id": "wayfarer_hood",
-      "name": "Wayfarer's Hood",
+      "name": "Capucha del viajero",
       "slot": "head",
       "material": "leather",
       "icon": "helm",
@@ -458,7 +458,7 @@
     },
     {
       "id": "circlet",
-      "name": "Circlet",
+      "name": "Diadema",
       "slot": "head",
       "material": "cloth",
       "icon": "circlet",
@@ -495,7 +495,7 @@
     },
     {
       "id": "lens_mask",
-      "name": "Lens Mask",
+      "name": "Máscara con lentes",
       "slot": "head",
       "material": "leather",
       "icon": "mask",
@@ -532,7 +532,7 @@
     },
     {
       "id": "keeper_loupe",
-      "name": "Keeper's Loupe",
+      "name": "Lupa del guardián",
       "slot": "head",
       "material": "cloth",
       "icon": "circlet",
@@ -574,7 +574,7 @@
     },
     {
       "id": "slit_mask",
-      "name": "Slit Mask",
+      "name": "Máscara rasgada",
       "slot": "head",
       "material": "mail",
       "icon": "mask",
@@ -611,7 +611,7 @@
     },
     {
       "id": "iron_helm",
-      "name": "Iron Helm",
+      "name": "Yelmo de hierro",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -648,7 +648,7 @@
     },
     {
       "id": "spangenhelm",
-      "name": "Spangenhelm",
+      "name": "Yelmo con nasal",
       "slot": "head",
       "material": "mail",
       "icon": "helm",
@@ -680,7 +680,7 @@
     },
     {
       "id": "norman_helm",
-      "name": "Norman Helm",
+      "name": "Yelmo normando",
       "slot": "head",
       "material": "mail",
       "icon": "helm",
@@ -712,7 +712,7 @@
     },
     {
       "id": "sallet",
-      "name": "Sallet",
+      "name": "Celada",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -749,7 +749,7 @@
     },
     {
       "id": "barbute",
-      "name": "Barbute",
+      "name": "Barbuta",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -786,7 +786,7 @@
     },
     {
       "id": "visored_barbute",
-      "name": "Visored Barbute",
+      "name": "Barbuta con visera",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -823,7 +823,7 @@
     },
     {
       "id": "great_helm",
-      "name": "Great Helm",
+      "name": "Gran yelmo",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -860,7 +860,7 @@
     },
     {
       "id": "visored_bascinet",
-      "name": "Visored Bascinet",
+      "name": "Bacinete con visera",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -934,7 +934,7 @@
     },
     {
       "id": "gothic_bascinet",
-      "name": "Gothic Bascinet",
+      "name": "Bacinete gótico",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -971,7 +971,7 @@
     },
     {
       "id": "horned_helm",
-      "name": "Horned Helm",
+      "name": "Yelmo con cuernos",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -1008,7 +1008,7 @@
     },
     {
       "id": "spiked_war_helm",
-      "name": "Spiked War-Helm",
+      "name": "Yelmo de guerra con púas",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -1050,7 +1050,7 @@
     },
     {
       "id": "saltworn_shirt",
-      "name": "Saltworn Shirt",
+      "name": "Camisa desgastada por la sal",
       "slot": "chest",
       "material": "cloth",
       "icon": "armour",
@@ -1083,7 +1083,7 @@
     },
     {
       "id": "penitent_robe",
-      "name": "Penitent's Robe",
+      "name": "Túnica del penitente",
       "slot": "chest",
       "material": "cloth",
       "icon": "armour",
@@ -1116,7 +1116,7 @@
     },
     {
       "id": "drowned_leathers",
-      "name": "Drowned Leathers",
+      "name": "Cueros ahogados",
       "slot": "chest",
       "material": "leather",
       "icon": "armour",
@@ -1149,7 +1149,7 @@
     },
     {
       "id": "ringmail_hauberk",
-      "name": "Ringmail Hauberk",
+      "name": "Cota de malla anillada",
       "slot": "chest",
       "material": "mail",
       "icon": "armour",
@@ -1182,7 +1182,7 @@
     },
     {
       "id": "squall_plate",
-      "name": "Squall Plate",
+      "name": "Coraza de Turbonada",
       "slot": "chest",
       "material": "plate",
       "icon": "armour",
@@ -1215,7 +1215,7 @@
     },
     {
       "id": "tanner_gloves",
-      "name": "Tanner's Gloves",
+      "name": "Guantes del curtidor",
       "slot": "hands",
       "material": "leather",
       "icon": "gloves",
@@ -1248,7 +1248,7 @@
     },
     {
       "id": "strapped_bracers",
-      "name": "Strapped Bracers",
+      "name": "Brazales con correas",
       "slot": "hands",
       "material": "leather",
       "icon": "gloves",
@@ -1281,7 +1281,7 @@
     },
     {
       "id": "marsh_breeches",
-      "name": "Marsh Breeches",
+      "name": "Calzones del pantano",
       "slot": "legs",
       "material": "cloth",
       "icon": "legs",
@@ -1314,7 +1314,7 @@
     },
     {
       "id": "gravedigger_breeches",
-      "name": "Gravedigger's Breeches",
+      "name": "Calzones del sepulturero",
       "slot": "legs",
       "material": "leather",
       "icon": "legs",
@@ -1347,7 +1347,7 @@
     },
     {
       "id": "stalker_leggings",
-      "name": "Stalker's Leggings",
+      "name": "Calzas del acechador",
       "slot": "legs",
       "material": "leather",
       "icon": "legs",
@@ -1385,7 +1385,7 @@
     },
     {
       "id": "mudcaked_boots",
-      "name": "Mudcaked Boots",
+      "name": "Botas cubiertas de lodo",
       "slot": "feet",
       "material": "cloth",
       "icon": "boots",
@@ -1422,7 +1422,7 @@
     },
     {
       "id": "strider_boots",
-      "name": "Strider's Boots",
+      "name": "Botas del caminante",
       "slot": "feet",
       "material": "leather",
       "icon": "boots",
@@ -1454,7 +1454,7 @@
     },
     {
       "id": "traveller_coat",
-      "name": "Traveller's Coat",
+      "name": "Abrigo del viajero",
       "slot": "chest",
       "material": "cloth",
       "icon": "armour",
@@ -1487,7 +1487,7 @@
     },
     {
       "id": "traveller_trousers",
-      "name": "Traveller's Trousers",
+      "name": "Pantalones del viajero",
       "slot": "legs",
       "material": "cloth",
       "icon": "legs",
@@ -1520,7 +1520,7 @@
     },
     {
       "id": "traveller_boots",
-      "name": "Traveller's Boots",
+      "name": "Botas del viajero",
       "slot": "feet",
       "material": "cloth",
       "icon": "boots",
@@ -1552,7 +1552,7 @@
     },
     {
       "id": "gale_charm",
-      "name": "Gale Charm",
+      "name": "Amuleto de vendaval",
       "slot": "charm",
       "material": null,
       "icon": "charm",
@@ -1584,7 +1584,7 @@
     },
     {
       "id": "ember_charm",
-      "name": "Ember Charm",
+      "name": "Amuleto de brasa",
       "slot": "charm",
       "material": null,
       "icon": "charm",
@@ -1611,7 +1611,7 @@
     },
     {
       "id": "warden_shortsword",
-      "name": "Warden's Shortsword",
+      "name": "Espada corta del Guardián",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -1647,7 +1647,7 @@
     },
     {
       "id": "driftwood_staff",
-      "name": "Driftwood Staff",
+      "name": "Bastón de madera flotante",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -1689,7 +1689,7 @@
     },
     {
       "id": "woodsman_hatchet",
-      "name": "Woodsman's Hatchet",
+      "name": "Hacha del leñador",
       "slot": "weapon",
       "material": null,
       "weaponKind": "axe",
@@ -1725,7 +1725,7 @@
     },
     {
       "id": "reed_crossbow",
-      "name": "Reed Crossbow",
+      "name": "Ballesta de junco",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -1777,7 +1777,7 @@
     },
     {
       "id": "tidecut_sabre",
-      "name": "Tidecut Sabre",
+      "name": "Sable cortamareas",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -1818,7 +1818,7 @@
     },
     {
       "id": "flanged_mace",
-      "name": "Flanged Mace",
+      "name": "Maza con aletas",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blunt",
@@ -1859,7 +1859,7 @@
     },
     {
       "id": "keepers_rod",
-      "name": "Keeper's Rod",
+      "name": "Vara del custodio",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -1906,7 +1906,7 @@
     },
     {
       "id": "iron_maul",
-      "name": "Iron Maul",
+      "name": "Mazo de hierro",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blunt",
@@ -1942,7 +1942,7 @@
     },
     {
       "id": "bearded_axe",
-      "name": "Bearded Axe",
+      "name": "Hacha de barba ancha",
       "slot": "weapon",
       "material": null,
       "weaponKind": "axe",
@@ -1983,7 +1983,7 @@
     },
     {
       "id": "riverbreaker",
-      "name": "Riverbreaker",
+      "name": "Quebrarríos",
       "slot": "weapon",
       "material": null,
       "weaponKind": "greatsword",
@@ -2024,7 +2024,7 @@
     },
     {
       "id": "warden_broadsword",
-      "name": "Warden's Broadsword",
+      "name": "Espadón del Guardián",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -2065,7 +2065,7 @@
     },
     {
       "id": "warden_arbalest",
-      "name": "Warden's Arbalest",
+      "name": "Ballesta de repetición del Guardián",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -2122,7 +2122,7 @@
     },
     {
       "id": "stormcaller_stave",
-      "name": "Stormcaller's Stave",
+      "name": "Bastón del invocatormentas",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -2174,7 +2174,7 @@
     },
     {
       "id": "gale_repeater",
-      "name": "Gale Repeater",
+      "name": "Ballesta de repetición de vendaval",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -2231,7 +2231,7 @@
     },
     {
       "id": "stormglass_longsword",
-      "name": "Stormglass Longsword",
+      "name": "Espada larga de vidrio tormentoso",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -2277,7 +2277,7 @@
     },
     {
       "id": "skinning_knife",
-      "name": "Skinning Knife",
+      "name": "Cuchillo de desuello",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -2323,7 +2323,7 @@
     },
     {
       "id": "quarry_maul",
-      "name": "Quarry Maul",
+      "name": "Mazo de cantera",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blunt",
@@ -2369,7 +2369,7 @@
     },
     {
       "id": "couriers_dirk",
-      "name": "Courier's Dirk",
+      "name": "Daga del mensajero",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -2415,7 +2415,7 @@
     },
     {
       "id": "ashwood_stave",
-      "name": "Ashwood Stave",
+      "name": "Bastón de fresno",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -2467,7 +2467,7 @@
     },
     {
       "id": "fordbreaker",
-      "name": "Fordbreaker",
+      "name": "Rompevados",
       "slot": "weapon",
       "material": null,
       "weaponKind": "greatsword",
@@ -2513,7 +2513,7 @@
     },
     {
       "id": "longwatch_arbalest",
-      "name": "Longwatch Arbalest",
+      "name": "Ballesta de la larga guardia",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -2565,7 +2565,7 @@
     },
     {
       "id": "windcutter",
-      "name": "Windcutter",
+      "name": "Cortavientos",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -2616,7 +2616,7 @@
     },
     {
       "id": "thunderwood_staff",
-      "name": "Thunderwood Staff",
+      "name": "Bastón de madera de trueno",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -2673,7 +2673,7 @@
     },
     {
       "id": "cairn_maul",
-      "name": "Cairn Maul",
+      "name": "Mazo de túmulo",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blunt",
@@ -2724,7 +2724,7 @@
     },
     {
       "id": "stormlatch_repeater",
-      "name": "Stormlatch Repeater",
+      "name": "Repetidora de cierre de tormenta",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -2776,7 +2776,7 @@
     },
     {
       "id": "deepwater_staff",
-      "name": "Deepwater Staff",
+      "name": "Bastón de aguas profundas",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -2833,7 +2833,7 @@
     },
     {
       "id": "gullwing_blade",
-      "name": "Gullwing Blade",
+      "name": "Hoja de ala de gaviota",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -2889,7 +2889,7 @@
     },
     {
       "id": "stitched_tunic",
-      "name": "Stitched Tunic",
+      "name": "Túnica cosida",
       "slot": "chest",
       "material": "cloth",
       "icon": "armour",
@@ -2922,7 +2922,7 @@
     },
     {
       "id": "warden_jerkin",
-      "name": "Warden's Jerkin",
+      "name": "Casaca del Guardián",
       "slot": "chest",
       "material": "leather",
       "icon": "armour",
@@ -2955,7 +2955,7 @@
     },
     {
       "id": "salvaged_hauberk",
-      "name": "Salvaged Hauberk",
+      "name": "Cota de malla recuperada",
       "slot": "chest",
       "material": "mail",
       "icon": "armour",
@@ -2988,7 +2988,7 @@
     },
     {
       "id": "stormwarden_plate",
-      "name": "Stormwarden Plate",
+      "name": "Coraza del Guardián de la tormenta",
       "slot": "chest",
       "material": "plate",
       "icon": "armour",
@@ -3026,7 +3026,7 @@
     },
     {
       "id": "warden_gloves",
-      "name": "Warden's Gloves",
+      "name": "Guantes del Guardián",
       "slot": "hands",
       "material": "leather",
       "icon": "gloves",
@@ -3059,7 +3059,7 @@
     },
     {
       "id": "mailed_gauntlets",
-      "name": "Mailed Gauntlets",
+      "name": "Guanteletes de malla",
       "slot": "hands",
       "material": "mail",
       "icon": "gloves",
@@ -3092,7 +3092,7 @@
     },
     {
       "id": "stitched_trousers",
-      "name": "Stitched Trousers",
+      "name": "Pantalones cosidos",
       "slot": "legs",
       "material": "cloth",
       "icon": "legs",
@@ -3125,7 +3125,7 @@
     },
     {
       "id": "warden_breeches",
-      "name": "Warden's Breeches",
+      "name": "Calzones del Guardián",
       "slot": "legs",
       "material": "leather",
       "icon": "legs",
@@ -3158,7 +3158,7 @@
     },
     {
       "id": "mailed_chausses",
-      "name": "Mailed Chausses",
+      "name": "Calzas de malla",
       "slot": "legs",
       "material": "mail",
       "icon": "legs",
@@ -3191,7 +3191,7 @@
     },
     {
       "id": "warden_boots",
-      "name": "Warden's Boots",
+      "name": "Botas del Guardián",
       "slot": "feet",
       "material": "leather",
       "icon": "boots",
@@ -3228,7 +3228,7 @@
     },
     {
       "id": "ironshod_boots",
-      "name": "Iron-shod Boots",
+      "name": "Botas con refuerzo de hierro",
       "slot": "feet",
       "material": "mail",
       "icon": "boots",
@@ -3260,7 +3260,7 @@
     },
     {
       "id": "drover_smock",
-      "name": "Drover's Smock",
+      "name": "Blusón del arriero",
       "slot": "chest",
       "material": "cloth",
       "icon": "armour",
@@ -3299,7 +3299,7 @@
     },
     {
       "id": "militia_tunic",
-      "name": "Militia Tunic",
+      "name": "Túnica de miliciano",
       "slot": "chest",
       "material": "cloth",
       "icon": "armour",
@@ -3338,7 +3338,7 @@
     },
     {
       "id": "open_jerkin",
-      "name": "Open Jerkin",
+      "name": "Jubón abierto",
       "slot": "chest",
       "material": "leather",
       "icon": "armour",
@@ -3377,7 +3377,7 @@
     },
     {
       "id": "iron_vambraces",
-      "name": "Iron Vambraces",
+      "name": "Brazales de hierro",
       "slot": "hands",
       "material": "plate",
       "icon": "gloves",
@@ -3410,7 +3410,7 @@
     },
     {
       "id": "iron_greaves",
-      "name": "Iron Greaves",
+      "name": "Grebas de hierro",
       "slot": "legs",
       "material": "plate",
       "icon": "legs",
@@ -3448,7 +3448,7 @@
     },
     {
       "id": "iron_sabatons",
-      "name": "Iron Sabatons",
+      "name": "Escarpes de hierro",
       "slot": "feet",
       "material": "plate",
       "icon": "boots",
@@ -3485,7 +3485,7 @@
     },
     {
       "id": "blackened_plate",
-      "name": "Blackened Plate",
+      "name": "Coraza ennegrecida",
       "slot": "chest",
       "material": "plate",
       "icon": "armour",
@@ -3523,7 +3523,7 @@
     },
     {
       "id": "gilded_token",
-      "name": "Gilded Token",
+      "name": "Ficha dorada",
       "slot": "charm",
       "material": null,
       "icon": "charm",
@@ -3555,7 +3555,7 @@
     },
     {
       "id": "tidestone_charm",
-      "name": "Tidestone Charm",
+      "name": "Amuleto de piedra de marea",
       "slot": "charm",
       "material": null,
       "icon": "charm",
@@ -3587,7 +3587,7 @@
     },
     {
       "id": "storm_idol",
-      "name": "Storm Idol",
+      "name": "Ídolo de la Tormenta",
       "slot": "charm",
       "material": null,
       "icon": "charm",
@@ -3619,7 +3619,7 @@
     },
     {
       "id": "worn_journal",
-      "name": "Worn Journal",
+      "name": "Diario gastado",
       "slot": null,
       "book": "journal",
       "story": true,
@@ -3633,7 +3633,7 @@
     },
     {
       "id": "folded_hour",
-      "name": "Return Thread",
+      "name": "Hilo de retorno",
       "slot": null,
       "keepsake": "thread_ring",
       "material": null,
@@ -3653,7 +3653,7 @@
     },
     {
       "id": "wirethread_gloves",
-      "name": "Wirethread Gloves",
+      "name": "Guantes de hilo metálico",
       "slot": "hands",
       "material": "leather",
       "icon": "gloves",
@@ -3685,7 +3685,7 @@
       },
       "power": {
         "family": "forkweather",
-        "text": "An echo you kill releases a Forkline from where it stood.",
+        "text": "Un eco que matas libera una Línea bifurcada desde el lugar donde estaba.",
         "triggers": [
           {
             "on": "kill",
@@ -3701,7 +3701,7 @@
     },
     {
       "id": "lantern_of_second_sounds",
-      "name": "Lantern of Second Sounds",
+      "name": "Farol de los segundos sonidos",
       "slot": "charm",
       "material": null,
       "icon": "charm",
@@ -3732,7 +3732,7 @@
       },
       "power": {
         "family": "forkweather",
-        "text": "Lightning chains +2. Each hop hits harder instead of weaker.",
+        "text": "Los relámpagos encadenados rebotan +2 veces. Cada rebote inflige más daño en lugar de menos.",
         "skillMods": [
           {
             "group": "lightning",
@@ -3749,7 +3749,7 @@
     },
     {
       "id": "crown_of_the_struck_hour",
-      "name": "Crown of the Struck Hour",
+      "name": "Corona de la hora fulminada",
       "slot": "head",
       "material": "leather",
       "icon": "crown",
@@ -3773,7 +3773,7 @@
       ],
       "power": {
         "family": "forkweather",
-        "text": "Storm Bolt splits into a Forkline on its first hit.",
+        "text": "Rayo de tormenta se divide en una Línea bifurcada al impactar por primera vez.",
         "triggers": [
           {
             "on": "hit",
@@ -3792,7 +3792,7 @@
     },
     {
       "id": "the_millwheel",
-      "name": "The Millwheel",
+      "name": "La Rueda de molino",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blade",
@@ -3827,7 +3827,7 @@
       },
       "power": {
         "family": "millwheel",
-        "text": "Cleave becomes the Millwheel: hold it to keep turning as you run, and every enemy struck builds momentum.",
+        "text": "Tajo se convierte en la Rueda de molino: mantenlo pulsado para seguir girando mientras corres, y cada enemigo alcanzado acumula ímpetu.",
         "variants": [
           {
             "skill": "cleave",
@@ -3838,7 +3838,7 @@
     },
     {
       "id": "grinders_bracers",
-      "name": "Grinder's Bracers",
+      "name": "Brazales del triturador",
       "slot": "hands",
       "material": "leather",
       "icon": "gloves",
@@ -3870,7 +3870,7 @@
       },
       "power": {
         "family": "millwheel",
-        "text": "Each enemy a Cleave form hits gives +3% attack speed and +2% damage for 3 s (stacks 10).",
+        "text": "Cada enemigo alcanzado por una forma de Tajo otorga +3% de velocidad de ataque y +2% de daño durante 3 s (se acumula hasta 10 veces).",
         "triggers": [
           {
             "on": "hit",
@@ -3905,7 +3905,7 @@
     },
     {
       "id": "gyre_stitched_breeches",
-      "name": "Gyre-Stitched Breeches",
+      "name": "Calzones cosidos en espiral",
       "slot": "legs",
       "material": "leather",
       "icon": "legs",
@@ -3942,7 +3942,7 @@
       },
       "power": {
         "family": "millwheel",
-        "text": "While spinning you pull enemies in, and every third turn lets out a Thunderclap.",
+        "text": "Mientras giras, atraes a los enemigos y cada tercer giro desata un Estruendo.",
         "skillMods": [
           {
             "group": "spin",
@@ -3968,7 +3968,7 @@
     },
     {
       "id": "quietshot",
-      "name": "Quietshot",
+      "name": "Disparo silencioso",
       "slot": "weapon",
       "material": null,
       "weaponKind": "crossbow",
@@ -4019,7 +4019,7 @@
       ],
       "power": {
         "family": "quietshot",
-        "text": "Quarrels pass through two more enemies, and for 3 s after a Dodge Roll you deal +60% damage.",
+        "text": "Los Pernos atraviesan a dos enemigos más y, durante 3 s después de una rodada evasiva, infliges +60% de daño.",
         "skillMods": [
           {
             "skill": "quarrel",
@@ -4047,7 +4047,7 @@
     },
     {
       "id": "nightjar_gloves",
-      "name": "Nightjar Gloves",
+      "name": "Guantes de chotacabras",
       "slot": "hands",
       "material": "leather",
       "icon": "gloves",
@@ -4084,7 +4084,7 @@
       },
       "power": {
         "family": "quietshot",
-        "text": "For 2 s after a Dodge Roll, every Quarrel looses two more bolts in a fan beside it.",
+        "text": "Durante 2 s después de una rodada evasiva, cada Perno dispara dos proyectiles adicionales en abanico a su lado.",
         "triggers": [
           {
             "on": "use",
@@ -4117,7 +4117,7 @@
     },
     {
       "id": "longsight_coat",
-      "name": "Longsight Coat",
+      "name": "Abrigo de largo alcance",
       "slot": "chest",
       "material": "leather",
       "icon": "armour",
@@ -4154,7 +4154,7 @@
       },
       "power": {
         "family": "quietshot",
-        "text": "Quarrels fly 40% further and hit 25% harder, and every shot throws what it strikes three times as far back.",
+        "text": "Los pernos vuelan 40% más lejos e impactan 25% más fuerte, y cada disparo lanza lo que golpea tres veces más lejos.",
         "skillMods": [
           {
             "skill": "quarrel",
@@ -4176,7 +4176,7 @@
     },
     {
       "id": "groundbreaker",
-      "name": "Groundbreaker",
+      "name": "Quebratierra",
       "slot": "weapon",
       "material": null,
       "weaponKind": "blunt",
@@ -4221,7 +4221,7 @@
       },
       "power": {
         "family": "groundbreaker",
-        "text": "Every third enemy Cleave strikes is hit by a Thunderclap, and each strike gives +5 Armour for 4 s (stacks 10).",
+        "text": "Cada tercer enemigo que golpea el Tajo recibe un Estruendo, y cada impacto otorga +5 de Armadura durante 4 s (se acumula hasta 10 veces).",
         "triggers": [
           {
             "on": "hit",
@@ -4255,7 +4255,7 @@
     },
     {
       "id": "bellwether_helm",
-      "name": "Bellwether Helm",
+      "name": "Yelmo del Heraldo",
       "slot": "head",
       "material": "plate",
       "icon": "helm",
@@ -4286,7 +4286,7 @@
       },
       "power": {
         "family": "groundbreaker",
-        "text": "Every fourth blow that lands on you answers with a Thunderclap around you, and Thunderclap reaches 20% wider.",
+        "text": "Cada cuarto golpe que recibes responde con un Estruendo a tu alrededor, y el alcance del Estruendo aumenta 20%.",
         "skillMods": [
           {
             "skill": "thunderclap",
@@ -4310,7 +4310,7 @@
     },
     {
       "id": "anvilback_hauberk",
-      "name": "Anvilback Hauberk",
+      "name": "Cota de malla de Espalda de Yunque",
       "slot": "chest",
       "material": "plate",
       "icon": "armour",
@@ -4342,7 +4342,7 @@
       },
       "power": {
         "family": "groundbreaker",
-        "text": "Letting go of a Heaving Cleave also slams a Thunderclap around you, and each enemy a Thunderclap strikes gives +4 Armour for 5 s (stacks 15).",
+        "text": "Al soltar un Tajo pesado, también desatas un Estruendo a tu alrededor, y cada enemigo alcanzado por un Estruendo otorga +4 de Armadura durante 5 s (se acumula hasta 15 veces).",
         "triggers": [
           {
             "on": "use",
@@ -4375,7 +4375,7 @@
     },
     {
       "id": "rainmaker",
-      "name": "Rainmaker",
+      "name": "Hacedor de lluvia",
       "slot": "weapon",
       "material": null,
       "weaponKind": "staff",
@@ -4415,7 +4415,7 @@
       },
       "power": {
         "family": "rainmaker",
-        "text": "Every Squall you call also breaks over you, and area skills last 20% longer.",
+        "text": "Cada Turbonada que invocas también cae sobre ti, y las habilidades de área duran 20% más.",
         "skillMods": [
           {
             "group": "spread",
@@ -4446,7 +4446,7 @@
     },
     {
       "id": "mist_treader_boots",
-      "name": "Mist-Treader Boots",
+      "name": "Botas Caminanieblas",
       "slot": "feet",
       "material": "leather",
       "icon": "boots",
@@ -4482,7 +4482,7 @@
       },
       "power": {
         "family": "mist_treader",
-        "text": "Every roll leaves an Undertow where you land, at most once a second, and your roll comes back 15% sooner.",
+        "text": "Cada rodada deja una Resaca donde aterrizas, como máximo una vez por segundo, y puedes volver a rodar 15% antes.",
         "skillMods": [
           {
             "group": "roll",
@@ -4510,7 +4510,7 @@
   "affixes": [
     {
       "id": "honed",
-      "label": "Honed",
+      "label": "Afilado",
       "slots": [
         "weapon",
         "hands",
@@ -4524,7 +4524,7 @@
     },
     {
       "id": "quick",
-      "label": "Quick",
+      "label": "Rápido",
       "slots": [
         "weapon",
         "hands",
@@ -4538,7 +4538,7 @@
     },
     {
       "id": "keen",
-      "label": "Keen",
+      "label": "Certero",
       "slots": [
         "weapon",
         "head",
@@ -4552,7 +4552,7 @@
     },
     {
       "id": "hale",
-      "label": "Hale",
+      "label": "Robusto",
       "slots": [
         "head",
         "chest",
@@ -4569,7 +4569,7 @@
     },
     {
       "id": "plated",
-      "label": "Plated",
+      "label": "Blindado",
       "slots": [
         "head",
         "chest",
@@ -4585,7 +4585,7 @@
     },
     {
       "id": "grounded",
-      "label": "Grounded",
+      "label": "Firme",
       "slots": [
         "head",
         "chest",
@@ -4602,7 +4602,7 @@
     },
     {
       "id": "hearthwarm",
-      "label": "Hearthwarm",
+      "label": "Cálido como hogar",
       "slots": [
         "head",
         "chest",
@@ -4619,7 +4619,7 @@
     },
     {
       "id": "fleet",
-      "label": "Fleet",
+      "label": "Veloz",
       "slots": [
         "legs",
         "feet"
@@ -4632,7 +4632,7 @@
     },
     {
       "id": "brimming",
-      "label": "Brimming",
+      "label": "Rebosante",
       "slots": [
         "weapon",
         "head",
@@ -4647,7 +4647,7 @@
     },
     {
       "id": "mending",
-      "label": "Mending",
+      "label": "Reparador",
       "slots": [
         "head",
         "chest",
@@ -4662,7 +4662,7 @@
     },
     {
       "id": "clear",
-      "label": "Clear",
+      "label": "Lúcido",
       "slots": [
         "weapon",
         "head",
@@ -4691,7 +4691,7 @@
     },
     {
       "id": "sturdy",
-      "label": "Sturdy",
+      "label": "Robusto",
       "slots": [
         "chest",
         "hands",
@@ -4706,7 +4706,7 @@
     },
     {
       "id": "jagged",
-      "label": "Jagged",
+      "label": "Dentado",
       "slots": [
         "weapon"
       ],

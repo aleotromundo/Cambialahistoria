@@ -1,7 +1,7 @@
 [
   {
     "id": "unfinished",
-    "name": "The Unfinished",
+    "name": "Los Inconclusos",
     "palette": {
       "tints": [
         "#f2e4d6",
@@ -35,7 +35,7 @@
   },
   {
     "id": "still",
-    "name": "The Still",
+    "name": "Los Inmutables",
     "palette": {
       "tints": [
         "#c4c8ca",
@@ -56,7 +56,7 @@
   },
   {
     "id": "menders",
-    "name": "The Menders",
+    "name": "Los Reparadores",
     "palette": {
       "tints": [
         "#fff4e6",
@@ -84,7 +84,7 @@
   },
   {
     "id": "timekeepers",
-    "name": "The Timekeepers",
+    "name": "Los Guardianes del Tiempo",
     "palette": {
       "tints": [
         "#fff4e6"
@@ -125,7 +125,7 @@
   },
   {
     "id": "wardens",
-    "name": "The Wardens",
+    "name": "Los Guardianes",
     "palette": {
       "tints": [
         "#f2e2d0"
@@ -156,7 +156,7 @@
   },
   {
     "id": "stormcallers",
-    "name": "The Stormcallers",
+    "name": "Los Invocadores de Tormentas",
     "palette": {
       "tints": [
         "#f4eedd"
@@ -180,7 +180,7 @@
   },
   {
     "id": "echoes",
-    "name": "Echoes",
+    "name": "Ecos",
     "palette": {
       "tints": [
         "#ffffff"
@@ -195,7 +195,7 @@
   },
   {
     "id": "beasts",
-    "name": "Beasts",
+    "name": "Bestias",
     "palette": {
       "tints": [
         "#a39a8c",
@@ -213,7 +213,7 @@
   },
   {
     "id": "cinders",
-    "name": "Cinders",
+    "name": "Rescoldo",
     "palette": {
       "tints": [
         "#7a645a",
@@ -234,7 +234,7 @@
   },
   {
     "id": "timekeeper_works",
-    "name": "The Timekeepers",
+    "name": "Los Guardianes del Tiempo",
     "palette": {
       "tints": [
         "#fff4e6"

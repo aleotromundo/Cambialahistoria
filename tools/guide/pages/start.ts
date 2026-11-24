@@ -8,8 +8,8 @@ import { bullets, esc, kbd, link, list, note, para, percent, section, seconds, s
 import type { PageBody } from '../layout.ts';
 
 const KEY_NAMES: Readonly<Record<string, string>> = {
-  mouse_left: 'Left mouse',
-  mouse_right: 'Right mouse',
+  mouse_left: 'Clic izquierdo',
+  mouse_right: 'Clic derecho',
   Space: 'Space',
   Tab: 'Tab',
   Escape: 'Esc',
@@ -73,38 +73,38 @@ export function startPage(data: GuideData): PageBody {
   const gate: number = gateLevel(data);
   return {
     kicker: 'Guide',
-    title: 'Getting started',
-    lede: 'The keys, your first ten minutes, and the handful of things nobody tells you.',
-    description: 'How to start The Lost Storm: controls on desktop and phone, the first ten minutes, flasks, the Hideout, the trader, the auction house, the waypoint and the map.',
+    title: 'Primeros pasos',
+    lede: 'Las teclas, tus primeros diez minutos y unas cuantas cosas que nadie te cuenta.',
+    description: 'Cómo empezar en The Lost Storm: controles en computadora y teléfono, los primeros diez minutos, frascos, El Refugio, el comerciante, la casa de subastas, el punto de ruta y el mapa.',
     body: [
       section(
         'controls',
         'Controls',
         [
-          para('Click the ground to walk there. Click an enemy to attack it, an item to pick it up, a person to talk, and an exit to go through it. Hold the button to keep walking or keep attacking. Hold Shift while you click to attack where you stand without walking. The mouse wheel zooms.'),
-          table({ head: ['Action', 'Key'], rows: controlRows(data), caption: 'The keys a new character starts with' }),
+          para('Haz clic en el suelo para caminar hasta ahí. Haz clic en un enemigo para atacarlo, en un objeto para recogerlo, en una persona para hablar y en una salida para atravesarla. Mantén presionado el botón para seguir caminando o atacando. Mantén presionada la tecla Shift mientras haces clic para atacar desde donde estás, sin caminar. La rueda del mouse sirve para acercar y alejar la vista.'),
+          table({ head: ['Action', 'Key'], rows: controlRows(data), caption: 'Las teclas con las que empieza un personaje nuevo' }),
           para(`Every key except the left mouse button, Shift and Enter can be changed under ${kbd('Esc')} → Settings → Controls. Most skill slots start empty: a skill you take on the ${link('/guide/tree/', 'Skill Tree')} goes on the first empty one. The Ladder only opens when the game is connected to its server.`),
           subsection(
-            'On a phone',
+            'En un teléfono',
             bullets([
-              'Turn the phone sideways.',
-              'Drag anywhere on the left of the screen to walk, or tap the ground.',
-              'Tap an enemy to attack it. Pinch to zoom.',
-              'The skill buttons aim at the nearest enemy in front of you, so you rarely need to aim yourself.',
-              'The flask buttons show how many drinks each flask has left.',
-              'The buttons along the top open the inventory, the character sheet, the Skill Tree, the map and the menu. The tag button shows the names of everything on the ground, like holding Alt.',
+              'Gira el teléfono de lado.',
+              'Arrastra en cualquier parte del lado izquierdo de la pantalla para caminar o toca el suelo.',
+              'Toca a un enemigo para atacarlo. Pellizca la pantalla para acercar o alejar la vista.',
+              'Los botones de habilidades apuntan al enemigo más cercano que esté frente a ti, así que casi nunca necesitas apuntar por tu cuenta.',
+              'Los botones de los frascos muestran cuántas dosis le quedan a cada uno.',
+              'Los botones de la parte superior abren el inventario, la hoja del personaje, el árbol de habilidades, el mapa y el menú. El botón de etiquetas muestra los nombres de todo lo que hay en el suelo, como cuando mantienes presionada la tecla Alt.',
             ]),
           ),
         ].join('\n'),
       ),
       section(
         'first',
-        'The first ten minutes',
+        'Los primeros diez minutos',
         [
           para(
             `You wake in ${esc(zone(data, 'between').name)} with nothing in your hands. Read the ${esc(item(data, 'worn_journal').name)}, and a weapon appears: the man finds the ${esc(item(data, 'rusted_blade').name)}, the woman the ${esc(item(data, 'worn_crossbow').name)}. The way out opens once you have both.`,
             `${esc(zone(data, 'hall_of_time').name)} is where the fighting is. It teaches you to roll with ${kbd('Space')}: ${esc(skill(data, 'dodge_roll').description)} Use it. A roll at the right moment saves more life than any flask.`,
-            'Enemies come in packs, and their level follows yours, so the Hall of Time stays a fair fight as you grow. Somewhere in it you will find your first moment: a bubble in the air. Step in and it closes around you, and what is inside turns on you. Clear it to get out. If you step out early, it fades and comes back a few seconds later.',
+            'Los enemigos aparecen en grupos y su nivel se ajusta al tuyo, así que El Salón del Tiempo sigue siendo un desafío justo a medida que avanzas. En algún lugar encontrarás tu primer momento: una burbuja en el aire. Entra y se cerrará a tu alrededor; lo que haya dentro se volverá contra ti. Elimínalo para salir. Si sales antes, la burbuja se desvanece y vuelve unos segundos después.',
             `Your first moment and the Warden's first lesson each give you a point for the ${link('/guide/tree/', 'Skill Tree')}, on top of the points from each level. Spend them; there is nothing to save them for.`,
             `East of the Hall is ${esc(zone(data, 'hideout').name)}. The way to ${esc(zone(data, 'keepers_gate').name)}, where the boss waits, will not open until level ${gate}.`,
           ),

@@ -11,12 +11,12 @@ export interface GuideTopic {
 }
 
 export const GUIDE_TOPICS: readonly GuideTopic[] = [
-  { href: '/guide/start/', name: 'Getting started', line: 'The keys, the first ten minutes, flasks, the Hideout, the trader and the auction house.' },
-  { href: '/guide/combat/', name: 'How combat works', line: 'Damage, critical strikes, armour, resistances, stagger, experience, packs and the first boss.' },
-  { href: '/guide/skills/', name: 'Skills', line: 'Every skill: what it does, what it costs, how you get it and what changes it.' },
-  { href: '/guide/tree/', name: 'The Skill Tree', line: 'Points, the five paths, keystones, and what it costs to change your mind.' },
-  { href: '/guide/items/', name: 'Items', line: 'Slots, rarities, every rolled line, every weapon and the legendaries.' },
-  { href: '/guide/builds/', name: 'Builds', line: 'Five builds with routes and measured numbers, side by side.' },
+  { href: '/guide/start/', name: 'Primeros pasos', line: 'Las teclas, los primeros diez minutos, los frascos, El Refugio, el comerciante y la casa de subastas.' },
+  { href: '/guide/combat/', name: 'Cómo funciona el combate', line: 'Daño, golpes críticos, armadura, resistencias, aturdimiento, experiencia, grupos de enemigos y el primer jefe.' },
+  { href: '/guide/skills/', name: 'Skills', line: 'Cada habilidad: qué hace, cuánto cuesta, cómo se consigue y qué la modifica.' },
+  { href: '/guide/tree/', name: 'árbol de habilidades', line: 'Puntos, las cinco rutas, las piedras angulares y cuánto cuesta cambiar de opinión.' },
+  { href: '/guide/items/', name: 'Items', line: 'Espacios, rarezas, todas las líneas de atributos aleatorios, todas las armas y los objetos legendarios.' },
+  { href: '/guide/builds/', name: 'Builds', line: 'Cinco configuraciones con rutas y cifras medidas, lado a lado.' },
 ];
 
 function topicCard(topic: GuideTopic): string {
@@ -26,13 +26,13 @@ function topicCard(topic: GuideTopic): string {
 export function homePage(data: GuideData): PageBody {
   return {
     kicker: 'The Lost Storm',
-    title: 'Player\'s guide',
-    lede: 'Everything the game does not stop to explain, and five ways to build a character, measured in the game itself.',
-    description: 'The player\'s guide to The Lost Storm: getting started, how combat works, every skill, the Skill Tree, items and five measured builds.',
+    title: 'Guía del jugador',
+    lede: 'Todo lo que el juego no se detiene a explicar y cinco formas de configurar un personaje, medidas dentro del propio juego.',
+    description: 'La guía del jugador de The Lost Storm: cómo empezar, cómo funciona el combate, todas las habilidades, el árbol de habilidades, objetos y cinco configuraciones medidas.',
     body: [
-      section('contents', 'In this guide', `<ul class="cards">${GUIDE_TOPICS.map(topicCard).join('')}</ul>`),
+      section('contents', 'En esta guía', `<ul class="cards">${GUIDE_TOPICS.map(topicCard).join('')}</ul>`),
       section('builds', 'Builds', [para(`Not sure where to put your points? Pick the build that sounds like you and follow its route. ${link('/guide/builds/', 'Compare all five')}.`), buildCards(data, BUILD_NOTES)].join('\n')),
-      section('alpha', 'About this guide', para('The Lost Storm is in alpha, and it changes often. This guide only describes what is in the game today. Every number, name, cost and route in it is read from the game when the site is built, so when the game changes, the guide changes with it.')),
+      section('alpha', 'Acerca de esta guía', para('The Lost Storm está en alfa y cambia con frecuencia. Esta guía solo describe lo que hay en el juego hoy. Cada número, nombre, costo y ruta se consulta directamente en el juego cuando se genera el sitio; así que, cuando el juego cambia, la guía también.')),
     ].join('\n'),
   };
 }

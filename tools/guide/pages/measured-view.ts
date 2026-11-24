@@ -31,7 +31,7 @@ export function levelMinutes(measure: PlayMeasure, level: number): number | null
 
 function bar(entry: NamedMeasure, value: number | null, top: number, spec: Bars, current: string): string {
   const width: number = value === null || top <= 0 ? 0 : Math.max(2, Math.round((value / top) * 100));
-  const shown: string = value === null ? 'not every run' : spec.show(value);
+  const shown: string = value === null ? 'no en todas las partidas' : spec.show(value);
   return `<li${entry.id === current ? ' class="here"' : ''}><span class="bar-name"><a href="${esc(entry.href)}">${esc(entry.name)}</a></span><span class="bar-track"><span class="bar-fill" style="width:${width}%"></span></span><span class="bar-value">${esc(shown)}</span></li>`;
 }
 
@@ -47,19 +47,19 @@ export function barChart(entries: readonly NamedMeasure[], spec: Bars, current: 
 function levelCell(measure: PlayMeasure, level: number): string {
   const entry: LevelReach | null = reach(measure, level);
   if (entry === null || entry.minutes === null) return '–';
-  return entry.share < 1 ? `${minutes(entry.minutes)} (${percent(entry.share)} of runs)` : minutes(entry.minutes);
+  return entry.share < 1 ? `${minutes(entry.minutes)} (en el ${percent(entry.share)} de las partidas)` : minutes(entry.minutes);
 }
 
 function bossCell(measure: PlayMeasure, level: number): string {
   const entry: BossAt | null = bossAt(measure, level);
   if (entry === null || entry.attempts === 0) return '–';
-  const life: string = entry.lifeLeft === null ? '' : `, ${percent(entry.lifeLeft)} life left`;
-  return `${percent(entry.winShare)} won${life}`;
+  const life: string = entry.lifeLeft === null ? '' : `, queda ${percent(entry.lifeLeft)} de vida`;
+  return `victoria en el ${percent(entry.winShare)}${life}`;
 }
 
 export function measuredTable(entries: readonly NamedMeasure[], levels: readonly number[], bossLevel: number): string {
   return table({
-    head: ['Build', ...levels.map((level: number): string => `Level ${level}`), 'Kills a minute', `Boss at ${bossLevel}`, `Boss at ${bossLevel}, careless`, 'Deaths an hour, careless'],
+    head: ['Configuración', ...levels.map((level: number): string => `Nivel ${level}`), 'Bajas por minuto', `Jefe en nivel ${bossLevel}`, `Jefe en nivel ${bossLevel}, con descuidos`, 'Muertes por hora, por descuido'],
     rows: entries.map((entry: NamedMeasure): string[] => [
       `<a href="${esc(entry.href)}">${esc(entry.name)}</a>`,
       ...levels.map((level: number): string => levelCell(entry.measure.steady, level)),

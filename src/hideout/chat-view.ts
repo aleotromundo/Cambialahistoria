@@ -6,9 +6,9 @@ import { CHAT_KEYS, takesEnter } from './chat-keys.ts';
 import type { Mutes } from './mute.ts';
 
 export const CHAT_VIEW = {
-  placeholder: 'Press Enter to talk',
-  typingPlaceholder: 'Type a message, or /dm name',
-  namePlaceholder: 'Your name',
+  placeholder: 'Presiona Enter para hablar',
+  typingPlaceholder: 'Escribe un mensaje o usa /dm nombre',
+  namePlaceholder: 'Tu nombre',
   nameChars: 32,
   closeKey: 'Escape',
   swapMs: 320,
@@ -75,7 +75,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
   const general: HTMLButtonElement = make('button', 'chat-channel chat-general active', channels);
   general.type = 'button';
   general.textContent = CHAT_WORDS.general;
-  general.setAttribute('aria-label', 'Back to General');
+  general.setAttribute('aria-label', 'Volver a General');
   const whisperTab: HTMLDivElement = make('div', 'chat-channel-slot', channels);
   const whisperName: HTMLSpanElement = make('span', 'chat-channel chat-whisper-tab', whisperTab);
   const friendsSlot: HTMLDivElement = make('div', 'chat-slot', head);
@@ -95,7 +95,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
   let open: boolean = false;
   let lastSaid: string | null = null;
   swapText(to, destination({ kind: 'general' }));
-  swapText(readerLine, 'Everyone online reads this.');
+  swapText(readerLine, 'Todos los jugadores conectados pueden leer esto.');
 
   const giveBack = (): void => {
     field.blur();
@@ -118,7 +118,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
     input.autocomplete = 'off';
     const save: HTMLButtonElement = make('button', 'chat-reason', form);
     save.type = 'submit';
-    save.textContent = 'Save';
+    save.textContent = 'Guardar';
     const stop = (event: KeyboardEvent): void => {
       event.stopPropagation();
       if (event.type === 'keydown' && event.code === CHAT_VIEW.closeKey) input.blur();
@@ -164,7 +164,7 @@ export function createChatView(options: ChatViewOptions): ChatView {
       case 'whisper': {
         const element: HTMLLIElement = make('li', `chat-row chat-whisper ${entry.dir}`);
         const inner: HTMLDivElement = make('div', 'chat-row-inner', element);
-        make('span', 'chat-dir', inner).textContent = entry.dir === 'from' ? 'From' : 'To';
+        make('span', 'chat-dir', inner).textContent = entry.dir === 'from' ? 'De' : 'Para';
         nameButton(inner, entry.with, entry.dir === 'from' ? entry.line : null);
         make('span', 'chat-text', inner).textContent = entry.line.text;
         return element;

@@ -9,7 +9,7 @@ import resignCss from './rival-resign.css?inline';
 
 export const RIVAL_HUD = {
   shownClass: 'on',
-  label: 'Resign',
+  label: 'Rendirse',
   touchLayerClass: 'tc',
   labelLayer: '#overlays',
 } as const;

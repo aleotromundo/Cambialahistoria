@@ -30,7 +30,7 @@
   "acts": [
     {
       "id": "act_1",
-      "title": "Act I",
+      "title": "Acto I",
       "name": "",
       "atlas": {
         "width": 1600,
@@ -82,7 +82,7 @@
             "zone": "under_hall_2",
             "x": 555,
             "y": 395,
-            "label": "Level 2",
+            "label": "Nivel 2",
             "chain": "hourfall",
             "when": [{"type": "visited", "zone": "under_hall", "not": false}]
           },
@@ -90,7 +90,7 @@
             "zone": "under_hall_3",
             "x": 455,
             "y": 365,
-            "label": "Level 3",
+            "label": "Nivel 3",
             "chain": "hourfall",
             "when": [{"type": "visited", "zone": "under_hall_2", "not": false}]
           },
@@ -98,7 +98,7 @@
             "zone": "ledger_hall_2",
             "x": 765,
             "y": 270,
-            "label": "Level 2",
+            "label": "Nivel 2",
             "chain": "columned_hall",
             "when": [{"type": "visited", "zone": "ledger_hall_2", "not": false}]
           },
@@ -106,7 +106,7 @@
             "zone": "ledger_hall_3",
             "x": 865,
             "y": 255,
-            "label": "Level 3",
+            "label": "Nivel 3",
             "chain": "columned_hall",
             "when": [{"type": "visited", "zone": "ledger_hall_3", "not": false}]
           },
@@ -128,7 +128,7 @@
             "zone": "lava_depths_2",
             "x": 465,
             "y": 260,
-            "label": "Level 2",
+            "label": "Nivel 2",
             "chain": "lava",
             "when": [{"type": "visited", "zone": "lava_depths", "not": false}]
           },
@@ -136,7 +136,7 @@
             "zone": "lava_depths_3",
             "x": 565,
             "y": 285,
-            "label": "Level 3",
+            "label": "Nivel 3",
             "chain": "lava",
             "when": [{"type": "visited", "zone": "lava_depths_2", "not": false}]
           }
@@ -455,7 +455,7 @@
         ],
         "labels": [
           {
-            "text": "The Hall of Time",
+            "text": "El Salón del Tiempo",
             "x": 790,
             "y": 745,
             "size": 20,

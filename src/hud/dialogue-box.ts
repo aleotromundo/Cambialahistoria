@@ -8,7 +8,7 @@ import { promptText, use } from './prompts.ts';
 const DIALOGUE_BOX = {
   next: 'continue',
   last: 'close',
-  again: 'Hear it again',
+  again: 'Escuchar de nuevo',
   swapMs: 260,
 } as const;
 

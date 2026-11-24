@@ -1,8 +1,8 @@
 import { el, label } from './dom.ts';
 
 export const STALL_NOTICE = {
-  text: 'The world stopped moving.',
-  action: 'Resume',
+  text: 'El mundo dejó de moverse.',
+  action: 'Reanudar',
   shownClass: 'on',
 } as const;
 

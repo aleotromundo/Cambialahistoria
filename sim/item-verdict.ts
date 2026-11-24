@@ -341,47 +341,46 @@ function split(verdict: Verdict): Part | null {
   const ahead: number = percent(verdict.ahead);
   if (here === 0 || ahead === 0 || Math.sign(here) === Math.sign(ahead)) return null;
   const gainAhead: boolean = ahead > 0;
-  const gain: string = gainAhead ? `${signedPercent(verdict.ahead)} ahead` : `${signedPercent(verdict.here)} here`;
-  const loss: string = gainAhead ? `${signedPercent(verdict.here)} here` : `${signedPercent(verdict.ahead)} ahead`;
-  return { value: Math.max(verdict.here, verdict.ahead), text: `toughness ${gain}, ${loss}` };
+  const gain: string = gainAhead ? `${signedPercent(verdict.ahead)} más adelante` : `${signedPercent(verdict.here)} aquí`;
+  const loss: string = gainAhead ? `${signedPercent(verdict.here)} aquí` : `${signedPercent(verdict.ahead)} más adelante`;
+  return { value: Math.max(verdict.here, verdict.ahead), text: `resistencia ${gain}, ${loss}` };
 }
 
 export function verdictParts(verdict: Verdict): readonly string[] {
   const parts: Part[] = [];
-  if (percent(verdict.damage) !== 0) parts.push({ value: verdict.damage, text: `${signedPercent(verdict.damage)} damage` });
+  if (percent(verdict.damage) !== 0) parts.push({ value: verdict.damage, text: `${signedPercent(verdict.damage)} de daño` });
   const divided: Part | null = split(verdict);
   if (divided !== null) parts.push(divided);
   else if (percent(verdict.toughness) !== 0) {
-    const against: string = verdict.against.length === 0 ? '' : ` against ${listed(verdict.against)}`;
-    parts.push({ value: verdict.toughness, text: `${signedPercent(verdict.toughness)} toughness${against}` });
+    const against: string = verdict.against.length === 0 ? '' : ` contra ${listed(verdict.against)}`;
+    parts.push({ value: verdict.toughness, text: `${signedPercent(verdict.toughness)} de resistencia${against}` });
   }
-  if (Math.abs(verdict.speed) >= VERDICT.sharpSpeed && percent(verdict.speed) !== 0) parts.push({ value: verdict.speed, text: `${signedPercent(verdict.speed)} attack speed` });
-  if (Math.abs(verdict.move) >= VERDICT.move && percent(verdict.move) !== 0) parts.push({ value: verdict.move, text: `${signedPercent(verdict.move)} movement speed` });
+  if (Math.abs(verdict.speed) >= VERDICT.sharpSpeed && percent(verdict.speed) !== 0) parts.push({ value: verdict.speed, text: `${signedPercent(verdict.speed)} de velocidad de ataque` });
+  if (Math.abs(verdict.move) >= VERDICT.move && percent(verdict.move) !== 0) parts.push({ value: verdict.move, text: `${signedPercent(verdict.move)} de velocidad de movimiento` });
   const gained: PowerGain | null = verdict.gained;
   const powers: string[] = [];
-  if (gained !== null) powers.push(gained.of > 1 ? `${gained.name} power, ${gained.count}/${gained.of} worn` : `${gained.name} power`);
-  if (verdict.lost !== null) powers.push(`loses the ${verdict.lost} power`);
+  if (gained !== null) powers.push(gained.of > 1 ? `${gained.name}, ${gained.count}/${gained.of} piezas equipadas` : `${gained.name}`);
+  if (verdict.lost !== null) powers.push(`pierde el poder de ${verdict.lost}`);
   return [...parts.toSorted((a: Part, b: Part): number => b.value - a.value).map((part: Part): string => part.text), ...powers];
 }
 
 export function placeName(zone: string): string {
   const head: string = zone.split(',')[0]?.trim() ?? zone;
-  return `the ${head.replace(/^the\s+/i, '')}`;
+  return `${head.replace(/^the\s+/i, '')}`;
 }
 
 function peakText(peak: Peak): string {
-  const verb: string = peak.types.length > 1 ? 'hit' : 'hits';
-  if (!peak.ahead) return `${listed(peak.types)} ${verb} hardest here`;
-  const there: string = percent(peak.toughness) === 0 ? '' : `: ${signedPercent(peak.toughness)} toughness there`;
-  return `${listed(peak.types)} ${verb} hardest in ${placeName(peak.zone)}${there}`;
+  if (!peak.ahead) return `${listed(peak.types)} causa más daño aquí`;
+  const there: string = percent(peak.toughness) === 0 ? '' : `: ${signedPercent(peak.toughness)} de resistencia allí`;
+  return `${listed(peak.types)} causa más daño en ${placeName(peak.zone)}${there}`;
 }
 
 function switchText(switched: WeaponSwitch): string {
   const losses: string[] = [];
-  if (switched.places > 0) losses.push(`${switched.places} ${switched.path} ${switched.places === 1 ? 'place stops' : 'places stop'} adding damage`);
-  for (const skill of switched.becomes) losses.push(`${skill.from} becomes ${skill.to}`);
-  const fresh: string = percent(switched.fresh) === 0 ? '' : ` · ${signedPercent(switched.fresh)} damage on an unspent tree`;
-  return `with ${switched.needs} ${listed(losses)}${fresh}`;
+  if (switched.places > 0) losses.push(`${switched.places} ${switched.path} ${switched.places === 1 ? 'punto deja de aportar daño' : 'puntos dejan de aportar daño'}`);
+  for (const skill of switched.becomes) losses.push(`${skill.from} se convierte en ${skill.to}`);
+  const fresh: string = percent(switched.fresh) === 0 ? '' : ` · ${signedPercent(switched.fresh)} de daño con el árbol sin invertir`;
+  return `con ${switched.needs}, ${listed(losses)}${fresh}`;
 }
 
 export function verdictNote(verdict: Verdict): string | null {
@@ -389,8 +388,8 @@ export function verdictNote(verdict: Verdict): string | null {
   if (verdict.switched !== null) notes.push(switchText(verdict.switched));
   const peak: Peak | undefined = verdict.peaks[0];
   if (peak !== undefined) notes.push(peakText(peak));
-  if (verdict.absent.length > 0) notes.push(`no ${listed(verdict.absent)} ${verdict.looksAhead ? 'here or ahead' : 'nearby'}`);
-  if (verdict.capped.length > 0) notes.push(`${listed(verdict.capped)} resistance already capped`);
+  if (verdict.absent.length > 0) notes.push(`${listed(verdict.absent)} no aparece ${verdict.looksAhead ? 'aquí ni más adelante' : 'en las cercanías'}`);
+  if (verdict.capped.length > 0) notes.push(`resistencia a ${listed(verdict.capped)} ya al máximo`);
   if (notes.length === 0) return null;
   const text: string = notes.join(' · ');
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;

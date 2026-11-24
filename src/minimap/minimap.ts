@@ -110,7 +110,7 @@ export function createMinimap(root: HTMLElement, hooks: MinimapHooks): Minimap {
   const close: HTMLButtonElement = el('button', 'minimap-close', holder);
   tagPart(close, 'minimap');
   close.type = 'button';
-  close.setAttribute('aria-label', 'Close map');
+  close.setAttribute('aria-label', 'Cerrar mapa');
   close.innerHTML = CLOSE_ICON;
   const layer: MapLayer = createMapLayer(hooks.touch ? TOUCH_LOOK : LAYER);
   let seenKey: string = '';

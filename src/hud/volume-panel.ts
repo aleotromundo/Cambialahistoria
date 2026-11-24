@@ -52,7 +52,7 @@ export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls,
   const mute: HTMLButtonElement = el('button', 'set-switch', head);
   mute.type = 'button';
   mute.setAttribute('role', 'switch');
-  mute.setAttribute('aria-label', 'Mute all sound');
+  mute.setAttribute('aria-label', 'Silenciar todo el sonido');
   el('span', 'set-switch-knob', mute);
   const trouble: HTMLDivElement = label('volume-trouble', VOLUME.troubleText, parent);
   const showTrouble = (failing: boolean): void => {
@@ -82,7 +82,7 @@ export function createVolumeButton(parent: HTMLElement, controls: AudioControls,
   const element: HTMLDivElement = el('div', 'hud-volume-wrap', parent);
   const button: HTMLButtonElement = el('button', 'hud-menu-btn hud-volume-btn', element);
   button.type = 'button';
-  button.setAttribute('aria-label', 'Sound settings');
+  button.setAttribute('aria-label', 'Configuración de sonido');
   button.innerHTML = SPEAKER;
   track(button);
   controls.subscribe((settings: AudioSettings): void => {

@@ -53,7 +53,7 @@ void test('every shipped hint has touch wording that names no mouse or keyboard 
 void test('touch devices get the touch wording and everything else the desktop wording', (): void => {
   const move: HintDef | undefined = loadHints(loadContent()).hints.find((hint: HintDef): boolean => hint.id === 'move');
   assert.ok(move !== undefined);
-  assert.equal(hintWording(move, false), 'Click the ground to move');
+  assert.equal(hintWording(move, false), 'Haz clic en el suelo para moverte');
   assert.match(hintWording(move, true), /^Drag/);
 });
 

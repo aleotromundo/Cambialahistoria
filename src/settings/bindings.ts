@@ -49,7 +49,7 @@ export const BINDING = {
   maxLength: 24,
 } as const;
 
-export const PRIMARY_LABELS: Readonly<Record<Movement, string>> = { click: 'Move / attack', keys: 'Attack' };
+export const PRIMARY_LABELS: Readonly<Record<Movement, string>> = { click: 'Mover / atacar', keys: 'Atacar' };
 
 interface MoveDef {
   readonly id: MoveAction;
@@ -58,10 +58,10 @@ interface MoveDef {
 }
 
 const MOVE_DEFS: readonly MoveDef[] = [
-  { id: 'moveUp', label: 'Move up', code: 'KeyW' },
-  { id: 'moveLeft', label: 'Move left', code: 'KeyA' },
-  { id: 'moveDown', label: 'Move down', code: 'KeyS' },
-  { id: 'moveRight', label: 'Move right', code: 'KeyD' },
+  { id: 'moveUp', label: 'Moverse hacia arriba', code: 'KeyW' },
+  { id: 'moveLeft', label: 'Moverse hacia la izquierda', code: 'KeyA' },
+  { id: 'moveDown', label: 'Moverse hacia abajo', code: 'KeyS' },
+  { id: 'moveRight', label: 'Moverse hacia la derecha', code: 'KeyD' },
 ];
 
 const MOVE_CODES: ReadonlySet<string> = new Set<string>(MOVE_DEFS.map((def: MoveDef): string => def.code));
@@ -69,20 +69,20 @@ const MOVE_CODES: ReadonlySet<string> = new Set<string>(MOVE_DEFS.map((def: Move
 const RESERVED: ReadonlySet<string> = new Set<string>([BINDING.leftMouse, 'ShiftLeft', 'ShiftRight', 'Enter', 'NumpadEnter']);
 
 const FIXED_DEFS: readonly (Omit<ActionDef, 'locked'> & { readonly group: ActionGroup })[] = [
-  { id: 'flask1', label: 'Flask 1', group: 'Flasks', defaults: ['Digit1'] },
-  { id: 'flask2', label: 'Flask 2', group: 'Flasks', defaults: ['Digit2'] },
-  { id: 'flask3', label: 'Flask 3', group: 'Flasks', defaults: ['Digit3'] },
-  { id: 'flask4', label: 'Flask 4', group: 'Flasks', defaults: ['Digit4'] },
-  { id: 'flask5', label: 'Flask 5', group: 'Flasks', defaults: ['Digit5'] },
-  { id: 'inventory', label: 'Inventory', group: 'Panels', defaults: ['KeyI'] },
-  { id: 'character', label: 'Character', group: 'Panels', defaults: ['KeyC'] },
-  { id: 'tree', label: 'Skill Tree', group: 'Panels', defaults: ['KeyT'] },
-  { id: 'map', label: 'World map', group: 'Panels', defaults: ['KeyM'] },
-  { id: 'minimap', label: 'Minimap', group: 'Panels', defaults: ['Tab'] },
-  { id: 'ladder', label: 'Ladder', group: 'Panels', defaults: ['KeyL'] },
-  { id: 'pause', label: 'Menu', group: 'System', defaults: [BINDING.escape, ...HOST.menuKeys] },
-  { id: 'frameRate', label: 'Frame rate', group: 'System', defaults: ['F3'] },
-  { id: 'names', label: 'Show item names', group: 'System', defaults: ['AltLeft', 'AltRight'] },
+  { id: 'flask1', label: 'Frasco 1', group: 'Flasks', defaults: ['Digit1'] },
+  { id: 'flask2', label: 'Frasco 2', group: 'Flasks', defaults: ['Digit2'] },
+  { id: 'flask3', label: 'Frasco 3', group: 'Flasks', defaults: ['Digit3'] },
+  { id: 'flask4', label: 'Frasco 4', group: 'Flasks', defaults: ['Digit4'] },
+  { id: 'flask5', label: 'Frasco 5', group: 'Flasks', defaults: ['Digit5'] },
+  { id: 'inventory', label: 'Inventario', group: 'Panels', defaults: ['KeyI'] },
+  { id: 'character', label: 'Personaje', group: 'Panels', defaults: ['KeyC'] },
+  { id: 'tree', label: 'Árbol de habilidades', group: 'Panels', defaults: ['KeyT'] },
+  { id: 'map', label: 'Mapa del mundo', group: 'Panels', defaults: ['KeyM'] },
+  { id: 'minimap', label: 'Minimapa', group: 'Panels', defaults: ['Tab'] },
+  { id: 'ladder', label: 'Clasificación', group: 'Panels', defaults: ['KeyL'] },
+  { id: 'pause', label: 'Menú', group: 'System', defaults: [BINDING.escape, ...HOST.menuKeys] },
+  { id: 'frameRate', label: 'Velocidad de fotogramas', group: 'System', defaults: ['F3'] },
+  { id: 'names', label: 'Mostrar nombres de objetos', group: 'System', defaults: ['AltLeft', 'AltRight'] },
 ];
 
 export function isSkillAction(action: ActionId): boolean {
@@ -227,13 +227,13 @@ export function rebind(table: readonly ActionDef[], overrides: Overrides, action
   if (target === undefined || target.locked) return { kind: 'refused', reason: 'That action cannot be rebound.' };
   if (!isBindingCode(code)) return { kind: 'refused', reason: 'That key cannot be used.' };
   if (RESERVED.has(code)) return { kind: 'refused', reason: `${keyLabel(code)} is reserved.` };
-  if (code === BINDING.rightMouse && !isSkillAction(action)) return { kind: 'refused', reason: 'Only skills can use the right mouse button.' };
-  if (code === BINDING.escape && action !== 'pause') return { kind: 'refused', reason: 'Esc is reserved for closing panels and the menu.' };
+  if (code === BINDING.rightMouse && !isSkillAction(action)) return { kind: 'refused', reason: 'Solo las habilidades pueden usar el botón derecho del ratón.' };
+  if (code === BINDING.escape && action !== 'pause') return { kind: 'refused', reason: 'Esc está reservada para cerrar paneles y el menú.' };
   const owner: ActionDef | undefined = table.find((def: ActionDef): boolean => def.id !== action && bindingsFrom(def, overrides).includes(code));
   if (owner !== undefined) return { kind: 'conflict', with: owner };
   return { kind: 'ok', overrides: { ...overrides, [action]: [code] } };
 }
 
 export function slotName(slot: number): string {
-  return slot === 0 ? 'Move / attack' : `Skill slot ${slot}`;
+  return slot === 0 ? 'Moverse / atacar' : `Espacio de habilidad ${slot}`;
 }

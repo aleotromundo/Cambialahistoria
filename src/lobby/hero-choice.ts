@@ -7,10 +7,10 @@ import type { NameBody } from './name-pool.ts';
 export const HERO_KEY: string = 'lost-storm.hero';
 
 export const HERO_TEXT = {
-  heading: 'Who wakes',
-  fixedHeading: 'Who woke',
-  pick: 'Choose who wakes to enter the storm.',
-  change: 'You can change this until you enter.',
+  heading: 'Quién despierta',
+  fixedHeading: 'Quién despertó',
+  pick: 'Elige quién despierta para entrar en la tormenta.',
+  change: 'Puedes cambiar esta elección hasta que entres.',
 } as const;
 
 export interface HeroOption {

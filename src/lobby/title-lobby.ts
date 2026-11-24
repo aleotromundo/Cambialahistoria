@@ -22,7 +22,7 @@ export function mountTitleLobby(root: HTMLElement, lobby: Lobby): TitleLobby {
   const panel: LobbyPanel = createLobbyPanel(root, { title: COMPACT.title, rows: COMPACT.rows, ticker: true, pick: (name: string): void => lobby.profiles.open(name) });
   const tabs: HTMLDivElement = el('div', 'lobby-tabs', null);
   tabs.setAttribute('role', 'tablist');
-  tabs.setAttribute('aria-label', 'Rank by');
+  tabs.setAttribute('aria-label', 'Ordenar por');
   el('i', 'lobby-tab-glide', tabs);
   const caption: HTMLDivElement = label('lobby-caption', '', null);
   panel.head.after(tabs, caption);

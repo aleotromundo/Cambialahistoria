@@ -30,13 +30,13 @@ function navLink(entry: NavEntry, current: string): string {
 }
 
 export function frame(page: PageFrame): string {
-  const next: string = page.next === null ? '' : `<nav class="next" aria-label="Next page"><a href="${esc(page.next.href)}"><span>Next</span>${esc(page.next.label)}</a></nav>`;
+  const next: string = page.next === null ? '' : `<nav class="next" aria-label="Página siguiente"><a href="${esc(page.next.href)}"><span>Siguiente</span>${esc(page.next.label)}</a></nav>`;
   return `<header class="bar">
 <div class="bar-inner">
 <a class="brand" href="/">The Lost Storm</a>
-<a class="play" href="/play/">Play</a>
+<a class="play" href="/play/">Jugar</a>
 </div>
-<nav class="pages" aria-label="Guide">${page.nav.map((entry: NavEntry): string => navLink(entry, page.current)).join('')}</nav>
+<nav class="pages" aria-label="Guía">${page.nav.map((entry: NavEntry): string => navLink(entry, page.current)).join('')}</nav>
 </header>
 <main class="page">
 <header class="intro">
@@ -48,7 +48,7 @@ ${page.body}
 ${next}
 </main>
 <footer class="foot">
-<p>Written for the alpha. Every number on these pages is read from the game itself when the site is built, so a change to the game changes the guide with it.</p>
-<p><a href="/guide/">Guide</a><span aria-hidden="true">·</span><a href="/privacy.html">Privacy</a><span aria-hidden="true">·</span><a href="/terms.html">Terms</a><span aria-hidden="true">·</span><a href="https://mergestorm.ai">Built by Mergestorm</a></p>
+<p>Escrito para la alfa. Cada número de estas páginas se obtiene directamente del juego al crear el sitio, así que cualquier cambio en el juego también actualiza la guía.</p>
+<p><a href="/guide/">Guía</a><span aria-hidden="true">·</span><a href="/privacy.html">Privacidad</a><span aria-hidden="true">·</span><a href="/terms.html">Términos</a><span aria-hidden="true">·</span><a href="https://mergestorm.ai">Desarrollado por Mergestorm</a></p>
 </footer>`;
 }

@@ -29,48 +29,48 @@ function single(name: string, id: StatId, format: SheetRow['format']): SheetRow 
 }
 
 export const DEFENCE_ROWS: readonly SheetRow[] = [
-  single('Life', 'maxLife', whole),
-  single('Mana', 'maxMana', whole),
-  single('Life regeneration', 'lifeRegen', perSecond),
-  single('Mana regeneration', 'manaRegen', perSecond),
-  single('Armour', 'armour', whole),
+  single('Vida', 'maxLife', whole),
+  single('Maná', 'maxMana', whole),
+  single('Regeneración de vida', 'lifeRegen', perSecond),
+  single('Regeneración de maná', 'manaRegen', perSecond),
+  single('Armadura', 'armour', whole),
   {
-    name: 'Hit reduction',
-    note: `Every hit taken is cut by armour ÷ (armour + ${ARMOUR_HALF_POINT}), at any level.`,
+    name: 'Reducción de daño por golpe',
+    note: `Cada golpe recibido se reduce según la fórmula armadura ÷ (armadura + ${ARMOUR_HALF_POINT}), sin importar el nivel.`,
     read: (sheet: CharacterSheet, source: Source): readonly number[] => (source === 'total' ? [sheet.armourReduction] : [0]),
     format: percent,
   },
   {
-    name: 'Storm resistance',
-    note: 'Cuts storm hits, up to the cap. Deeper storm tiers take some of it away.',
+    name: 'Resistencia a la Tormenta',
+    note: 'Reduce el daño de Tormenta, hasta el límite. Los niveles más profundos de Tormenta reducen parte de esta resistencia.',
     read: (sheet: CharacterSheet, source: Source): readonly number[] => [stat(sheet, 'stormResist', source)],
     format: percent,
   },
   {
-    name: 'Frost resistance',
-    note: 'Cuts frost hits, up to the cap. Deeper storm tiers take some of it away.',
+    name: 'Resistencia al Hielo',
+    note: 'Reduce el daño de Hielo, hasta el límite. Los niveles más profundos de Tormenta reducen parte de esta resistencia.',
     read: (sheet: CharacterSheet, source: Source): readonly number[] => [stat(sheet, 'frostResist', source)],
     format: percent,
   },
-  single('Movement speed', 'moveSpeed', tenths),
+  single('Velocidad de movimiento', 'moveSpeed', tenths),
 ];
 
 export const OFFENCE_ROWS: readonly SheetRow[] = [
   {
-    name: 'Weapon damage',
+    name: 'Daño de arma',
     note: null,
     read: (sheet: CharacterSheet, source: Source): readonly number[] => [stat(sheet, 'damageMin', source), stat(sheet, 'damageMax', source)],
     format: range,
   },
-  single('Damage bonus', 'damagePercent', bonus),
-  single('Attack speed', 'attackSpeed', percent),
-  single('Critical chance', 'critChance', percentTenth),
-  single('Critical multiplier', 'critMultiplier', percent),
-  single('Gold found', 'goldFind', percent),
+  single('Bonificación de daño', 'damagePercent', bonus),
+  single('Velocidad de ataque', 'attackSpeed', percent),
+  single('Probabilidad de golpe crítico', 'critChance', percentTenth),
+  single('Multiplicador de golpe crítico', 'critMultiplier', percent),
+  single('Oro encontrado', 'goldFind', percent),
 ];
 
 export const SOURCES: readonly { readonly source: Source; readonly title: string }[] = [
   { source: 'base', title: 'Base' },
-  { source: 'gear', title: 'Gear' },
-  { source: 'tree', title: 'Skill Tree' },
+  { source: 'gear', title: 'Equipo' },
+  { source: 'tree', title: 'Árbol de habilidades' },
 ];

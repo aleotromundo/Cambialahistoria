@@ -3,7 +3,7 @@ import type { FriendsList } from '../backend/api.ts';
 export const PLAYER_MENU = {
   reach: 14,
   edgeGutter: 16,
-  soon: 'Soon',
+  soon: 'Próximamente',
 } as const;
 
 export type FriendStanding = 'none' | 'requested' | 'incoming' | 'friends' | 'unknown';
@@ -87,16 +87,16 @@ function friendEntry(facts: MenuFacts): MenuEntry {
   const open: boolean = facts.friendsAvailable && !facts.blocked && !busy;
   switch (facts.friend) {
     case 'friends':
-      return { id: 'friend', label: 'Friends', detail: 'You are friends', enabled: false, soon: false };
+      return { id: 'friend', label: 'Amigos', detail: 'Son amigos', enabled: false, soon: false };
     case 'requested':
-      return { id: 'friend', label: 'Request sent', detail: 'Waiting for them', enabled: false, soon: false };
+      return { id: 'friend', label: 'Solicitud enviada', detail: 'Esperando su respuesta', enabled: false, soon: false };
     case 'incoming':
-      return { id: 'friend', label: 'Accept request', detail: 'They asked to be friends', enabled: open, soon: false };
+      return { id: 'friend', label: 'Aceptar solicitud', detail: 'Quiere agregarte como amigo', enabled: open, soon: false };
     case 'none':
     case 'unknown':
-      return { id: 'friend', label: 'Add friend', detail: facts.blocked ? 'Unblock them first' : 'Send a friend request', enabled: open && facts.friend === 'none', soon: false };
+      return { id: 'friend', label: 'Agregar amigo', detail: facts.blocked ? 'Primero desbloquea a este jugador.' : 'Enviar una solicitud de amistad', enabled: open && facts.friend === 'none', soon: false };
   }
-  return { id: 'friend', label: 'Add friend', detail: 'Send a friend request', enabled: false, soon: false };
+  return { id: 'friend', label: 'Agregar amigo', detail: 'Enviar solicitud de amistad', enabled: false, soon: false };
 }
 
 export function tradeStanding(watch: TradeWatch): TradeStanding {
@@ -109,38 +109,38 @@ export function tradeStanding(watch: TradeWatch): TradeStanding {
 }
 
 function tradeDetail(facts: MenuFacts): string {
-  if (facts.trade !== 'unsupported' && facts.blocked) return 'Unblock them first';
+  if (facts.trade !== 'unsupported' && facts.blocked) return 'Primero desbloquea a este jugador.';
   switch (facts.trade) {
     case 'ready':
-      return 'Offer items and gold';
+      return 'Ofrecer objetos y oro';
     case 'unsupported':
       return PLAYER_MENU.soon;
     case 'trading':
-      return 'Finish your current trade first';
+      return 'Primero termina el intercambio actual.';
     case 'elsewhere':
-      return 'Only in the Hideout';
+      return 'Solo en El Refugio';
     case 'away':
-      return 'They are not in the Hideout';
+      return 'No está en El Refugio';
     case 'far':
-      return 'Walk closer to them';
+      return 'Acércate a este jugador.';
   }
   return PLAYER_MENU.soon;
 }
 
 function tradeEntry(facts: MenuFacts): MenuEntry {
-  return { id: 'trade', label: 'Trade', detail: tradeDetail(facts), enabled: facts.trade === 'ready' && !facts.blocked && !facts.busy.has('trade'), soon: facts.trade === 'unsupported' };
+  return { id: 'trade', label: 'Comercio', detail: tradeDetail(facts), enabled: facts.trade === 'ready' && !facts.blocked && !facts.busy.has('trade'), soon: facts.trade === 'unsupported' };
 }
 
 export function menuEntries(facts: MenuFacts): readonly MenuEntry[] {
   const busy = (id: EntryId): boolean => facts.busy.has(id);
   return [
-    { id: 'profile', label: 'Profile', detail: facts.canProfile ? 'What they wear and how far they came' : PLAYER_MENU.soon, enabled: facts.canProfile, soon: !facts.canProfile },
-    { id: 'message', label: 'Message', detail: facts.canMessage ? 'Write to them alone' : PLAYER_MENU.soon, enabled: facts.canMessage && !facts.blocked, soon: !facts.canMessage },
+    { id: 'profile', label: 'Perfil', detail: facts.canProfile ? 'Qué equipo lleva y hasta dónde ha llegado' : PLAYER_MENU.soon, enabled: facts.canProfile, soon: !facts.canProfile },
+    { id: 'message', label: 'Mensaje', detail: facts.canMessage ? 'Escribirle en privado' : PLAYER_MENU.soon, enabled: facts.canMessage && !facts.blocked, soon: !facts.canMessage },
     tradeEntry(facts),
     friendEntry(facts),
-    { id: 'mute', label: facts.muted ? 'Unmute' : 'Mute', detail: facts.muted ? 'Show their chat again' : 'Hide their chat', enabled: true, soon: false },
-    { id: 'block', label: facts.blocked ? 'Unblock' : 'Block', detail: facts.blocked ? 'Take their requests again' : 'Hide them and refuse their requests', enabled: facts.blocksAvailable && !busy('block'), soon: false },
-    { id: 'report', label: facts.reported ? 'Reported' : 'Report', detail: facts.reported ? 'Thank you' : 'Tell us about them', enabled: facts.reportAvailable && !facts.reported && !busy('report'), soon: false },
+    { id: 'mute', label: facts.muted ? 'Dejar de silenciar' : 'Silenciar', detail: facts.muted ? 'Volver a mostrar su chat' : 'Ocultar su chat', enabled: true, soon: false },
+    { id: 'block', label: facts.blocked ? 'Desbloquear' : 'Bloquear', detail: facts.blocked ? 'Volver a aceptar sus solicitudes' : 'Ocultarlo y rechazar sus solicitudes', enabled: facts.blocksAvailable && !busy('block'), soon: false },
+    { id: 'report', label: facts.reported ? 'Reportado' : 'Reportar', detail: facts.reported ? 'Gracias' : 'Cuéntanos sobre este jugador', enabled: facts.reportAvailable && !facts.reported && !busy('report'), soon: false },
   ];
 }
 

@@ -25,8 +25,8 @@ interface Column {
 }
 
 const COLUMNS: readonly Column[] = [
-  { title: 'Defence', rows: DEFENCE_ROWS },
-  { title: 'Offence', rows: OFFENCE_ROWS },
+  { title: 'Defensa', rows: DEFENCE_ROWS },
+  { title: 'Ofensiva', rows: OFFENCE_ROWS },
 ];
 
 export interface CharacterPanel extends PanelView {

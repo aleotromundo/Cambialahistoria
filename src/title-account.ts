@@ -37,8 +37,8 @@ export interface TitleAccount {
 export const TITLE_ACCOUNT: { readonly swapMs: number; readonly busyAttribute: string; readonly fallbackName: string; readonly methods: Readonly<Record<SignInMethod, string>> } = {
   swapMs: 280,
   busyAttribute: 'data-busy',
-  fallbackName: 'Signed in',
-  methods: { google: 'Google', email: 'Email' },
+  fallbackName: 'Sesión iniciada',
+  methods: { google: 'Google', email: 'Correo electrónico' },
 };
 
 export function offersSignIn(view: AccountView): boolean {

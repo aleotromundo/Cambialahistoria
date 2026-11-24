@@ -17,7 +17,7 @@
   "moments": [
     {
       "id": "campfire",
-      "name": "A campfire",
+      "name": "Una fogata",
       "tint": "#ff8a3c",
       "ground": "dirt",
       "light": "#ffb878",
@@ -136,7 +136,7 @@
     },
     {
       "id": "first_fire",
-      "name": "A campfire",
+      "name": "Una fogata",
       "tint": "#ff8a3c",
       "ground": "dirt",
       "light": "#ffb878",
@@ -270,7 +270,7 @@
     },
     {
       "id": "market_street",
-      "name": "A market street",
+      "name": "Una calle de mercado",
       "tint": "#f2c14e",
       "ground": "cobble",
       "light": "#ffe6b8",
@@ -422,7 +422,7 @@
     },
     {
       "id": "charge",
-      "name": "A charge",
+      "name": "Una carga",
       "tint": "#e8463a",
       "ground": "mud",
       "light": "#ffd2b4",
@@ -527,7 +527,7 @@
     },
     {
       "id": "funeral",
-      "name": "A funeral",
+      "name": "Un funeral",
       "tint": "#b48cff",
       "ground": "pale_flagstone",
       "light": "#d8ccff",
@@ -651,7 +651,7 @@
     },
     {
       "id": "duel",
-      "name": "A duel",
+      "name": "Un duelo",
       "tint": "#4fa8ff",
       "ground": "flagstone",
       "light": "#cfe2ff",
@@ -753,7 +753,7 @@
     },
     {
       "id": "children_at_play",
-      "name": "Children at play",
+      "name": "Niños jugando",
       "tint": "#7fe07a",
       "ground": "meadow",
       "light": "#f2ffd8",
@@ -835,7 +835,7 @@
     },
     {
       "id": "shipwreck_deck",
-      "name": "A shipwreck's deck",
+      "name": "La cubierta de un barco naufragado",
       "tint": "#3fc6d9",
       "ground": "planks",
       "light": "#c8f0ff",
@@ -970,7 +970,7 @@
     },
     {
       "id": "watch_post",
-      "name": "A watch post",
+      "name": "Un puesto de vigilancia",
       "tint": "#ffd86a",
       "ground": "crag_ground",
       "light": "#ffe8b0",

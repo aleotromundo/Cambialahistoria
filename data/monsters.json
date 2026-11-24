@@ -1,7 +1,7 @@
 [
   {
     "id": "unfinished_brute",
-    "name": "Echo",
+    "name": "Eco",
     "rig": "unfinished_heavy",
     "bodyMaterial": "flesh",
     "faction": "unfinished",
@@ -42,7 +42,7 @@
   },
   {
     "id": "unfinished_taker",
-    "name": "Echo",
+    "name": "Eco",
     "rig": "unfinished_taker",
     "bodyMaterial": "flesh",
     "faction": "unfinished",
@@ -79,7 +79,7 @@
   },
   {
     "id": "unfinished_thrower",
-    "name": "Echo",
+    "name": "Eco",
     "rig": "unfinished_thrower",
     "bodyMaterial": "flesh",
     "faction": "unfinished",
@@ -121,7 +121,7 @@
   },
   {
     "id": "unfinished_borrower",
-    "name": "Echo",
+    "name": "Eco",
     "rig": "unfinished_heavy",
     "bodyMaterial": "flesh",
     "faction": "unfinished",
@@ -169,7 +169,7 @@
   },
   {
     "id": "unfinished_colossus",
-    "name": "Echo",
+    "name": "Eco",
     "rig": "unfinished_heavy",
     "bodyMaterial": "flesh",
     "faction": "unfinished",
@@ -203,7 +203,7 @@
       "mismatched_gloves"
     ],
     "boss": {
-      "title": "Built Too Large",
+      "title": "Demasiado grande",
       "phases": [
         {
           "below": 1,
@@ -255,7 +255,7 @@
   },
   {
     "id": "still_standing",
-    "name": "Still",
+    "name": "Inmóvil",
     "rig": "still_figure",
     "bodyMaterial": "flesh",
     "faction": "still",
@@ -295,7 +295,7 @@
   },
   {
     "id": "still_waking",
-    "name": "Still",
+    "name": "Inmóvil",
     "rig": "still_figure",
     "bodyMaterial": "flesh",
     "faction": "still",
@@ -334,7 +334,7 @@
   },
   {
     "id": "mender",
-    "name": "Mender",
+    "name": "Sanador",
     "rig": "mender",
     "bodyMaterial": "bone",
     "faction": "menders",
@@ -373,7 +373,7 @@
   },
   {
     "id": "mended",
-    "name": "Mended",
+    "name": "Reparado",
     "rig": "mended",
     "bodyMaterial": "bone",
     "faction": "menders",
@@ -407,7 +407,7 @@
   },
   {
     "id": "timekeeper_adept",
-    "name": "Timekeeper Adept",
+    "name": "Adepto cronomante",
     "rig": "timekeeper",
     "bodyMaterial": "flesh",
     "faction": "timekeepers",
@@ -443,7 +443,7 @@
   },
   {
     "id": "timekeeper_binder",
-    "name": "Timekeeper Binder",
+    "name": "Vinculador cronomante",
     "rig": "timekeeper",
     "bodyMaterial": "flesh",
     "faction": "timekeepers",
@@ -480,7 +480,7 @@
   },
   {
     "id": "timekeeper_duelist",
-    "name": "Timekeeper Duelist",
+    "name": "Duelista cronomante",
     "rig": "timekeeper",
     "bodyMaterial": "flesh",
     "faction": "timekeepers",
@@ -519,7 +519,7 @@
   },
   {
     "id": "timekeeper_gatekeeper",
-    "name": "The Reckoner",
+    "name": "El Ajusticiador",
     "rig": "timekeeper",
     "bodyMaterial": "flesh",
     "faction": "timekeepers",
@@ -552,7 +552,7 @@
       "keeper_gloves"
     ],
     "boss": {
-      "title": "Timekeeper",
+      "title": "Cronomante",
       "phases": [
         {
           "below": 1,
@@ -644,7 +644,7 @@
   },
   {
     "id": "warden_patrol",
-    "name": "Warden Patrol",
+    "name": "Patrulla del Guardián",
     "rig": "warden",
     "bodyMaterial": "armour",
     "faction": "wardens",
@@ -686,7 +686,7 @@
   },
   {
     "id": "stormcaller_rival",
-    "name": "Stormcaller Rival",
+    "name": "Rival invocatormentas",
     "rig": "skeleton_hero",
     "bodyMaterial": "flesh",
     "faction": "stormcallers",
@@ -715,7 +715,7 @@
     ],
     "wear": [],
     "boss": {
-      "title": "Coming Apart",
+      "title": "Desmoronamiento",
       "phases": [
         {
           "below": 1,
@@ -765,40 +765,40 @@
       }
     }
   },
-  {"id": "first_brute", "name": "Echo", "rig": "unfinished_heavy", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.3, "radius": 0.5, "life": 190, "damageMin": 6, "damageMax": 7, "moveSpeed": 2.6, "xp": 18, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "first_haymaker", "loot": {"goldChance": 0.65, "goldMin": 4, "goldMax": 11, "itemChance": 0.24}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": ["raider_maul", "scrap_board"], "wear": ["salvaged_mail", "faded_trousers", "mismatched_gloves"], "poise": {"knockback": 0.3, "stagger": 0.35}},
-  {"id": "first_thrower", "name": "Echo", "rig": "unfinished_thrower", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.0, "radius": 0.5, "life": 110, "damageMin": 5, "damageMax": 6, "moveSpeed": 4.0, "xp": 11, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4}, "skill": "first_stone", "loot": {"goldChance": 0.65, "goldMin": 3, "goldMax": 9, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": ["scrap_javelin"], "wear": ["stolen_jerkin", "faded_trousers", "torn_hood", "cast_off_boots"], "poise": {"knockback": 0.6, "stagger": 0}},
-  {"id": "wolf", "name": "Wolf", "rig": "wolf", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 48, "damageMin": 6, "damageMax": 10, "moveSpeed": 6.2, "xp": 14, "aggroRadius": 11, "behaviour": {"type": "stalker", "orbitRange": 5}, "skill": "wolf_pounce", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 7, "itemChance": 0.15}, "color": "#c9b48a", "tint": "#a39a8c", "gear": [], "wear": []},
-  {"id": "rat", "name": "Rat", "rig": "rat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.4, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 4.0, "xp": 2, "aggroRadius": 12, "behaviour": {"type": "swarm", "ring": 2.2}, "skill": "rat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "bat", "name": "Bat", "rig": "bat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.35, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 7.2, "xp": 3, "aggroRadius": 11, "behaviour": {"type": "swarm", "ring": 3.8}, "skill": "bat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "crackle_bat", "name": "Crackle Bat", "rig": "bat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.35, "radius": 0.42, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 6.2, "xp": 3, "aggroRadius": 11, "behaviour": {"type": "swarm", "ring": 3.8}, "skill": "bat_bite", "deathSkill": "crackle_burst", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
-  {"id": "spider", "name": "Spider", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.8, "life": 60, "damageMin": 9, "damageMax": 14, "moveSpeed": 1.9, "xp": 18, "aggroRadius": 11, "behaviour": {"type": "ambush", "spring": 4.5}, "skill": "spider_leap", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "weaver", "name": "Weaver", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 0.68, "radius": 0.6, "life": 40, "damageMin": 6, "damageMax": 9, "moveSpeed": 1.35, "xp": 17, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 9, "retreatRange": 4, "lead": 0.6}, "skill": "weaver_web", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
-  {"id": "spiderling", "name": "Spiderling", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 0.5, "radius": 0.4, "life": 9, "damageMin": 3, "damageMax": 5, "moveSpeed": 1.0, "xp": 4, "aggroRadius": 12, "behaviour": {"type": "swarm", "ring": 1.8}, "skill": "spiderling_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#a39a8c", "gear": [], "wear": []},
-  {"id": "broodmother", "name": "Broodmother", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.85, "radius": 1.3, "life": 200, "damageMin": 10, "damageMax": 15, "moveSpeed": 1.5, "xp": 60, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "brood_crash", "loot": {"goldChance": 0.85, "goldMin": 8, "goldMax": 24, "itemChance": 0.5}, "color": "#c9b48a", "tint": "#8a7d6c", "gear": [], "wear": [], "summon": {"monster": "spiderling", "count": 2, "cooldown": 9, "limit": 4}, "poise": {"knockback": 0.3, "stagger": 0.4, "resolve": 3}},
-  {"id": "crawler", "name": "Crawler", "rig": "crawler", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.7, "life": 80, "damageMin": 10, "damageMax": 15, "moveSpeed": 0.7, "xp": 20, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "crawler_lunge", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": [], "dormant": {"noiseRadius": 6}},
-  {"id": "silt_ooze", "name": "Silt Ooze", "rig": "silt_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 70, "damageMin": 8, "damageMax": 12, "moveSpeed": 1.1, "xp": 18, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "silt_smother", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": [], "poise": {"knockback": 0.6, "stagger": 0.8, "resolve": 1}},
-  {"id": "spined_ooze", "name": "Spined Ooze", "rig": "spined_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.65, "life": 50, "damageMin": 6, "damageMax": 9, "moveSpeed": 0.9, "xp": 20, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4, "lead": 0.4}, "skill": "spine_volley", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "mire_spitter", "name": "Mire Spitter", "rig": "spined_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.15, "radius": 0.7, "life": 48, "damageMin": 6, "damageMax": 8, "moveSpeed": 1.15, "xp": 20, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4.5, "lead": 0.4}, "skill": "spine_volley", "trail": {"skill": "silt_pool", "every": 1.8, "limit": 2, "retreatOnly": true}, "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#8a7d6c", "gear": [], "wear": []},
-  {"id": "sporecap", "name": "Sporecap", "rig": "sporecap", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.55, "life": 45, "damageMin": 7, "damageMax": 11, "moveSpeed": 1.0, "xp": 16, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "sporecap_bite", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": [], "dormant": {"noiseRadius": 5}, "deathSkill": "spore_burst"},
-  {"id": "cave_shade", "name": "Shade", "rig": "cave_shade", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.55, "life": 34, "damageMin": 7, "damageMax": 11, "moveSpeed": 3.0, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "stalker", "orbitRange": 5}, "skill": "shade_dive", "loot": {"goldChance": 0.35, "goldMin": 2, "goldMax": 7, "itemChance": 0.14}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
-  {"id": "drifter", "name": "Drifter", "rig": "drifter", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 60, "damageMin": 5, "damageMax": 8, "moveSpeed": 1.2, "xp": 20, "aggroRadius": 12, "behaviour": {"type": "ranged", "preferredRange": 7, "retreatRange": 3.5, "lead": 0}, "skill": "drifter_grasp", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
-  {"id": "echo_shieldbearer", "name": "Echo Shieldbearer", "rig": "unfinished_heavy", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.18, "radius": 0.5, "life": 72, "damageMin": 6, "damageMax": 9, "moveSpeed": 2.9, "xp": 15, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "brute_haymaker", "guard": {"arcDegrees": 120, "damageTaken": 0.55, "breakStagger": 0.35, "breakTime": 1.8}, "poise": {"knockback": 0.4, "stagger": 0.45, "resolve": 2}, "loot": {"goldChance": 0.65, "goldMin": 4, "goldMax": 11, "itemChance": 0.22}, "color": "#d08a5a", "tint": "#e6d8c8", "gear": ["raider_cleaver", "scrap_board"], "wear": ["salvaged_mail", "faded_trousers", "cast_off_boots"]},
-  {"id": "grave_stitcher", "name": "Grave Stitcher", "rig": "mender", "bodyMaterial": "bone", "faction": "unfinished", "scale": 1.08, "radius": 0.5, "life": 32, "damageMin": 4, "damageMax": 7, "moveSpeed": 3.6, "xp": 11, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4}, "skill": "mender_needle", "support": "mender_stitch", "loot": {"goldChance": 0.65, "goldMin": 3, "goldMax": 9, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": [], "wear": ["patched_tunic", "odd_breeches", "mismatched_gloves", "torn_hood", "cast_off_boots"]},
-  {"id": "unfinished_crier", "name": "Echo", "rig": "unfinished_taker", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 0.95, "radius": 0.5, "life": 38, "damageMin": 5, "damageMax": 8, "moveSpeed": 5.6, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "taker_snatch", "poise": {"knockback": 0.3, "stagger": 0.3}, "alarm": {"reach": 36, "cry": 3}, "loot": {"goldChance": 0.55, "goldMin": 3, "goldMax": 8, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#e6d8c8", "gear": [], "wear": ["torn_hood", "odd_breeches", "cast_off_boots"]},
-  {"id": "cinder_hound", "name": "Cinder Hound", "rig": "wolf", "bodyMaterial": "hide", "faction": "cinders", "scale": 0.95, "radius": 0.6, "life": 44, "damageMin": 6, "damageMax": 9, "moveSpeed": 6.6, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "stalker", "orbitRange": 5.5}, "skill": "cinder_pounce", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.15}, "color": "#ff6a1c", "tint": "#7a645a", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.0, "rim": 0.25}},
-  {"id": "cinder_alpha", "name": "Cinder Alpha", "rig": "wolf", "bodyMaterial": "hide", "faction": "cinders", "scale": 1.4, "radius": 0.85, "life": 170, "damageMin": 9, "damageMax": 14, "moveSpeed": 6.0, "xp": 60, "aggroRadius": 14, "behaviour": {"type": "stalker", "orbitRange": 6.5}, "skill": "alpha_pounce", "loot": {"goldChance": 0.9, "goldMin": 10, "goldMax": 30, "itemChance": 0.6}, "color": "#ff6a1c", "tint": "#5e4a40", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.4, "rim": 0.3}, "summon": {"monster": "cinder_hound", "count": 2, "cooldown": 9, "limit": 3}, "poise": {"knockback": 0.4, "stagger": 0.4, "resolve": 3}},
-  {"id": "slagback", "name": "Slagback", "rig": "stegosaurus", "bodyMaterial": "armour", "faction": "cinders", "scale": 1.6, "radius": 1.1, "life": 130, "damageMin": 8, "damageMax": 11, "moveSpeed": 2.0, "xp": 28, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "slag_crash", "loot": {"goldChance": 0.55, "goldMin": 4, "goldMax": 12, "itemChance": 0.24}, "color": "#ff6a1c", "tint": "#6a5a52", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 6, "seam": 0.025, "strength": 1.9, "rim": 0.2}, "guard": {"arcDegrees": 140, "damageTaken": 0.35, "breakStagger": 0.4, "breakTime": 2.5}, "poise": {"knockback": 0.2, "stagger": 0.3, "resolve": 4}, "deathSkill": "slag_eruption"},
-  {"id": "slagback_elder", "name": "Slagback Elder", "rig": "stegosaurus", "bodyMaterial": "armour", "faction": "cinders", "scale": 2.1, "radius": 1.45, "life": 340, "damageMin": 10, "damageMax": 13, "moveSpeed": 2.5, "xp": 90, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "elder_crash", "loot": {"goldChance": 0.95, "goldMin": 14, "goldMax": 40, "itemChance": 0.7}, "color": "#ff6a1c", "tint": "#574a44", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 6, "seam": 0.025, "strength": 2.2, "rim": 0.25}, "guard": {"arcDegrees": 150, "damageTaken": 0.3, "breakStagger": 0.45, "breakTime": 3}, "poise": {"knockback": 0.1, "stagger": 0.2, "resolve": 5}, "deathSkill": "elder_eruption", "summon": {"monster": "cinder_mite", "count": 3, "cooldown": 8, "limit": 6}},
-  {"id": "ember_spitter", "name": "Ember Spitter", "rig": "crawler", "bodyMaterial": "chitin", "faction": "cinders", "scale": 1, "radius": 0.6, "life": 40, "damageMin": 5, "damageMax": 8, "moveSpeed": 0.7, "xp": 17, "aggroRadius": 14, "behaviour": {"type": "ranged", "preferredRange": 10, "retreatRange": 5, "lead": 1.0}, "skill": "ember_spit", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#ff6a1c", "tint": "#8a5040", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.0, "rim": 0.2}},
-  {"id": "spitter_matron", "name": "Spitter Matron", "rig": "crawler", "bodyMaterial": "chitin", "faction": "cinders", "scale": 1.5, "radius": 0.95, "life": 220, "damageMin": 8, "damageMax": 11, "moveSpeed": 1.05, "xp": 75, "aggroRadius": 15, "behaviour": {"type": "ranged", "preferredRange": 11, "retreatRange": 6, "lead": 1.1}, "skill": "matron_spit", "loot": {"goldChance": 0.9, "goldMin": 12, "goldMax": 34, "itemChance": 0.65}, "color": "#ff6a1c", "tint": "#74443a", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.3, "rim": 0.25}, "summon": {"monster": "ember_spitter", "count": 1, "cooldown": 10, "limit": 2}, "poise": {"knockback": 0.4, "stagger": 0.4, "resolve": 3}},
-  {"id": "cinder_mite", "name": "Cinder Mite", "rig": "rat", "bodyMaterial": "hide", "faction": "cinders", "scale": 0.9, "radius": 0.4, "life": 14, "damageMin": 3, "damageMax": 5, "moveSpeed": 3.6, "xp": 5, "aggroRadius": 9, "behaviour": {"type": "swarm", "ring": 1.8}, "skill": "mite_bite", "loot": {"goldChance": 0.12, "goldMin": 1, "goldMax": 3, "itemChance": 0.03}, "color": "#ff6a1c", "tint": "#9a6248", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 4, "seam": 0.035, "strength": 2.6, "rim": 0.3}, "dormant": {"noiseRadius": 4.5}},
-  {"id": "timekeeper_rank", "name": "Timekeeper Rank", "rig": "timekeeper", "bodyMaterial": "armour", "faction": "timekeepers", "scale": 1.08, "radius": 0.55, "life": 120, "damageMin": 7, "damageMax": 11, "moveSpeed": 2.9, "xp": 26, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "rank_thrust", "guard": {"arcDegrees": 150, "damageTaken": 0.2, "breakStagger": 0.45, "breakTime": 1.5}, "poise": {"knockback": 0.15, "stagger": 0.3}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_blade", "rank_shield"], "wear": ["blackened_plate", "iron_vambraces", "iron_greaves", "iron_sabatons", "lens_mask"]},
-  {"id": "timekeeper_tallier", "name": "Timekeeper Tallier", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.0, "radius": 0.5, "life": 58, "damageMin": 6, "damageMax": 9, "moveSpeed": 3.4, "xp": 24, "aggroRadius": 11, "behaviour": {"type": "ranged", "preferredRange": 10, "retreatRange": 5}, "skill": "tally_mark", "poise": {"knockback": 0.8, "stagger": 0.8}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_rod"], "wear": ["tally_robe", "keeper_gloves", "lens_mask"]},
-  {"id": "timekeeper_custodian", "name": "Timekeeper Custodian", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.04, "radius": 0.5, "life": 90, "damageMin": 6, "damageMax": 9, "moveSpeed": 3.2, "xp": 30, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 7, "retreatRange": 3.5}, "skill": "custodian_push", "support": "custodian_mend", "poise": {"knockback": 0.5, "stagger": 0.5}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_rod"], "wear": ["custodian_robe", "keeper_gloves", "lens_mask"]},
-  {"id": "timekeeper_marshal", "name": "Timekeeper Marshal", "rig": "timekeeper", "bodyMaterial": "armour", "faction": "timekeepers", "scale": 1.24, "radius": 0.7, "life": 400, "damageMin": 10, "damageMax": 15, "moveSpeed": 2.7, "xp": 120, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "marshal_sweep", "guard": {"arcDegrees": 150, "damageTaken": 0.25, "breakStagger": 0.5, "breakTime": 1.8}, "summon": {"monster": "timekeeper_rank", "count": 2, "cooldown": 14, "limit": 4}, "poise": {"knockback": 0.05, "stagger": 0.15}, "loot": {"goldChance": 1, "goldMin": 30, "goldMax": 50, "itemChance": 0.9}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_blade", "rank_shield"], "wear": ["blackened_plate", "iron_vambraces", "iron_greaves", "iron_sabatons", "lens_mask"]},
+  {"id": "first_brute", "name": "Eco", "rig": "unfinished_heavy", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.3, "radius": 0.5, "life": 190, "damageMin": 6, "damageMax": 7, "moveSpeed": 2.6, "xp": 18, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "first_haymaker", "loot": {"goldChance": 0.65, "goldMin": 4, "goldMax": 11, "itemChance": 0.24}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": ["raider_maul", "scrap_board"], "wear": ["salvaged_mail", "faded_trousers", "mismatched_gloves"], "poise": {"knockback": 0.3, "stagger": 0.35}},
+  {"id": "first_thrower", "name": "Eco", "rig": "unfinished_thrower", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.0, "radius": 0.5, "life": 110, "damageMin": 5, "damageMax": 6, "moveSpeed": 4.0, "xp": 11, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4}, "skill": "first_stone", "loot": {"goldChance": 0.65, "goldMin": 3, "goldMax": 9, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": ["scrap_javelin"], "wear": ["stolen_jerkin", "faded_trousers", "torn_hood", "cast_off_boots"], "poise": {"knockback": 0.6, "stagger": 0}},
+  {"id": "wolf", "name": "Lobo", "rig": "wolf", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 48, "damageMin": 6, "damageMax": 10, "moveSpeed": 6.2, "xp": 14, "aggroRadius": 11, "behaviour": {"type": "stalker", "orbitRange": 5}, "skill": "wolf_pounce", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 7, "itemChance": 0.15}, "color": "#c9b48a", "tint": "#a39a8c", "gear": [], "wear": []},
+  {"id": "rat", "name": "Rata", "rig": "rat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.4, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 4.0, "xp": 2, "aggroRadius": 12, "behaviour": {"type": "swarm", "ring": 2.2}, "skill": "rat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "bat", "name": "Murciélago", "rig": "bat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.35, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 7.2, "xp": 3, "aggroRadius": 11, "behaviour": {"type": "swarm", "ring": 3.8}, "skill": "bat_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "crackle_bat", "name": "Murciélago crepitante", "rig": "bat", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.35, "radius": 0.42, "life": 1, "scalesLife": false, "damageMin": 2, "damageMax": 3, "moveSpeed": 6.2, "xp": 3, "aggroRadius": 11, "behaviour": {"type": "swarm", "ring": 3.8}, "skill": "bat_bite", "deathSkill": "crackle_burst", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
+  {"id": "spider", "name": "Araña", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.8, "life": 60, "damageMin": 9, "damageMax": 14, "moveSpeed": 1.9, "xp": 18, "aggroRadius": 11, "behaviour": {"type": "ambush", "spring": 4.5}, "skill": "spider_leap", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "weaver", "name": "Tejedor", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 0.68, "radius": 0.6, "life": 40, "damageMin": 6, "damageMax": 9, "moveSpeed": 1.35, "xp": 17, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 9, "retreatRange": 4, "lead": 0.6}, "skill": "weaver_web", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
+  {"id": "spiderling", "name": "Arañita", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 0.5, "radius": 0.4, "life": 9, "damageMin": 3, "damageMax": 5, "moveSpeed": 1.0, "xp": 4, "aggroRadius": 12, "behaviour": {"type": "swarm", "ring": 1.8}, "skill": "spiderling_bite", "loot": {"goldChance": 0.1, "goldMin": 1, "goldMax": 2, "itemChance": 0.02}, "color": "#c9b48a", "tint": "#a39a8c", "gear": [], "wear": []},
+  {"id": "broodmother", "name": "Madre de la cría", "rig": "spider", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.85, "radius": 1.3, "life": 200, "damageMin": 10, "damageMax": 15, "moveSpeed": 1.5, "xp": 60, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "brood_crash", "loot": {"goldChance": 0.85, "goldMin": 8, "goldMax": 24, "itemChance": 0.5}, "color": "#c9b48a", "tint": "#8a7d6c", "gear": [], "wear": [], "summon": {"monster": "spiderling", "count": 2, "cooldown": 9, "limit": 4}, "poise": {"knockback": 0.3, "stagger": 0.4, "resolve": 3}},
+  {"id": "crawler", "name": "Reptante", "rig": "crawler", "bodyMaterial": "chitin", "faction": "beasts", "scale": 1.0, "radius": 0.7, "life": 80, "damageMin": 10, "damageMax": 15, "moveSpeed": 0.7, "xp": 20, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "crawler_lunge", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": [], "dormant": {"noiseRadius": 6}},
+  {"id": "silt_ooze", "name": "Limo de cieno", "rig": "silt_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 70, "damageMin": 8, "damageMax": 12, "moveSpeed": 1.1, "xp": 18, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "silt_smother", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": [], "poise": {"knockback": 0.6, "stagger": 0.8, "resolve": 1}},
+  {"id": "spined_ooze", "name": "Limo espinoso", "rig": "spined_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.65, "life": 50, "damageMin": 6, "damageMax": 9, "moveSpeed": 0.9, "xp": 20, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4, "lead": 0.4}, "skill": "spine_volley", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "mire_spitter", "name": "Escupidor del pantano", "rig": "spined_ooze", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.15, "radius": 0.7, "life": 48, "damageMin": 6, "damageMax": 8, "moveSpeed": 1.15, "xp": 20, "aggroRadius": 13, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4.5, "lead": 0.4}, "skill": "spine_volley", "trail": {"skill": "silt_pool", "every": 1.8, "limit": 2, "retreatOnly": true}, "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#8a7d6c", "gear": [], "wear": []},
+  {"id": "sporecap", "name": "Sombrero de esporas", "rig": "sporecap", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.55, "life": 45, "damageMin": 7, "damageMax": 11, "moveSpeed": 1.0, "xp": 16, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "sporecap_bite", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.16}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": [], "dormant": {"noiseRadius": 5}, "deathSkill": "spore_burst"},
+  {"id": "cave_shade", "name": "Sombra", "rig": "cave_shade", "bodyMaterial": "hide", "faction": "beasts", "scale": 1.0, "radius": 0.55, "life": 34, "damageMin": 7, "damageMax": 11, "moveSpeed": 3.0, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "stalker", "orbitRange": 5}, "skill": "shade_dive", "loot": {"goldChance": 0.35, "goldMin": 2, "goldMax": 7, "itemChance": 0.14}, "color": "#c9b48a", "tint": "#b0a59a", "gear": [], "wear": []},
+  {"id": "drifter", "name": "Errante", "rig": "drifter", "bodyMaterial": "flesh", "faction": "beasts", "scale": 1.0, "radius": 0.6, "life": 60, "damageMin": 5, "damageMax": 8, "moveSpeed": 1.2, "xp": 20, "aggroRadius": 12, "behaviour": {"type": "ranged", "preferredRange": 7, "retreatRange": 3.5, "lead": 0}, "skill": "drifter_grasp", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#c9b48a", "tint": "#d4ccb8", "gear": [], "wear": []},
+  {"id": "echo_shieldbearer", "name": "Portador de escudo del eco", "rig": "unfinished_heavy", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 1.18, "radius": 0.5, "life": 72, "damageMin": 6, "damageMax": 9, "moveSpeed": 2.9, "xp": 15, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "brute_haymaker", "guard": {"arcDegrees": 120, "damageTaken": 0.55, "breakStagger": 0.35, "breakTime": 1.8}, "poise": {"knockback": 0.4, "stagger": 0.45, "resolve": 2}, "loot": {"goldChance": 0.65, "goldMin": 4, "goldMax": 11, "itemChance": 0.22}, "color": "#d08a5a", "tint": "#e6d8c8", "gear": ["raider_cleaver", "scrap_board"], "wear": ["salvaged_mail", "faded_trousers", "cast_off_boots"]},
+  {"id": "grave_stitcher", "name": "Costurero de tumbas", "rig": "mender", "bodyMaterial": "bone", "faction": "unfinished", "scale": 1.08, "radius": 0.5, "life": 32, "damageMin": 4, "damageMax": 7, "moveSpeed": 3.6, "xp": 11, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 8, "retreatRange": 4}, "skill": "mender_needle", "support": "mender_stitch", "loot": {"goldChance": 0.65, "goldMin": 3, "goldMax": 9, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#f2e4d6", "gear": [], "wear": ["patched_tunic", "odd_breeches", "mismatched_gloves", "torn_hood", "cast_off_boots"]},
+  {"id": "unfinished_crier", "name": "Eco", "rig": "unfinished_taker", "bodyMaterial": "flesh", "faction": "unfinished", "scale": 0.95, "radius": 0.5, "life": 38, "damageMin": 5, "damageMax": 8, "moveSpeed": 5.6, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "taker_snatch", "poise": {"knockback": 0.3, "stagger": 0.3}, "alarm": {"reach": 36, "cry": 3}, "loot": {"goldChance": 0.55, "goldMin": 3, "goldMax": 8, "itemChance": 0.2}, "color": "#d08a5a", "tint": "#e6d8c8", "gear": [], "wear": ["torn_hood", "odd_breeches", "cast_off_boots"]},
+  {"id": "cinder_hound", "name": "Sabueso de ceniza", "rig": "wolf", "bodyMaterial": "hide", "faction": "cinders", "scale": 0.95, "radius": 0.6, "life": 44, "damageMin": 6, "damageMax": 9, "moveSpeed": 6.6, "xp": 15, "aggroRadius": 12, "behaviour": {"type": "stalker", "orbitRange": 5.5}, "skill": "cinder_pounce", "loot": {"goldChance": 0.4, "goldMin": 2, "goldMax": 8, "itemChance": 0.15}, "color": "#ff6a1c", "tint": "#7a645a", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.0, "rim": 0.25}},
+  {"id": "cinder_alpha", "name": "Alfa de ceniza", "rig": "wolf", "bodyMaterial": "hide", "faction": "cinders", "scale": 1.4, "radius": 0.85, "life": 170, "damageMin": 9, "damageMax": 14, "moveSpeed": 6.0, "xp": 60, "aggroRadius": 14, "behaviour": {"type": "stalker", "orbitRange": 6.5}, "skill": "alpha_pounce", "loot": {"goldChance": 0.9, "goldMin": 10, "goldMax": 30, "itemChance": 0.6}, "color": "#ff6a1c", "tint": "#5e4a40", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.4, "rim": 0.3}, "summon": {"monster": "cinder_hound", "count": 2, "cooldown": 9, "limit": 3}, "poise": {"knockback": 0.4, "stagger": 0.4, "resolve": 3}},
+  {"id": "slagback", "name": "Lomo de escoria", "rig": "stegosaurus", "bodyMaterial": "armour", "faction": "cinders", "scale": 1.6, "radius": 1.1, "life": 130, "damageMin": 8, "damageMax": 11, "moveSpeed": 2.0, "xp": 28, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "slag_crash", "loot": {"goldChance": 0.55, "goldMin": 4, "goldMax": 12, "itemChance": 0.24}, "color": "#ff6a1c", "tint": "#6a5a52", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 6, "seam": 0.025, "strength": 1.9, "rim": 0.2}, "guard": {"arcDegrees": 140, "damageTaken": 0.35, "breakStagger": 0.4, "breakTime": 2.5}, "poise": {"knockback": 0.2, "stagger": 0.3, "resolve": 4}, "deathSkill": "slag_eruption"},
+  {"id": "slagback_elder", "name": "Lomo de escoria anciano", "rig": "stegosaurus", "bodyMaterial": "armour", "faction": "cinders", "scale": 2.1, "radius": 1.45, "life": 340, "damageMin": 10, "damageMax": 13, "moveSpeed": 2.5, "xp": 90, "aggroRadius": 12, "behaviour": {"type": "chaser"}, "skill": "elder_crash", "loot": {"goldChance": 0.95, "goldMin": 14, "goldMax": 40, "itemChance": 0.7}, "color": "#ff6a1c", "tint": "#574a44", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 6, "seam": 0.025, "strength": 2.2, "rim": 0.25}, "guard": {"arcDegrees": 150, "damageTaken": 0.3, "breakStagger": 0.45, "breakTime": 3}, "poise": {"knockback": 0.1, "stagger": 0.2, "resolve": 5}, "deathSkill": "elder_eruption", "summon": {"monster": "cinder_mite", "count": 3, "cooldown": 8, "limit": 6}},
+  {"id": "ember_spitter", "name": "Escupellamas", "rig": "crawler", "bodyMaterial": "chitin", "faction": "cinders", "scale": 1, "radius": 0.6, "life": 40, "damageMin": 5, "damageMax": 8, "moveSpeed": 0.7, "xp": 17, "aggroRadius": 14, "behaviour": {"type": "ranged", "preferredRange": 10, "retreatRange": 5, "lead": 1.0}, "skill": "ember_spit", "loot": {"goldChance": 0.45, "goldMin": 3, "goldMax": 9, "itemChance": 0.18}, "color": "#ff6a1c", "tint": "#8a5040", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.0, "rim": 0.2}},
+  {"id": "spitter_matron", "name": "Matrona escupidora", "rig": "crawler", "bodyMaterial": "chitin", "faction": "cinders", "scale": 1.5, "radius": 0.95, "life": 220, "damageMin": 8, "damageMax": 11, "moveSpeed": 1.05, "xp": 75, "aggroRadius": 15, "behaviour": {"type": "ranged", "preferredRange": 11, "retreatRange": 6, "lead": 1.1}, "skill": "matron_spit", "loot": {"goldChance": 0.9, "goldMin": 12, "goldMax": 34, "itemChance": 0.65}, "color": "#ff6a1c", "tint": "#74443a", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 5, "seam": 0.03, "strength": 2.3, "rim": 0.25}, "summon": {"monster": "ember_spitter", "count": 1, "cooldown": 10, "limit": 2}, "poise": {"knockback": 0.4, "stagger": 0.4, "resolve": 3}},
+  {"id": "cinder_mite", "name": "Ácaro de ceniza", "rig": "rat", "bodyMaterial": "hide", "faction": "cinders", "scale": 0.9, "radius": 0.4, "life": 14, "damageMin": 3, "damageMax": 5, "moveSpeed": 3.6, "xp": 5, "aggroRadius": 9, "behaviour": {"type": "swarm", "ring": 1.8}, "skill": "mite_bite", "loot": {"goldChance": 0.12, "goldMin": 1, "goldMax": 3, "itemChance": 0.03}, "color": "#ff6a1c", "tint": "#9a6248", "gear": [], "wear": [], "heatproof": true, "crust": {"cells": 4, "seam": 0.035, "strength": 2.6, "rim": 0.3}, "dormant": {"noiseRadius": 4.5}},
+  {"id": "timekeeper_rank", "name": "Rango de guardatiempo", "rig": "timekeeper", "bodyMaterial": "armour", "faction": "timekeepers", "scale": 1.08, "radius": 0.55, "life": 120, "damageMin": 7, "damageMax": 11, "moveSpeed": 2.9, "xp": 26, "aggroRadius": 10, "behaviour": {"type": "chaser"}, "skill": "rank_thrust", "guard": {"arcDegrees": 150, "damageTaken": 0.2, "breakStagger": 0.45, "breakTime": 1.5}, "poise": {"knockback": 0.15, "stagger": 0.3}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_blade", "rank_shield"], "wear": ["blackened_plate", "iron_vambraces", "iron_greaves", "iron_sabatons", "lens_mask"]},
+  {"id": "timekeeper_tallier", "name": "Contador de guardatiempo", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.0, "radius": 0.5, "life": 58, "damageMin": 6, "damageMax": 9, "moveSpeed": 3.4, "xp": 24, "aggroRadius": 11, "behaviour": {"type": "ranged", "preferredRange": 10, "retreatRange": 5}, "skill": "tally_mark", "poise": {"knockback": 0.8, "stagger": 0.8}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_rod"], "wear": ["tally_robe", "keeper_gloves", "lens_mask"]},
+  {"id": "timekeeper_custodian", "name": "Custodio de guardatiempo", "rig": "timekeeper", "bodyMaterial": "flesh", "faction": "timekeepers", "scale": 1.04, "radius": 0.5, "life": 90, "damageMin": 6, "damageMax": 9, "moveSpeed": 3.2, "xp": 30, "aggroRadius": 10, "behaviour": {"type": "ranged", "preferredRange": 7, "retreatRange": 3.5}, "skill": "custodian_push", "support": "custodian_mend", "poise": {"knockback": 0.5, "stagger": 0.5}, "loot": {"goldChance": 0.7, "goldMin": 6, "goldMax": 14, "itemChance": 0.28}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_rod"], "wear": ["custodian_robe", "keeper_gloves", "lens_mask"]},
+  {"id": "timekeeper_marshal", "name": "Mariscal de guardatiempo", "rig": "timekeeper", "bodyMaterial": "armour", "faction": "timekeepers", "scale": 1.24, "radius": 0.7, "life": 400, "damageMin": 10, "damageMax": 15, "moveSpeed": 2.7, "xp": 120, "aggroRadius": 11, "behaviour": {"type": "chaser"}, "skill": "marshal_sweep", "guard": {"arcDegrees": 150, "damageTaken": 0.25, "breakStagger": 0.5, "breakTime": 1.8}, "summon": {"monster": "timekeeper_rank", "count": 2, "cooldown": 14, "limit": 4}, "poise": {"knockback": 0.05, "stagger": 0.15}, "loot": {"goldChance": 1, "goldMin": 30, "goldMax": 50, "itemChance": 0.9}, "color": "#d8b46a", "tint": "#fff4e6", "gear": ["keeper_blade", "rank_shield"], "wear": ["blackened_plate", "iron_vambraces", "iron_greaves", "iron_sabatons", "lens_mask"]},
   {
     "id": "ledger_keeper",
-    "name": "Timekeeper",
+    "name": "Cronomante",
     "rig": "timekeeper",
     "bodyMaterial": "flesh",
     "faction": "timekeepers",
@@ -831,7 +831,7 @@
       "keeper_gloves"
     ],
     "boss": {
-      "title": "Timekeeper",
+      "title": "Cronomante",
       "phases": [
         {
           "below": 1,
@@ -921,7 +921,7 @@
   },
   {
     "id": "count_clock_a",
-    "name": "Standing Clock",
+    "name": "Reloj de pie",
     "rig": "standing_clock",
     "bodyMaterial": "armour",
     "faction": "timekeeper_works",
@@ -961,7 +961,7 @@
   },
   {
     "id": "count_clock_b",
-    "name": "Standing Clock",
+    "name": "Reloj de pie",
     "rig": "standing_clock",
     "bodyMaterial": "armour",
     "faction": "timekeeper_works",
@@ -1001,7 +1001,7 @@
   },
   {
     "id": "ledger_book",
-    "name": "The Ledger",
+    "name": "El libro mayor",
     "rig": "ledger_plinth",
     "bodyMaterial": "armour",
     "faction": "timekeeper_works",

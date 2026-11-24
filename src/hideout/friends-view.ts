@@ -1,7 +1,7 @@
 import type { FriendRow, FriendsState } from './friends.ts';
 import { friendRows, friendsSummary } from './friends.ts';
 
-export const FRIENDS_VIEW = { title: 'Friends', empty: 'No friends yet. Click a name in chat to add one.', leaveMs: 600 } as const;
+export const FRIENDS_VIEW = { title: 'Amigos', empty: 'Todavía no tienes amigos. Haz clic en un nombre del chat para agregarlo.', leaveMs: 600 } as const;
 
 export interface FriendsViewOptions {
   readonly slot: HTMLElement;
@@ -63,7 +63,7 @@ export function createFriendsView(options: FriendsViewOptions): FriendsView {
   const message = (parent: HTMLElement, name: string): void => {
     const button: HTMLButtonElement = make('button', 'friends-action', parent);
     button.type = 'button';
-    button.textContent = 'Message';
+    button.textContent = 'Mensaje';
     button.addEventListener('click', (): void => {
       box.classList.remove('expanded');
       options.message(name);
@@ -78,13 +78,13 @@ export function createFriendsView(options: FriendsViewOptions): FriendsView {
     make('span', 'friends-name', line).textContent = row.name;
     switch (row.kind) {
       case 'incoming':
-        make('span', 'friends-note', line).textContent = 'asks to be friends';
-        action(line, 'Accept', (): void => options.accept(row.name));
-        action(line, 'Decline', (): void => options.remove(row.name));
+        make('span', 'friends-note', line).textContent = 'quiere agregarte como amigo';
+        action(line, 'Aceptar', (): void => options.accept(row.name));
+        action(line, 'Rechazar', (): void => options.remove(row.name));
         break;
       case 'outgoing':
-        make('span', 'friends-note', line).textContent = 'request sent';
-        action(line, 'Cancel', (): void => options.remove(row.name));
+        make('span', 'friends-note', line).textContent = 'solicitud enviada';
+        action(line, 'Cancelar', (): void => options.remove(row.name));
         break;
       case 'friend':
         message(line, row.name);

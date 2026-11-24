@@ -10,21 +10,21 @@ import { whereLikely } from './build-page.ts';
 import type { PageBody } from '../layout.ts';
 
 const STAT_MEANINGS: Readonly<Record<StatId, string>> = {
-  maxLife: 'How much you can take before you fall.',
-  maxMana: 'How much you can spend on skills before you wait.',
-  lifeRegen: 'Life that comes back every second, in a fight or out of it.',
-  manaRegen: 'Mana that comes back every second.',
-  damageMin: 'The low end of the damage range. Adds to every hit of every skill.',
-  damageMax: 'The high end of the damage range. Adds to every hit of every skill.',
-  damagePercent: 'A bonus on all your damage, from every skill.',
-  attackSpeed: 'How quickly you swing and shoot. Spells do not cast faster for it.',
-  critChance: 'The chance that a hit is a critical strike.',
-  critMultiplier: 'How much harder a critical strike lands.',
-  moveSpeed: 'How fast you walk.',
-  armour: 'Takes a share off every hit you take.',
-  goldFind: 'More gold from every pile.',
-  stormResist: 'Takes a share off storm hits, after armour.',
-  frostResist: 'Takes a share off frost hits, after armour.',
+  maxLife: 'Cuánto puedes soportar antes de caer.',
+  maxMana: 'Cuánto puedes gastar en habilidades antes de tener que esperar.',
+  lifeRegen: 'La vida que recuperas cada segundo, en combate o fuera de él.',
+  manaRegen: 'El maná que recuperas cada segundo.',
+  damageMin: 'El extremo inferior del rango de daño. Se suma a cada golpe de cada habilidad.',
+  damageMax: 'El extremo superior del rango de daño. Se suma a cada golpe de cada habilidad.',
+  damagePercent: 'Una bonificación a todo tu daño, de todas tus habilidades.',
+  attackSpeed: 'Qué tan rápido blandes armas y disparas. Esto no hace que los hechizos se lancen más rápido.',
+  critChance: 'La probabilidad de que un golpe sea un golpe crítico.',
+  critMultiplier: 'Qué tan fuerte impacta un golpe crítico.',
+  moveSpeed: 'Qué tan rápido caminas.',
+  armour: 'Reduce una parte del daño de cada golpe que recibes.',
+  goldFind: 'Más oro de cada montón.',
+  stormResist: 'Reduce una parte del daño de los golpes de tormenta, después de la armadura.',
+  frostResist: 'Reduce una parte del daño de los golpes de escarcha, después de la armadura.',
 };
 
 function capNote(data: GuideData, stat: StatId): string {
@@ -32,7 +32,7 @@ function capNote(data: GuideData, stat: StatId): string {
   if (stat === 'stormResist' || stat === 'frostResist') return `Stops at ${percent(data.content.player.resistance.cap)}`;
   const cap: number | null = statCap(data, stat);
   if (cap === null) return '';
-  if (stat === 'moveSpeed') return 'Has a top speed';
+  if (stat === 'moveSpeed') return 'Tiene una velocidad máxima';
   return `Stops at ${capPercent(data, stat)}`;
 }
 
@@ -93,7 +93,7 @@ function bossLine(data: GuideData): string {
 
 function shareWord(data: GuideData): string {
   const shares: number[] = [...new Set(data.content.leans.filter((lean: DropLean): boolean => lean.share > 1).map((lean: DropLean): number => lean.share))];
-  return shares.length === 1 ? `${decimal(shares[0] ?? 1, 1)} times` : 'several times';
+  return shares.length === 1 ? `${decimal(shares[0] ?? 1, 1)} times` : 'varias veces';
 }
 
 function affixRows(data: GuideData): string[][] {
@@ -137,12 +137,12 @@ export function itemsPage(data: GuideData): PageBody {
   return {
     kicker: 'Guide',
     title: 'Items',
-    lede: 'What you can wear, how rare things are, and what every line on an item does for you.',
-    description: 'Items in The Lost Storm: slots, rarities and drop odds, every affix and weapon, the legendaries by family, where each kind drops most, and what each stat does.',
+    lede: 'Qué puedes usar, qué tan raros son los objetos y qué hace cada línea de un objeto por ti.',
+    description: 'Objetos en The Lost Storm: espacios, rarezas y probabilidades de aparición, todos los afijos y armas, los legendarios por familia, dónde aparece más cada tipo y qué hace cada estadística.',
     body: [
       section(
         'slots',
-        'What you wear',
+        'Lo que usas',
         para(
           `You have ${ITEM_SLOTS.length} slots: ${esc(list(ITEM_SLOTS.map((slot: ItemSlot): string => SLOT_NAMES[slot])))}. Your weapon sets your damage range, and every skill you use starts from it, so it is the slot that matters most. Everything else adds life, armour, speed and the rest.`,
           `Every item has a level, about the level you were when it dropped. Its own lines (the ones every item of that kind has) grow by ${growth} for every level above the first, and so do its rolled lines. A drawback, such as the slower swing of a heavy weapon or the slower step of plate, stays the same at every level. A level 15 sword is a much better sword than a level 2 one.`,

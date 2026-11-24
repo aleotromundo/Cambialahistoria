@@ -56,5 +56,5 @@ export function skillForms(content: Content, skill: string): SkillForms[] {
 
 export function formsText(content: Content, forms: SkillForms): string {
   const name = (id: string): string => content.skills.get(id)?.name ?? id;
-  return forms.steps.map((step: readonly string[]): string => step.map(name).join(' or ')).join(', then ');
+  return forms.steps.map((step: readonly string[]): string => step.map(name).join(' o ')).join(', luego ');
 }

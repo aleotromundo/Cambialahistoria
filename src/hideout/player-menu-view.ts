@@ -14,9 +14,9 @@ export const PLAYER_MENU_VIEW = {
 } as const;
 
 const REASONS: readonly { readonly reason: ReportReason; readonly label: string }[] = [
-  { reason: 'abuse', label: 'Abuse' },
+  { reason: 'abuse', label: 'Abuso' },
   { reason: 'spam', label: 'Spam' },
-  { reason: 'other', label: 'Other' },
+  { reason: 'other', label: 'Otro' },
 ];
 
 export interface MenuTarget {
@@ -98,12 +98,12 @@ export function createPlayerMenuView(options: PlayerMenuViewOptions): PlayerMenu
   const confirmText: HTMLSpanElement = make('span', 'player-menu-ask', confirmBody);
   const confirmRow: HTMLDivElement = make('div', 'player-menu-choices', confirmBody);
   const blockButton: HTMLButtonElement = button('player-menu-choice', confirmRow);
-  blockButton.textContent = 'Block';
+  blockButton.textContent = 'Bloquear';
   const keepButton: HTMLButtonElement = button('player-menu-choice', confirmRow);
-  keepButton.textContent = 'Cancel';
+  keepButton.textContent = 'Cancelar';
   const report: HTMLDivElement = make('div', 'player-menu-step report', inner);
   const reportBody: HTMLDivElement = make('div', 'player-menu-step-body', report);
-  make('span', 'player-menu-ask', reportBody).textContent = 'What is wrong?';
+  make('span', 'player-menu-ask', reportBody).textContent = '¿Qué ocurre?';
   const reportRow: HTMLDivElement = make('div', 'player-menu-choices', reportBody);
   const reasonButtons: HTMLButtonElement[] = REASONS.map(({ reason, label }): HTMLButtonElement => {
     const made: HTMLButtonElement = button('player-menu-choice', reportRow);

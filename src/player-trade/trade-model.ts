@@ -54,39 +54,39 @@ export function tradeBusy(state: TradeState): boolean {
 }
 
 export function askingText(name: string): string {
-  return `Waiting for ${name} to answer.`;
+  return `Esperando que ${name} responda.`;
 }
 
 const EMPTY_SIDE: TradeSide = { items: [], gold: 0, confirmed: false };
 
 const REFUSAL_TEXT: Readonly<Record<TradeRefusal, string>> = {
-  unsupported: 'They cannot trade yet: their game needs to reload.',
-  not_here: 'Trading happens in the Hideout.',
-  no_such_player: 'That player has left.',
-  self: 'You cannot trade with yourself.',
-  not_accepting: 'They are not taking trades from you.',
-  busy: 'One of you is already trading.',
-  too_far: 'Walk closer to trade.',
-  slow_down: 'Too fast. Wait a moment.',
-  changed: 'The offer changed. Check it again before you confirm.',
-  no_trade: 'That trade has ended.',
-  no_room: 'Your bags are full. Make room before you confirm.',
-  no_character: 'You need a character to trade.',
-  too_many: `At most ${String(TRADE_LIMITS.items)} items in one trade.`,
-  repeated: 'That item is already in the offer.',
-  not_yours: 'That item is no longer yours to trade.',
-  story: 'Items the story gives cannot be traded.',
-  not_enough_gold: 'You do not have that much gold.',
+  unsupported: 'Todavía no puede comerciar: debe recargar el juego.',
+  not_here: 'Solo se puede comerciar en el Refugio.',
+  no_such_player: 'Ese jugador ya se fue.',
+  self: 'No puedes comerciar contigo.',
+  not_accepting: 'Ese jugador no acepta intercambios tuyos.',
+  busy: 'Uno de ustedes ya está comerciando.',
+  too_far: 'Acércate para comerciar.',
+  slow_down: 'Demasiado rápido. Espera un momento.',
+  changed: 'La oferta cambió. Revísala antes de confirmar.',
+  no_trade: 'El intercambio terminó.',
+  no_room: 'No tienes espacio en la mochila. Haz lugar antes de confirmar.',
+  no_character: 'Necesitas un personaje para comerciar.',
+  too_many: `Puedes intercambiar hasta ${String(TRADE_LIMITS.items)} objetos.`,
+  repeated: 'Ese objeto ya está en la oferta.',
+  not_yours: 'Ese objeto ya no es tuyo para intercambiar.',
+  story: 'Los objetos de misión no se pueden intercambiar.',
+  not_enough_gold: 'No tienes tanto oro.',
 };
 
 const CLOSE_TEXT: Readonly<Record<TradeClose, string>> = {
-  cancelled: 'The trade was cancelled.',
-  declined: 'They declined the trade.',
-  expired: 'The trade request expired.',
-  walked_away: 'You walked too far apart. The trade was cancelled.',
-  left: 'They left. The trade was cancelled.',
-  disconnected: 'The connection dropped. The trade was cancelled.',
-  failed: 'The trade could not finish. Nothing changed hands.',
+  cancelled: 'Se canceló el intercambio.',
+  declined: 'Rechazaron el intercambio.',
+  expired: 'La solicitud de intercambio venció.',
+  walked_away: 'Se alejaron demasiado. Se canceló el intercambio.',
+  left: 'Se fue. Se canceló el intercambio.',
+  disconnected: 'Se perdió la conexión. Se canceló el intercambio.',
+  failed: 'No se pudo completar el intercambio. No se transfirió nada.',
 };
 
 export function refusalText(reason: TradeRefusal): string {
@@ -103,13 +103,13 @@ function sameGoods(a: TradeGoods, b: TradeGoods): boolean {
 
 function goodsLine(goods: TradeGoods): string {
   const parts: string[] = [];
-  if (goods.items.length > 0) parts.push(goods.items.length === 1 ? '1 item' : `${String(goods.items.length)} items`);
-  if (goods.gold > 0) parts.push(`${String(goods.gold)} gold`);
-  return parts.length === 0 ? 'nothing' : parts.join(' and ');
+  if (goods.items.length > 0) parts.push(goods.items.length === 1 ? '1 objeto' : `${String(goods.items.length)} objetos`);
+  if (goods.gold > 0) parts.push(`${String(goods.gold)} de oro`);
+  return parts.length === 0 ? 'nada' : parts.join(' y ');
 }
 
 export function doneText(gave: TradeGoods, got: TradeGoods): string {
-  return `Trade done. You gave ${goodsLine(gave)} and got ${goodsLine(got)}.`;
+  return `Intercambio completado. Entregaste ${goodsLine(gave)} y recibiste ${goodsLine(got)}.`;
 }
 
 function withSides(state: TradeState, frame: Extract<TradeFrame, { type: 'trade_state' }>, now: number): TradeState {
@@ -118,7 +118,7 @@ function withSides(state: TradeState, frame: Extract<TradeFrame, { type: 'trade_
   return {
     ...state,
     open: { ...state.open, revision: frame.revision, mine: frame.mine, theirs: frame.theirs, countdownEndsAt: frame.countdownEndsAt, changedAt: changed ? now : state.open.changedAt },
-    note: changed ? { text: `${state.open.name} changed their offer. Check it before you confirm.`, tone: 'note' } : state.note,
+    note: changed ? { text: `${state.open.name} cambió su oferta. Revísala antes de confirmar.`, tone: 'note' } : state.note,
   };
 }
 
@@ -141,7 +141,7 @@ export function tradeStep(state: TradeState, frame: TradeFrame, now: number): Tr
 }
 
 export function asked(state: TradeState, name: string): TradeState {
-  return { ...state, asking: name, note: { text: `Asked ${name} to trade.`, tone: 'note' } };
+  return { ...state, asking: name, note: { text: `Le propusiste un intercambio a ${name}.`, tone: 'note' } };
 }
 
 export function expire(state: TradeState, now: number): TradeState {
@@ -173,7 +173,7 @@ export function confirmBlock(open: OpenTrade, freeSlots: number, now: number): C
 }
 
 function roomText(short: number): string {
-  return `Your bags are full: make room for ${short === 1 ? '1 more item' : `${String(short)} more items`}.`;
+  return `Your bags are full: make room for ${short === 1 ? '1 more item' : `${String(short)} objetos más`}.`;
 }
 
 export function blockText(block: ConfirmBlock, open: OpenTrade, freeSlots: number): string | null {
@@ -181,11 +181,11 @@ export function blockText(block: ConfirmBlock, open: OpenTrade, freeSlots: numbe
     case 'none':
       return null;
     case 'confirmed':
-      return open.theirs.confirmed ? 'Both confirmed.' : `Waiting for ${open.name} to confirm.`;
+      return open.theirs.confirmed ? 'Ambos confirmaron.' : `Esperando que ${open.name} confirme.`;
     case 'changed':
-      return 'The offer just changed.';
+      return 'La oferta acaba de cambiar.';
     case 'empty':
-      return 'Add items or gold to trade.';
+      return 'Agrega objetos u oro para intercambiar.';
     case 'no_room':
       return roomText(open.theirs.items.length - open.mine.items.length - freeSlots);
   }  return null;

@@ -30,13 +30,13 @@ export interface RevealLine {
 }
 
 export const IDENTIFY_TEXT = {
-  button: (cost: number): string => `Identify · ${cost}`,
-  all: (total: number): string => `Identify all · ${total}`,
-  short: (missing: number): string => `${missing} gold short`,
-  kind: (rarity: string, slot: string, level: number): string => `${rarity} ${slot} · item level ${level}`,
-  empty: 'Nothing to identify. Rare and Legendary finds arrive unidentified.',
-  done: 'Identified',
-  stash: 'In your stash',
+  button: (cost: number): string => `Identificar · ${cost}`,
+  all: (total: number): string => `Identificar todo · ${total}`,
+  short: (missing: number): string => `Te faltan ${missing} de oro`,
+  kind: (rarity: string, slot: string, level: number): string => `${rarity} ${slot} · nivel de objeto ${level}`,
+  empty: 'No hay nada que identificar. Los objetos raros y legendarios aparecen sin identificar.',
+  done: 'Identificado',
+  stash: 'En tu alijo',
 } as const;
 
 function kindOf(content: Content, item: ItemInstance): string {

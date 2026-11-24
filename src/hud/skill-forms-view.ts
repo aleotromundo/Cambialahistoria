@@ -7,9 +7,9 @@ import { el, label } from './dom.ts';
 import { familyMark } from './weapon-family.ts';
 
 export const FORMS_WORDS = {
-  anyWeapon: 'Any weapon',
-  channel: 'Hold to keep it going',
-  channelMoving: 'Hold to keep it going; you can move while you hold it',
+  anyWeapon: 'Cualquier arma',
+  channel: 'Mantén para seguir canalizando',
+  channelMoving: 'Mantén para seguir canalizando; puedes moverte mientras la mantienes',
 } as const;
 
 export function pressLine(press: PressDef | null): string | null {
@@ -17,7 +17,7 @@ export function pressLine(press: PressDef | null): string | null {
   if (press.hint !== null) return press.hint;
   switch (press.type) {
     case 'charge':
-      return `Hold to charge, up to ${press.max.toFixed(1)}s, then let go`;
+      return `Mantén para cargar hasta ${press.max.toFixed(1)} s y suelta`;
     case 'channel':
       return press.move > 0 ? FORMS_WORDS.channelMoving : FORMS_WORDS.channel;
   }
@@ -46,7 +46,7 @@ export function appendForms(root: HTMLElement, content: Content, base: SkillDef 
   const rows: readonly FormRow[] = formRows(content, base.id, wielding);
   if (rows.length === 0) return;
   const block: HTMLDivElement = el('div', 'tip-forms', root);
-  label('tip-forms-title', `${base.name} with each weapon`, block);
+  label('tip-forms-title', `${base.name} con cada arma`, block);
   for (const row of rows) {
     const line: HTMLDivElement = el('div', row.held ? 'tip-form held' : 'tip-form', block);
     if (row.family === null) el('span', 'family-mark tip-form-mark', line);

@@ -1,8 +1,8 @@
 [
   {
     "id": "warden_guide",
-    "name": "Warden Guide",
-    "title": "Warden",
+    "name": "Guía guardián",
+    "title": "Guardián",
     "faction": "wardens",
     "rig": "warden",
     "scale": 1.0,
@@ -114,8 +114,8 @@
   },
   {
     "id": "warden_trader",
-    "name": "Warden Trader",
-    "title": "Warden",
+    "name": "Comerciante guardián",
+    "title": "Guardián",
     "faction": "wardens",
     "rig": "warden",
     "scale": 1.0,
@@ -144,8 +144,8 @@
   },
   {
     "id": "warden_lookout",
-    "name": "Warden Lookout",
-    "title": "Warden",
+    "name": "Vigía guardián",
+    "title": "Guardián",
     "faction": "wardens",
     "rig": "warden",
     "scale": 1.0,
@@ -175,8 +175,8 @@
   },
   {
     "id": "warden_auctioneer",
-    "name": "Warden Auctioneer",
-    "title": "Auctioneer",
+    "name": "Subastador guardián",
+    "title": "Subastador",
     "faction": "wardens",
     "rig": "warden",
     "scale": 1.0,
@@ -205,8 +205,8 @@
   },
   {
     "id": "warden_appraiser",
-    "name": "Warden Appraiser",
-    "title": "Appraiser",
+    "name": "Tasador guardián",
+    "title": "Tasador",
     "faction": "wardens",
     "rig": "appraiser",
     "scale": 1.0,

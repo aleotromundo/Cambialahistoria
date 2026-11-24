@@ -29,7 +29,7 @@ export function watchContext(canvas: HTMLCanvasElement, parent: HTMLElement, isL
   const text: HTMLDivElement = label('ctx-text', CONTEXT_NOTICE.restoring, note);
   const reload: HTMLButtonElement = el('button', 'ctx-reload', note);
   reload.type = 'button';
-  reload.textContent = 'Reload';
+  reload.textContent = 'Recargar';
   reload.tabIndex = -1;
   reload.addEventListener('click', reloadPage);
 

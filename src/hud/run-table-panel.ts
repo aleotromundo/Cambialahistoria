@@ -7,9 +7,9 @@ import type { ConditionRow, KindChip, LevelRow, TableAction, TablePick, TableVie
 import { choosePick, chooseLevel, firstPick, tableView, togglePin } from './run-table-model.ts';
 
 const RUN_TABLE = {
-  title: 'Descent Table',
-  role: 'Shape your next descent',
-  levels: 'Level',
+  title: 'Tabla de descenso',
+  role: 'Prepara tu próximo descenso',
+  levels: 'Nivel',
   conditions: 'Conditions',
 } as const;
 
@@ -48,7 +48,7 @@ function showAction(view: ActionView, action: TableAction): void {
 }
 
 function pinsHint(count: number): string {
-  return count === 1 ? '1 pin left' : `${count} pins left`;
+  return count === 1 ? '1 condición disponible' : `${count} condiciones disponibles`;
 }
 
 export function createRunTablePanel(parent: HTMLElement, context: HudContext): PanelView {
@@ -176,13 +176,13 @@ export function createRunTablePanel(parent: HTMLElement, context: HudContext): P
       conditions.set(row.id, entry);
       setClass(entry.row, 'pinned', row.pinned);
       setClass(entry.row, 'closed', !row.open);
-      setText(entry.price, `${row.price} gold`, true);
+      setText(entry.price, `${row.price} de oro`, true);
       setText(entry.danger, row.danger, true);
       setClass(entry.price, 'short', !row.pinned && isShort(row.price, context.api.world.player.gold));
       showKinds(entry, row.id, row.kinds);
     }
     setText(totalDanger, shown.danger, true);
-    setText(totalReward, shown.reward === '' ? 'No added reward' : shown.reward, true);
+    setText(totalReward, shown.reward === '' ? 'Sin recompensa adicional' : shown.reward, true);
     showAction(setOut, shown.setOut);
     showAction(again, shown.again);
   };

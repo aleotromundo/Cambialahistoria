@@ -13,7 +13,7 @@
   "weather": {"lightning":null,"rain":0,"wet":0.05,"mistWall":null},
   "heroLight": {"strength":12,"radius":20,"height":7,"falloff":1,"rim":0.3},
   "id": "ledger_hall_2",
-  "name": "The Columned Hall, second level",
+  "name": "El Salón de las Columnas, segundo nivel",
   "level": 27,
   "levelUpTo": 28,
   "cellSize": 2,

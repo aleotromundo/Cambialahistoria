@@ -9,7 +9,7 @@ export const PICKUP_NOTE = {
 } as const;
 
 export function pickupLine(content: Content, ground: GroundItem): string | null {
-  return ground.content.kind === 'item' ? `Picked up ${itemName(content, ground.content.item)}` : null;
+  return ground.content.kind === 'item' ? `Recogiste ${itemName(content, ground.content.item)}` : null;
 }
 
 export function findLabel(touch: boolean): string {

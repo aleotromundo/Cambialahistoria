@@ -12,7 +12,7 @@
     },
     {
       "id": "magic",
-      "name": "Magic",
+      "name": "Mágico",
       "color": "#7fb0ff",
       "aura": "#4f8cff",
       "look": { "rim": 0.85, "leader": 1 },
@@ -22,7 +22,7 @@
     },
     {
       "id": "rare",
-      "name": "Rare",
+      "name": "Raro",
       "color": "#f1d06b",
       "aura": "#f0b83c",
       "look": { "rim": 0.75, "leader": 1.25 },

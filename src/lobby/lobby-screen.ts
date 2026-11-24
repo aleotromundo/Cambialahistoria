@@ -16,19 +16,19 @@ export const LOBBY_SCREEN = {
   shownClass: 'shown',
   confirmClass: 'confirming',
   unnamed: 'The one who woke',
-  fresh: 'Not yet woken. Everything starts in the storm.',
+  fresh: 'Aún no has despertado. Todo comienza en la tormenta.',
   offlineTitle: 'Ladder',
-  offline: 'Offline. The ladder needs a connection; your character is kept on this device.',
-  enterNew: 'Enter the storm',
+  offline: 'Sin conexión. La clasificación requiere conexión; tu personaje se guarda en este dispositivo.',
+  enterNew: 'Entrar en la tormenta',
   enterKnown: 'Continue',
   startOver: STRIP_TEXT.deleteLabel,
   settings: 'Settings',
   feedback: 'Feedback',
-  back: 'Back to title',
+  back: 'Volver al título',
   confirmNo: STRIP_TEXT.keep,
   playedLabel: 'Played',
   seenLabel: 'Last seen',
-  levelLabel: 'Level',
+  levelLabel: 'Nivel',
   findsLabel: 'Finds the',
   chosenColumnProperty: '--chosen-column',
   chosenRowProperty: '--chosen-row',
@@ -110,13 +110,13 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
   ensureStyles();
   root.classList.add('lobby-screen');
   root.setAttribute('role', 'dialog');
-  root.setAttribute('aria-label', 'Lobby');
+  root.setAttribute('aria-label', 'Sala');
   root.inert = true;
 
   const side: HTMLDivElement = el('div', 'lobby-side', root);
   const strip: CharacterStrip = createCharacterStrip(side, { pick: (key: string): void => actions.pick(key), create: (text: string): Promise<string | null> => actions.create(text), suggest: (): string | null => actions.suggest() });
   const sheet: HTMLElement = el('section', 'lobby-sheet', side);
-  sheet.setAttribute('aria-label', 'Your character');
+  sheet.setAttribute('aria-label', 'Tu personaje');
   const name: HTMLHeadingElement = el('h2', 'lobby-name', sheet);
   const account: HTMLDivElement = label('lobby-account', '', sheet);
   const setUsername = (username: string | null): void => {
@@ -214,7 +214,7 @@ export function createLobbyScreen(root: HTMLElement, lobby: Lobby | null, action
   const seen: HTMLDivElement = label('lobby-fact', '', facts);
 
   const ladder: HTMLElement = el('aside', 'lobby-ladder lobby', root);
-  ladder.setAttribute('aria-label', 'Ladder');
+  ladder.setAttribute('aria-label', 'Clasificación');
   if (lobby === null) {
     ladder.classList.add('offline');
     label('lobby-ladder-title', LOBBY_SCREEN.offlineTitle, ladder);

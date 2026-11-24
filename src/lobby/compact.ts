@@ -32,7 +32,7 @@ export function rankedService(service: LobbyService, by: Ranking): LobbyService 
   return { ...service, read: (): ReturnType<LobbyService['read']> => service.read(by) };
 }
 
-export const COMPACT: { readonly rows: number; readonly title: string; readonly refreshMs: number } = { rows: 10, title: 'Ladder', refreshMs: 30_000 };
+export const COMPACT: { readonly rows: number; readonly title: string; readonly refreshMs: number } = { rows: 10, title: 'Clasificación', refreshMs: 30_000 };
 
 export function createBrowserLobby(rawUrl: string | undefined, withAccount: boolean): Lobby | null {
   const server: ServerUrl = readServerUrl(rawUrl);

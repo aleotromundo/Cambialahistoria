@@ -39,9 +39,9 @@ export function howToGet(data: GuideData, entry: SkillDef): string {
   const place: SkillTreeNodeDef | null = unlockPlace(data, entry.id);
   if (place !== null) return `Take ${esc(place.name)} on ${esc(path(data, place.path).name)}`;
   const book: SkillUnlock | undefined = data.content.player.skillBook.find((own: SkillUnlock): boolean => own.skill === entry.id);
-  if (book !== undefined) return book.when.length === 0 ? 'You start with it' : 'Learned in the Hall of Time';
+  if (book !== undefined) return book.when.length === 0 ? 'Empiezas con esta habilidad' : 'Se aprende en El Salón del Tiempo';
   const weapon: ItemBaseDef | undefined = variantSources(data, entry.id)[0];
-  return weapon === undefined ? 'Not yet in the game' : 'Hold a crossbow';
+  return weapon === undefined ? 'Todavía no está en el juego' : 'Sostén una ballesta';
 }
 
 function variantSources(data: GuideData, becomes: string): ItemBaseDef[] {
@@ -77,11 +77,11 @@ function skillCard(data: GuideData, entry: SkillDef): string {
   const facts: string[] = [
     `<div><dt>Cost</dt><dd>${cost(entry)}</dd></div>`,
     `<div><dt>Wait</dt><dd>${wait(entry)}</dd></div>`,
-    `<div><dt>How you get it</dt><dd>${howToGet(data, entry)}</dd></div>`,
-    `<div><dt>Counts as</dt><dd>${groups.length === 0 ? 'Nothing else' : esc(list(groups))}</dd></div>`,
+    `<div><dt>Cómo conseguirla</dt><dd>${howToGet(data, entry)}</dd></div>`,
+    `<div><dt>Cuenta como</dt><dd>${groups.length === 0 ? 'Nothing else' : esc(list(groups))}</dd></div>`,
   ];
-  const changed: string = changes.length === 0 ? '' : `<p class="label">What can change it</p><ul class="changes">${changes.map(changeLine).join('')}</ul>`;
-  const helped: string = stronger.length === 0 ? '' : `<p class="label">Places made for it</p><p>${esc(list(stronger))}</p>`;
+  const changed: string = changes.length === 0 ? '' : `<p class="label">Qué puede modificarla</p><ul class="changes">${changes.map(changeLine).join('')}</ul>`;
+  const helped: string = stronger.length === 0 ? '' : `<p class="label">Lugares hechos para ello</p><p>${esc(list(stronger))}</p>`;
   return `<article class="skill" id="${esc(entry.id.replace(/_/g, '-'))}">
 <h3>${esc(entry.name)}</h3>
 <p>${esc(entry.description)}</p>
@@ -96,24 +96,24 @@ export function skillsPage(data: GuideData): PageBody {
   return {
     kicker: 'Guide',
     title: 'Skills',
-    lede: 'Every skill you can use today: what it does, what it costs, how you get it and what can change it.',
-    description: 'Every skill in The Lost Storm: what it does, its mana cost and cooldown, where on the Skill Tree you get it, and every place and item that changes it.',
+    lede: 'Todas las habilidades que puedes usar hoy: qué hacen, cuánto cuestan, cómo las consigues y qué puede modificarlas.',
+    description: 'Todas las habilidades de The Lost Storm: qué hacen, cuánto cuestan de maná y su tiempo de recarga, dónde las consigues en el árbol de habilidades y todos los lugares y objetos que las modifican.',
     body: [
       section(
         'how',
-        'How skills work',
+        'Cómo funcionan las habilidades',
         para(
           `You start with ${esc(skill(data, 'cleave').name)} and learn ${esc(skill(data, 'dodge_roll').name)} in the Hall of Time. Every other skill is a place on the ${link('/guide/tree/', 'Skill Tree')}: take it and the skill goes on your first empty slot.`,
-          'A skill can be changed into something else, by a place on the tree or by the weapon you hold. Only one place on the tree may change a given skill at a time. A weapon\'s change comes on top: hold a crossbow and Cleave becomes Quarrel, whatever else you have.',
-          '"Counts as" says which kinds of skill it is. A place that says "damage for lightning skills" helps every skill that counts as a lightning skill.',
+          'Una habilidad puede convertirse en otra cosa por un lugar del árbol o por el arma que sostienes. Solo un lugar del árbol puede modificar una habilidad a la vez. El cambio del arma se suma: sostén una ballesta y Tajo se convierte en Perno, sin importar qué más tengas.',
+          '«Cuenta como» indica a qué tipos de habilidad pertenece. Un lugar que diga «daño para habilidades de relámpago» beneficia a todas las habilidades que cuentan como habilidades de relámpago.',
         ),
       ),
       section(
         'table',
-        'At a glance',
-        table({ head: ['Skill', 'Cost', 'Wait', 'How you get it'], rows: skills.map((entry: SkillDef): string[] => [`<a href="#${esc(entry.id.replace(/_/g, '-'))}">${esc(entry.name)}</a>`, cost(entry), wait(entry), howToGet(data, entry)]) }),
+        'De un vistazo',
+        table({ head: ['Skill', 'Cost', 'Wait', 'Cómo conseguirla'], rows: skills.map((entry: SkillDef): string[] => [`<a href="#${esc(entry.id.replace(/_/g, '-'))}">${esc(entry.name)}</a>`, cost(entry), wait(entry), howToGet(data, entry)]) }),
       ),
-      section('all', 'Every skill', skills.map((entry: SkillDef): string => skillCard(data, entry)).join('\n')),
+      section('all', 'Todas las habilidades', skills.map((entry: SkillDef): string => skillCard(data, entry)).join('\n')),
     ].join('\n'),
   };
 }

@@ -1,7 +1,7 @@
 [
   {
     "id": "life_flask",
-    "name": "Life Flask",
+    "name": "Frasco de vida",
     "resource": "life",
     "amount": 70,
     "share": 0.35,
@@ -19,7 +19,7 @@
   },
   {
     "id": "mana_flask",
-    "name": "Mana Flask",
+    "name": "Frasco de maná",
     "resource": "mana",
     "amount": 45,
     "share": 0.45,

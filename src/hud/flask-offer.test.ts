@@ -17,7 +17,7 @@ const third: FlaskTier = must(life.tiers[2], 'third');
 void test('the next tier is told in plain numbers for this hero, beside what the flask gives now', (): void => {
   const view: FlaskOfferView = flaskOfferView(life, flaskOffer(life, 0, first.level, first.price), 1000, first.price);
   assert.equal(view.state, 'ready');
-  assert.equal(view.name, 'Life Flask');
+  assert.equal(view.name, 'Frasco de vida');
   assert.equal(view.tier, `Base, ${life.tiers.length} upgrades`);
   assert.equal(view.next, `Restores ${Math.round(first.share * 1000)} life over ${first.duration} s (now ${Math.round(life.share * 1000)} life over ${life.duration} s)`);
   assert.equal(view.price, first.price);

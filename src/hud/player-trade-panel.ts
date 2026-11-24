@@ -39,7 +39,7 @@ function sideView(context: HudContext, parent: HTMLElement, title: string, hint:
   const root: HTMLDivElement = el('div', 'swap-side', parent);
   const head: HTMLDivElement = el('div', 'swap-side-head', root);
   label('swap-side-title', title, head);
-  const mark: HTMLDivElement = label('swap-mark', 'Confirmed', head);
+  const mark: HTMLDivElement = label('swap-mark', 'Confirmado', head);
   const grid: HTMLDivElement = el('div', 'inv-grid swap-grid', root);
   const cells: ItemCell[] = Array.from({ length: TRADE_LIMITS.items }, (): ItemCell => createItemCell(context, grid, (): string => hint));
   const holder: HTMLDivElement = el('div', 'swap-gold', root);
@@ -78,11 +78,11 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
   const line: HTMLDivElement = label('auction-line', '', body);
   const columns: HTMLDivElement = el('div', 'swap-columns', body);
   let goldInput: HTMLInputElement | null = null;
-  const give: SideView = sideView(context, columns, 'You give', 'Take it back from your bag below', (holder: HTMLElement): HTMLElement => {
+  const give: SideView = sideView(context, columns, 'Tú entregas', 'Retíralo de tu mochila abajo', (holder: HTMLElement): HTMLElement => {
     const input: HTMLInputElement = el('input', 'auction-input swap-gold-input', holder);
     input.inputMode = 'numeric';
     input.placeholder = '0';
-    input.setAttribute('aria-label', 'Gold you give');
+    input.setAttribute('aria-label', 'Oro que das');
     input.addEventListener('keydown', (event: KeyboardEvent): void => {
       if (event.code !== 'Escape') event.stopPropagation();
     });
@@ -90,16 +90,16 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
     goldInput = input;
     return input;
   });
-  const get: SideView = sideView(context, columns, 'You get', 'What they give you', (holder: HTMLElement): HTMLElement => label('swap-gold-amount', '0', holder));
+  const get: SideView = sideView(context, columns, 'Tú recibes', 'Lo que te entrega la otra persona', (holder: HTMLElement): HTMLElement => label('swap-gold-amount', '0', holder));
   const countdown: HTMLDivElement = el('div', 'swap-countdown', body);
   const fill: HTMLDivElement = el('div', 'swap-countdown-fill', countdown);
-  const bagHead: HTMLDivElement = label('swap-bag-title', `Your bag: ${promptText(context.api.touch, use('offer an item'))}`, body);
+  const bagHead: HTMLDivElement = label('swap-bag-title', `Tu mochila: ${promptText(context.api.touch, use('ofrecer un objeto'))}`, body);
   const bagGrid: HTMLDivElement = el('div', 'inv-grid swap-bag', body);
   watchScrollFade(body);
   const actions: HTMLDivElement = el('div', 'swap-actions', element);
   const reason: HTMLDivElement = label('swap-reason', '', actions);
-  const confirm: HTMLButtonElement = actButton(actions, 'Confirm', 'Confirmed');
-  const cancel: HTMLButtonElement = actButton(actions, 'Cancel', 'Cancel');
+  const confirm: HTMLButtonElement = actButton(actions, 'Confirmar', 'Confirmado');
+  const cancel: HTMLButtonElement = actButton(actions, 'Cancelar', 'Cancelar');
   confirm.addEventListener('click', (): void => flow.confirmOffer());
   cancel.addEventListener('click', (): void => flow.cancel());
 
@@ -107,9 +107,9 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
     const view: ItemCell = createItemCell(context, bagGrid, (): string => {
       const entry: BagEntry | undefined = bagEntries.find((each: BagEntry): boolean => each.index === index);
       if (entry === undefined) return '';
-      if (entry.block === 'story') return 'Story items cannot be traded';
-      if (entry.block === 'unverified') return 'Only items in the ledger can be traded';
-      if (entry.block === 'unidentified') return 'Unidentified items cannot be traded. Have it identified first.';
+      if (entry.block === 'story') return 'Los objetos de misión no se pueden intercambiar';
+      if (entry.block === 'unverified') return 'Solo se pueden intercambiar objetos registrados';
+      if (entry.block === 'unidentified') return 'No se pueden intercambiar objetos sin identificar. Identifícalo primero.';
       return promptText(context.api.touch, use(entry.offered ? 'take it back' : 'offer it'));
     });
     view.cell.addEventListener('click', (): void => {
@@ -135,7 +135,7 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
   decline.addEventListener('click', (): void => flow.decline());
   const waitRow: HTMLDivElement = el('div', 'swap-ask-row', ask);
   const waitActions: HTMLDivElement = el('div', 'swap-actions', el('div', 'swap-ask-inner', waitRow));
-  const stopAsking: HTMLButtonElement = actButton(waitActions, 'Cancel', 'Cancel');
+  const stopAsking: HTMLButtonElement = actButton(waitActions, 'Cancelar', 'Cancelar');
   stopAsking.addEventListener('click', (): void => flow.cancel());
   let askedAt: { readonly from: string; readonly at: number } | null = null;
   let seenNote: TradeNote | null = null;
