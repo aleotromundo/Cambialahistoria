@@ -92,7 +92,7 @@ function trapPage(now: () => number, storage: 'open' | 'refused'): TrapPage {
   const boot: { boot?: string } = {};
   let reloads: number = 0;
   const statusClasses: Set<string> = new Set<string>();
-  const status = { textContent: 'Loading…', classList: statusClasses };
+  const status = { textContent: 'Cargando…', classList: statusClasses };
   const enter = { textContent: 'Enter', disabled: true, addEventListener: (): void => undefined };
   const nodes: Record<string, object> = {
     'title-status': { get textContent(): string { return status.textContent; }, set textContent(value: string) { status.textContent = value; }, classList: classes(statusClasses) },
@@ -137,7 +137,7 @@ void test('a script from another site that fails to load, or an error from one, 
   page.error(({ window }) => ({ target: window, filename: 'chrome-extension://abc/inject.js' }));
   page.error(({ window }) => ({ target: window, filename: '' }));
   assert.equal(page.reloads(), 0);
-  assert.equal(page.status.textContent, 'Loading…');
+  assert.equal(page.status.textContent, 'Cargando…');
   assert.equal(page.enter.disabled, true);
 });
 
@@ -147,7 +147,7 @@ void test("the game's own script failing to load reloads the page once, then say
   page.error(({ script }) => ({ target: script(`${ORIGIN}/assets/play-abc.js`) }));
   assert.equal(page.reloads(), 1);
   assert.equal(page.stored.get(RETRY.key), RETRY.mark);
-  assert.equal(page.status.textContent, 'Loading…');
+  assert.equal(page.status.textContent, 'Cargando…');
   now += 10 * 60_000;
   page.status.classList.add('quiet');
   page.error(({ script }) => ({ target: script(`${ORIGIN}/assets/play-abc.js`) }));
@@ -168,5 +168,5 @@ void test("an error in the game's own code stops the title only until the game h
   late.boot.boot = RETRY.started;
   late.error(({ window }) => ({ target: window, filename: `${ORIGIN}/assets/play-abc.js` }));
   assert.equal(late.reloads(), 0);
-  assert.equal(late.status.textContent, 'Loading…');
+  assert.equal(late.status.textContent, 'Cargando…');
 });

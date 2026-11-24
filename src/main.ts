@@ -196,7 +196,7 @@ async function start(): Promise<void> {
   const serverUrl: string | undefined = watchAsked === null ? import.meta.env.VITE_SERVER_URL : undefined;
   const { canvas, title, status, enter, reset, vignette, statusLine, placeLine, mobile, overlayManager, launch }: TitleBoot = bootTitle({ lines: titleLines, serverUrl, build: import.meta.env.VITE_BUILD_ID, inPlay: (): boolean => playing });
   const hurtVignette: HurtVignette = createHurtVignette(vignette);
-  statusLine.show('Loading…');
+  statusLine.show('Cargando…');
   const portalSdk: Promise<PortalSdk> = startPortalSdk();
   const unsupported: string | null = unsupportedReason(probeBrowser(window, Array.prototype));
   if (unsupported !== null) throw new UnsupportedBrowser(unsupported);

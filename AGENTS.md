@@ -151,4 +151,4 @@ The game has no audio yet. When it gets audio, never play it from an agent sessi
 
 ## Git
 
-Never push to `main`. Every change goes on a branch and lands through a pull request.
+Work directly on `main` by default. Use a branch and pull request only when Ale explicitly asks for them.
