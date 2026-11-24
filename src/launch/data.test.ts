@@ -85,7 +85,7 @@ function classes(held: Set<string>): { add: (name: string) => void; remove: (nam
 
 function trapPage(now: () => number, storage: 'open' | 'refused'): TrapPage {
   const html: string = readFileSync('play/index.html', 'utf8');
-  const trap: RegExpMatchArray | null = html.match(/<script>((?:(?!<\/script>)[\s\S])*could not finish loading(?:(?!<\/script>)[\s\S])*)<\/script>/);
+  const trap: RegExpMatchArray | null = html.match(/<script>((?:(?!<\/script>)[\s\S])*no terminó de cargar(?:(?!<\/script>)[\s\S])*)<\/script>/i);
   assert.ok(trap !== null, 'the game page has no loading trap');
   const listeners: ((event: TrapEvent) => void)[] = [];
   const stored: Map<string, string> = new Map<string, string>();
