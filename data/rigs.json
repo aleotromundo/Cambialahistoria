@@ -204,11 +204,11 @@
         },
         "attack_b": {
           "clip": "Sword_Combo_B",
-          "impactFraction": 0.17
+          "impactFraction": 0.16
         },
         "attack_c": {
           "clip": "Sword_Combo_C",
-          "impactFraction": 0.325
+          "impactFraction": 0.345
         },
         "slam": {
           "clip": "Sword_Slam",
@@ -653,11 +653,11 @@
         },
         "attack_b": {
           "clip": "Sword_Combo_B",
-          "impactFraction": 0.17
+          "impactFraction": 0.16
         },
         "attack_c": {
           "clip": "Sword_Combo_C",
-          "impactFraction": 0.325
+          "impactFraction": 0.345
         },
         "slam": {
           "clip": "Sword_Slam",
@@ -1100,11 +1100,11 @@
         },
         "attack_b": {
           "clip": "Sword_Combo_B",
-          "impactFraction": 0.17
+          "impactFraction": 0.16
         },
         "attack_c": {
           "clip": "Sword_Combo_C",
-          "impactFraction": 0.325
+          "impactFraction": 0.345
         },
         "slam": {
           "clip": "Sword_Slam",
@@ -1550,11 +1550,11 @@
         },
         "attack_b": {
           "clip": "Sword_Combo_B",
-          "impactFraction": 0.17
+          "impactFraction": 0.16
         },
         "attack_c": {
           "clip": "Sword_Combo_C",
-          "impactFraction": 0.325
+          "impactFraction": 0.345
         },
         "slam": {
           "clip": "Sword_Slam",
