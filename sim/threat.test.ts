@@ -24,10 +24,10 @@ void test('a zone mixes the damage its monsters deal by kind, from their own ski
 });
 
 void test('ranked packs bring storm and frost into a physical cave, and a volatile mod brings storm through its death burst', (): void => {
-  const mix = zoneDamageMix(content, caves);
+  const plain: ZoneDef = { ...caves, ranks: false, packs: [{ x: 0, z: 0, when: [], members: [{ monster: 'wolf', count: 1, mods: [] }] }] };
+  const mix = zoneDamageMix(content, { ...plain, ranks: true });
   assert.ok(mix.storm > 0 && mix.storm < 0.5);
   assert.ok(mix.frost > 0 && mix.frost < 0.5);
-  const plain: ZoneDef = { ...caves, ranks: false };
   assert.equal(zoneDamageMix(content, plain).storm, 0);
   const volatile: ZoneDef = { ...plain, packs: [{ x: 0, z: 0, when: [], members: [{ monster: 'wolf', count: 1, mods: ['volatile'] }] }] };
   assert.ok(zoneDamageMix(content, volatile).storm > 0);

@@ -11,7 +11,7 @@ export function trailAreas(world: World, monster: MonsterState, skill: string): 
 
 export function stepTrail(world: World, monster: MonsterState): void {
   const trail: MonsterTrail | null = monster.def.trail;
-  if (trail === null || !monster.alive || !monster.aggro) {
+  if (trail === null || !monster.alive || !monster.aggro || (trail.retreatOnly && monster.stance !== 'retreat')) {
     monster.trailFrom = { x: monster.pos.x, z: monster.pos.z };
     return;
   }

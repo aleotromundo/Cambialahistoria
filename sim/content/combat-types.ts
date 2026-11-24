@@ -86,6 +86,7 @@ export interface MonsterTrail {
   readonly skill: string;
   readonly every: number;
   readonly limit: number;
+  readonly retreatOnly: boolean;
 }
 
 export interface MonsterModDef {

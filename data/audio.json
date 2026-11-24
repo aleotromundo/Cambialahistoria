@@ -86,6 +86,7 @@
   "skillImpact": {
     "fire_slam": [{ "sound": "ground_boom", "volume": 0.9, "maxVoices": 2 }, { "sound": "slam_heavy", "volume": 0.8, "maxVoices": 1 }],
     "silt_smother": [{ "sound": "water_douse", "volume": 0.5, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.8, 0.95] }],
+    "crackle_burst": [{ "sound": "electric_crackle", "volume": 0.55, "maxVoices": 2, "cooldown": 0.2 }],
     "spore_burst": [{ "sound": "vent_hiss", "volume": 0.55, "maxVoices": 2, "cooldown": 0.2, "pitch": [0.9, 1.1] }],
     "brood_crash": [{ "sound": "rock_slam", "volume": 0.55, "maxVoices": 2, "cooldown": 0.2 }],
     "riptide_wake": [{ "sound": "water_douse", "volume": 0.6, "maxVoices": 2, "cooldown": 0.2 }],

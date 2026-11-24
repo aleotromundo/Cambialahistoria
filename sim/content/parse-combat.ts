@@ -121,7 +121,7 @@ function element(source: Fields, where: string): MonsterElement {
 function trail(source: Fields, where: string): MonsterTrail {
   const limit: number = positive(source, 'limit', where);
   if (!Number.isInteger(limit)) throw new ContentError(`${where}.limit`, 'expected a whole number');
-  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit };
+  return { skill: text(source, 'skill', where), every: positive(source, 'every', where), limit, retreatOnly: source['retreatOnly'] === undefined ? false : flag(source, 'retreatOnly', where) };
 }
 
 export interface MonsterTraits {
