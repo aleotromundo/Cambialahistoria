@@ -22,48 +22,48 @@ function times(scale: number): string {
 }
 
 function more(scale: number): string {
-  return scale >= 1 ? `${percent(scale - 1)} more` : `${percent(1 - scale)} less`;
+  return scale >= 1 ? `${percent(scale - 1)} más` : `${percent(1 - scale)} menos`;
 }
 
 function rank(data: GuideData, id: string): PackRankDef {
   const found: PackRankDef | undefined = data.content.packRanks.ranks.find((entry: PackRankDef): boolean => entry.id === id);
-  if (found === undefined) throw new Error(`no pack rank ${id}`);
+  if (found === undefined) throw new Error(`no existe el rango de grupo ${id}`);
   return found;
 }
 
 function scaleLine(scale: RankScale): string {
-  return `${more(scale.life)} life, ${more(scale.damage)} damage, ${times(scale.xp)} experience`;
+  return `${more(scale.life)} de vida, ${more(scale.damage)} de daño, ${times(scale.xp)} de experiencia`;
 }
 
 function modEffect(data: GuideData, mod: MonsterModDef): string {
   const parts: string[] = [];
-  if (mod.speedScale !== 1) parts.push(`moves ${percent(Math.abs(mod.speedScale - 1))} ${mod.speedScale > 1 ? 'faster' : 'slower'}`);
-  if (mod.lifeScale !== 1) parts.push(`has ${more(mod.lifeScale)} life`);
-  if (mod.damageScale !== 1) parts.push(`hits ${percent(Math.abs(mod.damageScale - 1))} ${mod.damageScale > 1 ? 'harder' : 'softer'}`);
+  if (mod.speedScale !== 1) parts.push(`se mueve ${percent(Math.abs(mod.speedScale - 1))} ${mod.speedScale > 1 ? 'más rápido' : 'más lento'}`);
+  if (mod.lifeScale !== 1) parts.push(`tiene ${more(mod.lifeScale)} de vida`);
+  if (mod.damageScale !== 1) parts.push(`golpea ${percent(Math.abs(mod.damageScale - 1))} ${mod.damageScale > 1 ? 'más fuerte' : 'más suave'}`);
   if (mod.sizeScale > 1) parts.push('es más grande');
-  if (mod.staggerScale < 1) parts.push(`is staggered ${percent(1 - mod.staggerScale)} less`);
-  if (mod.regen > 0) parts.push(`heals ${percent(mod.regen)} of its life a second once it has gone a while without being hit`);
-  if (mod.deathSkill !== null) parts.push(`bursts a moment after it dies, where it fell (${esc(skill(data, mod.deathSkill).name)}), so step away from it`);
+  if (mod.staggerScale < 1) parts.push(`se aturde un ${percent(1 - mod.staggerScale)} menos`);
+  if (mod.regen > 0) parts.push(`recupera un ${percent(mod.regen)} de vida por segundo cuando lleva un tiempo sin recibir golpes`);
+  if (mod.deathSkill !== null) parts.push(`estalla un instante después de morir, donde cayó (${esc(skill(data, mod.deathSkill).name)}), así que aléjate`);
   return parts.join(', ');
 }
 
 function poolMods(data: GuideData): MonsterModDef[] {
   return data.content.packRanks.pool.map((choice: RankModChoice): MonsterModDef => {
     const found: MonsterModDef | undefined = data.content.monsterMods.get(choice.mod);
-    if (found === undefined) throw new Error(`no monster mod ${choice.mod}`);
+    if (found === undefined) throw new Error(`no existe el modificador de monstruo ${choice.mod}`);
     return found;
   });
 }
 
 function rarityName(data: GuideData, id: string): string {
   const found: RarityDef | undefined = data.content.rarities.find((rarity: RarityDef): boolean => rarity.id === id);
-  if (found === undefined) throw new Error(`the guide names the unknown rarity ${id}`);
+  if (found === undefined) throw new Error(`la guía menciona la rareza desconocida ${id}`);
   return found.name.toLowerCase();
 }
 
 function bossOf(data: GuideData): { readonly monster: MonsterDef; readonly boss: BossDef } {
   const found: MonsterDef = monster(data, COMBAT_PAGE.boss);
-  if (found.boss === null) throw new Error(`${found.id} is not a boss`);
+  if (found.boss === null) throw new Error(`${found.id} no es un jefe`);
   return { monster: found, boss: found.boss };
 }
 
@@ -77,10 +77,10 @@ function phaseText(data: GuideData, phase: BossPhase, index: number, all: readon
   const now: ReadonlySet<string> = new Set<string>(skills.map((entry: SkillDef): string => entry.id));
   const added: SkillDef[] = skills.filter((entry: SkillDef): boolean => !before.has(entry.id));
   const dropped: SkillDef[] = index === 0 ? [] : phaseSkills(data, all[index - 1] ?? phase).filter((entry: SkillDef): boolean => !now.has(entry.id));
-  const when: string = index === 0 ? 'Desde el principio' : `Below ${percent(phase.below)} of its life`;
+  const when: string = index === 0 ? 'Desde el principio' : `Por debajo del ${percent(phase.below)} de vida`;
   const what: string = added.map((entry: SkillDef): string => `<b>${esc(entry.name)}</b>: ${esc(entry.description)}`).join(' ');
-  const gone: string = dropped.length === 0 ? '' : ` It stops using ${esc(list(dropped.map((entry: SkillDef): string => entry.name)))}.`;
-  return `${when}. ${index === 0 ? 'It uses' : 'It adds'} ${what}${gone}`;
+  const gone: string = dropped.length === 0 ? '' : ` Deja de usar ${esc(list(dropped.map((entry: SkillDef): string => entry.name)))}.`;
+  return `${when}. ${index === 0 ? 'Usa' : 'Añade'} ${what}${gone}`;
 }
 
 function typedSkills(data: GuideData, type: 'storm' | 'frost'): string[] {
@@ -94,7 +94,7 @@ function typedSkills(data: GuideData, type: 'storm' | 'frost'): string[] {
 export function gapRows(data: GuideData): string[][] {
   const gap = data.content.player.xp.gap;
   const hero: number = COMBAT_PAGE.gapHero;
-  return COMBAT_PAGE.gapSteps.map((step: number): string[] => [step === 0 ? 'Tu nivel' : `${step} levels apart`, percent(gapScale(gap, hero, hero - step))]);
+  return COMBAT_PAGE.gapSteps.map((step: number): string[] => [step === 0 ? 'Tu nivel' : `${step} niveles de diferencia`, percent(gapScale(gap, hero, hero - step))]);
 }
 
 export function combatPage(data: GuideData): PageBody {
@@ -108,23 +108,23 @@ export function combatPage(data: GuideData): PageBody {
   const manaPerLevel: number = per.find((mod): boolean => mod.stat === 'maxMana')?.value ?? 0;
   const lifePerLevel: number = per.find((mod): boolean => mod.stat === 'maxLife')?.value ?? 0;
   return {
-    kicker: 'Guide',
+    kicker: 'Guía',
     title: 'Cómo funciona el combate',
     lede: 'Qué determina cuánto daño infliges, cuánto recibes y por qué algunas peleas salen mal.',
     description: 'Cómo funciona el combate en The Lost Storm: daño, golpes críticos, armadura, resistencias, maná, aturdimiento, experiencia, magia y grupos raros, además del primer jefe.',
     body: [
       section(
         'damage',
-        'Damage',
+        'Daño',
         [
           para(
             'Cada habilidad que usas parte de tu arma. Cada golpe calcula un número dentro del rango de daño de tu arma, le suma tu bonificación de daño y aplica la proporción que usa la habilidad. Algunas habilidades agregan un poco de daño propio. Después, el golpe puede ser crítico.',
             'Así que un arma mejor hace que todas tus habilidades sean más fuertes, incluso los hechizos. El «daño» del árbol de habilidades y del equipo es una bonificación a todo; el «daño de habilidades con armas» o el «daño de habilidades de rayo» solo cuenta para ese tipo de habilidad.',
-            `You start with a ${decimal(base.damageMin, 0)} to ${decimal(base.damageMax, 0)} damage range of your own, and every level adds a little to it. Your weapon adds far more.`,
+            `Empiezas con un rango de daño propio de ${decimal(base.damageMin, 0)} a ${decimal(base.damageMax, 0)}, que aumenta un poco con cada nivel. Tu arma aporta mucho más.`,
           ),
           subsection(
             'Golpes críticos',
-            para(`A critical strike multiplies the hit. You start with a ${percent(base.critChance)} chance and a ${times(base.critMultiplier)} multiplier. Chance stops counting at ${capPercent(data, 'critChance')}; the multiplier has no cap.`),
+            para(`Un golpe crítico multiplica el daño del impacto. Empiezas con una probabilidad del ${percent(base.critChance)} y un multiplicador de ${times(base.critMultiplier)}. La probabilidad deja de contar al llegar al ${capPercent(data, 'critChance')}; el multiplicador no tiene límite.`),
           ),
         ].join('\n'),
       ),
@@ -132,19 +132,19 @@ export function combatPage(data: GuideData): PageBody {
         'defence',
         'Armadura y resistencias',
         [
-          para(`Armour takes a share off every hit you take. The first points count the most: ${ARMOUR_HALF_POINT} armour takes off ${percent(armourReduction(ARMOUR_HALF_POINT, rules.armourCap))}, and no amount takes off more than ${percent(rules.armourCap)}.`),
-          table({ head: ['Armour', 'Se resta de cada golpe'], rows: COMBAT_PAGE.armourSamples.map((value: number): string[] => [String(value), percent(armourReduction(value, rules.armourCap))]) }),
+          para(`La armadura reduce cada golpe que recibes. Los primeros puntos son los que más cuentan: ${ARMOUR_HALF_POINT} de armadura reduce ${percent(armourReduction(ARMOUR_HALF_POINT, rules.armourCap))}, y ninguna cantidad puede reducir más del ${percent(rules.armourCap)}.`),
+          table({ head: ['Armadura', 'Se resta de cada golpe'], rows: COMBAT_PAGE.armourSamples.map((value: number): string[] => [String(value), percent(armourReduction(value, rules.armourCap))]) }),
           para(
-            `Storm and frost resistance take a further share off hits of that kind, after armour. They stop at ${percent(rules.cap)}. The storm hits you will meet are ${esc(list(typedSkills(data, 'storm')))}; the frost ones are ${esc(list(typedSkills(data, 'frost')))}. Everything else is plain physical damage, which only armour lowers.`,
+            `La resistencia a la tormenta y a la escarcha reduce aún más los golpes de esos tipos, después de la armadura. Tiene un máximo de ${percent(rules.cap)}. Los golpes de tormenta que encontrarás son ${esc(list(typedSkills(data, 'storm')))}; los de escarcha, ${esc(list(typedSkills(data, 'frost')))}. Todo lo demás es daño físico, que solo reduce la armadura.`,
           ),
-          para(`Life is the other half of staying alive. You start with ${decimal(base.maxLife, 0)} and gain ${decimal(lifePerLevel, 0)} with every level.`),
+          para(`La vida también es fundamental para sobrevivir. Empiezas con ${decimal(base.maxLife, 0)} y ganas ${decimal(lifePerLevel, 0)} con cada nivel.`),
         ].join('\n'),
       ),
       section(
         'mana',
-        'Mana',
+        'Maná',
         para(
-          `Skills cost mana; ${esc(skill(data, 'cleave').name)} and ${esc(skill(data, 'dodge_roll').name)} cost none. You start with ${decimal(base.maxMana, 0)}, gain ${decimal(manaPerLevel, 0)} with every level, and regain ${decimal(base.manaRegen, 1)} a second. The mana flask on 2 refills it faster. A spell build runs out of mana long before it runs out of cooldowns, so mana on gear and on the tree matters to it.`,
+          `Las habilidades cuestan maná; ${esc(skill(data, 'cleave').name)} y ${esc(skill(data, 'dodge_roll').name)} no cuestan nada. Empiezas con ${decimal(base.maxMana, 0)}, ganas ${decimal(manaPerLevel, 0)} con cada nivel y recuperas ${decimal(base.manaRegen, 1)} por segundo. El frasco de maná en la tecla 2 lo recarga más rápido. Una configuración de hechizos se queda sin maná mucho antes de que sus habilidades terminen de recargarse, así que el maná del equipo y del árbol importa mucho.`,
         ),
       ),
       section(
@@ -163,10 +163,10 @@ export function combatPage(data: GuideData): PageBody {
         'Experiencia y diferencia de nivel',
         [
           para(
-            `In ${esc(zone(data, 'hall_of_time').name)} and ${esc(zone(data, 'keepers_gate').name)} the enemies are your level, so there is always a fair fight in front of you. Enemies far from your level, above or below, give less experience. Up to ${gapBand(gap, COMBAT_PAGE.gapHero)} levels apart (a little more as you grow) there is no loss; past that it falls off quickly.`,
+            `En ${esc(zone(data, 'hall_of_time').name)} y ${esc(zone(data, 'keepers_gate').name)}, los enemigos tienen tu nivel, así que siempre te espera un combate equilibrado. Los enemigos de un nivel muy distinto, por encima o por debajo, dan menos experiencia. No hay penalización hasta una diferencia de ${gapBand(gap, COMBAT_PAGE.gapHero)} niveles (un poco más conforme subes); después, disminuye rápidamente.`,
           ),
-          table({ head: ['Nivel del enemigo', 'Experiencia que obtienes'], rows: gapRows(data), caption: `For a level ${COMBAT_PAGE.gapHero} character` }),
-          para(`Dying costs ${percent(data.content.player.deathPenalty.xpPercent)} of the experience you need for your next level. It never takes a level away.`),
+          table({ head: ['Nivel del enemigo', 'Experiencia que obtienes'], rows: gapRows(data), caption: `Para un personaje de nivel ${COMBAT_PAGE.gapHero}` }),
+          para(`Al morir pierdes el ${percent(data.content.player.deathPenalty.xpPercent)} de la experiencia que necesitas para subir al siguiente nivel. Nunca pierdes un nivel.`),
         ].join('\n'),
       ),
       section(
@@ -177,27 +177,27 @@ export function combatPage(data: GuideData): PageBody {
           terms([
             [
               `<span style="color: ${esc(magic.color)}">${esc(magic.name)}</span>`,
-              `About ${percent(magic.chance?.base ?? 0)} of packs at first, up to ${percent(magic.chance?.max ?? 0)}. Every member has ${scaleLine(magic.members)}, and one trait from the list below. They drop more items.`,
+              `Al principio, cerca del ${percent(magic.chance?.base ?? 0)} de los grupos son mágicos; puede llegar al ${percent(magic.chance?.max ?? 0)}. Cada integrante tiene ${scaleLine(magic.members)} y un rasgo de la lista. Dejan más objetos.`,
             ],
             [
               `<span style="color: ${esc(rare.color)}">${esc(rare.name)}</span>`,
-              `About ${percent(rare.chance?.base ?? 0)} of packs at first, up to ${percent(rare.chance?.max ?? 0)}. The members have ${scaleLine(rare.members)}. The leader has a two-word name, ${scaleLine(rare.leader ?? rare.members)}, ${rare.leader?.mods ?? 0} traits, and always drops ${rare.leader?.items ?? 0} extra items that are at least magic.`,
+              `Al principio, cerca del ${percent(rare.chance?.base ?? 0)} de los grupos son raros; puede llegar al ${percent(rare.chance?.max ?? 0)}. Sus integrantes tienen ${scaleLine(rare.members)}. El líder tiene un nombre de dos palabras, ${scaleLine(rare.leader ?? rare.members)}, ${rare.leader?.mods ?? 0} rasgos y siempre deja ${rare.leader?.items ?? 0} objetos adicionales de rareza mágica o superior.`,
             ],
           ]),
-          subsection('Traits', bullets(poolMods(data).map((mod: MonsterModDef): string => `<b>${esc(mod.prefix)}</b>: ${modEffect(data, mod)}.`))),
+          subsection('Rasgos', bullets(poolMods(data).map((mod: MonsterModDef): string => `<b>${esc(mod.prefix)}</b>: ${modEffect(data, mod)}.`))),
         ].join('\n'),
       ),
       section(
         'boss',
-        `The boss: ${boss.name}`,
+        `El jefe: ${boss.name}`,
         [
           para(
-            `${esc(boss.name)} waits at ${esc(zone(data, 'keepers_gate').name)}, behind the gate that opens at level ${gateLevel(data)}. It is slow, it follows you, and it changes how it fights twice as it loses life. If you would rather meet it fresh, stop reading here.`,
+            `${esc(boss.name)} te espera en ${esc(zone(data, 'keepers_gate').name)}, detrás de la puerta que se abre al nivel ${gateLevel(data)}. Es lento, te sigue y cambia su forma de luchar dos veces a medida que pierde vida. Si prefieres enfrentarlo sin saber qué te espera, deja de leer aquí.`,
           ),
           bullets(bossDef.phases.map((phase: BossPhase, index: number): string => phaseText(data, phase, index, bossDef.phases))),
           para(
-            `Every time it falls it drops ${bossDef.drop.items} items, each ${esc(rarityName(data, bossDef.drop.floor))} or better, and some gold. The first time, it also gives you ${percent(bossDef.firstKill?.xpShare ?? 0)} of a level.`,
-            `What helps: keep moving out of the sweep, never stand still inside the slowed ground, and roll through the lines that hold you. Each ${link('/guide/builds/', 'build page')} shows how often that build won against it.`,
+            `Cada vez que cae, deja ${bossDef.drop.items} objetos de rareza ${esc(rarityName(data, bossDef.drop.floor))} o superior y algo de oro. La primera vez también te da el ${percent(bossDef.firstKill?.xpShare ?? 0)} de un nivel.`,
+            `Consejos: muévete para esquivar el barrido, no te quedes quieto en el suelo que te ralentiza y rueda para atravesar las líneas que te sujetan. Cada ${link('/guide/builds/', 'configuración')} muestra con qué frecuencia venció al jefe.`,
           ),
         ].join('\n'),
       ),

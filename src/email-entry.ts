@@ -26,15 +26,15 @@ export const EMAIL_NOTES: {
   readonly lastWrong: string;
 } = {
   none: '',
-  invalid: 'That does not look like an email address.',
-  checking: 'Checking you are not a bot…',
-  botFailed: 'The bot check did not pass. Try again.',
-  sent: 'Check your email for a 6-digit code.',
-  wait: 'Too many codes asked for. Wait a little and try again.',
-  unavailable: 'Email sign-in is not available right now. Try again later.',
-  expired: 'That code has expired. Ask for a new one.',
-  locked: 'Too many wrong codes. Ask for a new one.',
-  lastWrong: 'That code is not right. Ask for a new one.',
+  invalid: 'Esa dirección de correo electrónico no parece válida.',
+  checking: 'Comprobando que no seas un bot…',
+  botFailed: 'No se pudo completar la verificación. Inténtalo de nuevo.',
+  sent: 'Revisa tu correo: te enviamos un código de 6 dígitos.',
+  wait: 'Solicitaste demasiados códigos. Espera un poco e inténtalo de nuevo.',
+  unavailable: 'El inicio de sesión por correo no está disponible en este momento. Inténtalo más tarde.',
+  expired: 'Ese código venció. Solicita uno nuevo.',
+  locked: 'Ingresaste demasiados códigos incorrectos. Solicita uno nuevo.',
+  lastWrong: 'Ese código es incorrecto. Solicita uno nuevo.',
 };
 
 const ADDRESS: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -51,7 +51,7 @@ function problem(step: EmailStep, note: string): EmailEntry {
 
 export function wrongNote(attemptsLeft: number): string {
   if (attemptsLeft <= 0) return EMAIL_NOTES.lastWrong;
-  return `That code is not right. ${attemptsLeft} ${attemptsLeft === 1 ? 'try' : 'tries'} left.`;
+  return `Ese código es incorrecto. Te quedan ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'}.`;
 }
 
 export function closedEntry(): EmailEntry {

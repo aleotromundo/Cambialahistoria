@@ -6,8 +6,8 @@ import { el, retrigger, setText } from './dom.ts';
 import { promptText, use } from './prompts.ts';
 
 const DIALOGUE_BOX = {
-  next: 'continue',
-  last: 'close',
+  next: 'continuar',
+  last: 'cerrar',
   again: 'Escuchar de nuevo',
   swapMs: 260,
 } as const;

@@ -4,7 +4,7 @@ import type { GlitchSettings, GlitchSettingsStore } from '../glitch/glitch-setti
 import type { SettingsStore } from '../settings/store.ts';
 import { el, label, setText } from './dom.ts';
 
-const QUALITY_LABELS: Readonly<Record<Quality, string>> = { low: 'Low', medium: 'Medium', high: 'High' };
+const QUALITY_LABELS: Readonly<Record<Quality, string>> = { low: 'Baja', medium: 'Media', high: 'Alta' };
 
 function switchRow(page: HTMLElement, name: string, onClick: () => void): HTMLButtonElement {
   const row: HTMLDivElement = el('div', 'set-row', page);
@@ -19,8 +19,8 @@ function switchRow(page: HTMLElement, name: string, onClick: () => void): HTMLBu
 }
 
 function mountGlitchSwitches(page: HTMLElement, glitches: GlitchSettingsStore): void {
-  const world: HTMLButtonElement = switchRow(page, 'World glitches', (): void => glitches.set({ glitches: !glitches.get().glitches }));
-  const soft: HTMLButtonElement = switchRow(page, 'Soften flashes', (): void => glitches.set({ reduceFlashes: !glitches.get().reduceFlashes }));
+  const world: HTMLButtonElement = switchRow(page, 'Anomalías del mundo', (): void => glitches.set({ glitches: !glitches.get().glitches }));
+  const soft: HTMLButtonElement = switchRow(page, 'Reducir destellos', (): void => glitches.set({ reduceFlashes: !glitches.get().reduceFlashes }));
   const render = (current: GlitchSettings): void => {
     world.setAttribute('aria-checked', String(current.glitches));
     soft.setAttribute('aria-checked', String(current.reduceFlashes));
@@ -31,7 +31,7 @@ function mountGlitchSwitches(page: HTMLElement, glitches: GlitchSettingsStore): 
 
 export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitches: GlitchSettingsStore): void {
   const quality: HTMLDivElement = el('div', 'set-row', page);
-  label('set-name', 'Quality', quality);
+  label('set-name', 'Calidad', quality);
   const segment: HTMLDivElement = el('div', 'set-seg', quality);
   segment.setAttribute('role', 'radiogroup');
   segment.style.setProperty('--count', String(QUALITIES.length));
@@ -47,9 +47,9 @@ export function mountGraphics(page: HTMLElement, settings: SettingsStore, glitch
   }
   const detail: HTMLDivElement = label('set-detail', '', page);
 
-  const toggle: HTMLButtonElement = switchRow(page, 'Show frame rate', (): void => settings.setShowFps(!settings.get().graphics.showFps));
-  const lens: HTMLButtonElement = switchRow(page, 'Lens water', (): void => settings.setLensWater(!settings.get().graphics.lensWater));
-  const streak: HTMLButtonElement = switchRow(page, 'Streak effects', (): void => settings.setStreakEffects(!settings.get().graphics.streakEffects));
+  const toggle: HTMLButtonElement = switchRow(page, 'Mostrar tasa de fotogramas', (): void => settings.setShowFps(!settings.get().graphics.showFps));
+  const lens: HTMLButtonElement = switchRow(page, 'Distorsión de agua en la lente', (): void => settings.setLensWater(!settings.get().graphics.lensWater));
+  const streak: HTMLButtonElement = switchRow(page, 'Efectos de estela', (): void => settings.setStreakEffects(!settings.get().graphics.streakEffects));
   mountGlitchSwitches(page, glitches);
 
   const render = (): void => {

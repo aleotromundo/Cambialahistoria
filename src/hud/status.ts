@@ -13,21 +13,21 @@ const STATUS = {
 } as const;
 
 const NOTICE_TEXT: Readonly<Record<NoticeReason, string>> = {
-  wrong_weapon: 'Needs another weapon',
-  no_mana: 'Not enough mana',
-  on_cooldown: 'Not ready yet',
-  inventory_full: 'Inventory is full',
-  flask_empty: 'The flask is empty',
-  life_full: 'Life is already full',
-  mana_full: 'Mana is already full',
-  no_gold: 'Not enough gold',
-  stash_full: 'Stash is full',
-  legendary_limit: 'Three Legendary items are already worn',
-  portal_town: 'No way opens from here',
-  portal_boss: 'The fight holds the way shut',
-  unidentified: 'It has to be identified before it can be worn',
-  run_refused: 'That descent cannot be set',
-  duel_gear: 'Your gear is set aside for the duel',
+  wrong_weapon: 'Necesitas otra arma',
+  no_mana: 'No tienes suficiente maná',
+  on_cooldown: 'Aún no está lista',
+  inventory_full: 'El inventario está lleno',
+  flask_empty: 'El frasco está vacío',
+  life_full: 'La vida ya está al máximo',
+  mana_full: 'El maná ya está al máximo',
+  no_gold: 'No tienes suficiente oro',
+  stash_full: 'El alijo está lleno',
+  legendary_limit: 'Ya llevas puestos tres objetos legendarios',
+  portal_town: 'No se puede abrir un camino desde aquí',
+  portal_boss: 'El combate mantiene el camino cerrado',
+  unidentified: 'Debes identificarlo antes de poder equiparlo',
+  run_refused: 'No se puede iniciar ese descenso',
+  duel_gear: 'Tu equipo se guarda aparte durante el duelo',
 };
 
 export interface Notices {
@@ -114,10 +114,10 @@ export function createSurgeStatus(parent: HTMLElement): WorldStatus {
         surging = inSurgeZone;
         element.classList.toggle('visible', inSurgeZone);
       }
-      if (inSurgeZone) setText(surge, `Surge ${world.surge}`, true);
+      if (inSurgeZone) setText(surge, `Oleada ${world.surge}`, true);
       const timer: number | null = world.surgeTimer;
       const active: boolean = timer !== null;
-      if (timer !== null) setText(gather, `The storm gathers… ${Math.max(0, Math.ceil(timer))}`, true);
+      if (timer !== null) setText(gather, `La tormenta se aproxima… ${Math.max(0, Math.ceil(timer))}`, true);
       if (active !== gathering) {
         gathering = active;
         gather.classList.toggle('visible', active);

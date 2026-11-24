@@ -194,7 +194,7 @@ const NAMED: ReadonlyMap<string, string> = new Map<string, string>([
   [BINDING.rightMouse, 'RMB'],
   ['mouse_middle', 'MMB'],
   ['Escape', 'Esc'],
-  ['Space', 'Space'],
+  ['Space', 'Espacio'],
   ['Backquote', '`'],
   ['Minus', '-'],
   ['Equal', '='],
@@ -206,10 +206,10 @@ const NAMED: ReadonlyMap<string, string> = new Map<string, string>([
   ['Period', '.'],
   ['Slash', '/'],
   ['Backslash', '\\'],
-  ['ArrowUp', 'Up'],
-  ['ArrowDown', 'Down'],
-  ['ArrowLeft', 'Left'],
-  ['ArrowRight', 'Right'],
+  ['ArrowUp', 'Arriba'],
+  ['ArrowDown', 'Abajo'],
+  ['ArrowLeft', 'Izquierda'],
+  ['ArrowRight', 'Derecha'],
   ['AltLeft', 'Alt'],
   ['AltRight', 'Alt'],
 ]);
@@ -224,9 +224,9 @@ export function keyLabel(code: string): string {
 
 export function rebind(table: readonly ActionDef[], overrides: Overrides, action: ActionId, code: string): RebindResult {
   const target: ActionDef | undefined = table.find((def: ActionDef): boolean => def.id === action);
-  if (target === undefined || target.locked) return { kind: 'refused', reason: 'That action cannot be rebound.' };
-  if (!isBindingCode(code)) return { kind: 'refused', reason: 'That key cannot be used.' };
-  if (RESERVED.has(code)) return { kind: 'refused', reason: `${keyLabel(code)} is reserved.` };
+  if (target === undefined || target.locked) return { kind: 'refused', reason: 'No se puede reasignar esa acción.' };
+  if (!isBindingCode(code)) return { kind: 'refused', reason: 'No se puede usar esa tecla.' };
+  if (RESERVED.has(code)) return { kind: 'refused', reason: `${keyLabel(code)} está reservada.` };
   if (code === BINDING.rightMouse && !isSkillAction(action)) return { kind: 'refused', reason: 'Solo las habilidades pueden usar el botón derecho del ratón.' };
   if (code === BINDING.escape && action !== 'pause') return { kind: 'refused', reason: 'Esc está reservada para cerrar paneles y el menú.' };
   const owner: ActionDef | undefined = table.find((def: ActionDef): boolean => def.id !== action && bindingsFrom(def, overrides).includes(code));

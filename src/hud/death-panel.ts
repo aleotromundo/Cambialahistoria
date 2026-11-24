@@ -33,14 +33,14 @@ function causeText(world: World): string {
 function costText(world: World): string {
   const death = world.death;
   if (death === null || death.xpLost <= 0) return '';
-  return `${death.xpLost.toLocaleString('en-US')} experience lost`;
+  return `${death.xpLost.toLocaleString('es-419')} de experiencia perdida`;
 }
 
 export function createDeathPanel(parent: HTMLElement, api: HudApi): WorldStatus {
   const screen: HTMLDivElement = el('div', 'death-screen', parent);
   const backdrop: DitherLayer = mountDither(screen, { className: 'death-backdrop', layers: BACKDROPS.death, eager: false, marks: 'dithered', maxRatio: DEATH_PANEL.backdropRatio });
   const panel: HTMLDivElement = el('div', 'death-panel', screen);
-  label('death-title', 'You have fallen', panel);
+  label('death-title', 'Has caído', panel);
   const cause: HTMLDivElement = el('div', 'death-cause', panel);
   const cost: HTMLDivElement = el('div', 'death-cost', panel);
   const actions: HTMLDivElement = el('div', 'death-actions', panel);

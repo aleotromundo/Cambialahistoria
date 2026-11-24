@@ -10,7 +10,7 @@ const CLOSE_GLYPH = {
 export function createCloseButton(parent: HTMLElement, name: string, onClose: () => void): HTMLButtonElement {
   const button: HTMLButtonElement = el('button', 'panel-close', parent);
   button.type = 'button';
-  button.setAttribute('aria-label', `Close ${name}`);
+  button.setAttribute('aria-label', `Cerrar ${name}`);
   const glyph: SVGSVGElement = svg('svg', 'panel-close-glyph', button, { viewBox: CLOSE_GLYPH.box, 'aria-hidden': 'true' });
   for (const line of CLOSE_GLYPH.lines) svg('path', '', glyph, { d: line, 'stroke-width': CLOSE_GLYPH.stroke });
   button.addEventListener('click', (event: MouseEvent): void => {

@@ -12,9 +12,9 @@ export interface PlaceOff {
 
 export function holdingLine(content: Content, equipped: Equipment): string {
   const weapon: ItemInstance | null = equipped.weapon;
-  if (weapon === null) return 'Your hands are empty.';
+  if (weapon === null) return 'No tienes un arma equipada.';
   const group: WeaponGroup | null = weaponGroup(content, heldGroup(content, equipped) ?? '');
-  return group === null ? `You hold ${itemName(content, weapon)}.` : `You hold ${group.needs}: ${itemName(content, weapon)}.`;
+  return group === null ? `Tienes ${itemName(content, weapon)} equipada.` : `Tienes ${group.needs}: ${itemName(content, weapon)}.`;
 }
 
 export function placeOff(content: Content, node: SkillTreeNodeDef, equipped: Equipment): PlaceOff | null {
@@ -22,5 +22,5 @@ export function placeOff(content: Content, node: SkillTreeNodeDef, equipped: Equ
   if (group === null || placeLive(node, heldGroup(content, equipped))) return null;
   const lines: string[] = node.statMods.filter((mod: StatMod): boolean => !liveStatMod(mod)).map(describeExactMod);
   if (lines.length === 0) return null;
-  return { lines, need: `Inactive: needs ${group.needs}.`, holding: holdingLine(content, equipped) };
+  return { lines, need: `Inactivo: requiere ${group.needs}.`, holding: holdingLine(content, equipped) };
 }

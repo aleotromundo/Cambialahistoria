@@ -19,7 +19,7 @@ import type { OverlayManager } from './overlays.ts';
 
 const PAUSE_ROWS: { readonly base: number } = { base: 3 };
 
-const SECTION_LABELS: Readonly<Record<SettingsSection, string>> = { graphics: 'Graphics', sound: 'Sound', controls: 'Controls' };
+const SECTION_LABELS: Readonly<Record<SettingsSection, string>> = { graphics: 'Gráficos', sound: 'Sonido', controls: 'Controles' };
 
 export interface PauseHooks {
   readonly settings: SettingsStore;
@@ -70,7 +70,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   let section: SettingsSection = 'graphics';
 
   const main: HTMLDivElement = el('div', 'pause-view pause-main', card);
-  label('pause-title', 'Menu', main);
+  label('pause-title', 'Menú', main);
   const settingsView: HTMLDivElement = el('div', 'pause-view pause-settings', card);
 
   const head: HTMLDivElement = el('div', 'set-head', settingsView);
@@ -130,10 +130,10 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   const resume = (): void => api.close();
 
   button(main, 'pause-btn', 'Volver al juego', resume);
-  button(main, 'pause-btn', 'Settings', (): void => setView('settings'));
+  button(main, 'pause-btn', 'Configuración', (): void => setView('settings'));
   const feedback: (() => void) | null = hooks.feedback;
   if (feedback !== null) {
-    button(main, 'pause-btn', 'Feedback', (): void => {
+    button(main, 'pause-btn', 'Comentarios', (): void => {
       api.close();
       feedback();
     });

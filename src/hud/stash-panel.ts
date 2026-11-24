@@ -8,7 +8,7 @@ import type { ScrollFade } from './scroll-fade.ts';
 import { watchScrollFade } from './scroll-fade.ts';
 
 const STASH = {
-  hint: 'take',
+  hint: 'tomar',
 } as const;
 
 export function createStashPanel(parent: HTMLElement, context: HudContext): PanelView {
@@ -18,7 +18,7 @@ export function createStashPanel(parent: HTMLElement, context: HudContext): Pane
     event.preventDefault();
   });
   const head: HTMLDivElement = el('div', 'trade-head', element);
-  label('panel-title', 'Stash', head);
+  label('panel-title', 'Alijo', head);
   const tally: HTMLDivElement = label('trade-role', '', head);
   const scroll: HTMLDivElement = el('div', 'stash-scroll', element);
   const fade: ScrollFade = watchScrollFade(scroll);

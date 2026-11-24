@@ -29,12 +29,12 @@ const MAP = {
   labelMargin: 3,
   labelClear: 24,
   labelKeep: { here: 4, landmark: 3, named: 2, level: 1 },
-  hintAway: 'Stand on a waypoint to travel',
-  hintReady: 'Choose a lit waypoint to travel',
-  hintNone: 'No other waypoint found yet',
+  hintAway: 'Párate en un punto de ruta para viajar',
+  hintReady: 'Elige un punto de ruta iluminado para viajar',
+  hintNone: 'Aún no has encontrado otro punto de ruta',
   ids: { fog: 'atlas-fog-mask', clear: 'atlas-fog-clear', grain: 'atlas-grain' },
-  markNames: { town: 'Town', wild: 'Wilds', boss: 'Boss lair', void: 'Void' },
-  stateNames: { here: 'You are here', travel: 'Travel here', found: 'Waypoint found', unfound: 'Waypoint not yet found', none: 'No waypoint: reached on foot', reachable: 'Unexplored', locked: 'The way is barred', unknown: 'Undiscovered' },
+  markNames: { town: 'Pueblo', wild: 'Tierras salvajes', boss: 'Guarida del jefe', void: 'Vacío' },
+  stateNames: { here: 'Estás aquí', travel: 'Viajar aquí', found: 'Punto de ruta encontrado', unfound: 'Aún no se encuentra este punto de ruta', none: 'Sin punto de ruta: se llega a pie', reachable: 'Sin explorar', locked: 'El camino está cerrado', unknown: 'Sin descubrir' },
 } as const;
 
 const PLACE_STATES: readonly PlaceState[] = ['here', 'visited', 'reachable', 'locked', 'unknown'];

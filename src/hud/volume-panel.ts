@@ -7,14 +7,14 @@ const VOLUME = {
   step: 0.01,
   percent: 100,
   svgNamespace: 'http://www.w3.org/2000/svg',
-  troubleText: 'Sound files could not be loaded',
+  troubleText: 'No se pudieron cargar los archivos de sonido',
 } as const;
 
 const LABELS: Readonly<Record<AudioCategory, string>> = {
-  master: 'Master',
-  effects: 'Effects',
-  voice: 'Voice',
-  ambience: 'Ambience',
+  master: 'General',
+  effects: 'Efectos',
+  voice: 'Voces',
+  ambience: 'Ambiente',
 };
 
 const SPEAKER: string =
@@ -38,7 +38,7 @@ function sliderRow(parent: HTMLElement, category: AudioCategory, controls: Audio
   input.min = '0';
   input.max = '1';
   input.step = String(VOLUME.step);
-  input.setAttribute('aria-label', `${LABELS[category]} volume`);
+  input.setAttribute('aria-label', `Volumen de ${LABELS[category].toLowerCase()}`);
   const value: HTMLDivElement = label('volume-value', '', row);
   input.addEventListener('input', (): void => {
     controls.setVolume(category, input.valueAsNumber);
@@ -48,7 +48,7 @@ function sliderRow(parent: HTMLElement, category: AudioCategory, controls: Audio
 
 export function mountVolumeSliders(parent: HTMLElement, controls: AudioControls, health: LoadHealth): void {
   const head: HTMLDivElement = el('div', 'volume-head', parent);
-  label('volume-mute-label', 'Mute all sound', head);
+  label('volume-mute-label', 'Silenciar todo el sonido', head);
   const mute: HTMLButtonElement = el('button', 'set-switch', head);
   mute.type = 'button';
   mute.setAttribute('role', 'switch');

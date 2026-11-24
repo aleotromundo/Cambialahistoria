@@ -28,12 +28,12 @@ const STAT_MEANINGS: Readonly<Record<StatId, string>> = {
 };
 
 function capNote(data: GuideData, stat: StatId): string {
-  if (stat === 'armour') return `Up to ${percent(data.content.player.resistance.armourCap)} off; ${ARMOUR_HALF_POINT} armour is ${percent(armourReduction(ARMOUR_HALF_POINT, data.content.player.resistance.armourCap))}`;
-  if (stat === 'stormResist' || stat === 'frostResist') return `Stops at ${percent(data.content.player.resistance.cap)}`;
+  if (stat === 'armour') return `Reduce hasta ${percent(data.content.player.resistance.armourCap)}; ${ARMOUR_HALF_POINT} de armadura reduce ${percent(armourReduction(ARMOUR_HALF_POINT, data.content.player.resistance.armourCap))}`;
+  if (stat === 'stormResist' || stat === 'frostResist') return `Tiene un máximo de ${percent(data.content.player.resistance.cap)}`;
   const cap: number | null = statCap(data, stat);
   if (cap === null) return '';
   if (stat === 'moveSpeed') return 'Tiene una velocidad máxima';
-  return `Stops at ${capPercent(data, stat)}`;
+  return `Tiene un máximo de ${capPercent(data, stat)}`;
 }
 
 function rarityRows(data: GuideData): string[][] {
@@ -41,7 +41,7 @@ function rarityRows(data: GuideData): string[][] {
   return data.content.rarities.map((rarity: RarityDef): string[] => [
     `<span style="color: ${esc(rarity.color)}">${esc(rarity.name)}</span>`,
     percent(rarity.weight / total),
-    rarity.affixMax === 0 ? 'None' : rarity.affixMin === rarity.affixMax ? String(rarity.affixMin) : `${rarity.affixMin} to ${rarity.affixMax}`,
+    rarity.affixMax === 0 ? 'Ninguno' : rarity.affixMin === rarity.affixMax ? String(rarity.affixMin) : `${rarity.affixMin} a ${rarity.affixMax}`,
   ]);
 }
 
@@ -57,7 +57,7 @@ function legendaryRows(data: GuideData): string[][] {
 
 function favouredWeapons(data: GuideData, lean: DropLean): string {
   const groups: string[] = leanWeapons(data.content, lean).map((group: WeaponGroup): string => group.needs);
-  const slots: string[] = lean.slots.map((slot: ItemSlot): string => `${SLOT_NAMES[slot]} pieces`);
+  const slots: string[] = lean.slots.map((slot: ItemSlot): string => `${SLOT_NAMES[slot]}: objetos`);
   return esc(list([...groups, ...slots]));
 }
 
@@ -69,7 +69,7 @@ function levelsOf(data: GuideData, lean: DropLean): string {
   const levels: number[] = leanZones(data.content, lean).map((zone: ZoneDef): number => zone.level);
   const low: number = Math.min(...levels);
   const high: number = Math.max(...levels);
-  return low === high ? String(low) : `${low} to ${high}`;
+  return low === high ? String(low) : `${low} a ${high}`;
 }
 
 function leanRows(data: GuideData): string[][] {
@@ -78,7 +78,7 @@ function leanRows(data: GuideData): string[][] {
     levelsOf(data, lean),
     lean.share > 1 ? favouredWeapons(data, lean) : '',
     lean.share > 1 ? favouredFamilies(data, lean) : '',
-    lean.legendary > 1 ? `×${decimal(lean.legendary, 0)} legendaries` : '',
+    lean.legendary > 1 ? `×${decimal(lean.legendary, 0)} objetos legendarios` : '',
   ]);
 }
 
@@ -88,19 +88,19 @@ function bossLine(data: GuideData): string {
   const floorId: string | undefined = [...data.content.monsters.values()].find((monster: MonsterDef): boolean => monster.boss !== null)?.boss?.drop.floor;
   const floor: RarityDef | undefined = data.content.rarities.find((rarity: RarityDef): boolean => rarity.id === floorId);
   const floorName: string = floor?.name.toLowerCase() ?? 'rare';
-  return `In ${esc(court.name)} every legendary is ${decimal(court.legendary, 0)} times as likely as anywhere else. A boss always drops ${esc(floorName)} items or better, and there ${percent(legendaryShare(data.content, court, floor?.id ?? null))} of them are legendary, against ${percent(legendaryShare(data.content, null, floor?.id ?? null))} elsewhere.`;
+  return `En ${esc(court.name)}, la probabilidad de obtener un objeto legendario es ${decimal(court.legendary, 0)} veces mayor que en cualquier otro lugar. Un jefe siempre deja objetos ${esc(floorName)} o mejores; allí, el ${percent(legendaryShare(data.content, court, floor?.id ?? null))} son legendarios, frente al ${percent(legendaryShare(data.content, null, floor?.id ?? null))} en otros lugares.`;
 }
 
 function shareWord(data: GuideData): string {
   const shares: number[] = [...new Set(data.content.leans.filter((lean: DropLean): boolean => lean.share > 1).map((lean: DropLean): number => lean.share))];
-  return shares.length === 1 ? `${decimal(shares[0] ?? 1, 1)} times` : 'varias veces';
+  return shares.length === 1 ? `${decimal(shares[0] ?? 1, 1)} veces` : 'varias veces';
 }
 
 function affixRows(data: GuideData): string[][] {
   return [...data.content.affixes.values()].map((affix: AffixDef): string[] => [
     esc(affix.label),
-    esc(affix.op === 'percent' ? `more ${statLabel(affix.stat)}` : statLabel(affix.stat)),
-    `+${statAmount(affix.stat, affix.op, affix.min)} to ${statAmount(affix.stat, affix.op, affix.max)}`,
+    esc(affix.op === 'percent' ? `más ${statLabel(affix.stat)}` : statLabel(affix.stat)),
+    `De +${statAmount(affix.stat, affix.op, affix.min)} a +${statAmount(affix.stat, affix.op, affix.max)}`,
     esc(list(affix.slots.map((slot: ItemSlot): string => SLOT_NAMES[slot]))),
   ]);
 }
@@ -121,7 +121,7 @@ function weaponRows(data: GuideData): string[][] {
       const high: number = base.implicit.find((mod): boolean => mod.stat === 'damageMax')?.value ?? 0;
       const speed: number = base.implicit.find((mod): boolean => mod.stat === 'attackSpeed')?.value ?? 0;
       const changes: string = base.variants.map((variant): string => data.content.skills.get(variant.becomes)?.name ?? '').filter((name: string): boolean => name.length > 0).join(', ');
-      return [esc(base.name), String(base.minLevel), `${low} to ${high}`, speed === 0 ? '' : `${speed > 0 ? '+' : '−'}${percent(Math.abs(speed))}`, changes.length === 0 ? '' : `Cleave becomes ${esc(changes)}`];
+      return [esc(base.name), String(base.minLevel), `${low} a ${high}`, speed === 0 ? '' : `${speed > 0 ? '+' : '−'}${percent(Math.abs(speed))}`, changes.length === 0 ? '' : `Tajo se convierte en ${esc(changes)}`];
     });
 }
 
@@ -135,8 +135,8 @@ export function itemsPage(data: GuideData): PageBody {
   const growth: string = percent(data.content.itemScaling.implicitPerLevel);
   const quarrel: SkillDef | undefined = data.content.skills.get('quarrel');
   return {
-    kicker: 'Guide',
-    title: 'Items',
+    kicker: 'Guía',
+    title: 'Objetos',
     lede: 'Qué puedes usar, qué tan raros son los objetos y qué hace cada línea de un objeto por ti.',
     description: 'Objetos en The Lost Storm: espacios, rarezas y probabilidades de aparición, todos los afijos y armas, los legendarios por familia, dónde aparece más cada tipo y qué hace cada estadística.',
     body: [
@@ -144,62 +144,62 @@ export function itemsPage(data: GuideData): PageBody {
         'slots',
         'Lo que usas',
         para(
-          `You have ${ITEM_SLOTS.length} slots: ${esc(list(ITEM_SLOTS.map((slot: ItemSlot): string => SLOT_NAMES[slot])))}. Your weapon sets your damage range, and every skill you use starts from it, so it is the slot that matters most. Everything else adds life, armour, speed and the rest.`,
-          `Every item has a level, about the level you were when it dropped. Its own lines (the ones every item of that kind has) grow by ${growth} for every level above the first, and so do its rolled lines. A drawback, such as the slower swing of a heavy weapon or the slower step of plate, stays the same at every level. A level 15 sword is a much better sword than a level 2 one.`,
+          `Tienes ${ITEM_SLOTS.length} espacios: ${esc(list(ITEM_SLOTS.map((slot: ItemSlot): string => SLOT_NAMES[slot])))}. Tu arma determina tu rango de daño, y todas tus habilidades parten de él, por eso es el espacio más importante. Los demás aportan vida, armadura, velocidad y otros atributos.`,
+          `Cada objeto tiene un nivel, más o menos igual al tuyo cuando apareció. Sus atributos propios (los que tiene cada objeto de ese tipo) aumentan ${growth} por cada nivel por encima del primero; lo mismo ocurre con los atributos aleatorios. Una desventaja, como el golpe más lento de un arma pesada o el paso más lento de una armadura de placas, no cambia con el nivel. Una espada de nivel 15 es mucho mejor que una de nivel 2.`,
         ),
       ),
       section(
         'weapons',
-        'Weapons',
+        'Armas',
         [
-          para(`The heavier weapons swing slower and hit harder. ${quarrel === undefined ? '' : `A crossbow turns Cleave into ${esc(quarrel.name)}, a shot.`} The damage below is for a level 1 item; it grows with the item's level.`),
-          table({ head: ['Weapon', 'From level', 'Damage', 'Attack speed', 'Changes'], rows: weaponRows(data), className: 'wide' }),
+          para(`Las armas más pesadas se blandan más despacio, pero golpean más fuerte. ${quarrel === undefined ? '' : `Una ballesta convierte Tajo en ${esc(quarrel.name)}, un disparo.`} El daño de abajo corresponde a un objeto de nivel 1; aumenta con su nivel.`),
+          table({ head: ['Arma', 'Desde el nivel', 'Daño', 'Velocidad de ataque', 'Cambios'], rows: weaponRows(data), className: 'wide' }),
         ].join('\n'),
       ),
       section(
         'rarity',
-        'Rarity',
+        'Rareza',
         [
-          para('Most of what drops is common. Magic and rare items carry extra rolled lines on top of what every item of their kind has. Magic and rare packs drop more, and a rare leader always drops something at least magic.'),
-          table({ head: ['Rarity', 'Share of drops', 'Rolled lines'], rows: rarityRows(data) }),
+          para('La mayoría de los objetos que aparecen son comunes. Los objetos mágicos y raros pueden tener atributos aleatorios adicionales, además de los que trae cada objeto de su tipo. Los grupos mágicos y raros dejan más botín, y el líder de un grupo raro siempre deja al menos un objeto mágico.'),
+          table({ head: ['Rareza', 'Proporción de objetos', 'Atributos aleatorios'], rows: rarityRows(data) }),
         ].join('\n'),
       ),
       section(
         'legendary',
-        'Legendaries',
+        'Legendarios',
         [
           para(
-            `A ${esc(legendary?.name.toLowerCase() ?? 'legendary')} item is one of a handful of named pieces, each with a power no other item has. You can wear ${legendary?.wornLimit ?? 0} at once at most. They come in ${families.length} families, ${esc(list(families.map((family: FamilyDef): string => family.name)))}, whose powers work together.`,
+            `Un objeto ${esc(legendary?.name.toLowerCase() ?? 'legendario')} es una de unas pocas piezas con nombre propio, cada una con un poder único. Puedes llevar como máximo ${legendary?.wornLimit ?? 0} a la vez. Hay ${families.length} familias: ${esc(list(families.map((family: FamilyDef): string => family.name)))}; los poderes de cada familia se complementan.`,
           ),
-          table({ head: ['Family', 'Item', 'Slot', 'Power', 'Most likely in'], rows: legendaryRows(data), className: 'wide' }),
-          para(`Each ${link('/guide/builds/', 'build page')} lists the legendaries made for it, what each changes, and which to chase first.`),
+          table({ head: ['Familia', 'Objeto', 'Espacio', 'Poder', 'Más probable en'], rows: legendaryRows(data), className: 'wide' }),
+          para(`Cada ${link('/guide/builds/', 'configuración')} indica qué objetos legendarios están pensados para ella, qué cambia cada uno y cuál conviene buscar primero.`),
         ].join('\n'),
       ),
       section(
         'where',
-        'Where things drop',
+        'Dónde aparecen los objetos',
         [
           para(
-            `Every area drops every item. Some areas lean toward certain kinds: there, each favoured kind of weapon drops about ${shareWord(data)} as often as it does elsewhere, measured against the other kinds, and a legendary from a favoured family gets the same lift. No area drops more items for it, and none drops rarer ones, except where the table says so.`,
+            `En todas las zonas puede aparecer cualquier objeto. Algunas favorecen ciertos tipos: allí, cada tipo de arma favorecido aparece aproximadamente ${shareWord(data)} veces más que en otras zonas, en comparación con los demás tipos; lo mismo ocurre con los legendarios de las familias favorecidas. Ninguna zona deja más objetos ni objetos de mayor rareza, salvo que la tabla indique lo contrario.`,
             bossLine(data),
           ),
-          table({ head: ['Area', 'Monster levels', 'Favours', 'Legendaries favoured', 'Rarer drops'], rows: leanRows(data), className: 'wide' }),
+          table({ head: ['Zona', 'Nivel de los monstruos', 'Favorece', 'Legendarios favorecidos', 'Objetos más raros'], rows: leanRows(data), className: 'wide' }),
         ].join('\n'),
       ),
       section(
         'affixes',
-        'Rolled lines',
+        'Atributos aleatorios',
         [
-          para('These are the lines a magic, rare or legendary item can roll. The range is for a level 1 item; higher-level items roll higher. No item rolls the same stat twice.'),
-          table({ head: ['Line', 'Gives', 'Range at level 1', 'Can appear on'], rows: affixRows(data), className: 'wide' }),
+          para('Estos son los atributos aleatorios que puede tener un objeto mágico, raro o legendario. El rango corresponde a un objeto de nivel 1; los objetos de mayor nivel pueden obtener valores más altos. Ningún objeto puede tener dos veces el mismo atributo.'),
+          table({ head: ['Atributo', 'Efecto', 'Rango en nivel 1', 'Puede aparecer en'], rows: affixRows(data), className: 'wide' }),
         ].join('\n'),
       ),
       section(
         'stats',
-        'What each stat does',
+        'Qué hace cada atributo',
         [
-          table({ head: ['Stat', 'What it does', 'Limit'], rows: statsInPlay(data).map((stat: StatId): string[] => [esc(statLabel(stat)), esc(STAT_MEANINGS[stat]), esc(capNote(data, stat))]) }),
-          para(`How damage, armour and resistances work together is on the ${link('/guide/combat/', 'combat')} page.`),
+          table({ head: ['Atributo', 'Efecto', 'Límite'], rows: statsInPlay(data).map((stat: StatId): string[] => [esc(statLabel(stat)), esc(STAT_MEANINGS[stat]), esc(capNote(data, stat))]) }),
+          para(`En la página de ${link('/guide/combat/', 'combate')} se explica cómo interactúan el daño, la armadura y las resistencias.`),
         ].join('\n'),
       ),
     ].join('\n'),

@@ -10,8 +10,8 @@ export const STATUS_LINE = {
 } as const;
 
 export const TITLE_NOTICES = {
-  freshStart: 'A new storm has begun.',
-  setAside: 'Your earlier save could not be read and was set aside. A new journey starts here.',
+  freshStart: 'Ha comenzado una nueva tormenta.',
+  setAside: 'No se pudo leer tu partida anterior y se guardó por separado. Aquí comienza una nueva aventura.',
 } as const;
 
 export interface LineEnd {

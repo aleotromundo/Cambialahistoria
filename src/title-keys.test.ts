@@ -23,25 +23,25 @@ function rowFor(rows: readonly TitleKeyRow[], does: string): TitleKeyRow | undef
 
 void test('without a server the list has no Ladder key, and it lists the minimap, the pause menu and the frame rate from the binding table', (): void => {
   const rows: readonly TitleKeyRow[] = titleKeyRows(defaultKeys(content, false), names);
-  assert.equal(rowFor(rows, 'Ladder'), undefined);
-  assert.equal(rowFor(rows, 'Minimap')?.keys.includes('Tab'), true);
-  assert.deepEqual(rowFor(rows, 'Menu'), { keys: 'Esc · F3 · Alt', does: 'Menu · Frame rate · Show item names' });
+  assert.equal(rowFor(rows, 'Clasificación'), undefined);
+  assert.equal(rowFor(rows, 'Minimapa')?.keys.includes('Tab'), true);
+  assert.deepEqual(rowFor(rows, 'Menú'), { keys: 'Esc · F3 · Alt', does: 'Menú · Velocidad de fotogramas · Mostrar nombres de objetos' });
   assert.deepEqual(rows[0], TITLE_KEYS.primary);
   assert.deepEqual(rows.at(-1), TITLE_KEYS.zoom);
 });
 
 void test('with a server the Ladder key joins the panel row', (): void => {
-  const panels: TitleKeyRow | undefined = rowFor(titleKeyRows(defaultKeys(content, true), names), 'Ladder');
+  const panels: TitleKeyRow | undefined = rowFor(titleKeyRows(defaultKeys(content, true), names), 'Clasificación');
   assert.ok(panels !== undefined);
   assert.equal(panels.keys, 'M · Tab · L');
-  assert.equal(panels.does, 'World map · Minimap · Ladder');
+  assert.equal(panels.does, 'Mapa del mundo · Minimapa · Clasificación');
 });
 
 void test('a skill bound to a key and the right mouse reads as one row, and flasks carry their own names', (): void => {
   const rows: readonly TitleKeyRow[] = titleKeyRows(defaultKeys(content, false), fullNames);
-  const bolt: TitleKeyRow | undefined = rows.find((row: TitleKeyRow): boolean => row.keys.includes('right mouse'));
+  const bolt: TitleKeyRow | undefined = rows.find((row: TitleKeyRow): boolean => row.keys.includes('clic derecho'));
   assert.ok(bolt !== undefined);
-  assert.match(bolt.keys, / or right mouse$/);
+  assert.match(bolt.keys, / o clic derecho$/);
   const flasks: TitleKeyRow | undefined = rowFor(rows, flaskNames[0] ?? '');
   assert.equal(flasks?.does, flaskNames.join(TITLE_KEYS.joiner));
 });
@@ -49,7 +49,7 @@ void test('a skill bound to a key and the right mouse reads as one row, and flas
 void test('a rebound key shows on the title as the player bound it', (): void => {
   const table = actionTable(skillSlots(content), shippedKeys(content, false));
   const rows: readonly TitleKeyRow[] = titleKeyRows(resolveKeys(table, { inventory: ['KeyB'] }), names);
-  assert.match(rowFor(rows, 'Inventory')?.keys ?? '', /^B · /);
+  assert.match(rowFor(rows, 'Inventario')?.keys ?? '', /^B · /);
 });
 
 void test('the rows become escaped definition-list markup', (): void => {
@@ -82,6 +82,6 @@ void test('a skill placed off its home slot is named in the slot it sits in', ()
 void test('with the keys moving the hero the list leads with the move keys, the left mouse attacks and picks up, and Shift still attacks in place', (): void => {
   const table = actionTable(skillSlots(content), shippedKeys(content, false), 'keys');
   const rows: readonly TitleKeyRow[] = titleKeyRows(resolveKeys(table, { moveUp: ['ArrowUp'] }), fullNames);
-  assert.deepEqual(rows.slice(0, 3), [{ keys: 'Up A S D', does: 'Move' }, TITLE_KEYS.primaryByKeys, TITLE_KEYS.inPlace]);
+  assert.deepEqual(rows.slice(0, 3), [{ keys: 'Arriba A S D', does: 'Moverse' }, TITLE_KEYS.primaryByKeys, TITLE_KEYS.inPlace]);
   assert.equal(rows.some((row: TitleKeyRow): boolean => /(^| )W( |$)/.test(row.keys)), false);
 });

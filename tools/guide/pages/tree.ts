@@ -55,8 +55,8 @@ export function treePage(data: GuideData): PageBody {
   const notables: number = count(data, 'notable');
   const keystones: number = count(data, 'keystone');
   return {
-    kicker: 'Guide',
-    title: 'árbol de habilidades',
+    kicker: 'Guía',
+    title: 'Árbol de habilidades',
     lede: 'A dónde van tus puntos, cómo encajan los cinco caminos y cuánto cuesta cambiar de opinión.',
     description: 'Cómo funciona el árbol de habilidades de The Lost Storm: puntos por nivel, los cinco caminos, los nodos notables y las piedras angulares, la única regla para cambiar una habilidad y cuánto cuesta redistribuir los puntos.',
     body: [
@@ -64,49 +64,49 @@ export function treePage(data: GuideData): PageBody {
         'whole',
         'Todo el árbol',
         [
-          `<figure class="tree">${treePicture(data.content, [], 'The whole Skill Tree')}<figcaption>Cada lugar del árbol. Los círculos grandes son nodos notables; los más grandes son piedras angulares.</figcaption></figure>`,
-          para(`Press ${kbd('T')} to open it in the game. There are ${minors + notables + keystones} places: ${minors} small ones that add a little, ${notables} notables that teach a skill or change one, and ${keystones} keystones that change how you play and always cost you something for it.`),
+          `<figure class="tree">${treePicture(data.content, [], 'El árbol de habilidades completo')}<figcaption>Cada lugar del árbol. Los círculos grandes son nodos notables; los más grandes son piedras angulares.</figcaption></figure>`,
+          para(`Presiona ${kbd('T')} para abrirlo en el juego. Tiene ${minors + notables + keystones} lugares: ${minors} pequeños que aportan un poco, ${notables} notables que enseñan o modifican una habilidad y ${keystones} piedras angulares que cambian tu forma de jugar, siempre con algún costo.`),
         ].join('\n'),
       ),
       section(
         'points',
-        'Points',
+        'Puntos',
         [
-          para(`You get ${per} points with every level. ${grants} more come early, from clearing your first moment and from the Warden's first lesson. A point spent is a place taken; there is nothing else to spend them on, so spend them as they come.`),
-          table({ head: ['Level', 'Points by then'], rows: TREE_PAGE.pointLevels.map((level: number): string[] => [String(level), String(pointsAtLevel(data.content, level))]) }),
+          para(`Recibes ${per} puntos con cada nivel. Obtienes ${grants} más al principio, al superar tu primer momento y recibir la primera lección del Guardián. Gastar un punto equivale a elegir un lugar; no hay nada más en qué gastarlos, así que úsalos conforme los recibas.`),
+          table({ head: ['Nivel', 'Puntos acumulados'], rows: TREE_PAGE.pointLevels.map((level: number): string[] => [String(level), String(pointsAtLevel(data.content, level))]) }),
         ].join('\n'),
       ),
       section(
         'paths',
-        'The five paths',
+        'Las cinco rutas',
         [
-          para('The tree is five paths around a centre. Each path begins with a notable that teaches a skill, and you may start at any of the five. From then on you can only take a place next to one you already have, so a build is a line walked outward, with a branch here and there into the next path.'),
-          table({ head: ['Path', 'What it is for', 'Starts with', 'Skills it teaches', 'Keystone'], rows: data.content.chart.paths.map((entry: ChartPath): string[] => pathRow(data, entry)), className: 'wide' }),
-          para('Between neighbouring paths there are small bridge places, which is how a build crosses from one path into the next.'),
+          para('El árbol tiene cinco rutas alrededor de un centro. Cada ruta empieza con un nodo notable que enseña una habilidad; puedes comenzar por cualquiera. Después, solo puedes elegir lugares junto a los que ya tienes, así que una configuración avanza hacia afuera y a veces se ramifica hacia la siguiente ruta.'),
+          table({ head: ['Ruta', 'Para qué sirve', 'Habilidad inicial', 'Habilidades que enseña', 'Piedra angular'], rows: data.content.chart.paths.map((entry: ChartPath): string[] => pathRow(data, entry)), className: 'wide' }),
+          para('Entre las rutas vecinas hay pequeños lugares de conexión que permiten pasar de una a otra.'),
         ].join('\n'),
       ),
       section(
         'keystones',
-        'Keystones',
-        [para('A keystone sits at the far end of its path. Each one gives you a lot and takes something away. Read the cost before you take one.'), table({ head: ['Keystone', 'What it does'], rows: keystoneRows(data) })].join('\n'),
+        'Piedras angulares',
+        [para('Una piedra angular está al final de su ruta. Cada una te da mucho, pero también te quita algo. Lee el costo antes de elegirla.'), table({ head: ['Piedra angular', 'Efecto'], rows: keystoneRows(data) })].join('\n'),
       ),
       section(
         'one-change',
-        'One change per skill',
+        'Un cambio por habilidad',
         [
-          para(`${variantCount(data)} notables change a skill into something else. A skill can only be changed by one of them at a time: once you hold one, the others that change the same skill are closed to you until you give it back. These share a skill:`),
+          para(`${variantCount(data)} notables convierten una habilidad en otra cosa. Cada habilidad solo puede ser modificada por uno de estos lugares a la vez: cuando eliges uno, los demás que modifican esa misma habilidad quedan bloqueados hasta que lo devuelvas. Estos lugares comparten una habilidad:`),
           `<ul>${sharedChanges(data).map((line: string): string => `<li>${line}</li>`).join('')}</ul>`,
-          para(`Every change is listed with its skill on the ${link('/guide/skills/', 'Skills')} page.`),
+          para(`Cada cambio aparece junto con su habilidad en la página de ${link('/guide/skills/', 'habilidades')}.`),
         ].join('\n'),
       ),
       section(
         'respec',
-        'Changing your mind',
+        'Cambiar de opinión',
         [
-          para(`You can give back a single place, as long as everything you hold still connects, or clear the whole tree at once. Either costs gold: ${respec.goldPerPoint} for each point, plus ${respec.goldPerLevel} for each point for every level you have. The points come back to spend again.`),
+          para(`Puedes devolver un solo lugar, siempre que los demás sigan conectados, o reiniciar todo el árbol de una vez. En ambos casos cuesta oro: ${respec.goldPerPoint} por punto, más ${respec.goldPerLevel} por cada punto y por cada nivel que tengas. Recuperas los puntos para volver a gastarlos.`),
           table({
-            head: ['Level', 'One place', 'Todo el árbol'],
-            rows: TREE_PAGE.respecLevels.map((level: number): string[] => [String(level), `${respecCost(data, level, 1)} gold`, `${respecCost(data, level, pointsAtLevel(data.content, level))} gold`]),
+            head: ['Nivel', 'Un lugar', 'Todo el árbol'],
+            rows: TREE_PAGE.respecLevels.map((level: number): string[] => [String(level), `${respecCost(data, level, 1)} de oro`, `${respecCost(data, level, pointsAtLevel(data.content, level))} de oro`]),
           }),
         ].join('\n'),
       ),

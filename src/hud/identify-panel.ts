@@ -87,7 +87,7 @@ export function createIdentifyPanel(parent: HTMLElement, context: HudContext): P
 
   const makeRow = (item: ItemInstance): Row => {
     const box: HTMLDivElement = el('div', 'appraise-row', list);
-    const view: ItemCell = createItemCell(context, box, (shown: ItemInstance): string => (rows.get(shown.uid)?.revealed === true ? '' : promptText(context.api.touch, use('identify'))));
+    const view: ItemCell = createItemCell(context, box, (shown: ItemInstance): string => (rows.get(shown.uid)?.revealed === true ? '' : promptText(context.api.touch, use('identificar'))));
     const text: HTMLDivElement = el('div', 'appraise-text', box);
     const name: HTMLDivElement = label('appraise-name', '', text);
     const kind: HTMLDivElement = label('appraise-kind', '', text);

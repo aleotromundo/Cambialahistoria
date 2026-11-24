@@ -45,8 +45,8 @@ void test('every ability place in the data has a kind and a cost line', (): void
 
 void test('costs read as mana and a cooldown in whole tenths, and damage reads by where it comes from', (): void => {
   const base: SkillDef = skill('storm_bolt');
-  assert.equal(costWords({ ...base, manaCost: 12, cooldown: 2.25 }), '12 mana · 2.3s cooldown');
-  assert.equal(costWords({ ...base, manaCost: 0, cooldown: 0 }), 'No mana');
-  assert.equal(damageWord({ ...base, damage: { type: 'physical', weaponPercent: 1, flatMin: 0, flatMax: 0 } }), 'Weapon damage');
-  assert.equal(damageWord({ ...base, damage: { type: 'physical', weaponPercent: 0, flatMin: 0, flatMax: 0 } }), 'No damage');
+  assert.equal(costWords({ ...base, manaCost: 12, cooldown: 2.25 }), '12 de maná · 2.3s de recarga');
+  assert.equal(costWords({ ...base, manaCost: 0, cooldown: 0 }), 'Sin maná');
+  assert.equal(damageWord({ ...base, damage: { type: 'physical', weaponPercent: 1, flatMin: 0, flatMax: 0 } }), 'Daño de arma');
+  assert.equal(damageWord({ ...base, damage: { type: 'physical', weaponPercent: 0, flatMin: 0, flatMax: 0 } }), 'Sin daño');
 });

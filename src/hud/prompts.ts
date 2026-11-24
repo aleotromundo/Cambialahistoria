@@ -12,8 +12,8 @@ export interface DeviceWords {
 }
 
 export const PROMPT_WORDS: Readonly<Record<'desk' | 'touch', DeviceWords>> = {
-  desk: { gestures: { use: 'Click', alternate: 'Right click' }, join: ' · ' },
-  touch: { gestures: { use: 'Tap', alternate: null }, join: ' · ' },
+  desk: { gestures: { use: 'Haz clic', alternate: 'Haz clic derecho' }, join: ' · ' },
+  touch: { gestures: { use: 'Toca', alternate: null }, join: ' · ' },
 };
 
 export function use(does: string, key: string | null = null): Prompt {
@@ -34,11 +34,13 @@ export function promptText(touch: boolean, ...prompts: readonly Prompt[]): strin
     .flatMap((prompt: Prompt): string[] => {
       const verb: string | null = words.gestures[prompt.gesture];
       if (verb === null) return [];
-      return [touch || prompt.key === null ? `${verb} to ${prompt.does}` : `${verb} or press ${prompt.key} to ${prompt.does}`];
+      return [touch || prompt.key === null ? `${verb} para ${prompt.does}` : `${verb} o presiona ${prompt.key} para ${prompt.does}`];
     })
     .join(words.join);
 }
 
 export function openWith(touch: boolean, panel: string, key: string): string {
-  return touch ? `Open the ${panel} from the top bar` : `Open the ${panel} with ${key}`;
+  const names: Readonly<Record<string, string>> = { map: 'mapa', 'skill tree': 'árbol de habilidades', inventory: 'inventario', character: 'personaje' };
+  const name: string = names[panel] ?? panel;
+  return touch ? `Abre el ${name} desde la barra superior` : `Abre el ${name} con ${key}`;
 }

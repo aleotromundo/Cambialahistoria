@@ -13,5 +13,5 @@ export function pickupLine(content: Content, ground: GroundItem): string | null 
 }
 
 export function findLabel(touch: boolean): string {
-  return promptText(touch, use('pick up'));
+  return promptText(touch, use('recoger'));
 }

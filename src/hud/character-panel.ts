@@ -98,8 +98,8 @@ function rowTip(row: SheetRow, sheet: CharacterSheet): HTMLElement {
 
 export function foundTip(found: readonly FoundLine[]): HTMLElement {
   const tip: HTMLDivElement = el('div', 'tip cs-tip', null);
-  label('cs-tip-title', 'Items found', tip);
-  if (found.length === 0) label('cs-tip-note', 'None yet', tip);
+  label('cs-tip-title', 'Objetos encontrados', tip);
+  if (found.length === 0) label('cs-tip-note', 'Todavía no hay', tip);
   for (const entry of found) line(tip, entry.name, countText(entry.count));
   return tip;
 }
@@ -118,9 +118,9 @@ interface RecordView {
 function skillTip(skill: SkillOffence): HTMLElement {
   const tip: HTMLDivElement = el('div', 'tip cs-tip', null);
   label('cs-tip-title', skill.name, tip);
-  line(tip, 'Weapon damage', `${Math.round(skill.weaponPercent * 100)}%`);
-  line(tip, 'Time per use', `${skill.cycle.toFixed(2)}s`);
-  if (skill.manaCost > 0) line(tip, 'Mana cost', String(skill.manaCost));
+  line(tip, 'Daño de arma', `${Math.round(skill.weaponPercent * 100)}%`);
+  line(tip, 'Tiempo por uso', `${skill.cycle.toFixed(2)}s`);
+  if (skill.manaCost > 0) line(tip, 'Costo de maná', String(skill.manaCost));
   return tip;
 }
 
@@ -130,8 +130,8 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
   const views: Animated[] = [];
 
   const head: HTMLDivElement = el('div', 'cs-head', element);
-  const levelView: Animated = animated(label('cs-level', '', head), (values: readonly number[]): string => `Level ${Math.round(values[0] ?? 0)}`);
-  const xpView: Animated = animated(label('cs-xp', '', head), (values: readonly number[]): string => (sheet.atMaxLevel ? 'Max level' : `${Math.round(values[0] ?? 0)} / ${Math.round(values[1] ?? 0)} XP`));
+  const levelView: Animated = animated(label('cs-level', '', head), (values: readonly number[]): string => `Nivel ${Math.round(values[0] ?? 0)}`);
+  const xpView: Animated = animated(label('cs-xp', '', head), (values: readonly number[]): string => (sheet.atMaxLevel ? 'Nivel máximo' : `${Math.round(values[0] ?? 0)} / ${Math.round(values[1] ?? 0)} XP`));
   const track: HTMLDivElement = el('div', 'cs-track', element);
   const fill: HTMLDivElement = el('div', 'cs-fill', track);
   views.push(levelView, xpView);
@@ -151,16 +151,16 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
     }
   }
 
-  label('cs-heading wide', 'Skills', element);
+  label('cs-heading wide', 'Habilidades', element);
   const skillTable: HTMLDivElement = el('div', 'cs-skills', element);
   let skillKey: string = '';
   let skillViews: { readonly hit: Animated; readonly rate: Animated }[] = [];
 
-  label('cs-heading wide', 'Bonuses', element);
+  label('cs-heading wide', 'Bonificaciones', element);
   const bonusList: HTMLDivElement = el('div', 'cs-bonuses', element);
   let bonusKey: string = '';
 
-  label('cs-heading wide', 'Record', element);
+  label('cs-heading wide', 'Registro', element);
   const recordList: HTMLDivElement = el('div', 'cs-record', element);
   let record: RecordFigures = ownRecord(context.api.world);
   const recordViews: RecordView[] = recordLines(record).map((entry: RecordLine): RecordView => {
@@ -227,7 +227,7 @@ export function createCharacterPanel(parent: HTMLElement, context: HudContext, i
 
   const rebuildBonuses = (): void => {
     bonusList.replaceChildren();
-    if (sheet.bonuses.length === 0) label('cs-none', 'No bonuses yet', bonusList);
+    if (sheet.bonuses.length === 0) label('cs-none', 'Todavía no hay bonificaciones', bonusList);
     for (const bonus of sheet.bonuses) label(`cs-bonus ${bonus.source}`, bonus.text, bonusList);
   };
 

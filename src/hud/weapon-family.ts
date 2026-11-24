@@ -12,12 +12,12 @@ export function placeFamily(content: Content, node: SkillTreeNodeDef): WeaponGro
   return node.weapon === null || !placeBound(node) ? null : weaponGroup(content, node.weapon);
 }
 
-export const ANY_WEAPON_LINE: string = 'Works with any weapon';
+export const ANY_WEAPON_LINE: string = 'Compatible con cualquier arma';
 
 export function strongerLine(content: Content, empowerment: SkillEmpowerment | null): string | null {
   if (empowerment === null) return null;
   const group: WeaponGroup | null = weaponGroup(content, empowerment.weapon);
-  return group === null ? null : `Stronger with ${group.needs}: ${empowerment.mods.map(describeEmpoweredMod).join(', ')}`;
+  return group === null ? null : `Más potente con ${group.needs}: ${empowerment.mods.map(describeEmpoweredMod).join(', ')}`;
 }
 
 function placeSkills(content: Content, node: SkillTreeNodeDef): SkillDef[] {

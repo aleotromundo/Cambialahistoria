@@ -1,8 +1,8 @@
 export const BROWSER_NOTICES = {
-  webgl: 'This browser cannot draw the game: it needs WebGL 2. Try an up-to-date Chrome, Edge, Firefox or Safari, or turn on hardware acceleration.',
-  old: 'This browser is too old to run the game. Update it, or try an up-to-date Chrome, Edge, Firefox or Safari.',
-  stopped: 'The storm could not finish loading. Reloading usually helps.',
-  reload: 'Reload',
+  webgl: 'Este navegador no puede mostrar el juego: necesita WebGL 2. Usa una versión reciente de Chrome, Edge, Firefox o Safari, o activa la aceleración por hardware.',
+  old: 'Este navegador es demasiado antiguo para ejecutar el juego. Actualízalo o usa una versión reciente de Chrome, Edge, Firefox o Safari.',
+  stopped: 'La tormenta no terminó de cargar. Por lo general, recargar la página lo soluciona.',
+  reload: 'Recargar',
 } as const;
 
 export const RETRY = {

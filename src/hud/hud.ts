@@ -112,7 +112,7 @@ import volumeCss from './volume.css?inline';
 import { createFeedbackButton } from './feedback-button.ts';
 import { createVolumeButton } from './volume-panel.ts';
 
-const GROUND_HINT: string = 'pick up';
+const GROUND_HINT: string = 'recoger';
 
 const HUD_WARM = {
   retryFrames: 45,
@@ -126,10 +126,10 @@ const PANEL_OVERLAY: Readonly<Record<HudPanel, OverlayId>> = {
 };
 
 const PANEL_NAME: Readonly<Record<HudPanel, string>> = {
-  inventory: 'Inventory',
-  character: 'Character',
-  tree: 'Skill Tree',
-  map: 'Map',
+  inventory: 'Inventario',
+  character: 'Personaje',
+  tree: 'Árbol de habilidades',
+  map: 'Mapa',
 };
 
 
@@ -260,16 +260,16 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
   const trade: TradeHud = createTradeHud(root, context, track, overlays, panels.inventory.element);
   let playerTrade: PlayerTradeMount | null = null;
   for (const view of trade.panels) {
-    createCloseButton(view.element, 'Trade', (): void => {
+    createCloseButton(view.element, 'Intercambio', (): void => {
       overlays.send({ type: 'close', id: 'trade' });
     });
   }
 
   const keyOf = (action: ActionId): string => api.settings.keys().labelOf(action);
-  buttons.inventory = createMenuButton(row, 'inventory', 'Inventory', keyOf('inventory'), (): void => fromRow((): void => toggle('inventory')), track);
-  buttons.character = createMenuButton(row, 'character', 'Character', keyOf('character'), (): void => fromRow((): void => toggle('character')), track);
+  buttons.inventory = createMenuButton(row, 'inventory', 'Inventario', keyOf('inventory'), (): void => fromRow((): void => toggle('inventory')), track);
+  buttons.character = createMenuButton(row, 'character', 'Personaje', keyOf('character'), (): void => fromRow((): void => toggle('character')), track);
   const skillBar: SkillBar = createSkillBar(row, context, track);
-  buttons.tree = createMenuButton(row, 'tree', 'Skill Tree', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
+  buttons.tree = createMenuButton(row, 'tree', 'Árbol de habilidades', keyOf('tree'), (): void => fromRow((): void => toggle('tree')), track);
   buttons.map = createMenuButton(row, 'map', 'Map', keyOf('map'), (): void => fromRow((): void => toggle('map')), track);
   const corner: HTMLDivElement = createVolumeButton(row, api.audio, track, (): void => fromRow((): void => api.openSettings('sound')));
   const feedback: (() => void) | null = api.feedback;
@@ -385,7 +385,7 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             barks.clear();
             break;
           case 'checkpoint':
-            banners.show('Checkpoint', null, 'checkpoint');
+            banners.show('Punto de control', null, 'checkpoint');
             break;
           case 'armed': {
             const armed: ArmedLine = armedLine(api.world.content, event.group, event.base, event.where);
@@ -407,20 +407,20 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'act_ended': {
             const act: ActDef | undefined = api.world.content.world.acts.find((candidate: ActDef): boolean => candidate.id === event.act);
-            if (act !== undefined) banners.show(`${act.title} complete`, act.end?.line ?? null, 'act');
+            if (act !== undefined) banners.show(`${act.title} completado`, act.end?.line ?? null, 'act');
             break;
           }
           case 'triggered':
             break;
           case 'waypoint_unlocked':
-            banners.show('Waypoint', `${openWith(api.touch, 'map', keyOf('map'))} to travel between waypoints`, 'checkpoint');
+            banners.show('Punto de viaje', `${openWith(api.touch, 'map', keyOf('map'))} para viajar entre puntos de viaje`, 'checkpoint');
             break;
           case 'exit_locked':
             notices.say(event.hint);
             break;
           case 'boss_defeated': {
             const def: MonsterDef | undefined = api.world.content.monsters.get(event.monster);
-            if (def !== undefined) banners.show(`${def.name} defeated`, event.first ? 'First victory' : def.boss === null ? null : plateTitle(def.name, def.boss.title), 'boss');
+            if (def !== undefined) banners.show(`${def.name} derrotado`, event.first ? 'Primera victoria' : def.boss === null ? null : plateTitle(def.name, def.boss.title), 'boss');
             break;
           }
           case 'bark':
@@ -432,14 +432,14 @@ export function createHud(root: HTMLElement, api: HudApi): Hud {
             break;
           case 'skill_unlocked':
             if (event.slot !== null) skillBar.learned(event.slot);
-            banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, event.slot === null ? 'New skill · bar full' : 'New skill', 'quest');
+            banners.show(api.world.content.skills.get(event.skill)?.name ?? event.skill, event.slot === null ? 'Nueva habilidad · barra llena' : 'Nueva habilidad', 'quest');
             break;
           case 'level_up':
-            banners.show(`LEVEL ${event.level}`, 'Skill point gained', 'level');
+            banners.show(`NIVEL ${event.level}`, 'Punto de habilidad obtenido', 'level');
             refreshOpen('character');
             break;
           case 'chart_point':
-            if (event.source !== 'level' && !hints.teaches('skill_point')) notices.say(`${openWith(api.touch, 'skill tree', keyOf('tree'))} to choose a place`);
+            if (event.source !== 'level' && !hints.teaches('skill_point')) notices.say(`${openWith(api.touch, 'skill tree', keyOf('tree'))} para elegir un lugar`);
             refreshOpen('tree');
             break;
           case 'notice':

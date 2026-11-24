@@ -17,8 +17,8 @@ import type { BagAction } from './trade-actions.ts';
 import { bagAction, inventoryHint } from './trade-actions.ts';
 
 const INVENTORY = {
-  hintEquipped: 'unequip',
-  dropAsk: 'Drop?',
+  hintEquipped: 'quitar',
+  dropAsk: '¿Soltar?',
   dropConfirmMs: 2600,
   holdMs: 480,
   holdSlop: 10,
@@ -32,13 +32,13 @@ interface Hold {
 }
 
 const SLOT_TITLES: Readonly<Record<ItemSlot, string>> = {
-  weapon: 'Weapon',
-  head: 'Head',
-  chest: 'Chest',
-  hands: 'Hands',
-  legs: 'Legs',
-  feet: 'Feet',
-  charm: 'Charm',
+  weapon: 'Arma',
+  head: 'Cabeza',
+  chest: 'Pecho',
+  hands: 'Manos',
+  legs: 'Piernas',
+  feet: 'Pies',
+  charm: 'Amuleto',
 };
 
 interface CellView {
@@ -59,7 +59,7 @@ export function createInventoryPanel(parent: HTMLElement, context: HudContext): 
   element.addEventListener('contextmenu', (event: MouseEvent): void => {
     event.preventDefault();
   });
-  label('panel-title', 'Inventory', element);
+  label('panel-title', 'Inventario', element);
 
   const equipRow: HTMLDivElement = el('div', 'equip-row', element);
   const grid: HTMLDivElement = el('div', 'inv-grid', element);

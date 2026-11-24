@@ -3,8 +3,8 @@ import type { Backend, BackendState, Timers } from './backend/backend.ts';
 const TITLE_SYNC: { readonly swapMs: number } = { swapMs: 280 };
 
 const LABELS: Readonly<Record<BackendState, string>> = {
-  offline: 'Offline',
-  cloud: 'Cloud save on',
+  offline: 'Sin conexión',
+  cloud: 'Partida guardada en la nube',
 };
 
 export interface TitleLine {

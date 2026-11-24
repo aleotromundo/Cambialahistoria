@@ -10,7 +10,7 @@ const RUN_TABLE = {
   title: 'Tabla de descenso',
   role: 'Prepara tu próximo descenso',
   levels: 'Nivel',
-  conditions: 'Conditions',
+  conditions: 'Condiciones',
 } as const;
 
 interface LevelView {

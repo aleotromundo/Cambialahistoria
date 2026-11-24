@@ -21,9 +21,9 @@ export interface SkillPicker {
 
 const CLEAR = {
   pointerBinding: 'mouse_left',
-  pointerName: 'Move only',
-  keyName: 'Empty',
-  pointerLine: 'A left click only moves, talks, opens and picks up. It never attacks.',
+  pointerName: 'Solo mover',
+  keyName: 'Vacío',
+  pointerLine: 'Con el clic izquierdo solo te mueves, hablas, abres y recoges objetos. No atacas.',
   keyLine: 'La tecla no hace nada hasta que le asignes una habilidad.',
 } as const;
 
@@ -42,9 +42,9 @@ export function skillDetails(skill: SkillDef, sub: string, unlock: number | null
   el('div', 'tip-sep', root);
   const press: string | null = pressLine(skill.press);
   if (press !== null) label('tip-line tip-press', press, root);
-  if (skill.manaCost > 0) label('tip-line cost', skill.press?.type === 'channel' ? `Mana cost: ${skill.manaCost} per pulse` : `Mana cost: ${skill.manaCost}`, root);
-  if (skill.cooldown > 0) label('tip-line', `Cooldown: ${skill.cooldown.toFixed(1)}s`, root);
-  if (unlock !== null) label('tip-line locked', `Learned at level ${unlock}`, root);
+  if (skill.manaCost > 0) label('tip-line cost', skill.press?.type === 'channel' ? `Costo de maná: ${skill.manaCost} por pulso` : `Costo de maná: ${skill.manaCost}`, root);
+  if (skill.cooldown > 0) label('tip-line', `Recarga: ${skill.cooldown.toFixed(1)} s`, root);
+  if (unlock !== null) label('tip-line locked', `Se aprende en el nivel ${unlock}`, root);
   if (stronger !== null) label('tip-line stronger', stronger, root);
   return root;
 }
@@ -73,7 +73,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
   clear.type = 'button';
   el('span', 'skill-clear-mark', clear);
   const clearName: HTMLDivElement = label('skill-clear-name', CLEAR.keyName, clear);
-  attachTooltip(context.tooltip, clear, (): HTMLElement | null => (slot === null ? null : clearDetails(pointerSlotOf(context, slot), promptText(context.api.touch, use('empty this slot')))));
+  attachTooltip(context.tooltip, clear, (): HTMLElement | null => (slot === null ? null : clearDetails(pointerSlotOf(context, slot), promptText(context.api.touch, use('vaciar este espacio')))));
   clear.addEventListener('click', (event: MouseEvent): void => {
     event.stopPropagation();
     if (slot === null) return;
@@ -89,7 +89,7 @@ export function createSkillPicker(parent: HTMLElement, context: HudContext, trac
     label('skill-choice-level', `${entry.level}`, root);
     const choice: Choice = { root, entry, skill, state: '' };
     attachTooltip(context.tooltip, root, (): HTMLElement => {
-      const details: HTMLElement = skillDetails(skill, choice.state === 'locked' ? 'Not yet learned' : promptText(context.api.touch, use('place it in this slot')), choice.state === 'locked' ? entry.level : null, strongerLine(content, skill.empowered));
+      const details: HTMLElement = skillDetails(skill, choice.state === 'locked' ? 'Aún no aprendida' : promptText(context.api.touch, use('asignarla a este espacio')), choice.state === 'locked' ? entry.level : null, strongerLine(content, skill.empowered));
       appendForms(details, content, skill, context.api.world.player.wielding);
       return details;
     });

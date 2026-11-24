@@ -30,9 +30,9 @@ export interface AccountFlow {
 
 export const ACCOUNT_NOTES: { readonly none: string; readonly failed: string; readonly blocked: string; readonly unsynced: string } = {
   none: '',
-  failed: 'Sign-in did not work. Try again.',
-  blocked: 'Your browser blocked the Google window. Allow pop-ups for this site and try again.',
-  unsynced: 'Your latest progress has not reached the cloud yet. Try again in a moment.',
+  failed: 'No se pudo iniciar sesión. Inténtalo de nuevo.',
+  blocked: 'El navegador bloqueó la ventana de Google. Permite las ventanas emergentes de este sitio e inténtalo de nuevo.',
+  unsynced: 'Tu progreso más reciente aún no se ha guardado en la nube. Inténtalo de nuevo en un momento.',
 };
 
 export const ACCOUNT_RETRY: { readonly delaysMs: readonly number[] } = { delaysMs: [1500, 3000, 6000, 12_000, 24_000, 48_000] };

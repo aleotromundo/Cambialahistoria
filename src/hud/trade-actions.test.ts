@@ -34,8 +34,8 @@ void test('a bag click equips whether or not the trader is open, and never sells
   assert.deepEqual(bagAction(world, 4, 'click'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
   assert.deepEqual(bagAction(world, 4, 'ctrl'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
   assert.deepEqual(bagAction(world, 4, 'right'), { kind: 'send', command: { type: 'drop', inventoryIndex: 4 } });
-  assert.equal(inventoryHint(world, item, false, false), 'Click to equip · Right click to drop');
-  assert.equal(inventoryHint(world, item, true, false), 'Tap to equip');
+  assert.equal(inventoryHint(world, item, false, false), 'Haz clic para equipar · Haz clic derecho para soltar');
+  assert.equal(inventoryHint(world, item, true, false), 'Toca para equipar');
   atVendor(world);
   assert.deepEqual(bagAction(world, 4, 'click'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
   assert.deepEqual(bagAction(world, 4, 'ctrl'), { kind: 'send', command: { type: 'equip', inventoryIndex: 4 } });
@@ -50,10 +50,10 @@ void test('at the trader a right click offers the item and shows its price befor
   const world: World = atVendor(holding({ 1: item }));
   assert.deepEqual(bagAction(world, 1, 'right'), { kind: 'offer', uid: 4002 });
   const price: number = sellPrice(content, item);
-  assert.equal(inventoryHint(world, item, false, false), `Click to equip · Right click to offer for ${price} gold`);
-  assert.equal(SALE_WORDS.button(price), `Sell · ${price} gold`);
-  assert.equal(saleEmptyText(false), 'Right click to offer an item from your bag');
-  assert.equal(saleEmptyText(true), 'Hold an item in your bag to offer it');
+  assert.equal(inventoryHint(world, item, false, false), `Haz clic para equipar · Haz clic derecho para ofrecer por ${price} de oro`);
+  assert.equal(SALE_WORDS.button(price), `Vender · ${price} de oro`);
+  assert.equal(saleEmptyText(false), 'Haz clic derecho para ofrecer un objeto de tu bolsa');
+  assert.equal(saleEmptyText(true), 'Mantén presionado un objeto de tu bolsa para ofrecerlo');
 });
 
 void test('the sell button sells the offered item wherever it sits, and nothing once it has left the bag', (): void => {
@@ -90,7 +90,7 @@ void test('at the stash every bag click stores the item', (): void => {
   const world: World = holding({ 2: item });
   world.service = { kind: 'stash', owner: 'any', anchor: { x: 0, z: 0 } };
   for (const click of CLICKS) assert.deepEqual(bagAction(world, 2, click), { kind: 'send', command: { type: 'trade', action: { type: 'stash', inventoryIndex: 2 } } });
-  assert.equal(inventoryHint(world, item, false, false), 'Click to stash');
+  assert.equal(inventoryHint(world, item, false, false), 'Haz clic para guardar');
 });
 
 void test('at the auctioneer a bag click picks the item to sell instead of sending a command', (): void => {
@@ -102,7 +102,7 @@ void test('at the auctioneer a bag click picks the item to sell instead of sendi
   assert.deepEqual(bagAction(world, 1, 'click'), { kind: 'pick' });
   assert.deepEqual(bagAction(world, 1, 'ctrl'), { kind: 'pick' });
   assert.deepEqual(bagAction(world, 1, 'right'), { kind: 'deny' });
-  assert.equal(inventoryHint(world, item, false, false), 'Click to pick to sell');
+  assert.equal(inventoryHint(world, item, false, false), 'Haz clic para elegir un objeto para vender');
   assert.equal(inventoryHint(world, { ...item, ledger: null }, false, true), UNSELLABLE_HINT);
   assert.equal(inventoryHint(world, { ...item, ledger: null }, false, false), '');
 });
@@ -120,10 +120,10 @@ void test('a bag click uses a usable good, and the trader is never offered it', 
   const world: World = holding({ 2: good });
   assert.deepEqual(bagAction(world, 2, 'click'), { kind: 'send', command: { type: 'use_item', inventoryIndex: 2 } });
   assert.deepEqual(bagAction(world, 2, 'right'), { kind: 'send', command: { type: 'drop', inventoryIndex: 2 } });
-  assert.equal(inventoryHint(world, good, false, false), 'Click to use · Right click to drop');
+  assert.equal(inventoryHint(world, good, false, false), 'Haz clic para usar · Haz clic derecho para soltar');
   atVendor(world);
   assert.deepEqual(bagAction(world, 2, 'click'), { kind: 'send', command: { type: 'use_item', inventoryIndex: 2 } });
   assert.deepEqual(bagAction(world, 2, 'right'), { kind: 'deny' });
   assert.equal(offeredItem(world, good.uid), null);
-  assert.equal(inventoryHint(world, good, false, false), 'Click to use');
+  assert.equal(inventoryHint(world, good, false, false), 'Haz clic para usar');
 });

@@ -19,10 +19,10 @@ void test('before the first pick only the starting places are open, and every ot
   assert.deepEqual(treeNodeStatus(CONTENT, [], 0, node('stone_thunderclap')), { kind: 'no_points' });
   assert.deepEqual(treeNodeStatus(CONTENT, [], 3, node('bedrock')), { kind: 'locked', needs: 'begin' });
   assert.deepEqual(treeNodeStatus(CONTENT, [], 3, node('storm_blade_near')), { kind: 'locked', needs: 'begin' });
-  assert.equal(statusLine({ kind: 'locked', needs: 'begin' }, false), 'Begin at a starting place first');
-  assert.equal(pointsPrompt(2, 0), 'Choose where you begin');
-  assert.equal(pointsPrompt(2, 1), '2 points: choose a place');
-  assert.equal(pointsPrompt(1, 3), '1 point: choose a place');
+  assert.equal(statusLine({ kind: 'locked', needs: 'begin' }, false), 'Primero asigna puntos en un lugar inicial');
+  assert.equal(pointsPrompt(2, 0), 'Elige dónde empezar');
+  assert.equal(pointsPrompt(2, 1), '2 puntos: elige un lugar');
+  assert.equal(pointsPrompt(1, 3), '1 punto: elige un lugar');
 });
 
 void test('after the first pick a place is open only beside what is held, and the other centres lock', (): void => {
@@ -31,25 +31,25 @@ void test('after the first pick a place is open only beside what is held, and th
   assert.deepEqual(treeNodeStatus(CONTENT, held, 3, node('tempered_body')), { kind: 'available' });
   assert.deepEqual(treeNodeStatus(CONTENT, held, 3, node('storm_storm_bolt')), { kind: 'locked', needs: 'connect' });
   assert.deepEqual(treeNodeStatus(CONTENT, ['blade_thunderhead', 'heavy_hands', 'blade_1'], 1, node('storm_blade_near')), { kind: 'available' });
-  assert.equal(statusLine({ kind: 'locked', needs: 'connect' }, false), 'Connect to a place you hold');
+  assert.equal(statusLine({ kind: 'locked', needs: 'connect' }, false), 'Conéctalo con un lugar que ya tengas');
   assert.deepEqual(treeNodeStatus(CONTENT, ['storm_storm_bolt', 'blade_thunderhead', 'heavy_hands'], 1, node('stormcallers_focus')), { kind: 'locked', needs: 'branch' });
-  assert.equal(statusLine({ kind: 'locked', needs: 'branch' }, false), 'Only your largest group of places can grow');
-  assert.equal(lockedLine({ kind: 'locked', needs: 'connect' }, 3, false), 'Connect to a place you hold · 3 points along the lit route');
-  assert.equal(lockedLine({ kind: 'locked', needs: 'connect' }, 0, false), 'Connect to a place you hold');
+  assert.equal(statusLine({ kind: 'locked', needs: 'branch' }, false), 'Solo puede crecer tu grupo más grande de lugares');
+  assert.equal(lockedLine({ kind: 'locked', needs: 'connect' }, 3, false), 'Conéctalo con un lugar que ya tengas · 3 puntos en la ruta iluminada');
+  assert.equal(lockedLine({ kind: 'locked', needs: 'connect' }, 0, false), 'Conéctalo con un lugar que ya tengas');
 });
 
 void test('a taken place says why it cannot be given back', (): void => {
-  assert.equal(takenLine(null), 'Taken');
-  assert.equal(takenLine('split'), 'Taken · giving it back would cut off places beyond it');
-  assert.equal(takenLine('root'), 'Taken · everything you hold grows from here');
+  assert.equal(takenLine(null), 'Asignado');
+  assert.equal(takenLine('split'), 'Asignado · devolverlo desconectaría los lugares que siguen');
+  assert.equal(takenLine('root'), 'Asignado · todos tus lugares dependen de este');
 });
 
 void test('the card lines name the cost and the reason', (): void => {
-  assert.equal(costLine(), 'Cost 1 skill point');
-  assert.equal(statusLine({ kind: 'no_points' }, false), 'No skill points to spend');
-  assert.equal(statusLine({ kind: 'available' }, false), 'Click to allocate');
-  assert.equal(statusLine({ kind: 'available' }, true), 'Tap to allocate');
-  assert.equal(statusLine({ kind: 'allocated' }, false), 'Allocated');
+  assert.equal(costLine(), 'Costo: 1 punto de habilidad');
+  assert.equal(statusLine({ kind: 'no_points' }, false), 'No tienes puntos de habilidad para gastar');
+  assert.equal(statusLine({ kind: 'available' }, false), 'Haz clic para asignar');
+  assert.equal(statusLine({ kind: 'available' }, true), 'Toca para asignar');
+  assert.equal(statusLine({ kind: 'allocated' }, false), 'Asignado');
 });
 
 void test('a place that changes a skill a held place already changes is open like any other place', (): void => {

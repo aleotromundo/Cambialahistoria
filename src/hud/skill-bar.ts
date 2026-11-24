@@ -70,8 +70,8 @@ export interface SkillBar {
 }
 
 function emptyTooltip(context: HudContext, index: number, key: string): HTMLElement {
-  const root: HTMLElement = clearDetails(pointerSlotOf(context, index), key === '' ? 'Empty slot' : `Empty slot · ${key}`);
-  label('tip-line', `${promptText(context.api.touch, use('choose a skill for this slot'))}.`, root);
+  const root: HTMLElement = clearDetails(pointerSlotOf(context, index), key === '' ? 'Espacio vacío' : `Espacio vacío · ${key}`);
+  label('tip-line', `${promptText(context.api.touch, use('elige una habilidad para este espacio'))}.`, root);
   return root;
 }
 

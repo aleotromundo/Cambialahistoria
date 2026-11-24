@@ -14,18 +14,18 @@ export interface TitleKeyRow {
 }
 
 export const TITLE_KEYS = {
-  primary: { keys: 'Left mouse', does: 'Move, attack, pick up' },
-  inPlace: { keys: 'Shift + left mouse', does: 'Attack in place' },
-  primaryByKeys: { keys: 'Left mouse', does: 'Attack, pick up' },
-  moves: 'Move',
+  primary: { keys: 'Clic izquierdo', does: 'Moverse, atacar y recoger objetos' },
+  inPlace: { keys: 'Mayús + clic izquierdo', does: 'Atacar sin moverte' },
+  primaryByKeys: { keys: 'Clic izquierdo', does: 'Atacar y recoger objetos' },
+  moves: 'Moverse',
   movesJoiner: ' ',
-  zoom: { keys: 'Mouse wheel', does: 'Zoom' },
+  zoom: { keys: 'Rueda del ratón', does: 'Acercar o alejar' },
   panelsPerRow: 3,
-  or: ' or ',
+  or: ' o ',
   joiner: ' · ',
   listClass: 'title-keys-desk',
   reboundClass: 'rebound',
-  mouse: { [BINDING.leftMouse]: 'left mouse', [BINDING.rightMouse]: 'right mouse', mouse_middle: 'middle mouse' } as Readonly<Record<string, string>>,
+  mouse: { [BINDING.leftMouse]: 'clic izquierdo', [BINDING.rightMouse]: 'clic derecho', mouse_middle: 'clic central' } as Readonly<Record<string, string>>,
 } as const;
 
 export function skillSlots(content: Content): readonly SlotDefault[] {

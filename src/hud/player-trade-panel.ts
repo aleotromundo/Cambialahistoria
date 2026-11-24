@@ -72,7 +72,7 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
     event.preventDefault();
   });
   const head: HTMLDivElement = el('div', 'trade-head', element);
-  const title: HTMLDivElement = label('panel-title', 'Trade', head);
+  const title: HTMLDivElement = label('panel-title', 'Intercambio', head);
   const status: HTMLDivElement = label('trade-role swap-status', '', head);
   const body: HTMLDivElement = el('div', 'swap-body', element);
   const line: HTMLDivElement = label('auction-line', '', body);
@@ -110,7 +110,7 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
       if (entry.block === 'story') return 'Los objetos de misión no se pueden intercambiar';
       if (entry.block === 'unverified') return 'Solo se pueden intercambiar objetos registrados';
       if (entry.block === 'unidentified') return 'No se pueden intercambiar objetos sin identificar. Identifícalo primero.';
-      return promptText(context.api.touch, use(entry.offered ? 'take it back' : 'offer it'));
+      return promptText(context.api.touch, use(entry.offered ? 'retirar la oferta' : 'ofrecerlo'));
     });
     view.cell.addEventListener('click', (): void => {
       const entry: BagEntry | undefined = bagEntries.find((each: BagEntry): boolean => each.index === index);
@@ -129,8 +129,8 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
   const askTime: HTMLDivElement = el('div', 'swap-ask-time', askInner);
   const askFill: HTMLDivElement = el('div', 'swap-ask-fill', askTime);
   const askActions: HTMLDivElement = el('div', 'swap-actions', askInner);
-  const accept: HTMLButtonElement = actButton(askActions, 'Accept', 'Accept');
-  const decline: HTMLButtonElement = actButton(askActions, 'Decline', 'Decline');
+  const accept: HTMLButtonElement = actButton(askActions, 'Aceptar', 'Aceptar');
+  const decline: HTMLButtonElement = actButton(askActions, 'Rechazar', 'Rechazar');
   accept.addEventListener('click', (): void => flow.accept());
   decline.addEventListener('click', (): void => flow.decline());
   const waitRow: HTMLDivElement = el('div', 'swap-ask-row', ask);
@@ -184,7 +184,7 @@ export function createPlayerTradePanel(parent: HTMLElement, context: HudContext,
   };
 
   const showOpen = (open: OpenTrade, now: number): void => {
-    setText(title, `Trade with ${open.name}`, false);
+    setText(title, `Intercambio con ${open.name}`, false);
     showSide(give, open.mine);
     if (showSide(get, open.theirs) || (lastTheirs !== null && lastTheirs.gold !== open.theirs.gold)) context.tooltip.hide();
     lastTheirs = open.theirs;
@@ -251,7 +251,7 @@ export function mountPlayerTrade(parent: HTMLElement, context: HudContext, flow:
   const panel: PlayerTradePanel = createPlayerTradePanel(parent, context, flow);
   track(panel.element);
   track(panel.ask);
-  createCloseButton(panel.element, 'Trade', (): void => flow.cancel());
+  createCloseButton(panel.element, 'Intercambio', (): void => flow.cancel());
   let open: boolean = false;
   window.addEventListener(
     'keydown',

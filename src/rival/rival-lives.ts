@@ -5,8 +5,8 @@ import type { LifeRow, SeatLife, SeatNames } from '../watch/duel-lives.ts';
 import { duelLives } from '../watch/duel-lives.ts';
 
 export const RIVAL_LIVES: SeatNames = {
-  names: ['You', 'Rival'],
-  tags: ['You', 'Rival'],
+  names: ['Tú', 'Rival'],
+  tags: ['Tú', 'Rival'],
 };
 
 interface Ending {
@@ -17,9 +17,9 @@ interface Ending {
 
 const ENDINGS: Readonly<Record<RivalOutcome, Ending>> = {
   fighting: { you: 'running', rival: 'running', verdict: null },
-  won: { you: 'won', rival: 'died', verdict: 'You win' },
-  lost: { you: 'died', rival: 'won', verdict: 'The rival wins' },
-  resigned: { you: 'running', rival: 'won', verdict: 'You resigned' },
+  won: { you: 'won', rival: 'died', verdict: 'Ganaste' },
+  lost: { you: 'died', rival: 'won', verdict: 'El rival ganó' },
+  resigned: { you: 'running', rival: 'won', verdict: 'Te rendiste' },
   left: { you: 'running', rival: 'running', verdict: null },
 };
 

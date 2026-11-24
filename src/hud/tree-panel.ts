@@ -269,8 +269,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   let confirmUntil: number = 0;
   const restartLabel = (): string => {
     const price: number = respecCost(content, player());
-    const cost: string = price === 0 ? 'free' : `${price} gold`;
-    return performance.now() < confirmUntil ? `Again to start over · ${cost}` : `Start over · ${cost}`;
+    const cost: string = price === 0 ? 'gratis' : `${price} de oro`;
+    return performance.now() < confirmUntil ? `Pulsa otra vez para reiniciar · ${cost}` : `Reiniciar · ${cost}`;
   };
   restart.addEventListener('click', (): void => {
     const count: number = player().allocated.length;

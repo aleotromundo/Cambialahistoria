@@ -13,10 +13,10 @@ export interface GuideTopic {
 export const GUIDE_TOPICS: readonly GuideTopic[] = [
   { href: '/guide/start/', name: 'Primeros pasos', line: 'Las teclas, los primeros diez minutos, los frascos, El Refugio, el comerciante y la casa de subastas.' },
   { href: '/guide/combat/', name: 'Cómo funciona el combate', line: 'Daño, golpes críticos, armadura, resistencias, aturdimiento, experiencia, grupos de enemigos y el primer jefe.' },
-  { href: '/guide/skills/', name: 'Skills', line: 'Cada habilidad: qué hace, cuánto cuesta, cómo se consigue y qué la modifica.' },
+  { href: '/guide/skills/', name: 'Habilidades', line: 'Cada habilidad: qué hace, cuánto cuesta, cómo se consigue y qué la modifica.' },
   { href: '/guide/tree/', name: 'árbol de habilidades', line: 'Puntos, las cinco rutas, las piedras angulares y cuánto cuesta cambiar de opinión.' },
-  { href: '/guide/items/', name: 'Items', line: 'Espacios, rarezas, todas las líneas de atributos aleatorios, todas las armas y los objetos legendarios.' },
-  { href: '/guide/builds/', name: 'Builds', line: 'Cinco configuraciones con rutas y cifras medidas, lado a lado.' },
+  { href: '/guide/items/', name: 'Objetos', line: 'Espacios, rarezas, todas las líneas de atributos aleatorios, todas las armas y los objetos legendarios.' },
+  { href: '/guide/builds/', name: 'Configuraciones', line: 'Cinco configuraciones con rutas y cifras medidas, lado a lado.' },
 ];
 
 function topicCard(topic: GuideTopic): string {
@@ -31,7 +31,7 @@ export function homePage(data: GuideData): PageBody {
     description: 'La guía del jugador de The Lost Storm: cómo empezar, cómo funciona el combate, todas las habilidades, el árbol de habilidades, objetos y cinco configuraciones medidas.',
     body: [
       section('contents', 'En esta guía', `<ul class="cards">${GUIDE_TOPICS.map(topicCard).join('')}</ul>`),
-      section('builds', 'Builds', [para(`Not sure where to put your points? Pick the build that sounds like you and follow its route. ${link('/guide/builds/', 'Compare all five')}.`), buildCards(data, BUILD_NOTES)].join('\n')),
+      section('builds', 'Configuraciones', [para(`¿No sabes dónde poner tus puntos? Elige la configuración que más te guste y sigue su ruta. ${link('/guide/builds/', 'Compara las cinco')}.`), buildCards(data, BUILD_NOTES)].join('\n')),
       section('alpha', 'Acerca de esta guía', para('The Lost Storm está en alfa y cambia con frecuencia. Esta guía solo describe lo que hay en el juego hoy. Cada número, nombre, costo y ruta se consulta directamente en el juego cuando se genera el sitio; así que, cuando el juego cambia, la guía también.')),
     ].join('\n'),
   };

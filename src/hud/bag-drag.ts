@@ -1,7 +1,7 @@
 export const BAG_DRAG = {
   slop: 6,
   settleMs: 520,
-  dropWord: 'Drop',
+  dropWord: 'Soltar',
 } as const;
 
 export interface Box {

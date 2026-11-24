@@ -23,28 +23,28 @@ export function treeNodeStatus(content: Content, allocated: readonly string[], s
 }
 
 export function costLine(): string {
-  return `Cost ${TREE_NODE_COST} skill point`;
+  return `Costo: ${TREE_NODE_COST} punto de habilidad`;
 }
 
 const SETTLED_LINES: Readonly<Record<Exclude<TreeNodeStatus['kind'], 'locked' | 'closed'>, string>> = {
-  allocated: 'Allocated',
-  available: 'allocate',
-  no_points: 'No skill points to spend',
+  allocated: 'Asignado',
+  available: 'asignar',
+  no_points: 'No tienes puntos de habilidad para gastar',
 };
 
 const LOCKED_LINES: Readonly<Record<JoinBlock, string>> = {
-  begin: 'Begin at a starting place first',
-  connect: 'Connect to a place you hold',
-  branch: 'Only your largest group of places can grow',
+  begin: 'Primero asigna puntos en un lugar inicial',
+  connect: 'Conéctalo con un lugar que ya tengas',
+  branch: 'Solo puede crecer tu grupo más grande de lugares',
 };
 
 function spokenList(names: readonly string[]): string {
   if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''}`;
+  return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1] ?? ''}`;
 }
 
 export function closedLine(chosen: readonly string[]): string {
-  return `Closed · you follow ${spokenList(chosen)} · give one up to follow this`;
+  return `Cerrado · sigues ${spokenList(chosen)} · abandona uno para seguir este`;
 }
 
 export function statusLine(status: TreeNodeStatus, touch: boolean): string {
@@ -55,21 +55,21 @@ export function statusLine(status: TreeNodeStatus, touch: boolean): string {
 }
 
 const TAKEN_LINES: Readonly<Record<RefundBlock, string>> = {
-  not_held: 'Taken',
-  split: 'Taken · giving it back would cut off places beyond it',
-  root: 'Taken · everything you hold grows from here',
+  not_held: 'Asignado',
+  split: 'Asignado · devolverlo desconectaría los lugares que siguen',
+  root: 'Asignado · todos tus lugares dependen de este',
 };
 
 export function takenLine(block: RefundBlock | null): string {
-  return block === null ? 'Taken' : TAKEN_LINES[block];
+  return block === null ? 'Asignado' : TAKEN_LINES[block];
 }
 
 export function lockedLine(status: TreeNodeStatus, steps: number, touch: boolean): string {
   const line: string = statusLine(status, touch);
-  return steps > 0 && status.kind !== 'closed' ? `${line} · ${steps * TREE_NODE_COST} points along the lit route` : line;
+  return steps > 0 && status.kind !== 'closed' ? `${line} · ${steps * TREE_NODE_COST} puntos en la ruta iluminada` : line;
 }
 
 export function pointsPrompt(points: number, held: number): string {
-  if (held === 0) return 'Choose where you begin';
-  return `${points} ${points === 1 ? 'point' : 'points'}: choose a place`;
+  if (held === 0) return 'Elige dónde empezar';
+  return `${points} ${points === 1 ? 'punto' : 'puntos'}: elige un lugar`;
 }

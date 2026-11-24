@@ -37,28 +37,28 @@ export function threatFor(content: Content, visited: readonly string[], zone: Zo
 }
 
 export const TOOLTIP_WORDS: { readonly unverified: string; readonly unidentified: string; readonly unread: string } = {
-  unverified: 'Unverified',
-  unidentified: 'Unidentified',
-  unread: 'Its lines are hidden until the Appraiser in the Hideout reads it.',
+  unverified: 'Sin verificar',
+  unidentified: 'Sin identificar',
+  unread: 'Sus atributos permanecerán ocultos hasta que el tasador del Refugio lo examine.',
 };
 
 const MATERIAL_NAMES: Readonly<Record<ArmourMaterial, string>> = {
-  cloth: 'Cloth',
-  leather: 'Leather',
-  mail: 'Mail',
-  plate: 'Plate',
+  cloth: 'Tela',
+  leather: 'Cuero',
+  mail: 'Malla',
+  plate: 'Placas',
 };
 
 export const USE_WORDS: Readonly<Record<ItemUse['type'], string>> = {
-  portal: 'Opens a way to the Hideout. Step through it again to come back here.',
+  portal: 'Abre un portal al Refugio. Crúzalo de nuevo para volver aquí.',
 };
 
 const VERDICT_WORDS: Readonly<Record<VerdictKind, string>> = {
-  better: 'Better',
-  worse: 'Worse',
-  trade: 'Trade',
-  same: 'Same',
-  switch: 'Other weapon',
+  better: 'Mejor',
+  worse: 'Peor',
+  trade: 'Intercambio',
+  same: 'Igual',
+  switch: 'Otra arma',
 };
 
 function deltaClass(delta: number | null): string {
@@ -77,8 +77,8 @@ function appendHeadline(parent: HTMLElement, headline: Headline): void {
   const block: HTMLDivElement = el('div', 'tip-headline', parent);
   if (headline.kind === 'damage') {
     label('tip-headline-value', `${Math.round(headline.min)}–${Math.round(headline.max)}`, block);
-    label('tip-headline-name', 'Damage', block);
-    if (headline.delta !== null && headline.delta !== 0) label(`tip-delta${deltaClass(headline.delta)}`, `${headline.delta > 0 ? '+' : '−'}${Math.abs(headline.delta)} base hit`, block);
+    label('tip-headline-name', 'Daño', block);
+    if (headline.delta !== null && headline.delta !== 0) label(`tip-delta${deltaClass(headline.delta)}`, `${headline.delta > 0 ? '+' : '−'}${Math.abs(headline.delta)} de daño base`, block);
     return;
   }
   label('tip-headline-value', headline.row.text, block);
@@ -127,7 +127,7 @@ function itemCard(api: HudApi, item: ItemInstance, equipped: ItemInstance | null
   const material: ArmourMaterial | null = base?.material ?? null;
   const kind: string = slot === null ? '' : material === null ? SLOT_NAMES[slot] : `${MATERIAL_NAMES[material]} ${SLOT_NAMES[slot]}`;
   label('tip-sub', slot === null ? rarity.name : `${rarity.name} ${kind}`, heading);
-  label('tip-sub', `Item level ${item.level}`, heading);
+  label('tip-sub', `Nivel del objeto ${item.level}`, heading);
   if (base !== null && base.stack > 1) label('tip-sub', heldText(countOf(item), base.stack), heading);
   if (api.unverified(item)) label('tip-sub tip-unverified', TOOLTIP_WORDS.unverified, heading);
   if (isUnidentified(item)) {
@@ -159,7 +159,7 @@ export function itemTooltip(api: HudApi, item: ItemInstance, equipped: ItemInsta
   pair.append(itemCard(api, item, equipped, !worn, hint, 'tip'));
   if (equipped !== null && !isUnidentified(item)) {
     const side: HTMLElement = itemCard(api, equipped, null, false, null, 'tip tip-equipped');
-    label('tip-sub', 'Equipped', side);
+    label('tip-sub', 'Equipado', side);
     pair.append(side);
   }
   return pair;

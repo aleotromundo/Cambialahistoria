@@ -17,29 +17,29 @@ export type BagAction =
   | { readonly kind: 'deny' };
 
 export const INVENTORY_HINTS: Readonly<Record<'equip' | 'stash' | 'read' | 'use', readonly Prompt[]>> = {
-  equip: [use('equip'), alternate('drop')],
-  use: [use('use'), alternate('drop')],
-  stash: [use('stash')],
-  read: [use('read')],
+  equip: [use('equipar'), alternate('soltar')],
+  use: [use('usar'), alternate('soltar')],
+  stash: [use('guardar')],
+  read: [use('leer')],
 };
 
 export const IDENTIFY_WORDS = {
-  prompt: (price: number): string => `identify for ${price} gold`,
-  unworn: 'drop',
+  prompt: (price: number): string => `identificar por ${price} de oro`,
+  unworn: 'soltar',
 } as const;
 
 export const SALE_WORDS = {
-  offer: (price: number): string => `offer for ${price} gold`,
-  button: (price: number): string => `Sell · ${price} gold`,
-  offerFromBag: 'offer an item from your bag',
-  touchEmpty: 'Hold an item in your bag to offer it',
+  offer: (price: number): string => `ofrecer por ${price} de oro`,
+  button: (price: number): string => `Vender · ${price} de oro`,
+  offerFromBag: 'ofrecer un objeto de tu bolsa',
+  touchEmpty: 'Mantén presionado un objeto de tu bolsa para ofrecerlo',
 } as const;
 
 export function saleEmptyText(touch: boolean): string {
   return touch ? SALE_WORDS.touchEmpty : promptText(false, alternate(SALE_WORDS.offerFromBag));
 }
 
-const AUCTION_PICK: string = 'pick to sell';
+const AUCTION_PICK: string = 'elegir un objeto para vender';
 
 function serviceOf(world: World): ServiceKind | null {
   return world.service === null ? null : world.service.kind;
@@ -92,7 +92,7 @@ function wearPrompts(world: World, item: ItemInstance): readonly Prompt[] {
 }
 
 function vendorPrompts(world: World, item: ItemInstance): readonly Prompt[] {
-  const verbs: readonly Prompt[] = usable(world, item) ? [use('use')] : isUnidentified(item) ? [] : [use('equip')];
+  const verbs: readonly Prompt[] = usable(world, item) ? [use('usar')] : isUnidentified(item) ? [] : [use('equipar')];
   return sellable(world, item) ? [...verbs, alternate(SALE_WORDS.offer(sellPrice(world.content, item)))] : verbs;
 }
 

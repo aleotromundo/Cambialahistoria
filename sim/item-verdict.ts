@@ -359,14 +359,14 @@ export function verdictParts(verdict: Verdict): readonly string[] {
   if (Math.abs(verdict.move) >= VERDICT.move && percent(verdict.move) !== 0) parts.push({ value: verdict.move, text: `${signedPercent(verdict.move)} de velocidad de movimiento` });
   const gained: PowerGain | null = verdict.gained;
   const powers: string[] = [];
-  if (gained !== null) powers.push(gained.of > 1 ? `${gained.name}, ${gained.count}/${gained.of} piezas equipadas` : `${gained.name}`);
+  if (gained !== null) powers.push(gained.of > 1 ? `${gained.name}, ${gained.count}/${gained.of} piezas equipadas` : gained.name);
   if (verdict.lost !== null) powers.push(`pierde el poder de ${verdict.lost}`);
   return [...parts.toSorted((a: Part, b: Part): number => b.value - a.value).map((part: Part): string => part.text), ...powers];
 }
 
 export function placeName(zone: string): string {
   const head: string = zone.split(',')[0]?.trim() ?? zone;
-  return `${head.replace(/^the\s+/i, '')}`;
+  return head.replace(/^the\s+/i, '');
 }
 
 function peakText(peak: Peak): string {

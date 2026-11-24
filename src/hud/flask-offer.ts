@@ -27,21 +27,21 @@ function restoreText(def: FlaskDef, maximum: number): string {
 
 function chargesText(now: FlaskDef, next: FlaskDef): string {
   const parts: string[] = [];
-  if (next.maxCharges !== now.maxCharges) parts.push(`${next.maxCharges} charges`);
-  if (next.chargesPerKill !== now.chargesPerKill) parts.push(`${next.chargesPerKill} a kill`);
+  if (next.maxCharges !== now.maxCharges) parts.push(`${next.maxCharges} cargas`);
+  if (next.chargesPerKill !== now.chargesPerKill) parts.push(`${next.chargesPerKill} por baja`);
   return parts.length === 0 ? '' : `, ${parts.join(', ')}`;
 }
 
 function tierText(base: FlaskDef, tier: number): string {
-  return tier === 0 ? `Base, ${base.tiers.length} upgrades` : `Tier ${tier} of ${base.tiers.length}`;
+  return tier === 0 ? `Base, ${base.tiers.length} mejoras` : `Nivel ${tier} de ${base.tiers.length}`;
 }
 
 export function flaskOfferView(base: FlaskDef, offer: FlaskOffer, maximum: number, gold: number): FlaskOfferView {
   const now: FlaskDef = tieredFlask(base, offer.tier);
   const shared: Pick<FlaskOfferView, 'name' | 'tier' | 'state'> = { name: base.name, tier: tierText(base, offer.tier), state: offer.kind };
-  if (offer.kind === 'top') return { ...shared, next: `Restores ${restoreText(now, maximum)}`, need: 'Fully upgraded', price: null };
+  if (offer.kind === 'top') return { ...shared, next: `Restaura ${restoreText(now, maximum)}`, need: 'Al máximo', price: null };
   const next: FlaskDef = tieredFlask(base, offer.tier + 1);
-  const line: string = `Restores ${restoreText(next, maximum)}${chargesText(now, next)} (now ${restoreText(now, maximum)})`;
+  const line: string = `Restaura ${restoreText(next, maximum)}${chargesText(now, next)} (ahora ${restoreText(now, maximum)})`;
   return { ...shared, next: line, need: needText(offer, gold), price: offer.next.price };
 }
 
@@ -49,13 +49,13 @@ function needText(offer: Exclude<FlaskOffer, { readonly kind: 'top' }>, gold: nu
   let need: string;
   switch (offer.kind) {
     case 'locked':
-      need = `Needs level ${offer.next.level}`;
+      need = `Requiere nivel ${offer.next.level}`;
       break;
     case 'short':
       need = goldShortText(offer.next.price, gold);
       break;
     case 'ready':
-      need = 'Upgrade ready';
+      need = 'Mejora disponible';
       break;
   }
   return need;

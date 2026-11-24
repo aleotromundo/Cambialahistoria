@@ -61,7 +61,7 @@ function artFor(resource: FlaskResource, reading: FlaskReading): PreparedArt {
 }
 
 function describe(resource: FlaskResource, gauge: FlaskGauge, marked: boolean): string {
-  return `${resource === 'life' ? 'Life' : 'Mana'} flask, ${gauge.uses} of ${gauge.maxUses} uses${marked ? VESSEL.markWords : ''}`;
+  return `${resource === 'life' ? 'Vida' : 'Maná'} flask, ${gauge.uses} de ${gauge.maxUses} usos${marked ? VESSEL.markWords : ''}`;
 }
 
 interface Drawn {

@@ -6,7 +6,7 @@ export const RECORD = {
   secondsPerMinute: 60,
   minutesPerHour: 60,
   msPerSecond: 1000,
-  under: 'Under a minute',
+  under: 'Menos de un minuto',
 } as const;
 
 export type RecordId = 'played' | 'kills' | 'bosses' | 'deaths' | 'level' | 'furthest' | 'gold' | 'found' | 'hit' | 'quests' | 'moments';
@@ -39,7 +39,7 @@ export interface FoundLine {
   readonly count: number;
 }
 
-const GROUPED: Intl.NumberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const GROUPED: Intl.NumberFormat = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
 
 function whole(value: number): number {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;

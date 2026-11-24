@@ -30,7 +30,7 @@ export const BUILD_NAMES: Readonly<Record<string, BuildName>> = {
 
 export function buildName(id: string): BuildName {
   const found: BuildName | undefined = BUILD_NAMES[id];
-  if (found === undefined) throw new Error(`la build ${id} no tiene nombre en la guía`);
+  if (found === undefined) throw new Error(`la configuración ${id} no tiene nombre en la guía`);
   return found;
 }
 
@@ -154,7 +154,7 @@ function legendariesSection(data: GuideData, notes: BuildNotes): string {
     'Legendarios',
     [
       para(
-        `Aproximadamente uno de cada ${Math.round(1 / share)} objetos que caen es legendario, y puedes llevar ${rarity?.wornLimit ?? 0} a la vez. Estos son los que mejor van con esta build. Cada uno es útil por sí solo, y juntos cambian la forma de jugarla.`,
+        `Aproximadamente uno de cada ${Math.round(1 / share)} objetos que caen es legendario, y puedes llevar ${rarity?.wornLimit ?? 0} a la vez. Estos son los que mejor van con esta configuración. Cada uno es útil por sí solo, y juntos cambian la forma de jugarla.`,
         'En cada zona puede caer cualquier objeto legendario. La última columna indica dónde es más probable encontrar cada uno: en esas zonas suelen caer con más frecuencia los objetos de ese tipo.',
       ),
       table({ head: ['Objeto', 'Ranura', 'Poder', 'Qué cambia', 'Dónde es más probable'], rows: notes.legendaries.map((entry: LegendaryNote): string[] => legendaryRow(data, entry)), className: 'wide' }),
@@ -192,8 +192,8 @@ function habits(policy: SkillPolicy): string {
 
 export function measuredMethod(data: GuideData): string {
   return para(
-    `Estas cifras se obtienen con las reglas del propio juego: un jugador simulado juega ${data.measured.runs} veces cada build con un personaje nuevo. El jugador constante ${habits(namedSkill(data.policies, data.spec.skill))}. El jugador despreocupado ${habits(namedSkill(data.policies, data.spec.careless))}. Ambos siguen la ruta de esta página y usan el equipo que más aumenta su daño y resistencia.`,
-    'El jugador simulado va directo al siguiente combate y nunca se detiene a leer un objeto, así que una persona tarda más en alcanzar cada nivel. Compara las builds entre sí, no con tu propio tiempo.',
+    `Estas cifras se obtienen con las reglas del propio juego: un jugador simulado juega ${data.measured.runs} veces cada configuración con un personaje nuevo. El jugador constante ${habits(namedSkill(data.policies, data.spec.skill))}. El jugador despreocupado ${habits(namedSkill(data.policies, data.spec.careless))}. Ambos siguen la ruta de esta página y usan el equipo que más aumenta su daño y resistencia.`,
+    'El jugador simulado va directo al siguiente combate y nunca se detiene a leer un objeto, así que una persona tarda más en alcanzar cada nivel. Compara las configuraciones entre sí, no con tu propio tiempo.',
     measuredNow(data) ? `Se midieron con el estado actual del juego, equilibrio ${data.balance}.` : `Se midieron con el equilibrio ${data.measured.fingerprint}. El equilibrio actual del juego es ${data.balance}.`,
   );
 }
@@ -213,7 +213,7 @@ export function summaryLine(data: GuideData, id: string): string {
   const reached: number | null = levelMinutes(measure.steady, top);
   const climb: string = reached === null ? `llegó al nivel ${top} solo en algunas partidas` : `llegó al nivel ${top} en aproximadamente ${minutes(reached)} de juego`;
   const won: string = percent(bossAt(measure.careless, bossLevel)?.winShare ?? 0);
-  return `Jugando de forma constante, esta build ${climb} y ${deaths(measure.steady.deathsPerHour)}. Jugando sin cuidado ${deaths(measure.careless.deathsPerHour)} y ganó ${won} de sus combates contra el jefe de nivel ${bossLevel}.`;
+  return `Jugando de forma constante, esta configuración ${climb} y ${deaths(measure.steady.deathsPerHour)}. Jugando sin cuidado ${deaths(measure.careless.deathsPerHour)} y ganó ${won} de sus combates contra el jefe de nivel ${bossLevel}.`;
 }
 
 export function mainSkillName(data: GuideData, notes: BuildNotes): string {
