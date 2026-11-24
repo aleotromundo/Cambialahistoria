@@ -546,27 +546,8 @@
   },
   "lobby": {
     "loops": [
-      { "sound": "ambience_lobby_wind", "volume": 0.5 },
-      { "sound": "ambience_lobby_drone", "volume": 0.35 },
-      { "sound": "ambience_mist_air", "volume": 0.08 }
+      { "sound": "music_exploration", "volume": 0.72 }
     ],
-    "stingers": [],
-    "score": {
-      "length": 192,
-      "notes": [
-        { "sound": "music_pad_am", "at": 0, "rate": 0.5, "volume": 0.9, "pan": -0.15 },
-        { "sound": "music_pad_high", "at": 12, "rate": 1, "volume": 0.35, "pan": 0.55 },
-        { "sound": "music_pad_f", "at": 24, "rate": 0.5, "volume": 0.85, "pan": 0.2 },
-        { "sound": "music_pad_em", "at": 48, "rate": 0.5, "volume": 0.9, "pan": -0.25 },
-        { "sound": "music_pad_g", "at": 58, "rate": 1, "volume": 0.4, "pan": 0.45 },
-        { "sound": "music_pad_fmaj7", "at": 72, "rate": 0.5, "volume": 0.9, "pan": 0.1 },
-        { "sound": "music_pad_high", "at": 84, "rate": 1, "volume": 0.3, "pan": -0.5 },
-        { "sound": "music_pad_c", "at": 96, "rate": 0.5, "volume": 0.85, "pan": -0.2 },
-        { "sound": "music_pad_am", "at": 108, "rate": 1, "volume": 0.4, "pan": 0.4 },
-        { "sound": "music_pad_am", "at": 120, "rate": 0.5, "volume": 0.9, "pan": 0.15 },
-        { "sound": "music_pad_em", "at": 144, "rate": 0.5, "volume": 0.9, "pan": -0.1 },
-        { "sound": "music_pad_f", "at": 168, "rate": 0.5, "volume": 0.85, "pan": 0.25 }
-      ]
-    }
+    "stingers": []
   }
 }

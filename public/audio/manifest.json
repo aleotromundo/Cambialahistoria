@@ -515,6 +515,9 @@
     ],
     "wolf_snarl": [
       "generated/wolf_snarl.wav"
+    ],
+    "music_exploration": [
+      "music/cambialahistoria_exploration.mp3"
     ]
   },
   "voice": {}
