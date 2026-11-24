@@ -10,7 +10,7 @@ export const ASK_PROMPT = {
   campValue: 'reached',
   showSeconds: 45,
   line: '¿Qué te ha parecido la alfa hasta ahora?',
-  later: 'Not now',
+  later: 'Ahora no',
 } as const;
 
 export interface AskFacts {

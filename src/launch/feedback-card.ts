@@ -30,11 +30,11 @@ const COPY: Readonly<Record<CardMode, { readonly title: string; readonly line: s
 
 const NOTES: Readonly<Record<SendResult, string>> = {
   sent: '',
-  queued: 'It sends when you are online.',
-  rejected: 'It could not be sent, sorry.',
+  queued: 'Se enviará cuando estés conectado.',
+  rejected: 'No se pudo enviar, disculpá.',
 };
 
-const THANKS_LINE: string = 'Thank you.';
+const THANKS_LINE: string = 'Gracias.';
 
 const THUMB_PATH: string = 'M7 10v10M7 10l4-7c1.2 0 2 .9 2 2v3h5.2c1.1 0 1.9 1 1.7 2.1l-1.4 7.2c-.2.9-.9 1.7-1.9 1.7H7';
 const SVG_NS = 'http://www.w3.org/2000/svg' as const;
@@ -54,7 +54,7 @@ function thumb(parent: HTMLElement, rating: Rating): HTMLButtonElement {
   button.type = 'button';
   button.dataset['rating'] = rating;
   button.setAttribute('aria-pressed', 'false');
-  button.setAttribute('aria-label', rating === 'up' ? 'Thumbs up' : 'Thumbs down');
+  button.setAttribute('aria-label', rating === 'up' ? 'Me gusta' : 'No me gusta');
   button.appendChild(thumbIcon());
   return button;
 }
@@ -140,7 +140,7 @@ export function createFeedbackCard(root: HTMLElement, name: string, hooks: CardH
     anchor.href = link.href;
     anchor.target = '_blank';
     anchor.rel = 'noopener';
-    anchor.textContent = link.id === 'discord' ? 'Join the Discord' : link.label;
+    anchor.textContent = link.id === 'discord' ? 'Unite a Discord' : link.label;
   }
   const copy: HTMLButtonElement | null = row === null || hooks.site === null ? null : shareButton(row, hooks.site);
   const done: HTMLButtonElement = el('button', 'fb-done', thanks);

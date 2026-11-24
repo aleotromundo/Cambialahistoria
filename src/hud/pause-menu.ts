@@ -91,7 +91,7 @@ export function createPauseMenu(root: HTMLElement, hooks: PauseHooks): PauseMenu
   const graphicsPage: HTMLDivElement | undefined = pages.get('graphics');
   const soundPage: HTMLDivElement | undefined = pages.get('sound');
   const controlsPage: HTMLDivElement | undefined = pages.get('controls');
-  if (graphicsPage === undefined || soundPage === undefined || controlsPage === undefined) throw new Error('Settings pages are missing');
+  if (graphicsPage === undefined || soundPage === undefined || controlsPage === undefined) throw new Error('Faltan las páginas de configuración');
   mountGraphics(graphicsPage, hooks.settings, hooks.glitches);
   mountVolumeSliders(soundPage, hooks.audio, hooks.soundHealth);
   const controls: ControlsPage = mountControls(controlsPage, hooks.settings);

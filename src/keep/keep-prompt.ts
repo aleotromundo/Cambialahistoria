@@ -9,12 +9,12 @@ export const KEEP_PROMPT = {
   calmSeconds: 6,
   fightRadius: 16,
   showSeconds: 30,
-  sheetLine: 'This character is kept only in this browser. Sign in and it is yours on any device.',
-  cardTitle: 'Keep this character',
-  cardLine: 'It lives only in this browser. Sign in and it is yours on any device.',
-  signIn: 'Sign in',
-  later: 'Not now',
-  titleNote: 'Sign in to keep this character.',
+  sheetLine: 'Este personaje solo se conserva en este navegador. Iniciá sesión y será tuyo en cualquier dispositivo.',
+  cardTitle: 'Conservar este personaje',
+  cardLine: 'Solo existe en este navegador. Iniciá sesión y será tuyo en cualquier dispositivo.',
+  signIn: 'Iniciar sesión',
+  later: 'Ahora no',
+  titleNote: 'Iniciá sesión para conservar este personaje.',
 } as const;
 
 export interface KeepFacts {

@@ -9,11 +9,11 @@ export const MOODS: readonly NameMood[] = ['night', 'small-hours', 'dawn', 'day'
 export const MOOD_HOURS: { readonly dawn: number; readonly day: number; readonly dusk: number; readonly night: number; readonly smallHours: number } = { smallHours: 0, dawn: 5, day: 8, dusk: 17, night: 21 };
 
 export const MOOD_LINES: Readonly<Record<NameMood, string>> = {
-  night: 'A name for the night, or your own.',
-  'small-hours': 'A name for the small hours, or your own.',
-  dawn: 'A name for first light, or your own.',
-  day: 'A name for the day, or your own.',
-  dusk: 'A name for dusk, or your own.',
+  night: 'Un nombre para la noche, o el tuyo.',
+  'small-hours': 'Un nombre para la madrugada, o el tuyo.',
+  dawn: 'Un nombre para el primer resplandor, o el tuyo.',
+  day: 'Un nombre para el día, o el tuyo.',
+  dusk: 'Un nombre para el crepúsculo, o el tuyo.',
 };
 
 export const EITHER_NAMES: readonly string[] = ['Wynn', 'Rook', 'Osk', 'Ash', 'Sorrel', 'Rowan', 'Linden', 'Hollis', 'Reed', 'Wren', 'Ellery', 'Merritt'];

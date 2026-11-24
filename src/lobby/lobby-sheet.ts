@@ -8,7 +8,7 @@ import type { SheetRow } from '../hud/character-rows.ts';
 import { wholeText } from './lobby-model.ts';
 
 export const LOBBY_SHEET = {
-  shown: ['Life', 'Mana', 'Armour', 'Weapon damage', DAMAGE_NAME, 'Attack speed', 'Critical chance'],
+  shown: ['Vida', 'Maná', 'Armadura', 'Daño de arma', DAMAGE_NAME, 'Velocidad de ataque', 'Probabilidad crítica'],
   secondsPerMinute: 60,
   minutesPerHour: 60,
 } as const;

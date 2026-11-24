@@ -7,9 +7,9 @@ export interface ArmedLine {
   readonly subtitle: string | null;
 }
 
-const PLACES: Readonly<Record<ArmedWhere | 'unknown', string>> = { bag: 'in your bag', ground: 'at your feet', unknown: 'for you' };
+const PLACES: Readonly<Record<ArmedWhere | 'unknown', string>> = { bag: 'en tu bolsa', ground: 'a tus pies', unknown: 'para vos' };
 
 export function armedLine(content: Content, group: string, base: string, where: ArmedWhere | null): ArmedLine {
-  const needs: string = weaponGroup(content, group)?.needs ?? 'a weapon';
-  return { title: `${needs.charAt(0).toUpperCase()}${needs.slice(1)} was laid ${where === null ? PLACES.unknown : PLACES[where]}`, subtitle: content.itemBases.get(base)?.name ?? null };
+  const needs: string = weaponGroup(content, group)?.needs ?? 'un arma';
+  return { title: `Se preparó ${needs} ${where === null ? PLACES.unknown : PLACES[where]}`, subtitle: content.itemBases.get(base)?.name ?? null };
 }

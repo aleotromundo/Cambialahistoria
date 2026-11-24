@@ -56,7 +56,7 @@ const CHART = {
   cardEdge: 10,
   warmFrames: 3,
   svgNamespace: 'http://www.w3.org/2000/svg',
-  emptyLine: 'No points yet. Moments in the storm and each new level bring them.',
+  emptyLine: 'Todavía no tenés puntos. Los momentos en la tormenta y cada nivel nuevo los traen.',
 } as const;
 
 const STATUS_CLASSES: readonly TreeNodeStatus['kind'][] = ['allocated', 'available', 'no_points', 'locked', 'closed'];
@@ -156,7 +156,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     if (status.kind === 'allocated') return takenLine(refundBlock(content, player().allocated, node.id));
     const steps: number = chartRoute(content, player().allocated, node.id).length;
     if (status.kind === 'available') return `${statusLine(status, context.api.touch)} · ${TREE_NODE_COST} point`;
-    if (status.kind === 'no_points') return `Needs ${TREE_NODE_COST} point · you have none`;
+    if (status.kind === 'no_points') return `Necesitás ${TREE_NODE_COST} punto · no tenés ninguno`;
     return lockedLine(status, steps, context.api.touch);
   };
 
@@ -195,7 +195,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
     showRoute(node.id);
     card.style.setProperty('--tint', placeTint(content, node));
     action.classList.toggle('shown', refundable);
-    if (refundable) setText(action, `${context.api.touch ? 'Give back' : 'Right-click to give back'} · ${goldFor(1)} gold`, false);
+    if (refundable) setText(action, `${context.api.touch ? 'Devolver' : 'Clic derecho para devolver'} · ${goldFor(1)} de oro`, false);
     action.classList.toggle('short', refundable && refund === 'no_gold');
     if (key === shownCard) {
       changes.forEach((entry: SkillChanges, index: number): void => segments[index]?.refresh(entry));
@@ -226,8 +226,8 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   };
 
   const slotWords = (slot: number | null): string => {
-    if (slot === null) return ' · bar full';
-    return context.api.touch ? ` · slot ${slot + 1}` : ` · on ${context.api.settings.keys().labelOf(slotAction(slot))}`;
+    if (slot === null) return ' · barra llena';
+    return context.api.touch ? ` · espacio ${slot + 1}` : ` · tecla ${context.api.settings.keys().labelOf(slotAction(slot))}`;
   };
 
   const tickCard = (): void => {
@@ -583,7 +583,7 @@ export function createTreePanel(parent: HTMLElement, context: HudContext, close:
   const sync = (): void => {
     const you = player();
     setText(pointCount, String(you.skillPoints), true);
-    setText(pointWord, you.skillPoints === 1 ? 'point' : 'points', false);
+    setText(pointWord, you.skillPoints === 1 ? 'punto' : 'puntos', false);
     points.classList.toggle('spendable', you.skillPoints > 0);
     viewport.classList.toggle('choosing', you.skillPoints > 0);
     const fresh: boolean = you.skillPoints === 0 && you.allocated.length === 0;

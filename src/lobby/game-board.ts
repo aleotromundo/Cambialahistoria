@@ -34,13 +34,13 @@ export const GAME_BOARD: {
   afterLevelMs: 8000,
   toastMs: 2800,
   toastLeaveMs: 520,
-  unnamed: 'Save once to join the ladder',
+  unnamed: 'Guardá una vez para entrar en la clasificación',
 };
 
 function passedText(names: readonly string[], you: YourRow): string {
   const [first] = names;
   const who: string = names.length === 1 && first !== undefined ? first : `${names.length} players`;
-  return `You passed ${who} · now ${rankText(you.rank)}`;
+  return `Superaste a ${who} · ahora estás ${rankText(you.rank)}`;
 }
 
 function typing(target: EventTarget | null): boolean {

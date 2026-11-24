@@ -63,12 +63,12 @@ export type NameProblem = NameRefusal | 'limited' | 'unavailable';
 export const NAME_RULES: { readonly min: number; readonly max: number } = { min: 3, max: 16 };
 
 export const NAME_MESSAGES: Readonly<Record<NameProblem, string>> = {
-  name_length: `Use ${NAME_RULES.min} to ${NAME_RULES.max} characters.`,
-  name_characters: 'Letters, digits and single spaces only.',
-  name_blocked: 'That name is not allowed.',
-  name_taken: 'Someone already has that name.',
-  limited: 'Too many name changes for now. Try again in an hour.',
-  unavailable: 'The ladder is out of reach. Try again in a moment.',
+  name_length: `Usá entre ${NAME_RULES.min} y ${NAME_RULES.max} caracteres.`,
+  name_characters: 'Solo letras, números y espacios simples.',
+  name_blocked: 'Ese nombre no está permitido.',
+  name_taken: 'Alguien ya tiene ese nombre.',
+  limited: 'Por ahora no podés cambiar más el nombre. Probá de nuevo en una hora.',
+  unavailable: 'La clasificación no está disponible. Probá de nuevo en un momento.',
 };
 
 const ALLOWED: RegExp = /^[A-Za-z0-9 ]+$/;
@@ -89,19 +89,19 @@ export function nameProblem(raw: string): NameRefusal | null {
 }
 
 export function agoText(minutes: number): string {
-  if (minutes < 1) return 'just now';
-  if (minutes < MINUTES_PER_HOUR) return `${minutes}m ago`;
+  if (minutes < 1) return 'recién';
+  if (minutes < MINUTES_PER_HOUR) return `hace ${minutes} min`;
   const hours: number = Math.floor(minutes / MINUTES_PER_HOUR);
-  if (hours < HOURS_PER_DAY) return `${hours}h ago`;
-  return `${Math.floor(hours / HOURS_PER_DAY)}d ago`;
+  if (hours < HOURS_PER_DAY) return `hace ${hours} h`;
+  return `hace ${Math.floor(hours / HOURS_PER_DAY)} días`;
 }
 
 export function levelUpText(note: LevelUpNote): string {
-  return `${note.name} reached level ${note.level}`;
+  return `${note.name} alcanzó el nivel ${note.level}`;
 }
 
 export function onlineText(count: number): string {
-  return `${count} online`;
+  return `${count} conectados`;
 }
 
 export interface PresentRow extends OnlineCharacter {
@@ -138,11 +138,11 @@ export function presentLevelText(level: number): string {
 }
 
 export function moreText(count: number): string {
-  return count === 1 ? '1 more' : `${count} more`;
+  return count === 1 ? '1 más' : `${count} más`;
 }
 
 export function arrivalsText(count: number): string {
-  return count === 1 ? '1 new arrival, not named yet' : `${count} new arrivals, not named yet`;
+  return count === 1 ? '1 recién llegado, sin nombre' : `${count} recién llegados, sin nombre`;
 }
 
 export function presentKey(view: PresentView | null): string {
@@ -151,7 +151,7 @@ export function presentKey(view: PresentView | null): string {
 }
 
 export function charactersText(count: number): string {
-  return count === 1 ? '1 character' : `${count} characters`;
+  return count === 1 ? '1 personaje' : `${count} personajes`;
 }
 
 export function rankText(rank: number): string {

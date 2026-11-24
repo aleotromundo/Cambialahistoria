@@ -50,17 +50,17 @@ export function blockText(result: BlockResult, name: string, blocking: boolean):
     case 'ok':
       return null;
     case 'unsupported':
-      return 'Blocking is not available here.';
+      return 'Bloquear no está disponible acá.';
     case 'failed':
-      return blocking ? `${name} could not be blocked.` : `${name} could not be unblocked.`;
+      return blocking ? `${name} no pudo ser bloqueado.` : `${name} no pudo ser desbloqueado.`;
     case 'refused':
       switch (result.reason) {
         case 'own_name':
-          return 'That is one of your own characters.';
+          return 'Ese es uno de tus propios personajes.';
         case 'no_such_character':
-          return `No one is called ${name}.`;
+          return `No existe nadie llamado ${name}.`;
         case 'block_limit':
-          return 'Your block list is full.';
+          return 'Tu lista de bloqueados está llena.';
       }
   }
   return null;

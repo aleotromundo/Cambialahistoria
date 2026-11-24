@@ -8,17 +8,17 @@ import { nameKey } from './chat-command.ts';
 export const CHAT = { keep: 120, names: 200 } as const;
 
 export const CHAT_DAYS = {
-  today: 'Today',
-  yesterday: 'Yesterday',
-  months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  today: 'Hoy',
+  yesterday: 'Ayer',
+  months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
 } as const;
 
 export const CHAT_WORDS = {
   general: 'General',
-  hint: 'Whisper with /dm name, reply with /r, back to General with /g.',
-  help: '/dm name message whispers to one player. /r message answers the last whisper. /g goes back to General. Put a name with spaces in quotes.',
-  noWhispers: 'Whispers are not available yet.',
-  noReply: 'No one has whispered to you yet.',
+  hint: 'Susurrá con /dm nombre, respondé con /r y volvé a General con /g.',
+  help: '/dm nombre mensaje susurra a un jugador. /r mensaje responde al último susurro. /g vuelve a General. Poné entre comillas los nombres con espacios.',
+  noWhispers: 'Los susurros todavía no están disponibles.',
+  noReply: 'Nadie te susurró todavía.',
 } as const;
 
 export type NoteKind = 'plain' | 'name' | 'hint';
@@ -59,19 +59,19 @@ export interface ChatStep {
 }
 
 const REFUSAL_TEXT: Readonly<Record<ChatRefusal, string>> = {
-  slow_down: 'Too fast. Wait a moment.',
-  blocked: 'That line was not sent.',
-  name_needed: 'Choose a name to speak.',
-  bad_text: 'That line cannot be sent.',
+  slow_down: 'Demasiado rápido. Esperá un momento.',
+  blocked: 'No se envió esa línea.',
+  name_needed: 'Elegí un nombre para hablar.',
+  bad_text: 'No se puede enviar esa línea.',
 };
 
 const REPORT_TEXT: Readonly<Record<ReportResult, string>> = {
-  reported: 'Reported. Thank you.',
-  gone: 'That line is gone.',
-  own: 'That is your own line.',
-  slow: 'Too many reports. Try again later.',
-  unsupported: 'Reports are not available here.',
-  failed: 'The report could not be sent.',
+  reported: 'Denunciado. Gracias.',
+  gone: 'Esa línea ya no está.',
+  own: 'Esa es tu propia línea.',
+  slow: 'Demasiadas denuncias. Probá de nuevo más tarde.',
+  unsupported: 'Las denuncias no están disponibles acá.',
+  failed: 'No se pudo enviar la denuncia.',
 };
 
 export function refusalText(reason: ChatRefusal): string {
@@ -81,23 +81,23 @@ export function refusalText(reason: ChatRefusal): string {
 export function unsentText(reason: WhisperRefusal, to: string): string {
   switch (reason) {
     case 'no_such_player':
-      return `No one is called ${to}. Put a name with spaces in quotes: /dm "Ash Walker" hello`;
+      return `No existe nadie llamado ${to}. Poné entre comillas los nombres con espacios: /dm "Ash Walker" hola`;
     case 'offline':
-      return `${to} is not online.`;
+      return `${to} no está conectado.`;
     case 'ignored':
-      return `${to} is not taking your whispers.`;
+      return `${to} no está recibiendo tus susurros.`;
     case 'self':
-      return 'That is you.';
+      return 'Ese sos vos.';
     case 'slow_down':
-      return 'Too fast. Wait a moment.';
+      return 'Demasiado rápido. Esperá un momento.';
     case 'blocked':
-      return 'That whisper was not sent.';
+      return 'No se envió ese susurro.';
     case 'bad_text':
-      return 'That whisper cannot be sent.';
+      return 'No se puede enviar ese susurro.';
     case 'name_needed':
-      return 'Choose a name to whisper.';
+      return 'Elegí un nombre para susurrar.';
   }
-  return 'That whisper was not sent.';
+  return 'No se envió ese susurro.';
 }
 
 export function reportText(result: ReportResult): string {
@@ -107,32 +107,32 @@ export function reportText(result: ReportResult): string {
 export function friendText(result: FriendResult, name: string): string {
   switch (result.kind) {
     case 'ok':
-      return result.state === 'friends' ? `You and ${name} are friends.` : `Friend request sent to ${name}.`;
+      return result.state === 'friends' ? `Vos y ${name} son amigos.` : `Solicitud de amistad enviada a ${name}.`;
     case 'unsupported':
-      return 'Friends are not available here.';
+      return 'Los amigos no están disponibles acá.';
     case 'failed':
-      return 'The request could not be sent.';
+      return 'No se pudo enviar la solicitud.';
     case 'refused':
       switch (result.reason) {
         case 'name_needed':
-          return 'Choose a name first.';
+          return 'Elegí un nombre primero.';
         case 'own_name':
-          return 'That is you.';
+          return 'Ese sos vos.';
         case 'no_such_character':
-          return `No one is called ${name}.`;
+          return `No existe nadie llamado ${name}.`;
         case 'friend_limit':
-          return 'Your friends list is full.';
+          return 'Tu lista de amigos está llena.';
         case 'no_such_request':
-          return `${name} has no request waiting.`;
+          return `${name} no tiene una solicitud pendiente.`;
       }
   }
-  return 'The request could not be sent.';
+  return 'No se pudo enviar la solicitud.';
 }
 
 export function renameText(result: NameResult): string {
   switch (result.kind) {
     case 'ok':
-      return `You are ${result.name} now. Say it again.`;
+      return `Ahora sos ${result.name}. Decilo otra vez.`;
     case 'invalid':
       return NAME_MESSAGES[result.reason];
     case 'limited':
@@ -185,12 +185,12 @@ export function dayDivider(previous: string | null, at: string | null, now: numb
 }
 
 export function readers(state: ChatState): string {
-  if (state.target.kind === 'whisper') return `Only you and ${state.target.name} read this.`;
-  return state.scope === 'hideout' ? 'Everyone in the Hideout reads this.' : 'Everyone online reads this.';
+  if (state.target.kind === 'whisper') return `Solo vos y ${state.target.name} leen esto.`;
+  return state.scope === 'hideout' ? 'Todos en el refugio leen esto.' : 'Todos los jugadores conectados leen esto.';
 }
 
 export function destination(aim: ChatTarget): string {
-  return aim.kind === 'whisper' ? `To ${aim.name}` : `To ${CHAT_WORDS.general}`;
+  return aim.kind === 'whisper' ? `Para ${aim.name}` : `Para ${CHAT_WORDS.general}`;
 }
 
 export function isResidentName(name: string, line: ChatLine | null, known: ReadonlySet<string>): boolean {

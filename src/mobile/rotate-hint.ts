@@ -4,7 +4,7 @@ import { createBrowserStore } from '../storage.ts';
 import { TITLE_SCREEN } from '../title-screen.ts';
 import { rotateHintShows, TOUCH } from './touch-map.ts';
 
-const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2"/><path d="M14.5 24.5h3"/></svg><div><b>Turn your phone sideways</b><span>The storm needs room.</span></div>';
+const ROTATE_HTML: string = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2"/><path d="M14.5 24.5h3"/></svg><div><b>Girá el teléfono de costado</b><span>La tormenta necesita espacio.</span></div>';
 
 export function startRotateHint(): void {
   const rotate: HTMLDivElement = el('div', 'tc-rotate', document.body);

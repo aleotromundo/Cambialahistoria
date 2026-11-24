@@ -6,10 +6,10 @@
       {
         "id": "do_not",
         "lines": [
-          "Do not."
+          "No lo hagas."
         ],
-        "address": "For {name}.",
-        "unnamed": "For you.",
+        "address": "Para {name}.",
+        "unnamed": "Para vos.",
         "voice": "journal_do_not",
         "when": [],
         "sets": {

@@ -10,7 +10,7 @@ const VESSEL = {
   refusedMs: 220,
   percent: 100,
   markGlyph: '!',
-  markWords: ', upgrade ready at the Warden Trader',
+  markWords: ', mejora disponible con el comerciante de guardianes',
 } as const;
 
 interface PreparedArt {
